@@ -74,7 +74,7 @@ export function passesLocationFilter(location: string, remote: boolean, jdText: 
   return { pass: false, reason: `Location not in UK/Europe/remote: ${location}` };
 }
 
-const NO_SPONSOR = /(we (do not|don'?t|cannot|can'?t) (offer |provide )?(visa )?sponsor|unable to (provide|offer|sponsor).*(visa )?|no (visa )?sponsorship|not able to sponsor)/i;
+const NO_SPONSOR = /(we (do not|don'?t|cannot|can'?t) (offer |provide )?(visa )?sponsor|unable to (provide |offer )?(visa )?sponsor|no (visa )?sponsorship|not able to sponsor)/i;
 const YES_SPONSOR = /(visa sponsorship (is )?available|we (can |will |do )?sponsor|sponsorship (is )?(available|provided|offered))/i;
 
 export function detectSponsorship(jdText: string): "yes" | "no" | "unknown" {

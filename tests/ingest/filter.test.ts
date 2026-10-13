@@ -79,6 +79,9 @@ describe("detectSponsorship", () => {
     ["Join our team in London.", "unknown"],
     ["We are unable to sponsor visas for this role.", "no"],
     ["Must have the right to work in the UK.", "unknown"],
+    ["We are unable to offer feedback to unsuccessful applicants.", "unknown"],
+    ["We are unable to provide visa sponsorship.", "no"],
+    ["We are unable to offer sponsorship.", "no"],
   ] as const)("%s → %s", (text, expected) => {
     expect(detectSponsorship(text)).toBe(expected);
   });
