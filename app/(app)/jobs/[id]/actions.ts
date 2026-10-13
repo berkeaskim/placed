@@ -210,6 +210,9 @@ export async function confirmNumber(jobId: string, claim: string, choice: "confi
   const text = (choice === "confirm" ? claim : edited ?? "").trim().slice(0, MAX_FACT);
   if (!text) return { error: "Type the real figure first." };
   const { supabase, user } = await requireUser();
+  // Only from a real tailoring of this job (23b fix 5): no stored facts or XP for jobs never tailored.
+  const app = await supabase.from("applications").select("tailored_json").eq("user_id", user.id).eq("job_id", jobId).maybeSingle();
+  if (!(app.data?.tailored_json as StoredTailoring | null)?.outcome) return { error: "Tailor your CV for this role first." };
   const { error } = await supabase.from("confirmed_facts").insert({ user_id: user.id, claim: text });
   if (error) {
     console.error("confirmNumber: insert failed", error.message);

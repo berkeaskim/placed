@@ -110,7 +110,7 @@ export default async function JobPage({ params }: { params: Promise<{ id: string
             jobId={job.id}
             hasCv={Boolean(cv)}
             original={{ skills: cv?.parsed.skills ?? [], summary: cv?.parsed.summary ?? null }}
-            initial={stored?.v === 1 && stored.outcome ? { outcome: stored.outcome, hasFinal: stored.final !== null } : null}
+            initial={stored?.v === 1 && stored.outcome ? { outcome: stored.outcome, final: stored.final ?? null } : null}
           />
 
           <section className="flex flex-col gap-2 rounded-[20px] border bg-white p-5">

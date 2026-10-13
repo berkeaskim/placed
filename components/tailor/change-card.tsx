@@ -19,7 +19,7 @@ function Line({ text }: { text: string }) {
   );
 }
 
-const btn = "inline-flex min-h-10 items-center gap-1.5 rounded-xl border-2 px-3 text-sm font-bold transition-colors disabled:opacity-50";
+const btn = "inline-flex min-h-11 items-center gap-1.5 rounded-xl border-2 px-3 text-sm font-bold transition-colors disabled:opacity-50";
 
 /**
  * One change (spec §8.3, B7, B8): before → after, the original CV line(s) it comes from, the posting requirement it
@@ -57,7 +57,7 @@ export function ChangeCard({ change: c, decision, text, onDecide, onUndo, onConf
             className="w-full rounded-xl border-2 border-[#C9C9D6] p-2.5 text-sm focus:border-[#5B3DF5] focus:outline-none" />
           <p className="text-xs text-muted-foreground">Use only what you really did. Any new number or tool is checked against your CV before your PDF is made.</p>
           <div className="flex gap-2">
-            <button type="button" className="btn-quest min-h-10 px-4 text-sm" disabled={!draft.trim()}
+            <button type="button" className="btn-quest min-h-11 px-4 text-sm" disabled={!draft.trim()}
               onClick={() => { onDecide({ kind: "edited", text: draft.trim() }); setEditing(false); }}>Use my version</button>
             <button type="button" className={`${btn} border-[#E6E6EF]`} onClick={() => setEditing(false)}>Cancel</button>
           </div>
@@ -78,7 +78,7 @@ export function ChangeCard({ change: c, decision, text, onDecide, onUndo, onConf
       {needsNumber && (
         <div className="flex flex-wrap items-center gap-2 rounded-xl bg-[#FFF4EC] px-2.5 py-2 text-xs text-[#7A3410]">
           <span className="flex-1">We left a blank instead of guessing a number. Until you add the real one, your PDF keeps your original wording.</span>
-          <button type="button" onClick={onConfirmNumber} className={`${btn} min-h-9 border-[#C2410C]/40 bg-white text-[#9A3412]`}>Confirm this number</button>
+          <button type="button" onClick={onConfirmNumber} className={`${btn} border-[#C2410C]/40 bg-white text-[#9A3412]`}>Confirm this number</button>
         </div>
       )}
 

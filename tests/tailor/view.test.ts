@@ -1,9 +1,9 @@
 import { describe, it, expect } from "vitest";
 import {
   NEEDS_NUMBER_TOKEN, hasPlaceholder, fillPlaceholder, stripPlaceholder, placeholderParts,
-  tailoredForRows, STATE_COPY, fallbackNotice, buildFinal, mustHavesNow, rulesGainedByDimension,
+  tailoredForRows, STATE_COPY, fallbackNotice, buildFinal, keywordCounts, rulesGainedByDimension,
   blockedByBullet, applyGateBlocks, isDirty, defendBullets, verificationState, pct, canReject, canEdit,
-  caughtNumbers, countStudentEdits, type Decisions,
+  caughtNumbers, countStudentEdits, caughtStatus, verificationCopy, decisionsFromFinal, anyConfirmed, type Decisions,
 } from "@/lib/tailor/view";
 import { NEEDS_NUMBER } from "@/lib/ai/prompts";
 import { FALLBACK_AI_ERROR, FALLBACK_NO_FIXTURE } from "@/lib/ai/tailorCV";
@@ -144,18 +144,17 @@ describe("buildFinal (accept / edit / reject)", () => {
   });
 });
 
-describe("mustHavesNow (live recount after accept / reject)", () => {
-  it("starts at the tailored total", () => {
-    expect(mustHavesNow(outcome, {})).toEqual({ matched: 3, total: 3 });
-  });
-  it("rejecting a change takes away what that change added, never below the original", () => {
-    expect(mustHavesNow(outcome, { "x0-b0": { kind: "rejected" } })).toEqual({ matched: 2, total: 3 });
-    expect(mustHavesNow(outcome, { "x0-b0": { kind: "rejected" }, "x0-b2": { kind: "rejected" }, skills: { kind: "rejected" } })).toEqual({ matched: 1, total: 3 });
-  });
-  it("accepting or editing keeps the gain; undo (back to suggested) restores it", () => {
-    expect(mustHavesNow(outcome, { "x0-b0": { kind: "accepted" } })).toEqual({ matched: 3, total: 3 });
-    expect(mustHavesNow(outcome, { "x0-b0": { kind: "edited", text: "x" } })).toEqual({ matched: 3, total: 3 });
-    expect(mustHavesNow(outcome, { "x0-b0": { kind: "suggested" } })).toEqual({ matched: 3, total: 3 });
+describe("keywordCounts (hero agrees with What we tailored for)", () => {
+  it("counts covered + surfaced rows per section over all rows", () => {
+    const rows: TailoredFor[] = [
+      { requirement: "Excel", skill: "Excel", section: "must", state: "covered" },
+      { requirement: "Stata", skill: "Stata", section: "must", state: "surfaced" },
+      { requirement: "CFA", skill: "CFA", section: "must", state: "missing" },
+      { requirement: "Tableau", skill: "Tableau", section: "nice", state: "missing" },
+      { requirement: "SQL", skill: "SQL", section: "nice", state: "covered" },
+    ];
+    expect(keywordCounts(rows)).toEqual({ must: { matched: 2, total: 3 }, nice: { matched: 1, total: 2 } });
+    expect(keywordCounts([])).toEqual({ must: { matched: 0, total: 0 }, nice: { matched: 0, total: 0 } });
   });
 });
 
@@ -253,5 +252,52 @@ describe("countStudentEdits (Made it yours)", () => {
     expect(countStudentEdits(buildFinal(tailored, changes, {}, original), tailored, cv)).toBe(0);
     expect(countStudentEdits(buildFinal(tailored, changes, { "x0-b0": { kind: "rejected" }, summary: { kind: "rejected" } }, original), tailored, cv)).toBe(0);
     expect(countStudentEdits(buildFinal(tailored, changes, { "x0-b2": { kind: "edited", text: "My own merged line" }, summary: { kind: "edited", text: "Mine" } }, original), tailored, cv)).toBe(2);
+  });
+});
+
+describe("caught it after the student confirms (fix 1)", () => {
+  const reverted = [
+    { bulletId: "x0-b9", reason: "Number not in your CV", attempted: "Reduced regressions by 20%", restored: "Reduced regressions" },
+    { bulletId: "skills", reason: "Not in your CV", attempted: "Azure", restored: null },
+  ];
+  it("a reverted line the student confirmed reads as confirmed, with its current text", () => {
+    expect(caughtStatus(reverted, { "x0-b9": { kind: "edited", text: "Reduced regressions by 20%" } })).toEqual([
+      { bulletId: "x0-b9", confirmed: "Reduced regressions by 20%" }, { bulletId: "skills", confirmed: null },
+    ]);
+    expect(caughtStatus(reverted, {}).every((x) => x.confirmed === null)).toBe(true);
+    expect(caughtStatus(reverted, { "x0-b9": { kind: "rejected" } })[0].confirmed).toBeNull();
+  });
+  it("anyConfirmed: a confirmed caught line or a blank filled with a figure", () => {
+    const o = { ...outcome, reverted } as unknown as TailorOutcome;
+    expect(anyConfirmed(o, {})).toBe(false);
+    expect(anyConfirmed(o, { "x0-b9": { kind: "edited", text: "Reduced regressions by 20%" } })).toBe(true);
+    expect(anyConfirmed(o, { "x0-b0": { kind: "edited", text: "Tracked 200 tickets, cutting backlog by 30%" } })).toBe(true);
+    expect(anyConfirmed(o, { "x0-b0": { kind: "edited", text: "Tracked tickets, cutting backlog" } })).toBe(false);
+  });
+  it("badge copy names the student's confirmations", () => {
+    expect(verificationCopy("traced", false)).toBe("Every claim traced to your original CV");
+    expect(verificationCopy("caught", true)).toBe("Every claim traced to your CV or confirmed by you");
+    expect(verificationCopy("blocked", true)).toMatch(/aren't supported/);
+  });
+});
+
+describe("decisionsFromFinal (revisit keeps the saved version, fix 2)", () => {
+  const caughtOutcome = { ...outcome, reverted: [{ bulletId: "x0-b1", reason: "r", attempted: "Ran Stata regressions on 30 survey waves", restored: "Ran Stata regressions on 3 survey waves" }] } as unknown as TailorOutcome;
+  it("round-trips: rebuilding from a saved final gives the same final", () => {
+    const d: Decisions = { "x0-b0": { kind: "rejected" }, "x0-b2": { kind: "edited", text: "Own words" }, "x0-b4": { kind: "rejected" }, skills: { kind: "rejected" }, summary: { kind: "edited", text: "Mine" } };
+    const saved = buildFinal(tailored, changes, d, original);
+    const back = decisionsFromFinal(outcome, saved, original);
+    expect(buildFinal(tailored, changes, back, original)).toEqual(saved);
+    expect(back["x0-b0"]).toEqual({ kind: "rejected" });
+    expect(back["x0-b2"]).toEqual({ kind: "edited", text: "Own words" });
+    expect(back["x0-b4"]).toEqual({ kind: "rejected" });
+    expect(back.skills).toEqual({ kind: "rejected" });
+    expect(back.summary).toEqual({ kind: "edited", text: "Mine" });
+  });
+  it("all suggested → no decisions; a confirmed caught line → edited", () => {
+    expect(decisionsFromFinal(outcome, buildFinal(tailored, changes, {}, original), original)).toEqual({});
+    const d: Decisions = { "x0-b1": { kind: "edited", text: "Ran Stata regressions on 30 survey waves" } };
+    const back = decisionsFromFinal(caughtOutcome, buildFinal(tailored, changes, d, original), original);
+    expect(back["x0-b1"]).toEqual(d["x0-b1"]);
   });
 });

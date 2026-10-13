@@ -118,16 +118,15 @@ export function buildFinal(t: TailoredCV, changes: TailorChangeView[], d: Decisi
 }
 
 /**
- * Instant "Must-haves met" recount: the tailored total minus what each rejected change added on its own,
- * never below the original CV's count. The server preview (reverifyEdits) replaces it with the exact figure.
+ * Controller ruling (fix round 1): the Findability box shows "Must-have keywords found X/Y", counted from the same rows
+ * as "What we tailored for" (covered + surfaced), so the two always agree. "Must-haves met" is reserved for B10.
  */
-export function mustHavesNow(o: TailorOutcome, d: Decisions): Counts {
-  const lost = o.changes
-    .filter((c) => kindOf(d, c.bulletId) === "rejected")
-    .reduce((n, c) => n + Math.max(0, c.mustHaves.after.matched - c.mustHaves.before.matched), 0);
-  const total = o.mustHaves.after.total;
-  const floor = Math.min(o.mustHaves.before.matched, o.mustHaves.after.matched);
-  return { matched: Math.min(total, Math.max(floor, o.mustHaves.after.matched - lost)), total };
+export function keywordCounts(rows: TailoredFor[]): { must: Counts; nice: Counts } {
+  const c = (section: TailoredFor["section"]) => {
+    const r = rows.filter((x) => x.section === section);
+    return { matched: r.filter((x) => x.state !== "missing").length, total: r.length };
+  };
+  return { must: c("must"), nice: c("nice") };
 }
 
 const norm = (s: string) => s.trim().replace(/\s+/g, " ").toLowerCase();
@@ -190,7 +189,59 @@ export function verificationState(r: VerifyReport, revertedCount: number): Verif
   return revertedCount > 0 ? "caught" : "traced";
 }
 
+export function verificationCopy(state: VerificationState, confirmedAny: boolean): string {
+  if (state === "blocked") return "Some lines aren't supported by your CV yet. Fix the flagged lines to download.";
+  return confirmedAny ? "Every claim traced to your CV or confirmed by you" : "Every claim traced to your original CV";
+}
+
 // ---------- B6 "Caught it" → B9 confirm ----------
+
+/** Fix 1: a caught line the student then confirmed (edited) shows as confirmed, not as still removed. */
+export function caughtStatus(reverted: RevertedChange[], d: Decisions): { bulletId: string; confirmed: string | null }[] {
+  return reverted.map((r) => {
+    const x = d[r.bulletId];
+    return { bulletId: r.bulletId, confirmed: r.restored !== null && x?.kind === "edited" ? x.text : null };
+  });
+}
+
+/** Badge wording: a caught figure the student confirmed, or a NEEDS_NUMBER blank they filled with a figure. */
+export function anyConfirmed(o: TailorOutcome, d: Decisions): boolean {
+  if (caughtStatus(o.reverted, d).some((x) => x.confirmed !== null)) return true;
+  return o.changes.some((c) => { const x = d[c.bulletId]; return c.needsNumber && x?.kind === "edited" && /\d/.test(x.text); });
+}
+
+/**
+ * Fix 2: on a revisit, rebuild the decisions that produced the saved version (applications.tailored_json.final),
+ * so the screen shows what's in the saved PDF and never offers to overwrite it with the AI version.
+ */
+export function decisionsFromFinal(o: TailorOutcome, final: TailoredCV, original: OriginalParts): Decisions {
+  const lines = new Map<string, { text: string; changeType?: string }>();
+  for (const s of SECTIONS) for (const e of final[s]) for (const b of e.bullets) lines.set(b.id, { text: b.text, changeType: b.changeType });
+  const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
+  const d: Decisions = {};
+  for (const c of o.changes) {
+    if (c.section === "skills") {
+      if (!same(final.skills, o.tailored.skills) && same(final.skills, original.skills)) d.skills = { kind: "rejected" };
+      continue;
+    }
+    if (c.section === "summary") {
+      if (final.summary === o.tailored.summary) continue;
+      d.summary = final.summary === original.summary ? { kind: "rejected" } : { kind: "edited", text: final.summary ?? "" };
+      continue;
+    }
+    const f = lines.get(c.bulletId);
+    if (c.changeType === "dropped") { if (f && f.changeType !== "dropped") d[c.bulletId] = { kind: "rejected" }; continue; }
+    if (!f) { d[c.bulletId] = { kind: "rejected" }; continue; }
+    if (f.text === c.after) continue;
+    const own = (c.sources.find((x) => x.id === c.bulletId) ?? c.sources[0])?.text;
+    d[c.bulletId] = f.changeType === "kept" && f.text === own ? { kind: "rejected" } : { kind: "edited", text: f.text };
+  }
+  for (const r of o.reverted) {
+    const f = lines.get(r.bulletId);
+    if (r.restored !== null && !d[r.bulletId] && f && f.text !== r.restored) d[r.bulletId] = { kind: "edited", text: f.text };
+  }
+  return d;
+}
 
 export type CaughtNumber = { bulletId: string; claim: string; attempted: string; restored: string };
 /** Reverted bullets whose attempted text held a figure the gate caught: the student may confirm it's real. */

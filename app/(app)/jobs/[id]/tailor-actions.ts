@@ -120,10 +120,17 @@ export async function getDefendQuestions(jobId: string, bullets: unknown): Promi
   if (!job) return { error: GONE };
   const key = createHash("sha256").update(JSON.stringify(clean)).digest("hex").slice(0, 32);
   const stored = app.data?.tailored_json as (StoredTailoring & { defend?: { key: string; questions: DefendQuestionT[] } }) | null;
-  if (stored?.defend?.key === key) return { questions: stored.defend.questions };
+  if (!stored?.outcome) return { error: "Tailor your CV for this role first." };
+  // Only lines that are in the saved version (fix round 1): never generate for arbitrary client text.
+  const saved = stored.final ?? stored.outcome.tailored;
+  const norm = (t: string) => t.trim().replace(/\s+/g, " ");
+  const lines = new Set([saved.summary ?? "", ...(["experience", "projects", "leadership"] as const)
+    .flatMap((s) => saved[s].flatMap((e) => e.bullets.map((b) => b.text)))].map(norm));
+  if (clean.some((b) => !lines.has(norm(b.after)))) return { error: "Save your version first, then we can prepare questions for it." };
+  if (stored.defend?.key === key) return { questions: stored.defend.questions };
   try {
     const { questions } = await defendQuestions({ bullets: clean, jobTitle: job.title, company: job.company });
-    if (stored) {
+    {
       const { error } = await supabase.from("applications").update({ tailored_json: { ...stored, defend: { key, questions } } })
         .eq("user_id", user.id).eq("job_id", jobId);
       if (error) console.error("getDefendQuestions: cache write failed", error.message);

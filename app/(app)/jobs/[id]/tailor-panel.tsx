@@ -13,7 +13,7 @@ import { DefendList } from "@/components/tailor/defend-list";
 import { DownloadIcon, InfoIcon, UndoIcon } from "@/components/tailor/icons";
 import {
   applyGateBlocks, blockedByBullet, buildFinal, caughtNumbers, defendBullets, fallbackNotice, fillPlaceholder, hasPlaceholder,
-  isDirty, mustHavesNow, stripPlaceholder, verificationState,
+  anyConfirmed, caughtStatus, decisionsFromFinal, isDirty, keywordCounts, stripPlaceholder, verificationCopy, verificationState,
   type DefendQuestion, type Decision, type Decisions, type OriginalParts, type TailorOutcome,
 } from "@/lib/tailor/view";
 import type { TailoredCV } from "@/lib/types";
@@ -51,16 +51,19 @@ function Section({ id, title, children, aside }: { id: string; title: string; ch
  * same gate before a PDF can be made.
  */
 export function TailorPanel({ jobId, hasCv, original, initial }: {
-  jobId: string; hasCv: boolean; original: OriginalParts; initial: { outcome: TailorOutcome; hasFinal: boolean } | null;
+  jobId: string; hasCv: boolean; original: OriginalParts; initial: { outcome: TailorOutcome; final: TailoredCV | null } | null;
 }) {
   const [outcome, setOutcome] = useState<TailorOutcome | null>(initial?.outcome ?? null);
   const [pdfUrl, setPdfUrl] = useState(`/api/tailored/${jobId}`);
-  const [decisions, setDecisions] = useState<Decisions>({});
+  // Fix 2: a revisit starts from the saved version (tailored_json.final), never from the AI version.
+  const [decisions, setDecisions] = useState<Decisions>(() => (initial?.final ? decisionsFromFinal(initial.outcome, initial.final, original) : {}));
   const [history, setHistory] = useState<Decisions[]>([]);
   const [preview, setPreview] = useState<{ key: string; data: Preview } | null>(null);
-  // The PDF made by tailorForJob is the all-suggested version (unless a saved edit replaced it on an earlier visit).
+  // The stored PDF is the version those decisions build (all-suggested right after tailorForJob, or the saved final).
   const [savedKey, setSavedKey] = useState<string | null>(() =>
-    initial && !initial.hasFinal ? JSON.stringify(buildFinal(initial.outcome.tailored, initial.outcome.changes, {}, original)) : null);
+    initial ? JSON.stringify(buildFinal(initial.outcome.tailored, initial.outcome.changes, decisions, original)) : null);
+  const [previewErr, setPreviewErr] = useState<string | null>(null);
+  const [retry, setRetry] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [ask, setAsk] = useState<NumberAsk | null>(null);
@@ -80,7 +83,8 @@ export function TailorPanel({ jobId, hasCv, original, initial }: {
     const k = key;
     const t = setTimeout(() => {
       previewTailoring(jobId, final).then((r) => {
-        if ("error" in r || keyRef.current !== k) return;
+        if (keyRef.current !== k) return;
+        if ("error" in r) { setPreviewErr(k); return; }
         setPreview({ key: k, data: r });
         const blocked = blockedByBullet(r.report);
         if (blocked.size) {
@@ -88,16 +92,16 @@ export function TailorPanel({ jobId, hasCv, original, initial }: {
           const first = [...blocked.values()][0];
           setNotice(`We put your original wording back: "${first.claim}" isn't in your CV.`);
         }
-      }).catch(() => { /* the preview is advisory; the save path re-runs the same gate */ });
+      }).catch(() => { if (keyRef.current === k) setPreviewErr(k); }); // advisory: the save path re-runs the same gate
     }, 350);
     return () => clearTimeout(t);
-  }, [jobId, key, final]);
+  }, [jobId, key, final, retry]);
 
   const run = () => startTailor(async () => {
     setError(null); setNotice(null);
     const r = await tailorForJob(jobId);
     if ("error" in r) { setError(r.error); return; }
-    setOutcome(r.outcome); setPdfUrl(r.pdfUrl); setDecisions({}); setHistory([]); setPreview(null); setDefend({ status: "idle" });
+    setOutcome(r.outcome); setPdfUrl(r.pdfUrl); setDecisions({}); setHistory([]); setPreview(null); setPreviewErr(null); setDefend({ status: "idle" });
     setSavedKey(JSON.stringify(buildFinal(r.outcome.tailored, r.outcome.changes, {}, original)));
     celebrate(r.award);
   });
@@ -119,13 +123,11 @@ export function TailorPanel({ jobId, hasCv, original, initial }: {
     startBusy(async () => {
       setAskError(null);
       const claim = a.kind === "caught" ? a.claim : figure;
-      const needsServer = choice === "confirm" || (choice === "edit" && figure);
-      if (needsServer) {
+      // Only a confirmed or corrected figure is stored; leave out / keep original / an empty rewrite store nothing.
+      if (choice === "confirm" || (choice === "edit" && figure)) {
         const r = await confirmNumberWithXp(jobId, choice === "edit" && a.kind === "placeholder" ? a.text : claim, choice, figure);
         if ("error" in r) { setAskError(r.error); return; }
         celebrate(r.award);
-      } else {
-        await confirmNumberWithXp(jobId, claim || a.bulletId, choice); // remove / keep original: nothing stored
       }
       if (a.kind === "placeholder") {
         if (choice === "confirm") decide(a.bulletId, { kind: "edited", text: fillPlaceholder(a.text, figure) });
@@ -189,14 +191,16 @@ export function TailorPanel({ jobId, hasCv, original, initial }: {
   const fresh = preview?.key === key ? preview.data : null;
   const report = fresh?.report ?? outcome.report;
   const vstate = verificationState(report, outcome.reverted.length);
-  const must = { before: outcome.mustHaves.before, now: fresh?.mustHaves.after ?? mustHavesNow(outcome, decisions) };
-  const nice = { before: outcome.niceToHaves.before, now: fresh?.niceToHaves.after ?? outcome.niceToHaves.after };
+  const kw = keywordCounts(outcome.tailoredFor);
+  const confirmed = new Map(caughtStatus(outcome.reverted, decisions).flatMap((x) => (x.confirmed === null ? [] : [[x.bulletId, x.confirmed] as const])));
   const fallback = fallbackNotice(outcome.usedFallback, outcome.fallbackReason);
   const caught = caughtNumbers(outcome);
   const toDefend = defendBullets(outcome.changes, decisions, final);
   const defendKey = `${jobId}:${JSON.stringify(toDefend)}`;
   const blocked = report.verdict === "block";
-  const checking = preview?.key !== key;
+  const previewFailed = previewErr === key && preview?.key !== key;
+  const checking = preview?.key !== key && !previewFailed;
+  const saved = savedKey === key;
   const suggestedLeft = outcome.changes.some((c) => (decisions[c.bulletId]?.kind ?? "suggested") === "suggested");
 
   const loadDefend = () => {
@@ -214,7 +218,7 @@ export function TailorPanel({ jobId, hasCv, original, initial }: {
     <section className="flex flex-col gap-5 rounded-[20px] border bg-white p-5" aria-label="Your tailored CV">
       <div className="flex items-center justify-between gap-2">
         <h2 className="text-lg font-extrabold tracking-tight">What we tailored for, and why</h2>
-        <button type="button" onClick={run} disabled={tailoring} className="shrink-0 text-xs font-semibold text-[#5B3DF5] hover:underline disabled:opacity-50">
+        <button type="button" onClick={run} disabled={tailoring} className="inline-flex min-h-11 shrink-0 items-center px-1 text-xs font-semibold text-[#5B3DF5] hover:underline disabled:opacity-50">
           {tailoring ? "Tailoring…" : "Tailor again"}
         </button>
       </div>
@@ -226,18 +230,19 @@ export function TailorPanel({ jobId, hasCv, original, initial }: {
         <p className="flex gap-2 rounded-xl bg-[#FFF1DC] px-3 py-2.5 text-sm text-[#7A4100]" role="note"><InfoIcon size={18} className="shrink-0" />We couldn&apos;t make changes we can stand behind, so your original CV stands unchanged.</p>
       )}
 
-      <CoverageHero before={outcome.coverageBefore} after={fresh?.coverageAfter ?? outcome.coverageAfter} must={must} nice={nice} />
+      <CoverageHero before={outcome.coverageBefore} after={fresh?.coverageAfter ?? outcome.coverageAfter} must={kw.must} nice={kw.nice} />
 
       <Section id="tailored-for" title="What we tailored for">
         <TailoredForList items={outcome.tailoredFor} />
       </Section>
 
-      <CaughtList reverted={outcome.reverted} caught={caught}
-        onConfirm={(c) => { setAskError(null); setAsk({ kind: "caught", ...c }); }} />
+      <CaughtList reverted={outcome.reverted} caught={caught} confirmed={confirmed}
+        onConfirm={(c) => { setAskError(null); setAsk({ kind: "caught", ...c }); }}
+        onUndo={(id) => decide(id, { kind: "suggested" })} />
 
       <Section id="changes" title="What changed, and why"
         aside={history.length > 0
-          ? <button type="button" onClick={undo} className="inline-flex items-center gap-1 text-xs font-semibold text-[#5B3DF5] hover:underline"><UndoIcon size={12} />Undo</button>
+          ? <button type="button" onClick={undo} className="inline-flex min-h-11 items-center gap-1 px-1 text-xs font-semibold text-[#5B3DF5] hover:underline"><UndoIcon size={12} />Undo</button>
           : undefined}>
         {notice && <p className="rounded-xl bg-[#FFF1DC] px-3 py-2 text-sm font-semibold text-[#7A4100]" role="status">{notice}</p>}
         {outcome.changes.length === 0 ? (
@@ -259,7 +264,7 @@ export function TailorPanel({ jobId, hasCv, original, initial }: {
               })}
             </ul>
             {suggestedLeft && (
-              <button type="button" className="min-h-10 self-start rounded-xl border-2 border-[#0E8A5F]/40 px-3 text-sm font-bold text-[#0B6B49] hover:bg-[#E3F6EE]"
+              <button type="button" className="min-h-11 self-start rounded-xl border-2 border-[#0E8A5F]/40 px-3 text-sm font-bold text-[#0B6B49] hover:bg-[#E3F6EE]"
                 onClick={() => {
                   setHistory((h) => [...h, decisions]);
                   setDecisions((cur) => {
@@ -277,15 +282,21 @@ export function TailorPanel({ jobId, hasCv, original, initial }: {
 
       <RulesGainedPanel rules={fresh?.rules ?? preview?.data.rules ?? null} />
 
-      <VerificationBadge state={vstate} />
+      <VerificationBadge state={vstate} text={verificationCopy(vstate, anyConfirmed(outcome, decisions))} />
 
       <div className="flex flex-col gap-1.5">
         <button type="button" onClick={download} disabled={blocked || busy || checking}
           className="btn-quest inline-flex min-h-12 items-center justify-center gap-2 py-3 disabled:cursor-not-allowed disabled:opacity-60">
           <DownloadIcon size={18} />
-          {busy ? "Checking and saving…" : checking ? "Checking your version…" : savedKey === key ? "Download PDF" : "Save my version and download PDF"}
+          {busy ? "Checking and saving…" : checking ? "Checking your version…" : saved ? (isDirty(decisions) ? "Download your saved version" : "Download PDF") : "Save my version and download PDF"}
         </button>
         <p className="text-xs text-muted-foreground">ATS-safe: one column, standard headings, contact details in the body.{isDirty(decisions) ? " Your choices are re-checked before the PDF is made." : ""}</p>
+        {previewFailed && (
+          <p className="flex flex-wrap items-center gap-2 text-xs text-[#7A4100]" role="status">
+            We couldn&apos;t check your version just now; saving re-checks it anyway.
+            <button type="button" onClick={() => setRetry((n) => n + 1)} className="inline-flex min-h-11 items-center px-1 font-bold text-[#5B3DF5] hover:underline">Try again</button>
+          </p>
+        )}
         {error && <p className="rounded-xl bg-[#FFF1DC] px-3 py-2 text-sm font-semibold text-[#7A4100]" role="alert">{error}</p>}
       </div>
 
@@ -298,7 +309,8 @@ export function TailorPanel({ jobId, hasCv, original, initial }: {
           <div className="flex flex-col gap-2" role="status"><Skeleton className="h-14 w-full" /><Skeleton className="h-14 w-full" /></div>
         ) : (
           <>
-            <button type="button" onClick={loadDefend} className="min-h-11 self-start rounded-xl border-2 border-[#5B3DF5] px-4 text-sm font-bold text-[#3A20C4] hover:bg-[#F4F1FF]">
+            {!saved && <p className="text-xs text-muted-foreground">Download (which saves your version) first, then we&apos;ll prepare questions for exactly those lines.</p>}
+            <button type="button" onClick={loadDefend} disabled={!saved || checking || blocked} className="min-h-11 self-start disabled:cursor-not-allowed disabled:opacity-50 rounded-xl border-2 border-[#5B3DF5] px-4 text-sm font-bold text-[#3A20C4] hover:bg-[#F4F1FF]">
               Show likely interview questions ({toDefend.length})
             </button>
             {defend.status === "error" && <p className="text-sm text-[#B42318]" role="alert">{defend.message}</p>}
@@ -306,7 +318,7 @@ export function TailorPanel({ jobId, hasCv, original, initial }: {
         )}
       </Section>
 
-      <NumberDialog ask={ask} pending={busy} error={askError} onChoose={chooseNumber} onClose={() => setAsk(null)} />
+      <NumberDialog key={ask ? `${ask.kind}-${ask.bulletId}` : "none"} ask={ask} pending={busy} error={askError} onChoose={chooseNumber} onClose={() => setAsk(null)} />
     </section>
   );
 }
