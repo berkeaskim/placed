@@ -1,6 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { todayLondon } from "@/lib/scoring/dates";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { computeAward, levelFromXp, londonDayStart, noAward, type AwardResult, type BadgeKey, type GamifyEvent } from "./core";
 
 const JOB_EVENTS = new Set(["job_saved", "cv_tailored", "applied", "interview", "rejected", "offer"]);
@@ -9,10 +10,17 @@ function fail(what: string, error: { message: string }): never {
   throw new Error(`awardXP: ${what} failed: ${error.message}`);
 }
 
-export async function awardXP(supabase: SupabaseClient, userId: string, e: GamifyEvent, jobId?: string): Promise<AwardResult> {
+/**
+ * `supabase` is the user's session client: it proves who the user is and does the reads.
+ * Writes go through `writer` (service role), because RLS makes gamify state read-only for users (0003).
+ */
+export async function awardXP(
+  supabase: SupabaseClient, userId: string, e: GamifyEvent, jobId?: string, writer?: SupabaseClient,
+): Promise<AwardResult> {
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user || auth.user.id !== userId) throw new Error("awardXP: userId does not match the session user");
   if (JOB_EVENTS.has(e.type) && !jobId) throw new Error(`awardXP: ${e.type} requires a jobId`);
+  const admin = writer ?? createAdminClient();
 
   const today = todayLondon();
   const count = (type: string, since?: string) => {
@@ -38,7 +46,7 @@ export async function awardXP(supabase: SupabaseClient, userId: string, e: Gamif
   }, e, today);
 
   // Event row first: unique indexes make this the idempotency gate.
-  const ins = await supabase.from("xp_events").insert({ user_id: userId, type: e.type, xp: result.xpGained, job_id: jobId ?? null });
+  const ins = await admin.from("xp_events").insert({ user_id: userId, type: e.type, xp: result.xpGained, job_id: jobId ?? null });
   if (ins.error) {
     if (ins.error.code === "23505") return noAward(p.data?.xp ?? 0, p.data?.streak_days ?? 0);
     fail("recording event", ins.error);
@@ -46,16 +54,16 @@ export async function awardXP(supabase: SupabaseClient, userId: string, e: Gamif
 
   let newXp = next.xp;
   if (result.xpGained !== 0) {
-    const inc = await supabase.rpc("increment_xp", { p_delta: result.xpGained });
+    const inc = await admin.rpc("award_xp", { p_user: userId, p_delta: result.xpGained });
     if (inc.error) fail("incrementing xp", inc.error);
     if (typeof inc.data === "number") newXp = inc.data;
   }
   const level = levelFromXp(newXp).level;
-  const upd = await supabase.from("profiles").update({ level, streak_days: next.streakDays, last_active_date: today }).eq("user_id", userId);
+  const upd = await admin.from("profiles").update({ level, streak_days: next.streakDays, last_active_date: today }).eq("user_id", userId);
   if (upd.error) fail("updating profile", upd.error);
 
   if (result.newBadges.length) {
-    const b = await supabase.from("badges").upsert(result.newBadges.map((badge_key) => ({ user_id: userId, badge_key })), { onConflict: "user_id,badge_key", ignoreDuplicates: true });
+    const b = await admin.from("badges").upsert(result.newBadges.map((badge_key) => ({ user_id: userId, badge_key })), { onConflict: "user_id,badge_key", ignoreDuplicates: true });
     if (b.error) fail("saving badges", b.error);
   }
   return { ...result, newXp, level, levelName: levelFromXp(newXp).name };

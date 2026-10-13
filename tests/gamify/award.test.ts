@@ -1,6 +1,10 @@
 import { describe, it, expect, vi } from "vitest";
 import { awardXP } from "@/lib/gamify/award";
 
+// awardXP writes through the service-role client; route it to the same fake as the session client.
+const admin = vi.hoisted(() => ({ current: null as unknown }));
+vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: () => admin.current }));
+
 type R = { data?: unknown; error?: { code?: string; message: string } | null; count?: number | null };
 function fake(opts: { insertError?: { code: string; message: string } }) {
   const calls: string[] = [];
@@ -23,6 +27,7 @@ function fake(opts: { insertError?: { code: string; message: string } }) {
   };
   const rpc = vi.fn(async () => ({ data: 90, error: null }));
   const supabase = { auth: { getUser: async () => ({ data: { user: { id: "u1" } } }) }, from, rpc };
+  admin.current = supabase;
   return { supabase: supabase as never, rpc, calls };
 }
 
@@ -32,7 +37,7 @@ describe("awardXP", () => {
     const r = await awardXP(f.supabase, "u1", { type: "job_saved" }, "j1");
     expect(r.xpGained).toBe(5);
     expect(f.rpc).toHaveBeenCalledTimes(1);
-    expect(f.rpc).toHaveBeenCalledWith("increment_xp", { p_delta: 5 });
+    expect(f.rpc).toHaveBeenCalledWith("award_xp", { p_user: "u1", p_delta: 5 });
     expect(r.newXp).toBe(90);
   });
   it("returns zero XP on a duplicate (unique violation) without incrementing", async () => {
