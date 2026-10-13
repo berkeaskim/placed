@@ -1,0 +1,4 @@
+import type { CvRule } from "./types";
+import { GENERAL_RULES } from "./rules/general";
+
+export const RULES: CvRule[] = [...GENERAL_RULES];
