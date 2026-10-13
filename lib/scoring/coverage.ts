@@ -64,5 +64,7 @@ export function computeCoverage(reqs: { skill: string; section: "must" | "nice" 
 
 export function coverageLabel(r: CoverageResult): string {
   if (!r.readable || r.weighted === null) return "Couldn't read the requirements";
-  return `You match ${r.must.matched}/${r.must.total} must-haves, ${r.nice.matched}/${r.nice.total} nice-to-haves (${Math.round(r.weighted * 100)}%)`;
+  let pct = Math.round(r.weighted * 100);
+  if (pct >= 100 && r.items.some((i) => i.status !== "existing")) pct = 99; // never display 100% with a gap
+  return `You match ${r.must.matched}/${r.must.total} must-haves, ${r.nice.matched}/${r.nice.total} nice-to-haves (${pct}%)`;
 }

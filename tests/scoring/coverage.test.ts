@@ -19,6 +19,19 @@ describe("jdRequirementSkills", () => {
     ]));
     expect(reqs.filter((r) => r.skill === "SQL")).toHaveLength(1);
   });
+  it("must wins over nice regardless of order (nice section first, must later)", () => {
+    const reqs = jdRequirementSkills(["## Nice to have", "- SQL", "## Requirements", "- SQL and Python"], []);
+    expect(reqs.filter((r) => r.skill === "SQL")).toEqual([{ skill: "SQL", section: "must" }]);
+  });
+  it("prose-only JD end to end is unreadable, never 100%", () => {
+    const lines = ["We are a friendly team looking for a motivated person to join us and grow with the company over the summer."];
+    const reqs = jdRequirementSkills(lines, []);
+    const r = computeCoverage(reqs, cv);
+    expect(r.readable).toBe(false);
+    expect(r.weighted).toBeNull();
+    expect(coverageLabel(r)).toBe("Couldn't read the requirements");
+    expect(coverageLabel(r)).not.toContain("100%");
+  });
 });
 
 describe("computeCoverage", () => {
@@ -43,5 +56,14 @@ describe("computeCoverage", () => {
   it("formats the label", () => {
     const r = computeCoverage([{ skill: "Python", section: "must" }, { skill: "Tableau", section: "nice" }], cv);
     expect(coverageLabel(r)).toBe("You match 1/1 must-haves, 1/1 nice-to-haves (92%)");
+  });
+});
+
+describe("coverageLabel rounding", () => {
+  it("never shows 100% while a gap exists", () => {
+    const reqs = Array.from({ length: 300 }, (_, i) => ({ skill: i === 0 ? "R" : "Python", section: "nice" as const }));
+    const r = computeCoverage(reqs, cv);
+    expect(r.weighted!).toBeGreaterThan(0.995);
+    expect(coverageLabel(r)).toContain("(99%)");
   });
 });
