@@ -135,6 +135,27 @@ function keySupported(key: string, keys: Set<string>): boolean {
   }
   return false;
 }
+/**
+ * Round 5: "dozens of weekly society events" names what it counts; the source must count the same thing ("30 weekly
+ * society events"), not just hold a big number for something else ("60 members"). The noun is the first count noun
+ * within four words of the phrase; with none, any number big enough still backs it.
+ */
+function vagueNoun(text: string, end: number): string | null {
+  const words = text.slice(end).match(/[A-Za-z][A-Za-z-]*/g)?.slice(0, 5) ?? [];
+  const w = words.map((x) => x.split("-").pop()!).find((x) => isCountNoun(x));
+  return w ? stem(w) : null;
+}
+function vagueBacked(key: string, noun: string | null, keys: Set<string>, supportText: string): boolean {
+  if (keys.has(key)) return true;
+  const min = VAGUE_MIN[key.slice(2)];
+  if (noun === null) return keySupported(key, keys);
+  for (const m of supportText.matchAll(NUM)) {
+    if (!numValues(m[0]).some((v) => +v >= min)) continue;
+    const next = supportText.slice(m.index! + m[0].length).match(/[A-Za-z][A-Za-z-]*/g)?.slice(0, 4) ?? [];
+    if (next.some((x) => stem(x.split("-").pop()!) === noun)) return true;
+  }
+  return false;
+}
 /** Numeric values named by an issue claim, digits or words ("thirty" → 30). */
 const claimValues = (claim: string) => [...numValues(claim), ...wordMetrics(claim).filter((w) => w.key.startsWith("n:")).map((w) => w.key.slice(2))];
 
@@ -358,17 +379,22 @@ const ADJECTIVES = new Set((
   "class cross well"
 ).split(" "));
 /**
- * Ordinary heads that may take an affiliation tail without naming anyone (round 4): "Till-trained", "Self-funded",
- * "Student-run", "Industry-backed". Any other capitalised compound is ordinary by default (Policy-focused, Tax-savvy).
+ * Ordinary heads of capitalised hyphen compounds (rounds 3–5): "Till-trained", "Self-funded", "Tax-savvy", "Society-trained".
+ * A compound with any other head is exempt only when its tail is attitude-only (ATTITUDE_TAIL).
  */
 const HYPHEN_HEADS = new Set(("hands hand detail fast self high low multi tech results client customer cross data team well long short full part " +
   "year time first second third final top mid non pre post re co sub semi over under open end real large small cost user people problem goal " +
   "award student community quick hard easy fact number numbers market public private front back side one two three four five half " +
   "forward future solution value risk budget deadline till crowd industry peer government council family employee charity state " +
-  "dry trial test home barista retail sales staff volunteer club society university college school field site job").split(" "));
-/** Tails that turn a capitalised compound head into an affiliation claim: "Zorblax-trained", "Ocado-sponsored" (round 4). */
-const AFFILIATION_TAIL = /^(?:(?:train|sponsor|fund|back|accredit|endors|affiliat|own|plac|hir|approv|partner)(?:ed|ing)|certified|certifying|run|running)$/;
-/** Suffixes strong enough to mark an affiliation-tail head as an ordinary word rather than a name ("Leadership-trained"). */
+  "dry trial test home barista retail sales staff volunteer club society university college school field site job " +
+  "tax stats code spreadsheet money").split(" "));
+/**
+ * Round 5 ruling: tails that only describe an attitude ("Policy-focused", "Brand-aware") never make the head a claim.
+ * Every other tail (competence: savvy, literate, proficient, based, ready…; affiliation: trained, led, sponsored,
+ * commissioned…) needs an ordinary head, or the head is a name candidate at any position.
+ */
+const ATTITUDE_TAIL = /^(?:focused|driven|minded|oriented|conscious|aware|centred|centered|centric|first|facing)$/;
+/** Suffixes strong enough to mark a compound head as an ordinary word ("Leadership-trained"); not the loose -er/-ian/-al shapes. */
 const STRONG_WORDISH = /(?:ing|ed|ment|ness|tion|sion|ship|ology|ism)$/;
 /** Morphology that marks an ordinary verb/adjective/noun rather than a name ("Cleaned", "Analytical", "Leadership"). */
 const WORDISH = /(?:ed|ing|ise|ize|ises|izes|ly|ive|ful|ous|able|ible|ment|ments|ness|tion|tions|sion|ity|ship|ist|ists|ism|ics|ical|al|ent|ents|ant|ants|ary|ory|ic|er|ers|or|ors|ian|ians|ate|ates|ance|ence|ology|age)$/;
@@ -605,10 +631,13 @@ export function verifyTailoring(i: VerifyInput): VerifyReport {
       }
     }
     // #1 word / multiplier / vague metrics (fix 1): must be backed by the cited source text (or confirmed facts)
-    const citedKeys = u.scoped ? null : supportKeys(`${normCurrency(u.cited)}\n${factsText}`);
+    const citedText = u.scoped ? null : stripContacts(`${normCurrency(u.cited)}\n${factsText}`);
+    const citedKeys = citedText === null ? null : supportKeys(citedText);
     for (const w of wordMetrics(text)) {
-      const keys = citedKeys ?? supportKeys(scopeFor(sentenceAt(text, text.indexOf(w.raw))));
-      if (keySupported(w.key, keys)) continue;
+      const at = text.indexOf(w.raw);
+      const supportText = citedText ?? stripContacts(scopeFor(sentenceAt(text, at)));
+      const keys = citedKeys ?? supportKeys(supportText);
+      if (w.key.startsWith("v:") ? vagueBacked(w.key, vagueNoun(text, at + w.raw.length), keys, supportText) : keySupported(w.key, keys)) continue;
       if (w.key.startsWith("n:")) addInvented(k, [w.key.slice(2)]);
       (wordRaws.get(k) ?? wordRaws.set(k, []).get(k)!).push(w.raw.toLowerCase());
       issues.push({ type: "inventedMetrics", severity: "block", ...where(u), claim: w.raw, check: "wordMetrics",
@@ -653,16 +682,17 @@ export function verifyTailoring(i: VerifyInput): VerifyReport {
       const allCaps = /^[A-Z0-9&+#]+$/.test(tok) && /[A-Z].*[A-Z]|[A-Z]\d/.test(tok);
       const before = u.text.slice(0, index).trimEnd();
       const sentenceStart = before === "" || /[.!?:;•▪|–—(]$/.test(before) || /\s-$/.test(` ${before}`);
-      // Round 4: a capitalised compound ("Policy-focused", "Hands-on") is ordinary by default. Its head is a name
-      // candidate only when an affiliation tail follows and the head isn't ordinary vocabulary ("Zorblax-trained",
-      // "Ocado-sponsored"; "Till-trained" passes). Known employers block in any form via the employer list.
+      // Round 5: a capitalised compound is exempt only when its head is ordinary vocabulary or its tail is attitude-only
+      // ("Policy-focused", "Tax-savvy", "Till-trained" pass; "Xero-literate", "Zorblax-led", "Unilever-sponsored" don't).
+      // A non-exempt compound head is a name candidate at any position, sentence start included.
       const tail = isCap(tok) && !allCaps ? u.text.slice(index + len).match(/^-([a-z]+)/)?.[1] : undefined;
-      const compound = tail !== undefined && !(AFFILIATION_TAIL.test(tail)
-        && !(COMMON.has(lower) || ADJECTIVES.has(lower) || HYPHEN_HEADS.has(lower) || IRREGULAR_PAST.has(lower) || STRONG_WORDISH.test(lower)));
+      const headOrdinary = COMMON.has(lower) || ADJECTIVES.has(lower) || HYPHEN_HEADS.has(lower) || STRONG_WORDISH.test(lower);
+      const compound = tail !== undefined;
+      const compoundExempt = compound && (headOrdinary || ATTITUDE_TAIL.test(tail));
       // "UCL, Class of 2027": a cohort, not a name
       if (lower === "class" && /^\s+of\s+\d{4}\b/.test(u.text.slice(index + len))) continue;
       const ordinary = COMMON.has(lower) || ADJECTIVES.has(lower) || IRREGULAR_PAST.has(lower) || WORDISH.test(lower) || authorshipLevel(lower) !== null || IRREGULAR.has(lower);
-      const candidate = allCaps || (isCap(tok) && !sentenceStart && !compound) || (isCap(tok) && sentenceStart && !compound && !ordinary);
+      const candidate = allCaps || (compound ? !compoundExempt : isCap(tok) && (!sentenceStart || !ordinary));
       if (!candidate) continue;
       if (hasToken(cNorm, tok) || cCompact.has(lower) || (allCaps && inits.has(lower))) continue;
       // capitalised run ("Survey Monkey") compared with spaces removed

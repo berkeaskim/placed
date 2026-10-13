@@ -697,3 +697,51 @@ describe("fix round 4 B: the CV's own years are years by default", () => {
     expect(blocksWith(ex4(ex4Bullet(text)), "inventedMetrics")).toBe(true);
   });
 });
+
+// ---------- Fix round 5: compounds exempt only for an ordinary head or an attitude-only tail ----------
+
+describe("fix round 5: competence/affiliation tails need an ordinary head, at any position", () => {
+  it.each([
+    ["summary", "Economics student at UCL, Xero-literate"],
+    ["summary", "Economics student at UCL, Xero-proficient"],
+    ["summary", "Economics student at UCL, Xero-experienced"],
+    ["summary", "Economics student at UCL, Xero-skilled"],
+    ["summary", "Economics student at UCL, Xero-fluent"],
+    ["summary", "Economics student at UCL, Xero-ready"],
+    ["summary", "Economics student at UCL, Alteryx-literate"],
+    ["summary", "Economics student at UCL, EViews-literate"],
+    ["retail", "Served customers on the till using Xero-based stock records"],
+    ["bullet", "Organised weekly Zorblax-led society events for 60 members"],
+    ["bullet", "Organised weekly Unilever-led society events for 60 members"],
+    ["summary", "Zorblax-mentored Economics student at UCL"],
+    ["project", "Analysed shop footfall data with pandas for a Zorblax-commissioned study"],
+    ["summary", "Unilever-sponsored Economics student at UCL"],
+    ["summary", "Mercer-trained Economics student at UCL"],
+    ["summary", "Experian-backed Economics student at UCL"],
+    ["bullet", "Unilever-sponsored weekly society events for 60 members"],
+  ])("%s '%s' blocks as an unsupported fact", (where, text) => {
+    const edit = where === "summary" ? (t: TailoredCV) => { t.summary = text; }
+      : where === "retail" ? ex4Bullet(text, "experience", 1) : where === "project" ? ex4Bullet(text, "projects") : ex4Bullet(text);
+    expect(blocksWith(ex4(edit), "unsupportedFacts")).toBe(true);
+  });
+  it.each(["Tax-savvy", "Stats-savvy", "Code-literate", "Spreadsheet-savvy", "Money-savvy", "Till-trained", "Excel-trained", "Self-funded",
+    "Society-trained", "Customer-facing", "Policy-focused", "Brand-aware", "Hands-on", "Detail-focused", "Self-motivated", "Part-time", "Full-time"])(
+    "'%s' passes at the start and mid-sentence", (c) => {
+      expect(has(ex4((t) => { t.summary = `${c} Economics student at UCL`; }).issues, "unsupportedFacts")).toBe(false);
+      expect(has(ex4((t) => { t.summary = `Economics student at UCL, ${c} and numerate`; }).issues, "unsupportedFacts")).toBe(false);
+    });
+});
+
+describe("fix round 5: a vague quantity needs a big enough number for the same thing", () => {
+  it("'dozens of weekly society events' blocks when only the member count is big", () => {
+    expect(blocksWith(ex4(ex4Bullet("Organised dozens of weekly society events for 60 members")), "inventedMetrics")).toBe(true);
+  });
+  it("passes when the source counts the same thing", () => {
+    const cv = structuredClone(econ4);
+    cv.experience[0].bullets[0].text = "Organised 30 weekly society events for 60 members";
+    const t = toTailored(cv);
+    t.experience[0].bullets[0] = { ...t.experience[0].bullets[0], text: "Organised dozens of weekly society events for 60 members", changeType: "rephrased" };
+    const r = verifyTailoring({ source: cv, sourceText: econ4Text, confirmedFacts: [], tailored: t, jdKeywords: [], coverageBefore: 0.3, coverageAfter: 0.5 });
+    expect(has(r.issues, "inventedMetrics")).toBe(false);
+  });
+});
