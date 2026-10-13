@@ -24,6 +24,7 @@ export async function anthropicStructured<T>(req: StructuredRequest<T>, c?: Mess
       res = await api.messages.create({
         model: MODELS[req.tier],
         max_tokens: req.maxTokens ?? 16000,
+        ...(req.temperature !== undefined ? { temperature: req.temperature } : {}),
         system: [{ type: "text", text: req.system, cache_control: { type: "ephemeral" } }],
         messages: [{ role: "user", content }],
         output_config: { format: zodOutputFormat(req.schema) },

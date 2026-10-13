@@ -3,7 +3,8 @@ import { aiMode, aiProvider } from "@/lib/env";
 import { loadFixture } from "./fixtures";
 
 export type Part = { type: "text"; text: string } | { type: "pdf"; base64: string };
-export type StructuredRequest<T> = { tier: "fast" | "smart"; system: string; parts: Part[]; schema: z.ZodType<T>; maxTokens?: number };
+/** `temperature` is optional; adapters send it only when set (tailorCV uses a low value, 05 §2 [2]). */
+export type StructuredRequest<T> = { tier: "fast" | "smart"; system: string; parts: Part[]; schema: z.ZodType<T>; maxTokens?: number; temperature?: number };
 
 export class AiError extends Error {}
 

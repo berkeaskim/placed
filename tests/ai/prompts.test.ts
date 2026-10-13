@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { wrapJob, UNTRUSTED_JD_RULE, UNTRUSTED_CV_RULE, SYSTEM_TAG_JOB, SYSTEM_PARSE_CV, SYSTEM_EXPLAIN } from "@/lib/ai/prompts";
+import { wrapJob, UNTRUSTED_JD_RULE, UNTRUSTED_CV_RULE, SYSTEM_TAG_JOB, SYSTEM_PARSE_CV, SYSTEM_EXPLAIN, SYSTEM_TAILOR } from "@/lib/ai/prompts";
 
 describe("prompt contract (prompt-injection safety)", () => {
   it("wraps JD text in job_posting tags and strips embedded closing tags", () => {
@@ -53,5 +53,19 @@ describe("SYSTEM_EXPLAIN", () => {
   it("treats the CV as untrusted data and keeps tagJob importance fixed", () => {
     expect(SYSTEM_EXPLAIN).toContain(UNTRUSTED_CV_RULE);
     expect(SYSTEM_EXPLAIN).toMatch(/do not re-rate importance/i);
+  });
+});
+
+describe("SYSTEM_TAILOR (C21)", () => {
+  it("treats the JD and the CV as untrusted data", () => {
+    expect(SYSTEM_TAILOR).toContain(UNTRUSTED_JD_RULE);
+    expect(SYSTEM_TAILOR).toContain(UNTRUSTED_CV_RULE);
+  });
+  it("forbids fabrication and allows NEEDS_NUMBER / unchanged bullets", () => {
+    expect(SYSTEM_TAILOR).toMatch(/NEEDS_NUMBER/);
+    expect(SYSTEM_TAILOR).toMatch(/unchanged/i);
+    expect(SYSTEM_TAILOR).toMatch(/changeType/);
+    expect(SYSTEM_TAILOR).toMatch(/qualifiersKept/);
+    expect(SYSTEM_TAILOR).not.toMatch(/beat the ATS|% more interviews/i);
   });
 });

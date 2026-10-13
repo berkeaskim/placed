@@ -6,6 +6,8 @@ import { tagSections } from "@/lib/text/jd";
 import { detectEmploymentType, detectSponsorship } from "@/lib/ingest/filter";
 import { extractSkills } from "@/lib/skills/extract";
 import type { TaggedJob } from "./tagJob";
+import type { TailorChange, TailoredCV, TailoredEntry } from "@/lib/types";
+import { toTailored } from "@/lib/verify/tailoring";
 
 const KEYWORDS: Record<Archetype, RegExp> = {
   software_eng: /\b(software|engineer(ing)?|developer|backend|frontend|full[- ]stack|swe|devops|mobile)\b/gi,
@@ -195,3 +197,39 @@ export function heuristicExplain(i: { requirements: Requirement[]; coverage: Cov
   return { rows, whyFit, gaps };
 }
 
+
+// ---------- tailorCV fallback (Task 23) ----------
+
+/**
+ * Deterministic tailoring: reorder bullets so the ones naming allowed skills come first, and list
+ * `supported` skills (already in the CV's prose) in Skills. It never rewrites a bullet, so it can't fabricate.
+ */
+export function heuristicTailor(i: { cv: ParsedCV; allowed: string[]; supported: string[] }): TailoredCV {
+  const t = toTailored(i.cv);
+  const allowed = new Set(i.allowed.map((s) => s.toLowerCase()));
+  const hits = (text: string) => extractSkills(text).filter((s) => allowed.has(s.toLowerCase()));
+  const changes: TailorChange[] = [];
+  const reorder = (es: TailoredEntry[]): TailoredEntry[] => es.map((e) => {
+    const sorted = e.bullets.map((b, n) => ({ b, n, h: hits(b.text).length })).sort((a, b) => b.h - a.h || a.n - b.n);
+    const bullets = sorted.map(({ b, n }, at) => (at === n ? b : { ...b, changeType: "reordered" as const }));
+    const top = sorted[0];
+    if (top && top.n !== 0) {
+      const named = hits(top.b.text);
+      changes.push({ bulletId: top.b.id, before: top.b.text, after: top.b.text, reason: `Moved up: it shows ${named.join(", ")}, which this role asks for`, jdRequirement: named[0] ?? null, keywordsAdded: [] });
+    }
+    return { ...e, bullets };
+  });
+  t.experience = reorder(t.experience); t.projects = reorder(t.projects); t.leadership = reorder(t.leadership);
+  const listed = new Set(t.skills.flatMap((g) => g.items.flatMap((x) => [x.toLowerCase(), ...extractSkills(x).map((s) => s.toLowerCase())])));
+  const surface = [...new Set(i.supported)].filter((s) => !listed.has(s.toLowerCase()));
+  if (surface.length) {
+    t.skills = t.skills.length ? t.skills.map((g, n) => (n === 0 ? { ...g, items: [...g.items, ...surface] } : g)) : [{ group: "Skills", items: surface }];
+    changes.push({
+      bulletId: "skills", before: "", after: surface.join(", "),
+      reason: `Listed ${surface.join(", ")} in Skills: your CV already mentions ${surface.length > 1 ? "them" : "it"} elsewhere`,
+      jdRequirement: surface[0], keywordsAdded: surface,
+    });
+  }
+  t.changes = changes;
+  return t;
+}

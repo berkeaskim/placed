@@ -26,6 +26,7 @@ export async function geminiStructured<T>(req: StructuredRequest<T>, c?: ModelsC
           responseMimeType: "application/json",
           responseJsonSchema: jsonSchema,
           maxOutputTokens: req.maxTokens ?? 16000,
+          ...(req.temperature !== undefined ? { temperature: req.temperature } : {}),
         },
       });
     } catch (cause) {

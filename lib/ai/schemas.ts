@@ -67,3 +67,36 @@ export const ExplainOutput = z.object({
   gaps: z.array(z.object({ index: z.number().int(), blocking: z.boolean(), adjacent_experience: z.string().nullable(), how_to_close: z.string() })),
 });
 export type ExplainOutputT = z.infer<typeof ExplainOutput>;
+
+/** tailorCV raw output (spec §7.1, 05 §2 [2]). Education and interests are not part of it: code copies them from the source CV. */
+const TailorChangeTypeOut = z.enum(["kept", "reordered", "rephrased", "merged", "dropped"]);
+const TBullet = z.object({
+  id: z.string(), text: z.string(), sourceRefs: z.array(z.string()), changeType: TailorChangeTypeOut,
+  qualifiersKept: z.array(z.string()), keywordsAdded: z.array(z.string()), dropReason: z.string().nullable(),
+});
+const TEntry = z.object({ id: z.string(), org: z.string(), title: z.string(), dates: z.string(), location: z.string(), bullets: z.array(TBullet) });
+const TChange = z.object({ bulletId: z.string(), before: z.string(), after: z.string(), reason: z.string(), jdRequirement: z.string().nullable(), keywordsAdded: z.array(z.string()) });
+export const TailoredCvOutput = z.object({
+  summary: z.string().nullable(),
+  experience: z.array(TEntry), projects: z.array(TEntry), leadership: z.array(TEntry),
+  skills: z.array(z.object({ group: z.string(), items: z.array(z.string()) })),
+  changes: z.array(TChange),
+});
+export type TailoredCvOutputT = z.infer<typeof TailoredCvOutput>;
+
+/**
+ * The same shape, lenient, for recorded fixtures (C6): an older or hand-written fixture that omits the
+ * per-bullet extras or a section still loads and goes through the same post-processing as live output.
+ */
+const TBulletLoose = TBullet.extend({
+  changeType: TailorChangeTypeOut.optional(), qualifiersKept: z.array(z.string()).default([]),
+  keywordsAdded: z.array(z.string()).default([]), dropReason: z.string().nullable().default(null),
+});
+const TEntryLoose = TEntry.extend({ dates: z.string().default(""), location: z.string().default(""), bullets: z.array(TBulletLoose) });
+export const TailoredCvFixture = z.object({
+  summary: z.string().nullable().default(null),
+  experience: z.array(TEntryLoose).default([]), projects: z.array(TEntryLoose).default([]), leadership: z.array(TEntryLoose).default([]),
+  skills: z.array(z.object({ group: z.string(), items: z.array(z.string()) })).default([]),
+  changes: z.array(TChange.extend({ jdRequirement: z.string().nullable().default(null), keywordsAdded: z.array(z.string()).default([]) })).default([]),
+});
+export type TailoredCvFixtureT = z.infer<typeof TailoredCvFixture>;
