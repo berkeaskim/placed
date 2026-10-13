@@ -5,8 +5,22 @@ const ENTITIES: Record<string, string> = {
 
 function decodeEntities(s: string): string {
   return s
-    .replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(Number(n)))
-    .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)))
+    .replace(/&#(\d+);/g, (match, n) => {
+      try {
+        const codePoint = Number(n);
+        return String.fromCodePoint(codePoint);
+      } catch {
+        return match;
+      }
+    })
+    .replace(/&#x([0-9a-f]+);/gi, (match, n) => {
+      try {
+        const codePoint = parseInt(n, 16);
+        return String.fromCodePoint(codePoint);
+      } catch {
+        return match;
+      }
+    })
     .replace(/&[a-z]+;|&#39;/gi, (m) => ENTITIES[m.toLowerCase()] ?? m);
 }
 
@@ -32,13 +46,16 @@ export type TaggedLine = { text: string; isHeader: boolean; section: "must" | "n
 
 const NICE_HEADER = /(preferred|nice[\s-]to[\s-]have|bonus|\bplus\b|it would be great|desirable|ideally|good to have)/i;
 const MUST_HEADER = /(required|requirements|qualifications|must[\s-]have|you'?ll (have|need|bring)|what we'?re looking for|who you are|minimum|essential|about you|what you'?ll need|skills( and|&) experience|you have)/i;
+const NICE_HEADER_START = /^(preferred|nice[\s-]to[\s-]have|bonus|desirable|good to have)\b/i;
+const MUST_HEADER_START = /^(requirements|minimum[\s-]requirements|qualifications|what we'?re looking for|you'?ll (have|need|bring)|about you|essential|must[\s-]have)\b/i;
 const NICE_BULLET = /\((preferred|a plus|bonus|desirable)\)|\ba plus\b|\bideally\b|\bdesirable\b|\bbonus\b|\bnice to have\b/i;
 const MUST_BULLET = /\bmust\b|\brequired\b|\bessential\b/i;
 
 function isHeaderLine(line: string): boolean {
   if (line.startsWith("## ")) return true;
   if (line.startsWith("- ")) return false;
-  return line.length <= 60 && (/:$/.test(line) || !/[.!?]$/.test(line)) && line.split(" ").length <= 8;
+  // A non-"## " line is a header only if it ends with ":" or starts with a must/nice header phrase
+  return /:$/.test(line) || MUST_HEADER_START.test(line) || NICE_HEADER_START.test(line);
 }
 
 export function tagSections(lines: string[]): TaggedLine[] {
