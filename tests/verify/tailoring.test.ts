@@ -450,3 +450,61 @@ describe("fix 8: warn-level drift", () => {
     expect(has(r.issues, "perBulletDrift", "warn")).toBe(true);
   });
 });
+
+// ---------- Fix round 2 (false blocks from round 1) ----------
+
+describe("fix round 2 N1: ordinary sentence openers are not names", () => {
+  const openers = ["Dealt", "Taught", "Made", "Kept", "Met", "Grew", "Cut", "Held", "Set", "Took", "Sold", "Brought", "Found", "Gave", "Became",
+    "Spoke", "Drew", "Began", "Chose", "Did", "Got", "Lent", "Left", "Paid", "Put", "Read", "Sent", "Spent", "Stood", "Told", "Thought",
+    "Understood", "Went", "Undertook", "Hands-on", "Detail-focused", "Fast-paced", "Self-motivated", "High-pressure", "Multi-tasking", "Tech-savvy",
+    "Results-focused", "Adept", "Calm", "Versatile", "Thorough", "Quick", "Diligent", "Organised", "Proactive", "Analytical", "Curious", "Reliable",
+    "Motivated", "Passionate", "Enthusiastic"];
+  it.each(openers)("'%s' at the start of a bullet or summary is not an unsupported fact", (o) => {
+    expect(has(fx((t) => setBullet(t, 1, `${o} survey data work in Python (pandas)`)).issues, "unsupportedFacts")).toBe(false);
+    expect(has(fx((t) => { t.summary = `${o} computer science student`; }).issues, "unsupportedFacts")).toBe(false);
+  });
+  it("sentence-start 'Won' is an achievement warn, like mid-sentence 'won'", () => {
+    const r = fx((t) => setBullet(t, 1, "Won a prize for survey data work in Python (pandas)"));
+    expect(has(r.issues, "unsupportedFacts")).toBe(false);
+    expect(r.issues.some((i) => i.check === "newAchievement" && i.severity === "warn")).toBe(true);
+    expect(r.verdict).toBe("warn");
+  });
+  it.each(["Deloitte-trained analyst cleaning survey data in Python (pandas)", "Ex-Deloitte analyst cleaning survey data in Python (pandas)"])("still blocks %s", (text) => {
+    expect(blocksWith(fx((t) => setBullet(t, 1, text)), "unsupportedFacts")).toBe(true);
+  });
+});
+
+describe("fix round 2 N2: the CV's own years used as years", () => {
+  it.each([
+    "Computer science student graduating in 2026",
+    "Class of 2026 computer science student",
+    "Computer science student at UCL (2023–2026)",
+    "Computer science student at UCL since 2023",
+    "Joined the Tech Society committee in 2023",
+    "Tech Society committee member (2023)",
+    "Tech Society committee member from September 2023",
+    "Computer science student, expected 2026",
+  ])("summary '%s' passes", (s) => {
+    const r = fx((t) => { t.summary = s; });
+    expect(has(r.issues, "inventedMetrics")).toBe(false);
+    expect(r.verdict).not.toBe("block");
+  });
+  it("a bullet may say when it happened", () => {
+    expect(fx((t) => setBullet(t, 0, "Helped organise 3 society events in 2023")).verdict).toBe("pass");
+    expect(fx((t) => setBullet(t, 0, "Helped organise 3 society events (2023–2024)")).verdict).not.toBe("block");
+  });
+  it.each(["Helped organise 3 society events for 2024 users", "Mentored 2026 first-year students in Python"])("still blocks a year used as a count: %s", (text) => {
+    const i = text.startsWith("Mentored") ? 6 : 0;
+    expect(blocksWith(fx((t) => setBullet(t, i, text)), "inventedMetrics")).toBe(true);
+  });
+  it("a year that isn't in any date field still blocks", () => {
+    expect(blocksWith(fx((t) => { t.summary = "Computer science student graduating in 2029"; }), "inventedMetrics")).toBe(true);
+  });
+});
+
+describe("fix round 2: multi-word numbers report once", () => {
+  it("'twenty five' is one issue", () => {
+    const r = fx((t) => setBullet(t, 6, "Mentored twenty five first-year students in Python"));
+    expect(r.issues.filter((i) => i.type === "inventedMetrics")).toHaveLength(1);
+  });
+});

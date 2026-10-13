@@ -177,9 +177,39 @@ function metricCorpus(cv: ParsedCV, sourceText: string, confirmedFacts: string[]
   for (const e of sections<ParsedCV, CvEntry>(cv)) { structured.push(e.org, e.title, e.location, ...e.bullets.map((b) => b.text)); dates.push(e.dates); }
   for (const g of cv.skills) structured.push(...g.items);
   const out = numberSet(structured.filter(Boolean).join("\n"));
-  const dateVals = numberSet(dates.join("\n"));
+  const dateVals = new Set<string>();
+  for (const d of dates) for (const m of d.match(NUM) ?? []) numValues(m).forEach((v) => dateVals.add(v));
   for (const v of numberSet(sourceText)) if (!dateVals.has(v) && !isYearLike(v)) out.add(v);
   return out;
+}
+
+/** Every value in the CV's own date fields (entries and education). */
+function dateFieldValues(cv: ParsedCV): Set<string> {
+  // no contact stripping here: adjacent date ranges ("2023 - 2024\n2024–2027") look like a phone number
+  const out = new Set<string>();
+  for (const d of [...cv.education.map((e) => e.dates), ...sections<ParsedCV, CvEntry>(cv).map((e) => e.dates)]) for (const m of d.match(NUM) ?? []) numValues(m).forEach((v) => out.add(v));
+  return out;
+}
+
+const MONTH_OR_SEASON = "jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|june?|july?|aug(?:ust)?|sept?(?:ember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?|spring|summer|autumn|fall|winter";
+const YEAR_BEFORE = new RegExp(`(?:\\b(?:in|since|of|by|from|until|till|to|through|graduating|graduated|graduation|graduate|expected|during|before|after|circa|c\\.|${MONTH_OR_SEASON})|[(\\[–—-]|\\d{4}\\s*[–—-])\\s*$`, "i");
+const YEAR_AFTER = /^\s*(?:[–—-]\s*(?:\d{2,4}|present|now|current)|[)\]])/i;
+/** Words after a number that make it a count ("2026 first-year students", "2024 users"). */
+const COUNT_AFTER = /^\s+(?:[a-z]+-)?(?:[a-z]+s|people|staff|members?|users?|customers?|clients?|students?|attendees?|participants?|followers?|downloads?|sign-?ups?|volunteers?|children|alumni)\b/i;
+const NOT_COUNT = new Set("as is was has his its this thus plus across towards alongside besides whereas does goes always various previous".split(" "));
+/**
+ * Round 2: a year-shaped value from the CV's own date fields, used as a year ("graduating in 2027", "(2024–2027)",
+ * "since 2024", "Sep 2023"), is a date, not a metric. Followed by a count noun it is still a count and still blocks.
+ */
+function isYearUse(text: string, index: number, raw: string, dateVals: Set<string>): boolean {
+  const before = text.slice(0, index), after = text.slice(index + raw.length);
+  // "2024-27": the short end of a range takes the century of its start
+  const short = /^\d{2}$/.test(raw) ? before.match(/(\d{2})\d{2}\s*[–—-]\s*$/) : null;
+  const v = short ? short[1] + raw : numValues(raw)[0];
+  if (!v || !isYearLike(v) || !dateVals.has(v) || /%|k|m|bn|x/i.test(raw.replace(/\d/g, ""))) return false;
+  const cm = after.match(COUNT_AFTER);
+  if (cm && !NOT_COUNT.has(cm[0].trim().split(/[- ]/).pop()!.toLowerCase())) return false;
+  return YEAR_BEFORE.test(before) || YEAR_AFTER.test(after);
 }
 
 /** Content units a summary/interests number can be scoped to (fix 5). */
@@ -271,6 +301,25 @@ const COMMON = new Set((
   "reading writing running football chess music piano guitar travel travelling traveling cooking photography swimming cycling hiking tennis rugby " +
   "cricket basketball debating gaming languages fluent native conversational working worked work skills skill experience tools technical languages " +
   "web mobile app apps backend frontend full stack cloud machine learning ai quantitative qualitative financial commercial technical"
+).split(" "));
+/**
+ * Irregular past-tense verbs (round 2): ordinary CV openers that WORDISH can't see. Authorship-ladder verbs
+ * (built, led, ran, wrote, oversaw…) are skipped here too but are still judged by the authorship checks.
+ */
+const IRREGULAR_PAST = new Set((
+  "dealt taught made kept met grew cut held set took sold brought found gave became spoke drew won began chose did got lent left paid put read " +
+  "sent spent stood told thought understood went undertook built led ran wrote oversaw drove bought caught fought sought saw knew threw rose " +
+  "shot shut split spread struck swam taught tore wore won wound overcame oversaw overtook withdrew upheld withstood rebuilt rewrote reran " +
+  "had was were felt heard lost meant sat slept stuck swept bent bound fed fled hung laid lit mistook outgrew sped forgave forecast broadcast"
+).split(" "));
+/** Plain adjectives that open summaries/bullets (round 2). */
+const ADJECTIVES = new Set((
+  "adept calm versatile thorough quick diligent organised organized proactive analytical curious reliable motivated passionate enthusiastic " +
+  "able agile astute bright capable careful clear collaborative conscientious dependable determined efficient energetic focused hardworking " +
+  "honest independent innovative inquisitive logical meticulous methodical numerate patient persistent personable practical precise " +
+  "productive punctual quantitative rigorous resilient resourceful responsible self sharp smart sociable strategic talented tenacious " +
+  "thoughtful tireless trustworthy upbeat vibrant warm keen eager friendly hard fast high low multi tech results detail people customer client " +
+  "class cross well"
 ).split(" "));
 /** Morphology that marks an ordinary verb/adjective/noun rather than a name ("Cleaned", "Analytical", "Leadership"). */
 const WORDISH = /(?:ed|ing|ise|ize|ises|izes|ly|ive|ful|ous|able|ible|ment|ments|ness|tion|tions|sion|ity|ship|ist|ists|ism|ics|ical|al|ent|ents|ant|ants|ary|ory|ic|er|ers|or|ors|ian|ians|ate|ates|ance|ence|ology|age)$/;
@@ -389,6 +438,8 @@ export function verifyTailoring(i: VerifyInput): VerifyReport {
   const cCompact = compactTokens(cNorm);
   const inits = initialisms(corpus);
   const corpusNums = metricCorpus(i.source, i.sourceText, i.confirmedFacts);
+  const dateVals = dateFieldValues(i.source);
+  const yearsUsed = new Map<string, Set<string>>(); // unit key → years accepted as dates (scopedMetrics must not re-flag them)
   const srcSkills = new Set(extractSkills(corpus));
   const jdStems = new Set(i.jdKeywords.flatMap((k) => [...contentStems(k)]));
   const hardJd = i.jdKeywords.filter((k) => isHardTerm(k) && extractSkills(k).length === 0 && !hasToken(cNorm, k));
@@ -483,12 +534,14 @@ export function verifyTailoring(i: VerifyInput): VerifyReport {
   const addInvented = (k: string, vals: string[]) => vals.forEach((v) => (invented.get(k) ?? invented.set(k, new Set()).get(k)!).add(v));
   const injectedByUnit = new Map<string, Set<string>>();
   const ownershipFlagged = new Set<string>();
+  const wordRaws = new Map<string, string[]>(); // unit key → flagged word-metric spans ("twenty five")
   for (const u of units) {
     const k = key(u);
     const text = normCurrency(u.text);
     // #1 inventedMetrics (global): every digit number must exist in source ∪ confirmed facts (dates excluded, fix 6)
     for (const m of text.matchAll(NUM)) {
       const vals = numValues(m[0]);
+      if (isYearUse(text, m.index!, m[0].trim(), dateVals)) { (yearsUsed.get(k) ?? yearsUsed.set(k, new Set()).get(k)!).add(vals[0]); continue; }
       if (!vals.some((v) => corpusNums.has(v))) {
         addInvented(k, vals);
         issues.push({ type: "inventedMetrics", severity: "block", ...where(u), claim: m[0].trim(), reason: "This number isn't in your CV — confirm it or we'll leave it out" });
@@ -508,6 +561,7 @@ export function verifyTailoring(i: VerifyInput): VerifyReport {
       const keys = citedKeys ?? supportKeys(scopeFor(sentenceAt(text, text.indexOf(w.raw))));
       if (keySupported(w.key, keys)) continue;
       if (w.key.startsWith("n:")) addInvented(k, [w.key.slice(2)]);
+      (wordRaws.get(k) ?? wordRaws.set(k, []).get(k)!).push(w.raw.toLowerCase());
       issues.push({ type: "inventedMetrics", severity: "block", ...where(u), claim: w.raw, check: "wordMetrics",
         reason: `"${w.raw}" isn't what your original says — confirm the figure or keep the original wording` });
     }
@@ -550,8 +604,10 @@ export function verifyTailoring(i: VerifyInput): VerifyReport {
       const allCaps = /^[A-Z0-9&+#]+$/.test(tok) && /[A-Z].*[A-Z]|[A-Z]\d/.test(tok);
       const before = u.text.slice(0, index).trimEnd();
       const sentenceStart = before === "" || /[.!?:;•▪|–—(]$/.test(before) || /\s-$/.test(` ${before}`);
-      const candidate = allCaps || (isCap(tok) && !sentenceStart)
-        || (isCap(tok) && sentenceStart && !COMMON.has(lower) && !WORDISH.test(lower) && authorshipLevel(lower) === null && !IRREGULAR.has(lower));
+      // "Hands-on", "Fast-paced": a capitalised word glued to a lowercase word is an ordinary compound, not a name
+      const compound = isCap(tok) && !allCaps && /^-[a-z]/.test(u.text.slice(index + len, index + len + 2));
+      const ordinary = COMMON.has(lower) || ADJECTIVES.has(lower) || IRREGULAR_PAST.has(lower) || WORDISH.test(lower) || authorshipLevel(lower) !== null || IRREGULAR.has(lower);
+      const candidate = allCaps || (isCap(tok) && !sentenceStart && !compound) || (isCap(tok) && sentenceStart && !compound && !ordinary);
       if (!candidate) continue;
       if (hasToken(cNorm, tok) || cCompact.has(lower) || (allCaps && inits.has(lower))) continue;
       // capitalised run ("Survey Monkey") compared with spaces removed
@@ -630,7 +686,13 @@ export function verifyTailoring(i: VerifyInput): VerifyReport {
       if (x.check === "scopedMetrics") {
         const vals = claimValues(x.claim);
         const inv = invented.get(x.bulletId);
-        return !(vals.length && inv && vals.every((v) => inv.has(v)));
+        if (vals.length && inv && vals.every((v) => inv.has(v))) return false;
+        // part of a multi-word number already reported ("twenty" of "twenty five")
+        const c = x.claim.toLowerCase();
+        if ((wordRaws.get(x.bulletId) ?? []).some((r) => r.includes(c) || c.includes(r))) return false;
+        // the CV's own years used as dates ("(2023–2024)") aren't metrics
+        const yrs = yearsUsed.get(x.bulletId);
+        return !(yrs && numValues(x.claim).length && [...x.claim.matchAll(/\d+/g)].every((d) => yrs.has(String(+d[0]))));
       }
       // sibling swap of a tool that's absent from the whole CV → skillInjection already says it
       if (x.check === "siblingContamination") {
