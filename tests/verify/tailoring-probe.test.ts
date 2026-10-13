@@ -449,3 +449,90 @@ describe("fix round 4 ruling 3: seasons, years, places, company suffixes and sep
     expect(runCv(same, "summary", `${x} employee since 2025; Economics student at UCL`).verdict).toBe("block");
   });
 });
+
+// ---------- Task 22b fix round 5 ----------
+
+const passes = (edit: (c: ParsedCV) => void, where: Where, text: string) =>
+  expect(runCv(edit, where, text).issues.filter((i) => i.severity === "block")).toEqual([]);
+
+describe("fix round 5 ruling a: 'with <tool>' is tool use unless an employment word or role/date follows", () => {
+  it.each([
+    "Economics student at UCL who has worked with Bloomberg data",
+    "Economics student at UCL who worked with Bloomberg and Excel",
+    "Economics student at UCL experienced working with Bloomberg, Excel and SQL",
+    "Economics student at UCL comfortable working with Snowflake and SQL",
+    "Economics student at UCL confident working with Tableau and Excel",
+    "Economics student at UCL seeking a role working with Tableau and SQL",
+    "Economics student at UCL seeking an analyst position working with Bloomberg",
+    "Economics student at UCL looking for an internship working with Snowflake",
+    "Economics student at UCL keen to work with Tableau and Python",
+    "Economics student at UCL aiming for an analyst role with Bloomberg skills",
+    "Economics student at UCL and data analyst with Tableau",
+    "Economics student at UCL; Excel analyst with Bloomberg experience",
+    "Economics student at UCL; analyst with Bloomberg skills",
+  ])("CV skills include the tool: '%s' passes", (text) => { passes(r4ToolCv, "summary", text); });
+  it.each([
+    "Economics student at UCL who worked with Bloomberg as a summer analyst",
+    "Economics student at UCL who interned with Bloomberg",
+    "Economics student at UCL; placement with Bloomberg",
+    "Economics student at UCL who worked with Bloomberg in 2025",
+    "Economics student at UCL who worked with Bloomberg since 2025",
+    "Economics student at UCL who worked with Bloomberg 2025",
+  ])("skills-only tool: '%s' blocks", (text) => { expect(runCv(r4ToolCv, "summary", text).verdict).toBe("block"); });
+});
+
+describe("fix round 5 ruling b: unknown capitalised name + capitalised role title", () => {
+  it.each([
+    "Prudential Analyst; Economics student at UCL", "Admiral Associate; Economics student at UCL", "Harrowgate Analyst; Economics student at UCL",
+    "Admiral Analyst, 2025; Economics student at UCL", "Prudential Analyst, London; Economics student at UCL",
+    "Economics student at UCL. Brightwater Intern 2025", "Harrowgate Trainee; Economics student at UCL", "Prudential Consultant; Economics student at UCL",
+    "Admiral Apprentice; Economics student at UCL",
+  ])("'%s' blocks", (text) => { expect(runCv(same, "summary", text).verdict).toBe("block"); });
+  it.each([
+    "Data Analyst applicant; Economics student at UCL", "Investment Analyst applicant; Economics student at UCL",
+    "Policy Analyst applicant; Economics student at UCL", "Junior Analyst applicant; Economics student at UCL",
+    "Research Assistant applicant; Economics student at UCL", "Summer Analyst applicant; Economics student at UCL",
+    "Equity Research Analyst applicant; Economics student at UCL", "Strategy Consultant applicant; Economics student at UCL",
+    "Economics Society Analyst; Economics student at UCL",
+  ])("'%s' is not a name claim", (text) => {
+    // "Research Assistant" / "Equity Research" are vocab skills, so skillInjection may still flag them; ruling b is about names
+    expect(runCv(same, "summary", text).issues.filter((i) => i.severity === "block" && i.type === "unsupportedFacts")).toEqual([]);
+  });
+});
+
+describe("fix round 5 ruling c: tool + analyst followed by a role, season, month or place is a role", () => {
+  const forms = (x: string) => [`Economics student at UCL; ${x} analyst placement`, `Economics student at UCL; ${x} analyst role`,
+    `Economics student at UCL; ${x} analyst position`, `Economics student at UCL; ${x} analyst, summer`, `Economics student at UCL; ${x} analyst (summer)`,
+    `Economics student at UCL; ${x} analyst, Jun–Aug 2025`, `Economics student at UCL; ${x} Analyst — London`, `Economics student at UCL; ${x} analyst in London`];
+  it.each(["Bloomberg", "Tableau"].flatMap((x) => forms(x)))("skills-only tool: '%s' blocks", (text) => {
+    expect(runCv(r4ToolCv, "summary", text).verdict).toBe("block");
+  });
+});
+
+describe("fix round 5 ruling d: more employment words and phrases", () => {
+  const forms = (x: string) => [`Economics student at UCL who worked as a consultant for ${x}`, `Economics student at UCL; contractor for ${x}`,
+    `Economics student at UCL who consulted for ${x}`, `Economics student at UCL who volunteered for ${x}`, `Economics student at UCL hired by ${x}`,
+    `Economics student at UCL employed by ${x}`, `Economics student at UCL with an offer from ${x}`, `Economics student at UCL with a return offer from ${x}`,
+    `Economics student at UCL who spent summer 2025 with ${x}`];
+  it.each(["Bloomberg", "Snowflake"].flatMap((x) => forms(x)))("skills-only tool: '%s' blocks", (text) => {
+    expect(runCv(r4ToolCv, "summary", text).verdict).toBe("block");
+  });
+  it.each(["Economics student at UCL hired by Prudential", "Economics student at UCL with a return offer from Prudential"])("'%s' blocks", (text) => {
+    expect(runCv(same, "summary", text).verdict).toBe("block");
+  });
+});
+
+describe("fix round 5 ruling e: skills implied by a CV tool are not injected", () => {
+  it.each([
+    [["Tableau"], "Built Tableau dashboards for Economics Society events"],
+    [["Power BI"], "Built Power BI dashboards for Economics Society events"],
+    [["Looker"], "Built Looker dashboards for Economics Society events"],
+    [["Salesforce"], "Economics student at UCL who logged members in Salesforce CRM"],
+    [["HubSpot"], "Economics student at UCL who logged members in HubSpot CRM"],
+  ] as [string[], string][])("CV skills %j: '%s' passes", (extra, text) => {
+    passes((c) => { c.skills[0].items.push(...extra); }, "summary", text);
+  });
+  it("without the tool, dashboards are still an injected skill", () => {
+    expect(runCv(same, "summary", "Built dashboards for Economics Society events").verdict).toBe("block");
+  });
+});

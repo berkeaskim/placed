@@ -453,29 +453,55 @@ function toolModifier(after: string): boolean {
   const m = after.match(/^\s+analysts?\b/i);
   if (!m) return false;
   const next = after.slice(m[0].length).match(/[A-Za-z0-9]+/g)?.slice(0, 2) ?? [];
-  return !next.some((w) => /^(?:19|20)\d{2}$/.test(w) || /^(?:since|interns?|internships?|programmes?|programs?|schemes?)$/i.test(w));
+  // fix round 5 (ruling c): role nouns, seasons, months and closed-set places make it a role too ("analyst placement", "analyst in London")
+  return !next.some((w) => /^(?:19|20)\d{2}$/.test(w) || MONTH_TOKENS.has(w.toLowerCase()) ||
+    /^(?:since|interns?|internships?|programmes?|programs?|schemes?|placements?|roles?|positions?|jobs?|summer|spring|autumn|winter|vacation|london|uk|manchester|edinburgh|europe|emea)$/i.test(w));
 }
 /** Fix round 4 (ruling 2): work words that make "for/with/at <tool>" an employer claim ("worked for Bloomberg"). */
-const WORK_WORD = /^(?:work|works|worked|working|interns?|interned|interning|internships?|placements?|roles?|employed|employees?|analysts?|associates?|positions?|jobs?|contracts?|apprentices?|apprenticeships?|trainees?)$/i;
+const WORK_WORD = /^(?:work|works|worked|working|interns?|interned|interning|internships?|placements?|roles?|employed|employees?|analysts?|associates?|positions?|jobs?|contracts?|apprentices?|apprenticeships?|trainees?|consultants?|contractors?|consulted|volunteered)$/i;
+/**
+ * Fix round 5 (ruling a): "with <tool>" is tool use ("worked with Bloomberg data", "analyst with Tableau") unless the word directly
+ * before "with" is an employment word, or the tool is followed by "as <role>", a year, "since" or "in <year>".
+ */
+const WITH_WORD = /^(?:interns?|interned|interning|internships?|placements?|apprentices?|apprenticeships?|apprenticed|trainees?|traineeships?|employed|employees?|jobs?|contracts?|contractors?|consultants?)$/i;
+const WITH_ROLE_AFTER = new RegExp(`^\\s*,?\\s*(?:as\\s+(?:an?\\s+|the\\s+)?(?:[A-Za-z]+\\s+){0,2}(?:${"interns?|internships?|placements?|trainees?|analysts?|associates?|graduates?|apprentices?|employees?|consultants?|contractors?|staff"})\\b|\\(?(?:19|20)\\d{2}\\b|since\\b|in\\s+(?:19|20)\\d{2}\\b)`, "i");
+/** "<prep> <tool> <noun>": the tool modifies a thing, never an employer ("with Bloomberg data", "with Tableau and Excel"). */
+const TOOL_NOUN_AFTER = /^\s+(?:data|prices|skills|experience|dashboards|tables|feeds|models|queries|and|or)\b/i;
+/** Fix round 5 (ruling b): capitalised role titles that make a capitalised run before them a name ("Prudential Analyst"). */
+const CAP_ROLE_TITLE = "(?:Analyst|Associate|Intern|Trainee|Consultant|Apprentice)s?";
 /** A 1–3-word capitalised run ("Slaughter and May", "Silverwater Partners") opening a sentence, followed by a role noun. */
 const ROLE_RUN = new RegExp(`(?:^|[.!?:;•▪|–—(\\n])\\s*(?:-\\s+)?([A-Z][A-Za-z0-9&.]*(?:\\s+(?:(?:and|&)\\s+)?[A-Z][A-Za-z0-9&.]*){0,2})(?=${ROLE_GAP}(?:${ROLE_NOUN})\\b)`, "g");
 /** Fix round 3 (ruling A): sector/programme words that open role phrases ("Consulting internship", "Insurance graduate scheme"). */
 const SECTOR_NOUNS = new Set(("consulting banking investment operations pricing economic industrial professional insurance econometrics budding " +
   "prospective remote hybrid virtual mentoring networking speaker careers onboarding policy tax treasury sandwich exchange insight trainee future " +
-  "aspiring data finance marketing research technology product strategy").split(" "));
+  "aspiring data finance marketing research technology product strategy " +
+  // fix round 5 (ruling b): sector words before capitalised role titles ("Equity Research Analyst", "Sales Associate")
+  "equity credit legal sales trading markets quant compliance accounting actuarial valuation portfolio wealth asset corporate advisory").split(" "));
+/** Fix round 5 (ruling b): the same run followed by a capitalised role title ("Prudential Analyst", "Admiral Associate, 2025"). */
+const CAP_ROLE_RUN = new RegExp(`(?:^|[.!?:;•▪|–—(\\n])\\s*(?:-\\s+)?([A-Z][A-Za-z0-9&.]*(?:\\s+(?:(?:and|&)\\s+)?[A-Z][A-Za-z0-9&.]*){0,2})(?=\\s+${CAP_ROLE_TITLE}\\b)`, "g");
 /** Ordinary words a role run may contain ("Summer intern", "Graduate scheme", "Economics graduate", "Charity volunteer"). */
 const ROLE_ORDINARY = new Set(("summer spring autumn winter vacation insight work graduate graduates events event charity intern internship placement " +
-  "scheme trainee programme program analyst associate apprentice apprenticeship alumnus alumna").split(" "));
+  "scheme trainee programme program analyst associate apprentice apprenticeship alumnus alumna " +
+  "junior senior freelance principal lead assistant consultant").split(" "));
 /** Fix round 2: role titles that are ordinary words mid-sentence ("aspiring Economist", "become an Analyst"). */
-const ROLE_TITLES = new Set("economist economists analyst analysts associate associates researcher researchers officer officers assistant assistants".split(" "));
+const ROLE_TITLES = new Set(("economist economists analyst analysts associate associates researcher researchers officer officers assistant assistants " +
+  "consultant consultants intern interns trainee trainees apprentice apprentices").split(" "));
 /** Fix round 2 (ruling 2): contexts where an employer name claims an affiliation, not tool use ("former X intern", "at X", "X-sponsored"). */
 function employerClaim(text: string, start: number, end: number, cvTool: boolean): boolean {
   const before = text.slice(0, start), after = text.slice(end);
   if (/(?:\binterned\s+(?:at|with|for)\s+|\b(?:at|former|formerly|joined|joining|secured|won)\s+|\bex\s*-\s*|\bex\s+)$/i.test(before)) return true;
+  // fix round 5 (ruling d): "hired/employed by X", "(return) offer from X", "spent summer 2025 with X"
+  if (/(?:\b(?:hired|employed)\s+by|\boffers?\s+from|\bspent\s+(?:the\s+)?(?:summer|spring|autumn|winter)(?:\s+(?:of\s+)?(?:19|20)\d{2})?\s+(?:with|at))\s+$/i.test(before)) return true;
+  // fix round 5 (ruling a): "with <tool>" claims only after an employment word or before a role/date
+  if (/\bwith\s+$/i.test(before)) {
+    if (TOOL_NOUN_AFTER.test(after)) return false;
+    const prev = before.match(/([A-Za-z]+)\s+with\s+$/i)?.[1] ?? "";
+    if (WITH_WORD.test(prev) || WITH_ROLE_AFTER.test(after)) return true;
+  }
   // fix round 3 (ruling B): "for/with <tool>" and "<tool> analyst" are tool use when the CV lists the tool
   if (/\bfor\s+$/i.test(before) && !cvTool) return true;
-  // fix round 4 (ruling 2): …unless a work word sits within 3 tokens before the preposition ("worked for", "placement with")
-  const prep = before.match(/\b(?:for|with|at)\s+$/i);
+  // fix round 4 (ruling 2): …unless a work word sits within 3 tokens before the preposition ("worked for"); "with" is handled above
+  const prep = before.match(/\b(?:for|at)\s+$/i);
   if (prep && (before.slice(0, prep.index).match(/[A-Za-z]+/g) ?? []).slice(-3).some((w) => WORK_WORD.test(w))) return true;
   if (cvTool && toolModifier(after)) return false;
   return ROLE_AFTER.test(after) ||
@@ -558,6 +584,12 @@ const EMPLOYER_RES = KNOWN_EMPLOYERS.map((k) => ({
   res: [k.name, ...(k.aliases ?? [])].map((n) => new RegExp(`(?<![A-Za-z0-9])${escapeRegex(n).replace(/\\?\s+/g, "\\s+")}(?![A-Za-z0-9])`, k.caseSensitive ? "g" : "gi")),
 }));
 
+/** Fix round 5 (ruling e): skills implied by a tool on the CV (canonical vocab names). */
+const IMPLIED_BY: Record<string, string[]> = {
+  "Data Visualisation": ["Tableau", "Power BI", "Looker"],
+  "CRM": ["Salesforce", "HubSpot"],
+  "Data Analysis": ["Pandas", "NumPy"],
+};
 type Unit = { text: string; cited: string; bulletId?: string; entryId?: string; scoped?: boolean };
 
 function parseDates(d: string): { start?: string; end?: string } {
@@ -622,6 +654,9 @@ export function verifyTailoring(i: VerifyInput): VerifyReport {
   const dateVals = dateFieldValues(i.source);
   const yearsUsed = new Map<string, Set<string>>(); // unit key → years accepted as dates (scopedMetrics must not re-flag them)
   const srcSkills = new Set(extractSkills(corpus));
+  // fix round 5 (ruling e): skills a CV tool implies ("Tableau" → Data Visualisation) are never injected
+  const impliedSkills = new Set(srcSkills);
+  for (const [skill, tools] of Object.entries(IMPLIED_BY)) if (tools.some((t) => srcSkills.has(t))) impliedSkills.add(skill);
   const jdStems = new Set(i.jdKeywords.flatMap((k) => [...contentStems(k)]));
   // Task 22b (c), fix round 1: CV ∪ confirmed-fact tokens only (the JD is never a fact source, ruling 1). Exact match first;
   // stems only from CV tokens of ≥ 4 characters; month/date tokens never count (ruling 2: "Mar" must not launder "Mars-").
@@ -795,7 +830,7 @@ export function verifyTailoring(i: VerifyInput): VerifyReport {
     // #4 skillInjection: canonical skills absent from source ∪ confirmed facts (the JD never counts)
     const inj = new Set<string>();
     for (const s of extractSkills(u.text)) {
-      if (srcSkills.has(s)) continue;
+      if (impliedSkills.has(s)) continue;
       inj.add(s);
       issues.push({ type: "skillInjection", severity: "block", ...where(u), claim: s, reason: `${s} isn't anywhere in your CV — we never add skills you don't have` });
     }
@@ -830,7 +865,8 @@ export function verifyTailoring(i: VerifyInput): VerifyReport {
     const toks = [...pText.matchAll(/[A-Za-z][A-Za-z0-9+#&']*/g)].map((m) => ({ tok: m[0].replace(/'s$|'$/, ""), index: m.index!, len: m[0].length }));
     const isCap = (t: string) => /^[A-Z]/.test(t);
     // fix round 2 (ruling 1b): spans of sentence-opening capitalised runs followed by a role noun ("Mercer placement", "Linklaters trainee")
-    const roleRuns = [...pText.matchAll(ROLE_RUN)].map((m) => { const s0 = m.index! + m[0].length - m[1].length; return [s0, s0 + m[1].length] as const; });
+    const roleRuns = [...pText.matchAll(ROLE_RUN), ...pText.matchAll(CAP_ROLE_RUN)]
+      .map((m) => { const s0 = m.index! + m[0].length - m[1].length; return [s0, s0 + m[1].length] as const; });
     for (let n = 0; n < toks.length; n++) {
       const { tok, index, len } = toks[n];
       const lower = tok.toLowerCase();
@@ -882,6 +918,8 @@ export function verifyTailoring(i: VerifyInput): VerifyReport {
       if (b > a && cCompact.has(toks.slice(a, b + 1).map((t) => t.tok.toLowerCase()).join(""))) continue;
       if (jdHits.some((kw) => hasToken(norm(kw), tok)) || [...inj].some((s) => hasToken(norm(s), tok))) continue;
       if (partOfSkill(pText, index, len)) continue;
+      // fix round 5 (ruling e): a tool name for a skill the CV implies ("Salesforce CRM" when the CV lists Salesforce)
+      { const sk = extractSkills(tok); if (sk.length && sk.every((x) => impliedSkills.has(x))) continue; }
       flagged.add(lower);
       issues.push({ type: "unsupportedFacts", severity: "block", ...where(u), claim: tok, reason: `"${tok}" isn't in your original CV — we don't add employers, tools or credentials` });
     }
@@ -929,7 +967,7 @@ export function verifyTailoring(i: VerifyInput): VerifyReport {
   const skillClaims = new Set<string>();
   for (const g of i.tailored.skills) for (const item of g.items) {
     const sk = extractSkills(item);
-    const missing = sk.length ? sk.filter((s) => !srcSkills.has(s)) : hasToken(cNorm, item) || cCompact.has(norm(item).replace(/ /g, "")) ? [] : [item];
+    const missing = sk.length ? sk.filter((s) => !impliedSkills.has(s)) : hasToken(cNorm, item) || cCompact.has(norm(item).replace(/ /g, "")) ? [] : [item];
     for (const s of missing) {
       if (skillClaims.has(s)) continue;
       skillClaims.add(s);
