@@ -14,6 +14,8 @@ import { FitBadge } from "@/components/fit-badge";
 import { SaveButton } from "@/components/save-button";
 import { ExplainPanel } from "./explain-panel";
 import { ApplyButton } from "./apply-button";
+import { TailorPanel } from "./tailor-panel";
+import type { StoredTailoring } from "./actions";
 
 const BAND_TONE = {
   Strong: "bg-[#E3F6EE] text-[#0B6B49]", Good: "bg-[#E6EEFF] text-[#2340A8]",
@@ -38,7 +40,7 @@ export default async function JobPage({ params }: { params: Promise<{ id: string
   if (!isUuid(id)) notFound();
   const [job, profile, cv, { data: app }] = await Promise.all([
     getJob(supabase, id), getProfile(supabase, user.id), getActiveCv(supabase, user.id),
-    supabase.from("applications").select("status").eq("user_id", user.id).eq("job_id", id).maybeSingle(),
+    supabase.from("applications").select("status, tailored_json").eq("user_id", user.id).eq("job_id", id).maybeSingle(),
   ]);
   if (!job) notFound();
 
@@ -56,6 +58,7 @@ export default async function JobPage({ params }: { params: Promise<{ id: string
     : false;
   const status = (app?.status as string | undefined) ?? null;
   const alreadyApplied = status !== null && status !== "saved";
+  const stored = (app?.tailored_json ?? null) as StoredTailoring | null;
 
   return (
     <div className="flex flex-col gap-4">
@@ -103,13 +106,12 @@ export default async function JobPage({ params }: { params: Promise<{ id: string
             </ExplainPanel>
           </section>
 
-          {/* Task 23 replaces this slot with <TailorPanel /> */}
-          <section id="tailor-slot" className="flex flex-col gap-2 rounded-[20px] border bg-white p-5">
-            <button type="button" disabled className="min-h-12 rounded-[14px] border-2 border-[#E6E6EF] py-3 font-bold text-muted-foreground">
-              Tailor my CV
-            </button>
-            <p className="text-xs text-muted-foreground">Coming soon: rephrase what&apos;s already on your CV for this role. We never invent experience.</p>
-          </section>
+          <TailorPanel
+            jobId={job.id}
+            hasCv={Boolean(cv)}
+            original={{ skills: cv?.parsed.skills ?? [], summary: cv?.parsed.summary ?? null }}
+            initial={stored?.v === 1 && stored.outcome ? { outcome: stored.outcome, hasFinal: stored.final !== null } : null}
+          />
 
           <section className="flex flex-col gap-2 rounded-[20px] border bg-white p-5">
             <ApplyButton jobId={job.id} url={safeHttpUrl(job.url)} company={job.company} alreadyApplied={alreadyApplied} />

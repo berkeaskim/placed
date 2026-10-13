@@ -4,7 +4,7 @@ import { todayLondon } from "@/lib/scoring/dates";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { computeAward, levelFromXp, londonDayStart, noAward, type AwardResult, type BadgeKey, type GamifyEvent } from "./core";
 
-const JOB_EVENTS = new Set(["job_saved", "cv_tailored", "applied", "interview", "rejected", "offer"]);
+const JOB_EVENTS = new Set(["job_saved", "cv_tailored", "applied", "interview", "rejected", "offer", "number_confirmed", "suggestion_edited"]);
 
 function fail(what: string, error: { message: string }): never {
   throw new Error(`awardXP: ${what} failed: ${error.message}`);

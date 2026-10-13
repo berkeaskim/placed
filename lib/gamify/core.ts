@@ -1,8 +1,10 @@
 import type { FitLabel } from "@/lib/types";
 import { daysUntil } from "@/lib/scoring/dates";
 
-export type XpEventType = "onboarding_complete" | "cv_uploaded" | "quiz_done" | "job_saved" | "cv_tailored" | "applied" | "interview" | "rejected" | "offer";
-export type BadgeKey = "profile_pro" | "first_shot" | "spring_week_hunter" | "early_bird" | "bounce_back";
+export type XpEventType = "onboarding_complete" | "cv_uploaded" | "quiz_done" | "job_saved" | "cv_tailored" | "applied" | "interview" | "rejected" | "offer"
+  // Task 23b: tailoring screen. Job-scoped, so xp_events_once_per_job (0002) makes each once per job.
+  | "number_confirmed" | "suggestion_edited";
+export type BadgeKey = "profile_pro" | "first_shot" | "spring_week_hunter" | "early_bird" | "bounce_back" | "made_it_yours";
 
 export const BADGES: Record<BadgeKey, { name: string; description: string }> = {
   profile_pro: { name: "Profile Pro", description: "Built your profile from a CV or the quiz" },
@@ -10,6 +12,7 @@ export const BADGES: Record<BadgeKey, { name: string; description: string }> = {
   spring_week_hunter: { name: "Spring Week Hunter", description: "Applied to a spring week or insight programme" },
   early_bird: { name: "Early Bird", description: "Applied more than 7 days before the deadline" },
   bounce_back: { name: "Bounce Back", description: "Applied again after a rejection" },
+  made_it_yours: { name: "Made it yours", description: "Edited a tailored line into your own words" },
 };
 
 export const LEVEL_NAMES = ["Explorer", "Applicant", "Contender", "Shortlisted", "Placed"] as const;
@@ -39,6 +42,7 @@ export function xpFor(e: GamifyEvent, s: GamifyState): number {
     case "interview": return 100;
     case "rejected": return 20;
     case "offer": return 300;
+    case "number_confirmed": case "suggestion_edited": return 10;
   }
 }
 
@@ -59,6 +63,7 @@ export function computeAward(state: GamifyState, e: GamifyEvent, today: string) 
     if (e.deadline && daysUntil(e.deadline, today) > 7) candidates.push("early_bird");
     if (s.rejectedCount > 0) candidates.push("bounce_back");
   }
+  if (e.type === "suggestion_edited") candidates.push("made_it_yours");
   const newBadges = candidates.filter((b) => !earned.has(b));
 
   const next: GamifyState = {

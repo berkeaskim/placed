@@ -1,0 +1,312 @@
+"use client";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import Link from "next/link";
+import { celebrate } from "@/components/reward-toast";
+import { Skeleton } from "@/components/ui/skeleton";
+import { CoverageHero } from "@/components/tailor/coverage-hero";
+import { TailoredForList } from "@/components/tailor/tailored-for-list";
+import { ChangeCard } from "@/components/tailor/change-card";
+import { NumberDialog, type NumberAsk, type NumberChoice } from "@/components/tailor/number-dialog";
+import { CaughtList, VerificationBadge } from "@/components/tailor/verification";
+import { RulesGainedPanel } from "@/components/tailor/rules-gained";
+import { DefendList } from "@/components/tailor/defend-list";
+import { DownloadIcon, InfoIcon, UndoIcon } from "@/components/tailor/icons";
+import {
+  applyGateBlocks, blockedByBullet, buildFinal, caughtNumbers, defendBullets, fallbackNotice, fillPlaceholder, hasPlaceholder,
+  isDirty, mustHavesNow, stripPlaceholder, verificationState,
+  type DefendQuestion, type Decision, type Decisions, type OriginalParts, type TailorOutcome,
+} from "@/lib/tailor/view";
+import type { TailoredCV } from "@/lib/types";
+import { tailorForJob } from "./actions";
+import { confirmNumberWithXp, getDefendQuestions, previewTailoring, saveTailoredVersion, type PreviewResult } from "./tailor-actions";
+
+type Preview = Exclude<PreviewResult, { error: string }>;
+type DefendState = { status: "idle" } | { status: "loading" } | { status: "error"; message: string } | { status: "ready"; key: string; questions: DefendQuestion[] };
+
+/** C13 questions cached per job and exact lines for the session (the server also caches in tailored_json). */
+const defendCache = new Map<string, DefendQuestion[]>();
+
+const SECTIONS = ["experience", "projects", "leadership"] as const;
+function lineOf(t: TailoredCV, id: string): string {
+  if (id === "summary") return t.summary ?? "";
+  for (const s of SECTIONS) for (const e of t[s]) for (const b of e.bullets) if (b.id === id) return b.text;
+  return "";
+}
+
+function Section({ id, title, children, aside }: { id: string; title: string; children: React.ReactNode; aside?: React.ReactNode }) {
+  return (
+    <section aria-labelledby={id} className="flex flex-col gap-2.5">
+      <div className="flex items-baseline justify-between gap-2">
+        <h3 id={id} className="font-bold">{title}</h3>
+        {aside}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+/**
+ * The tailoring screen (spec §8, amendments B6–B9, C13): what we tailored for, what changed and why, with every line
+ * traced to the original CV. The student accepts, edits or rejects each change; every version is re-checked by the
+ * same gate before a PDF can be made.
+ */
+export function TailorPanel({ jobId, hasCv, original, initial }: {
+  jobId: string; hasCv: boolean; original: OriginalParts; initial: { outcome: TailorOutcome; hasFinal: boolean } | null;
+}) {
+  const [outcome, setOutcome] = useState<TailorOutcome | null>(initial?.outcome ?? null);
+  const [pdfUrl, setPdfUrl] = useState(`/api/tailored/${jobId}`);
+  const [decisions, setDecisions] = useState<Decisions>({});
+  const [history, setHistory] = useState<Decisions[]>([]);
+  const [preview, setPreview] = useState<{ key: string; data: Preview } | null>(null);
+  // The PDF made by tailorForJob is the all-suggested version (unless a saved edit replaced it on an earlier visit).
+  const [savedKey, setSavedKey] = useState<string | null>(() =>
+    initial && !initial.hasFinal ? JSON.stringify(buildFinal(initial.outcome.tailored, initial.outcome.changes, {}, original)) : null);
+  const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [ask, setAsk] = useState<NumberAsk | null>(null);
+  const [askError, setAskError] = useState<string | null>(null);
+  const [defend, setDefend] = useState<DefendState>({ status: "idle" });
+  const [tailoring, startTailor] = useTransition();
+  const [busy, startBusy] = useTransition();
+
+  const final = useMemo(() => (outcome ? buildFinal(outcome.tailored, outcome.changes, decisions, original) : null), [outcome, decisions, original]);
+  const key = useMemo(() => (final ? JSON.stringify(final) : ""), [final]);
+  const keyRef = useRef(key);
+  useEffect(() => { keyRef.current = key; }, [key]);
+
+  // Live gate + exact recount + rules gained on every change (debounced). A blocked line is reverted, never rendered.
+  useEffect(() => {
+    if (!final) return;
+    const k = key;
+    const t = setTimeout(() => {
+      previewTailoring(jobId, final).then((r) => {
+        if ("error" in r || keyRef.current !== k) return;
+        setPreview({ key: k, data: r });
+        const blocked = blockedByBullet(r.report);
+        if (blocked.size) {
+          setDecisions((d) => applyGateBlocks(d, r.report));
+          const first = [...blocked.values()][0];
+          setNotice(`We put your original wording back: "${first.claim}" isn't in your CV.`);
+        }
+      }).catch(() => { /* the preview is advisory; the save path re-runs the same gate */ });
+    }, 350);
+    return () => clearTimeout(t);
+  }, [jobId, key, final]);
+
+  const run = () => startTailor(async () => {
+    setError(null); setNotice(null);
+    const r = await tailorForJob(jobId);
+    if ("error" in r) { setError(r.error); return; }
+    setOutcome(r.outcome); setPdfUrl(r.pdfUrl); setDecisions({}); setHistory([]); setPreview(null); setDefend({ status: "idle" });
+    setSavedKey(JSON.stringify(buildFinal(r.outcome.tailored, r.outcome.changes, {}, original)));
+    celebrate(r.award);
+  });
+
+  const decide = (id: string, d: Decision) => {
+    setHistory((h) => [...h.slice(-30), decisions]);
+    setDecisions((cur) => ({ ...cur, [id]: d }));
+    setNotice(null);
+  };
+  const undo = () => {
+    if (!history.length) return;
+    setDecisions(history[history.length - 1]);
+    setHistory(history.slice(0, -1));
+  };
+
+  const chooseNumber = (choice: NumberChoice, figure: string) => {
+    if (!ask) return;
+    const a = ask;
+    startBusy(async () => {
+      setAskError(null);
+      const claim = a.kind === "caught" ? a.claim : figure;
+      const needsServer = choice === "confirm" || (choice === "edit" && figure);
+      if (needsServer) {
+        const r = await confirmNumberWithXp(jobId, choice === "edit" && a.kind === "placeholder" ? a.text : claim, choice, figure);
+        if ("error" in r) { setAskError(r.error); return; }
+        celebrate(r.award);
+      } else {
+        await confirmNumberWithXp(jobId, claim || a.bulletId, choice); // remove / keep original: nothing stored
+      }
+      if (a.kind === "placeholder") {
+        if (choice === "confirm") decide(a.bulletId, { kind: "edited", text: fillPlaceholder(a.text, figure) });
+        else if (choice === "edit") { decide(a.bulletId, { kind: "edited", text: figure ? fillPlaceholder(a.text, figure) : stripPlaceholder(a.text) }); setNotice("Your line is ready to edit: use Edit on the card to reword it."); }
+        else if (choice === "remove") decide(a.bulletId, { kind: "edited", text: stripPlaceholder(a.text) });
+        else decide(a.bulletId, { kind: "rejected" });
+      } else if (choice === "confirm") {
+        decide(a.bulletId, { kind: "edited", text: a.attempted });
+      } else if (choice === "edit") {
+        decide(a.bulletId, { kind: "edited", text: a.attempted.split(a.claim).join(figure) });
+      }
+      setAsk(null);
+    });
+  };
+
+  const download = () => {
+    if (!final) return;
+    if (savedKey === key) { window.location.assign(pdfUrl); return; }
+    startBusy(async () => {
+      setError(null);
+      const r = await saveTailoredVersion(jobId, final);
+      if ("error" in r) {
+        if (r.report) setDecisions((d) => applyGateBlocks(d, r.report!));
+        setError(r.error);
+        return;
+      }
+      setSavedKey(key); setPdfUrl(r.pdfUrl);
+      celebrate(r.award);
+      window.location.assign(r.signedUrl ?? r.pdfUrl);
+    });
+  };
+
+  if (!hasCv) {
+    return (
+      <section className="flex flex-col gap-2 rounded-[20px] border bg-white p-5">
+        <h2 className="font-bold">Tailor my CV</h2>
+        <p className="text-sm text-muted-foreground">Upload your CV first: we tailor what&apos;s already on it to this role, and never invent experience.</p>
+        <Link href="/profile" className="btn-quest self-start px-4 py-2.5 text-sm no-underline">Upload my CV</Link>
+      </section>
+    );
+  }
+
+  if (!outcome || !final) {
+    return (
+      <section className="flex flex-col gap-3 rounded-[20px] border bg-white p-5" aria-busy={tailoring}>
+        <div className="flex items-center justify-between"><h2 className="font-bold">Tailor my CV</h2><span className="chip-xp">+30 XP</span></div>
+        <p className="text-sm text-muted-foreground">We reword and reorder what&apos;s already on your CV so this posting&apos;s requirements are easy to find. Every claim is checked against your original.</p>
+        {tailoring ? (
+          <div className="flex flex-col gap-2" role="status">
+            <Skeleton className="h-16 w-full" /><Skeleton className="h-5 w-4/5" /><Skeleton className="h-5 w-3/5" />
+            <span className="text-xs text-muted-foreground">Tailoring honestly: checking every line against your CV…</span>
+          </div>
+        ) : (
+          <button type="button" onClick={run} className="btn-quest min-h-12 py-3">Tailor my CV for this role</button>
+        )}
+        {error && <p className="rounded-xl bg-[#FFF1DC] px-3 py-2 text-sm font-semibold text-[#7A4100]" role="alert">{error}</p>}
+      </section>
+    );
+  }
+
+  const fresh = preview?.key === key ? preview.data : null;
+  const report = fresh?.report ?? outcome.report;
+  const vstate = verificationState(report, outcome.reverted.length);
+  const must = { before: outcome.mustHaves.before, now: fresh?.mustHaves.after ?? mustHavesNow(outcome, decisions) };
+  const nice = { before: outcome.niceToHaves.before, now: fresh?.niceToHaves.after ?? outcome.niceToHaves.after };
+  const fallback = fallbackNotice(outcome.usedFallback, outcome.fallbackReason);
+  const caught = caughtNumbers(outcome);
+  const toDefend = defendBullets(outcome.changes, decisions, final);
+  const defendKey = `${jobId}:${JSON.stringify(toDefend)}`;
+  const blocked = report.verdict === "block";
+  const checking = preview?.key !== key;
+  const suggestedLeft = outcome.changes.some((c) => (decisions[c.bulletId]?.kind ?? "suggested") === "suggested");
+
+  const loadDefend = () => {
+    const hit = defendCache.get(defendKey);
+    if (hit) { setDefend({ status: "ready", key: defendKey, questions: hit }); return; }
+    setDefend({ status: "loading" });
+    getDefendQuestions(jobId, toDefend).then((r) => {
+      if ("error" in r) { setDefend({ status: "error", message: r.error }); return; }
+      defendCache.set(defendKey, r.questions);
+      setDefend({ status: "ready", key: defendKey, questions: r.questions });
+    }).catch(() => setDefend({ status: "error", message: "We couldn't prepare questions right now. Try again in a moment." }));
+  };
+
+  return (
+    <section className="flex flex-col gap-5 rounded-[20px] border bg-white p-5" aria-label="Your tailored CV">
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="text-lg font-extrabold tracking-tight">What we tailored for, and why</h2>
+        <button type="button" onClick={run} disabled={tailoring} className="shrink-0 text-xs font-semibold text-[#5B3DF5] hover:underline disabled:opacity-50">
+          {tailoring ? "Tailoring…" : "Tailor again"}
+        </button>
+      </div>
+
+      {fallback && (
+        <p className="flex gap-2 rounded-xl bg-[#EEF2FF] px-3 py-2.5 text-sm text-[#2340A8]" role="note"><InfoIcon size={18} className="shrink-0" />{fallback}</p>
+      )}
+      {outcome.fellBackToOriginal && (
+        <p className="flex gap-2 rounded-xl bg-[#FFF1DC] px-3 py-2.5 text-sm text-[#7A4100]" role="note"><InfoIcon size={18} className="shrink-0" />We couldn&apos;t make changes we can stand behind, so your original CV stands unchanged.</p>
+      )}
+
+      <CoverageHero before={outcome.coverageBefore} after={fresh?.coverageAfter ?? outcome.coverageAfter} must={must} nice={nice} />
+
+      <Section id="tailored-for" title="What we tailored for">
+        <TailoredForList items={outcome.tailoredFor} />
+      </Section>
+
+      <CaughtList reverted={outcome.reverted} caught={caught}
+        onConfirm={(c) => { setAskError(null); setAsk({ kind: "caught", ...c }); }} />
+
+      <Section id="changes" title="What changed, and why"
+        aside={history.length > 0
+          ? <button type="button" onClick={undo} className="inline-flex items-center gap-1 text-xs font-semibold text-[#5B3DF5] hover:underline"><UndoIcon size={12} />Undo</button>
+          : undefined}>
+        {notice && <p className="rounded-xl bg-[#FFF1DC] px-3 py-2 text-sm font-semibold text-[#7A4100]" role="status">{notice}</p>}
+        {outcome.changes.length === 0 ? (
+          <p className="text-sm text-muted-foreground">Your CV already covers this role well, so nothing needed changing.</p>
+        ) : (
+          <>
+            <ul className="flex flex-col gap-3">
+              {outcome.changes.map((c) => {
+                const d = decisions[c.bulletId] ?? { kind: "suggested" as const };
+                return (
+                  <ChangeCard key={c.bulletId} change={c} decision={d} text={stripPlaceholder(lineOf(final, c.bulletId) || c.after)}
+                    onDecide={(x) => decide(c.bulletId, x)}
+                    onUndo={() => decide(c.bulletId, { kind: "suggested" })}
+                    onConfirmNumber={() => {
+                      const text = d.kind === "edited" ? d.text : c.after;
+                      if (hasPlaceholder(text)) { setAskError(null); setAsk({ kind: "placeholder", bulletId: c.bulletId, text, original: c.before }); }
+                    }} />
+                );
+              })}
+            </ul>
+            {suggestedLeft && (
+              <button type="button" className="min-h-10 self-start rounded-xl border-2 border-[#0E8A5F]/40 px-3 text-sm font-bold text-[#0B6B49] hover:bg-[#E3F6EE]"
+                onClick={() => {
+                  setHistory((h) => [...h, decisions]);
+                  setDecisions((cur) => {
+                    const next = { ...cur };
+                    for (const c of outcome.changes) if ((cur[c.bulletId]?.kind ?? "suggested") === "suggested" && !c.needsNumber) next[c.bulletId] = { kind: "accepted" };
+                    return next;
+                  });
+                }}>
+                Accept all suggestions
+              </button>
+            )}
+          </>
+        )}
+      </Section>
+
+      <RulesGainedPanel rules={fresh?.rules ?? preview?.data.rules ?? null} />
+
+      <VerificationBadge state={vstate} />
+
+      <div className="flex flex-col gap-1.5">
+        <button type="button" onClick={download} disabled={blocked || busy || checking}
+          className="btn-quest inline-flex min-h-12 items-center justify-center gap-2 py-3 disabled:cursor-not-allowed disabled:opacity-60">
+          <DownloadIcon size={18} />
+          {busy ? "Checking and saving…" : checking ? "Checking your version…" : savedKey === key ? "Download PDF" : "Save my version and download PDF"}
+        </button>
+        <p className="text-xs text-muted-foreground">ATS-safe: one column, standard headings, contact details in the body.{isDirty(decisions) ? " Your choices are re-checked before the PDF is made." : ""}</p>
+        {error && <p className="rounded-xl bg-[#FFF1DC] px-3 py-2 text-sm font-semibold text-[#7A4100]" role="alert">{error}</p>}
+      </div>
+
+      <Section id="defend" title="Be ready to defend this">
+        {toDefend.length === 0 ? (
+          <p className="text-sm text-muted-foreground">Accept or edit a change and we&apos;ll show the question an interviewer is most likely to ask about it.</p>
+        ) : defend.status === "ready" && defend.key === defendKey ? (
+          <DefendList bullets={toDefend} questions={defend.questions} />
+        ) : defend.status === "loading" ? (
+          <div className="flex flex-col gap-2" role="status"><Skeleton className="h-14 w-full" /><Skeleton className="h-14 w-full" /></div>
+        ) : (
+          <>
+            <button type="button" onClick={loadDefend} className="min-h-11 self-start rounded-xl border-2 border-[#5B3DF5] px-4 text-sm font-bold text-[#3A20C4] hover:bg-[#F4F1FF]">
+              Show likely interview questions ({toDefend.length})
+            </button>
+            {defend.status === "error" && <p className="text-sm text-[#B42318]" role="alert">{defend.message}</p>}
+          </>
+        )}
+      </Section>
+
+      <NumberDialog ask={ask} pending={busy} error={askError} onChoose={chooseNumber} onClose={() => setAsk(null)} />
+    </section>
+  );
+}
