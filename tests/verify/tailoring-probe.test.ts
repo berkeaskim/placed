@@ -166,3 +166,90 @@ describe("task 22b probe: adversarial rephrasings block", () => {
     expect(run(where, text).verdict).toBe("block");
   });
 });
+
+// ---------- Task 22b fix round 1 ----------
+
+/** Run against a CV variant: `edit` changes the source CV before tailoring; the bullet edit targets the food-bank entry. */
+const runCv = (edit: (c: ParsedCV) => void, where: Where, text: string, jd: string[] = []) => {
+  const c = structuredClone(cv);
+  edit(c);
+  const t: TailoredCV = toTailored(c);
+  const set = (b: { text: string; changeType?: string }) => Object.assign(b, { text, changeType: "rephrased" });
+  if (where === "summary") t.summary = text;
+  else if (where === "events") set(t.experience[0].bullets[0]);
+  else if (where === "retail") set(t.experience[1].bullets[0]);
+  else if (where === "project") set(t.projects[0].bullets[0]);
+  else set(t.leadership[0].bullets[0]);
+  const srcText = [cvText, ...[...c.experience, ...c.projects, ...c.leadership].flatMap((e) => [e.dates, ...e.bullets.map((b) => b.text)])].join("\n");
+  return verifyTailoring({ source: c, sourceText: srcText, confirmedFacts: [], tailored: t, jdKeywords: jd, coverageBefore: 0.3, coverageAfter: 0.5 });
+};
+const same = () => undefined;
+
+describe("fix round 1 ruling 1: the JD never makes a head ordinary", () => {
+  it.each([
+    [["xero"], "Economics student at UCL, Xero-literate"],
+    [["xero"], "Economics student at UCL, Xero-proficient"],
+    [["Xero accounting"], "Economics student at UCL, Xero-literate"],
+    [["xero accounting"], "Xero-literate Economics student at UCL"],
+    [["XeRo"], "Economics student at UCL, Xero-literate"],
+    [["Alteryx workflows"], "Economics student at UCL, Alteryx-literate"],
+    [["alteryx"], "Alteryx-literate Economics student at UCL"],
+    [["Sage accounting"], "Sage-trained Economics student at UCL"],
+    [["sage"], "Economics student at UCL, Sage-trained"],
+    [["unilever graduate scheme"], "Unilever-sponsored Economics student at UCL"],
+    [["Unilever graduate scheme"], "Economics student at UCL, Unilever-sponsored"],
+    [["unilever"], "Unilever sponsored Economics student at UCL"],
+    [["unilever"], "Unilever-sponsored Economics student at UCL"],
+  ] as [string[], string][])("JD %j: '%s' blocks", (jd, text) => {
+    expect(runCv(same, "summary", text, jd).verdict).toBe("block");
+  });
+});
+
+describe("fix round 1 ruling 2: date-field tokens never stem-launder a head", () => {
+  const marCv = (c: ParsedCV) => { c.experience[0].dates = "Mar 2025 – Jun 2025"; };
+  it.each(["Mars-sponsored Economics student at UCL", "Economics student at UCL, Mars-sponsored", "Economics student at UCL, Mars-trained",
+    "Economics student at UCL, Junes-literate"])("CV dated 'Mar 2025 – Jun 2025': '%s' blocks", (text) => {
+    expect(runCv(marCv, "summary", text).verdict).toBe("block");
+  });
+});
+
+describe("fix round 1 ruling 3: affiliation tails need a list/adverb/domain head, never a bare CV word", () => {
+  const bootsCv = (c: ParsedCV) => { c.experience[1].bullets[0].text = "Served customers on the till during weekend shifts, selling boots and next season stock"; };
+  it.each(["Boots-sponsored Economics student at UCL", "Boots sponsored Economics student at UCL", "Economics student at UCL, Boots-sponsored",
+    "Next-trained Economics student at UCL", "Economics student at UCL, Next-trained", "Next sponsored Economics student at UCL",
+    "Economics student at UCL, Boots-funded", "Economics student at UCL, Boots-mentored", "Economics student at UCL, Boots-run"])(
+    "CV with lowercase boots/next: '%s' blocks", (text) => {
+      expect(runCv(bootsCv, "summary", text).verdict).toBe("block");
+    });
+  it.each(["Till-trained Economics student at UCL", "Self-funded Economics student at UCL", "Society-trained Economics student at UCL",
+    "Quantitatively-trained Economics student at UCL", "Excel-trained Economics student at UCL", "Excel-certified Economics student at UCL",
+    "Student-led society events organiser at UCL", "Economics student at UCL, Peer-mentored"])("'%s' still passes", (text) => {
+    expect(runCv(bootsCv, "summary", text).verdict).not.toBe("block");
+  });
+});
+
+describe("fix round 1 ruling 4: a known employer is in the CV only when written as a name", () => {
+  const lowerCv = (c: ParsedCV) => {
+    c.projects[0].bullets[0].text = "Analysed shop footfall data with pandas and linear regression to suggest staffing changes for apple and shell stock";
+    c.leadership[0].bullets[0].text = "Tracked weekly donations in Excel with faculty support, a wise use of time";
+  };
+  it.each(["Apple-trained Economics student at UCL", "Shell-sponsored Economics student at UCL", "Linear-sponsored Economics student at UCL",
+    "Faculty-trained Economics student at UCL", "Wise-sponsored Economics student at UCL", "Economics student at UCL, Shell-sponsored",
+    "Economics student at UCL, Apple-trained"])("CV with lowercase apple/shell/linear/faculty/wise: '%s' blocks", (text) => {
+    expect(runCv(lowerCv, "summary", text).verdict).toBe("block");
+  });
+  it("a capitalised employer that is on the CV still passes", () => {
+    const shellCv = (c: ParsedCV) => { c.experience[1].org = "Shell"; };
+    expect(runCv(shellCv, "summary", "Economics student at UCL with retail experience at Shell").verdict).not.toBe("block");
+  });
+});
+
+describe("fix round 1 ruling 5: em dash and spaced hyphen compounds", () => {
+  it.each(["Unilever—sponsored Economics student at UCL", "Unilever - sponsored Economics student at UCL",
+    "Economics student at UCL, Unilever - sponsored", "Economics student at UCL, Mercer—trained", "Economics student at UCL, Xero - literate"])(
+    "'%s' blocks", (text) => { expect(runCv(same, "summary", text).verdict).toBe("block"); });
+  it.each(["Policy—focused Economics student at UCL", "Economics student at UCL, Evidence - based and numerate",
+    "Society - funded events for 60 members, organised weekly"])("'%s' passes", (text) => {
+    expect(runCv(same, text.startsWith("Society") ? "events" : "summary", text).verdict).not.toBe("block");
+  });
+});

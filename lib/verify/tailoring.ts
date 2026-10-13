@@ -408,13 +408,23 @@ const ADVERBS = new Set("fully newly highly partly jointly widely well".split(" 
 /** Task 22b (d): CV-domain nouns that head ordinary compounds ("Evidence-based", "Audit-ready", "Event-experienced"). */
 const DOMAIN_HEADS = new Set(("evidence insight policy analytics career interview workplace audit media digital commerce model theory survey revenue " +
   "office cash case event data research finance market client project product team community sector industry numbers detail quality process " +
-  "risk impact growth value people customer service").split(" "));
+  "risk impact growth value people customer service stakeholder society till").split(" "));
+/**
+ * Fix round 1 (ruling 3): affiliation tails. With one of these the head names who trained/paid/ran it, so it must be list
+ * vocabulary (not a CV word that merely happens to match, "boots"), never a known employer, and never a COMMON brand collision.
+ */
+const AFFIL_TAIL = /^(?:sponsored|funded|backed|mentored|commissioned|trained|hosted|employed|certified|accredited|endorsed|led|run|owned|hired|placed|partnered|approved)$/;
+/** COMMON words that are also single-word brands ("Next-trained", "Three-sponsored"); they never head an affiliation compound. */
+const COMMON_BRANDS = new Set("next one three first current head".split(" "));
+/** Month names/abbreviations: date-field tokens never make a head ordinary ("Mar" must not launder "Mars-sponsored"). */
+const MONTH_TOKENS = new Set(("jan feb mar apr may jun jul aug sep sept oct nov dec january february march april june july august september " +
+  "october november december present now current").split(" "));
 /** Task 22b (c): a head's stem — trailing s/es/ed/ing stripped ("Events" ≡ "Event"). */
 const headStem = (w: string) => { const s = w.toLowerCase(); const t = s.replace(/(?:ing|ed|es|s)$/, ""); return t.length >= 3 ? t : s; };
 /** Task 22b: participles that turn a preceding capitalised word into an affiliation claim ("Unilever sponsored"). */
-const AFFIL_PARTICIPLE = /^\s+(?:sponsored|trained|backed|funded|led|mentored|certified|accredited|hosted|employed|commissioned|endorsed)\b/i;
-/** Task 22b: hyphen-like characters between letters (U+2010–U+2013, U+2212) read as "-" before tokenising. Same length, so indices hold. */
-const dashNorm = (t: string) => t.replace(/(?<=[A-Za-z])[‐‑‒–−](?=[A-Za-z])/g, "-");
+const AFFIL_PARTICIPLE = /^\s+(sponsored|trained|backed|funded|led|mentored|certified|accredited|hosted|employed|commissioned|endorsed)\b/i;
+/** Task 22b: hyphen-like characters between letters (U+2010–U+2014, U+2212) read as "-" before tokenising. Same length, so indices hold. */
+const dashNorm = (t: string) => t.replace(/(?<=[A-Za-z])[‐‑‒–—−](?=[A-Za-z])/g, "-");
 /** Task 22b: vendor names allowed only directly before a tool the CV already has ("Microsoft Excel"). */
 const VENDOR_PREFIX = new Set(["microsoft", "google", "adobe", "apache", "amazon"]);
 /** Morphology that marks an ordinary verb/adjective/noun rather than a name ("Cleaned", "Analytical", "Leadership"). */
@@ -468,6 +478,19 @@ export const KNOWN_EMPLOYERS: KnownEmployer[] = [
   E("Wayve"), E("Wellington Management"), E("Wise", [], true), E("Xantium"), E("Zilch", [], true), E("Zopa"), E("iSAM"), E("Econic Partners"),
   E("Lloyds"),
 ];
+/** Single-word employer names/aliases, lowercased: never an ordinary affiliation head (fix round 1, ruling 3). */
+const EMPLOYER_WORDS = new Set(KNOWN_EMPLOYERS.flatMap((k) => [k.name, ...(k.aliases ?? [])]).filter((n) => /^[A-Za-z0-9.]+$/.test(n)).map((n) => n.toLowerCase()));
+/**
+ * Fix round 1 (ruling 4): a known employer is on the CV only when the CV writes it as a name — exact case for case-sensitive
+ * or lowercase-led names ("incident.io"), otherwise with its leading capital ("apple", "shell", "linear regression" don't count).
+ */
+function employerInCv(corpus: string, k: KnownEmployer): boolean {
+  return [k.name, ...(k.aliases ?? [])].some((n) => {
+    const exact = k.caseSensitive || !/^[A-Z]/.test(n);
+    const re = new RegExp(`(?<![A-Za-z0-9])${escapeRegex(n).replace(/\\?\s+/g, "\\s+")}(?![A-Za-z0-9])`, exact ? "g" : "gi");
+    return [...corpus.matchAll(re)].some((m) => exact || /^[A-Z]/.test(m[0]));
+  });
+}
 const EMPLOYER_RES = KNOWN_EMPLOYERS.map((k) => ({
   k,
   res: [k.name, ...(k.aliases ?? [])].map((n) => new RegExp(`(?<![A-Za-z0-9])${escapeRegex(n).replace(/\\?\s+/g, "\\s+")}(?![A-Za-z0-9])`, k.caseSensitive ? "g" : "gi")),
@@ -538,16 +561,32 @@ export function verifyTailoring(i: VerifyInput): VerifyReport {
   const yearsUsed = new Map<string, Set<string>>(); // unit key → years accepted as dates (scopedMetrics must not re-flag them)
   const srcSkills = new Set(extractSkills(corpus));
   const jdStems = new Set(i.jdKeywords.flatMap((k) => [...contentStems(k)]));
-  // Task 22b (c): stems of CV tokens, and of JD tokens that read as ordinary words. A JD token written capitalised and not
-  // in a sentence-case phrase ("Xero", "Power BI") is proper-noun-like and never makes a head ordinary: the JD is no fact source.
-  const cvHeadStems = new Set((corpus.match(/[A-Za-z]+/g) ?? []).map(headStem));
-  const jdHeadStems = new Set(i.jdKeywords.flatMap((k) => {
-    const ws = k.match(/[A-Za-z]+/g) ?? [];
-    return ws.filter((w, n) => /^[a-z]/.test(w) || (n === 0 && ws.length > 1 && ws.slice(1).every((x) => /^[a-z]/.test(x)))).map(headStem);
-  }));
-  /** Task 22b ruling: a compound head (or a word before an affiliation participle) is ordinary vocabulary, not a name. */
-  const headIsOrdinary = (lower: string) => COMMON.has(lower) || ADJECTIVES.has(lower) || HYPHEN_HEADS.has(lower) || STRONG_WORDISH.test(lower) ||
-    LY_ADVERB.test(lower) || ADVERBS.has(lower) || DOMAIN_HEADS.has(lower) || cvHeadStems.has(headStem(lower)) || jdHeadStems.has(headStem(lower));
+  // Task 22b (c), fix round 1: CV ∪ confirmed-fact tokens only (the JD is never a fact source, ruling 1). Exact match first;
+  // stems only from CV tokens of ≥ 4 characters; month/date tokens never count (ruling 2: "Mar" must not launder "Mars-").
+  const cvWords = (corpus.match(/[A-Za-z]+/g) ?? []).map((w) => w.toLowerCase()).filter((w) => !MONTH_TOKENS.has(w));
+  const cvHeadExact = new Set(cvWords);
+  const cvHeadStems = new Set(cvWords.filter((w) => w.length >= 4).map(headStem));
+  const inCvVocab = (lower: string) => cvHeadExact.has(lower) || cvHeadStems.has(headStem(lower));
+  /** List vocabulary, -ly adverbs and domain nouns (rulings (a), (b), (d)), without COMMON or the CV route. */
+  const listHead = (lower: string) => ADJECTIVES.has(lower) || HYPHEN_HEADS.has(lower) || STRONG_WORDISH.test(lower) ||
+    LY_ADVERB.test(lower) || ADVERBS.has(lower) || DOMAIN_HEADS.has(lower);
+  /** Task 22b ruling: a compound head with a non-affiliation tail is ordinary vocabulary, not a name. */
+  const headIsOrdinary = (lower: string) => COMMON.has(lower) || listHead(lower) || inCvVocab(lower);
+  /** CV org/title/institution words as written: the student's own organisations may head an affiliation ("Northside-trained"). */
+  const cvNames = new Set([...sections<ParsedCV, CvEntry>(i.source).flatMap((e) => [e.org, e.title]), ...i.source.education.map((e) => e.institution)]
+    .flatMap((t) => t.match(/[A-Z][A-Za-z0-9&]*/g) ?? []));
+  /**
+   * Fix round 1 (ruling 3): a head taking an affiliation tail. List/adverb/domain vocabulary or a non-brand COMMON word, never a
+   * known employer (those go through employerInCv); a CV word alone is not enough. Exceptions: the CV's own org/title/institution
+   * names, and a CV skill before trained/certified ("Excel-trained").
+   */
+  const affilHeadOk = (tok: string, tail: string) => {
+    const lower = tok.toLowerCase();
+    if (EMPLOYER_WORDS.has(lower) || COMMON_BRANDS.has(lower)) return false;
+    if (listHead(lower) || COMMON.has(lower) || cvNames.has(tok)) return true;
+    if (/^(?:trained|certified)$/.test(tail)) { const sk = extractSkills(tok); return sk.length > 0 && sk.every((x) => srcSkills.has(x)); }
+    return false;
+  };
   /** "Microsoft Excel": a vendor word directly before a tool the CV already names. */
   const vendorOk = (text: string, end: number) => {
     const next = text.slice(end).match(/^\s+([A-Z][A-Za-z0-9+#]*)/)?.[1];
@@ -701,7 +740,7 @@ export function verifyTailoring(i: VerifyInput): VerifyReport {
     for (const { k: emp, res } of EMPLOYER_RES) {
       if (extractSkills(emp.name).length) continue; // skillInjection owns tools that are also companies
       for (const re of res) for (const m of u.text.matchAll(re)) {
-        const known = [emp.name, ...(emp.aliases ?? [])].some((n) => hasToken(cNorm, n) || cCompact.has(norm(n).replace(/ /g, "")))
+        const known = employerInCv(corpus, emp)
           || (VENDOR_PREFIX.has(m[0].toLowerCase()) && vendorOk(u.text, m.index! + m[0].length));
         employerSpans.push([m.index!, m.index! + m[0].length]);
         if (known || issues.some((x) => key(x) === k && x.claim.toLowerCase() === m[0].toLowerCase())) continue;
@@ -725,20 +764,25 @@ export function verifyTailoring(i: VerifyInput): VerifyReport {
       // Round 5: a capitalised compound is exempt only when its head is ordinary vocabulary or its tail is attitude-only
       // ("Policy-focused", "Tax-savvy", "Till-trained" pass; "Xero-literate", "Zorblax-led", "Unilever-sponsored" don't).
       // A non-exempt compound head is a name candidate at any position, sentence start included.
-      const tail = isCap(tok) && !allCaps ? pText.slice(index + len).match(/^-([a-z]+)/)?.[1] : undefined;
+      // fix round 1 (ruling 5): "Unilever - sponsored" (spaced hyphen) is the same compound
+      const tail = isCap(tok) && !allCaps ? pText.slice(index + len).match(/^(?:-| - )([a-z]+)\b/)?.[1] : undefined;
       const headOrdinary = headIsOrdinary(lower);
       const compound = tail !== undefined;
-      const compoundExempt = compound && (headOrdinary || ATTITUDE_TAIL.test(tail));
+      // fix round 1 (ruling 3): an affiliation tail needs affilHeadOk; other tails keep the round-5/22b test
+      const affilTail = compound && AFFIL_TAIL.test(tail);
+      const compoundExempt = compound && (affilTail ? affilHeadOk(tok, tail) : headOrdinary || ATTITUDE_TAIL.test(tail));
       // "UCL, Class of 2027": a cohort, not a name
       if (lower === "class" && /^\s+of\s+\d{4}\b/.test(pText.slice(index + len))) continue;
       if (VENDOR_PREFIX.has(lower) && vendorOk(pText, index + len)) continue;
       const ordinary = COMMON.has(lower) || ADJECTIVES.has(lower) || IRREGULAR_PAST.has(lower) || WORDISH.test(lower) || authorshipLevel(lower) !== null || IRREGULAR.has(lower);
       // Task 22b: "Unilever sponsored …" at sentence start is the spaced form of "Unilever-sponsored"; verbs ("Led trained …") stay ordinary
-      const spacedAffil = !compound && isCap(tok) && sentenceStart && AFFIL_PARTICIPLE.test(pText.slice(index + len)) &&
-        !(headOrdinary || IRREGULAR_PAST.has(lower) || IRREGULAR.has(lower) || authorshipLevel(lower) !== null);
+      const participle = !compound && isCap(tok) && sentenceStart ? pText.slice(index + len).match(AFFIL_PARTICIPLE)?.[1]?.toLowerCase() : undefined;
+      const spacedAffil = participle !== undefined &&
+        !(affilHeadOk(tok, participle) || IRREGULAR_PAST.has(lower) || IRREGULAR.has(lower) || authorshipLevel(lower) !== null);
       const candidate = allCaps || spacedAffil || (compound ? !compoundExempt : isCap(tok) && (!sentenceStart || !ordinary));
       if (!candidate) continue;
-      if (hasToken(cNorm, tok) || cCompact.has(lower) || (allCaps && inits.has(lower))) continue;
+      // an affiliation head was already judged against the CV in affilHeadOk; a matching lowercase CV word doesn't excuse it
+      if (!affilTail && !spacedAffil && (hasToken(cNorm, tok) || cCompact.has(lower) || (allCaps && inits.has(lower)))) continue;
       // capitalised run ("Survey Monkey") compared with spaces removed
       let a = n, b = n;
       while (a > 0 && isCap(toks[a - 1].tok) && /^\s+$/.test(pText.slice(toks[a - 1].index + toks[a - 1].len, toks[a].index))) a--;
