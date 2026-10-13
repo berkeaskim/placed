@@ -93,7 +93,8 @@ const SECTION_RE: [string, RegExp][] = [
   ["interests", /^(interests|hobbies|interests (&|and) hobbies)$/i],
   ["summary", /^(profile|summary|personal statement|about me)$/i],
 ];
-const BULLET = /^\s*([•▪◦·*\-–]|\d+\.)\s+/;
+// \uF0B7 is the Symbol-font bullet Word PDFs emit as a private-use char; ● is Word's default bullet.
+const BULLET = /^\s*([•●▪■◦·*\-–\uF0B7]|\d+\.)\s+/;
 
 export function heuristicParseCv(text: string): ParsedCV {
   const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
@@ -105,7 +106,7 @@ export function heuristicParseCv(text: string): ParsedCV {
   let current = "header";
   for (const line of lines) {
     const hit = SECTION_RE.find(([, re]) => re.test(line.replace(/[:\s]+$/, "")));
-    if (hit) { current = hit[0]; if (!order.includes(current)) order.push(current); sections[current] = []; continue; }
+    if (hit) { current = hit[0]; if (!order.includes(current)) order.push(current); sections[current] ??= []; continue; }
     (sections[current] ??= []).push(line);
   }
   const toEntries = (ls: string[] = []): CvEntry[] => {

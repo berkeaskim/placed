@@ -34,7 +34,8 @@ export function htmlToLines(html: string): string[] {
     .replace(/<\s*li[^>]*>/gi, "\n- ")
     .replace(/<\s*br\s*\/?>/gi, "\n")
     .replace(/<\/\s*(p|div|h[1-6]|li|ul|ol|tr|section)\s*>/gi, "\n")
-    .replace(/<[^>]+>/g, "");
+    // Only real tags/comments/doctypes: a bare "<" or ">" (e.g. "latency < 10ms") is literal text.
+    .replace(/<\/?[a-z!?][^>]*>/gi, "");
   s = decodeEntities(s);
   return s
     .split("\n")
@@ -44,7 +45,9 @@ export function htmlToLines(html: string): string[] {
 
 export type TaggedLine = { text: string; isHeader: boolean; section: "must" | "nice" | "other" };
 
-const NICE_HEADER = /(preferred|nice[\s-]to[\s-]have|bonus|\bplus\b|it would be great|desirable|ideally|good to have)/i;
+// "bonus"/"plus" only count at the start or in nice-to-have phrasings, so "Salary and bonus" or
+// "Competitive pay plus benefits" stay "other" while "Bonus points" / "A plus if..." / "Plus:" are nice.
+const NICE_HEADER = /(preferred|nice[\s-]to[\s-]have|^bonus\b(?!\s+(scheme|structure|payments?|and|&))|\bbonus (points?|skills?)\b|^plus\b|\ba plus\b|\bplus points?\b|it would be great|desirable|ideally|good to have)/i;
 const MUST_HEADER = /(required|requirements|qualifications|must[\s-]have|you'?ll (have|need|bring)|what we('?re| are) looking for|who we('?re| are) looking for|who you are|minimum|essential|about you|what you'?ll need|what you bring|your profile|skills( and| ?&) experience|you have)/i;
 const NICE_HEADER_START = /^(preferred|nice[\s-]to[\s-]have|bonus|desirable|good to have)\b/i;
 const MUST_HEADER_START = /^(requirements|minimum[\s-]requirements|qualifications|what we('?re| are) looking for|you'?ll (have|need|bring)|about you|essential|must[\s-]have)\b/i;
