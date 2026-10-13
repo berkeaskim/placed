@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import type { CvScorePanelData } from "@/lib/cv-score/panel-data";
+import { IMAGE_ONLY_CAP } from "@/lib/cv-score/aggregate";
 
 vi.mock("@/components/cv-score/actions", () => ({ disagreeWithFix: vi.fn() }));
 vi.mock("next/link", () => ({ default: (p: { href: string; children: unknown; className?: string }) => createElement("a", { href: p.href, className: p.className }, p.children as never) }));
@@ -11,7 +12,7 @@ const { CvScorePanel } = await import("@/components/cv-score-panel");
 const data: CvScorePanelData = {
   cvId: "00000000-0000-4000-8000-000000000001", sector: "consulting", total: 68,
   dimensions: { ats: 82, impact: 54, clarity: 71, relevance: 66, uk: null },
-  capsApplied: ["Image-only PDF: capped at 50"],
+  capsApplied: [IMAGE_ONLY_CAP],
   fixes: [
     { ruleId: "GEN-04", statement: "Quantify results.", dimension: "impact", lostPoints: 9, evidenceLine: "Organised weekly society events", fix: "Organised weekly events for [add your real number] members", citation: { title: "CV guide", publisher: "Prospects", year: "2025", url: "https://www.prospects.ac.uk/cv" }, evidence: "A", convention: false },
     { ruleId: "CON-02", statement: "Show leadership.", dimension: "relevance", lostPoints: 4, evidenceLine: null, fix: null, citation: null, evidence: "D", convention: true },
@@ -40,6 +41,7 @@ describe("CvScorePanel render", () => {
     expect(html).toContain('href="/profile/quiz"');
     expect(html).toContain("What our AI saw");
     expect(html).toContain("<polyline");
+    expect(html).toContain("Score history: first 55, latest 68, 3 points");
     expect(html).toContain('target="_blank"');
   });
 });

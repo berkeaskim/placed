@@ -1,11 +1,11 @@
 import { describe, it, expect } from "vitest";
 import {
   scoreBand, splitFixes, isConvention, sourceChip, sparklinePoints, rulesPassedLabel, couldntAssessLabel,
-  disclaimer, capBanners, historyTotals, IMAGE_ONLY_CAP_COPY,
+  disclaimer, capBanners, historyTotals, IMAGE_ONLY_CAP_COPY, sparklineLabel,
 } from "@/lib/cv-score/present";
 import { SECTOR_CAVEATS } from "@/lib/cv-rules/profiles";
 import { ARCHETYPES } from "@/lib/types";
-import type { Fix } from "@/lib/cv-score/aggregate";
+import { IMAGE_ONLY_CAP, type Fix } from "@/lib/cv-score/aggregate";
 
 const fix = (ruleId: string, lostPoints: number, over: Partial<Fix> = {}): Fix => ({
   ruleId, statement: `why ${ruleId}`, dimension: "impact", lostPoints, evidenceLine: null, fix: null,
@@ -75,6 +75,10 @@ describe("sparklinePoints", () => {
   });
 });
 
+describe("sparklineLabel", () => {
+  it("summarises first, latest and count", () => expect(sparklineLabel([55, 61, 68])).toBe("Score history: first 55, latest 68, 3 points"));
+});
+
 describe("historyTotals", () => {
   it("orders by CV upload time then score time, oldest first", () => {
     const rows = [
@@ -101,10 +105,11 @@ describe("labels", () => {
 
 describe("capBanners", () => {
   it("keeps every cap; image-only cap links to the quiz", () => {
-    const b = capBanners(["Image-only PDF: capped at 50", "No phone or email: capped at 40"]);
+    const b = capBanners([IMAGE_ONLY_CAP, "No phone or email: capped at 40"]);
     expect(b).toHaveLength(2);
     expect(b[0]).toEqual({ text: "Image-only PDF: capped at 50", imageOnly: true });
     expect(b[1].imageOnly).toBe(false);
+    expect(capBanners(["image-only something else"])[0].imageOnly).toBe(false);
     expect(IMAGE_ONLY_CAP_COPY).toBe("We couldn't read this CV — try another file or take the quiz");
   });
 });
@@ -118,10 +123,12 @@ describe("SECTOR_CAVEATS", () => {
       expect(v).not.toMatch(/\n/);
     }
   });
-  it("covers the form-led sectors named in the research (Big 4: finance, consulting) and not CV-central ones", () => {
-    expect(SECTOR_CAVEATS.finance_banking).toMatch(/application forms/);
-    expect(SECTOR_CAVEATS.consulting).toMatch(/Big 4/);
-    expect(SECTOR_CAVEATS.software_eng).toBeUndefined();
-    expect(SECTOR_CAVEATS.quant_trading).toBeUndefined();
+  it("exact copy (research-backed; changing it must be deliberate) and only form-led sectors", () => {
+    expect(SECTOR_CAVEATS).toEqual({
+      consulting:
+        "Big 4 firms screen mainly via application forms and online tests — your CV matters less at that stage. MBB firms still screen on the CV.",
+      finance_banking:
+        "Big 4 and many insight or spring-week schemes screen mainly via application forms and online tests — your CV matters less at that stage. Banks still screen on the CV.",
+    });
   });
 });

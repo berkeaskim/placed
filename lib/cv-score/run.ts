@@ -16,6 +16,9 @@ import type { ScoredRuleResult } from "./context";
 type StoredRuleResults = {
   code: ScoredRuleResult[]; llm: ScoredRuleResult[]; spellingErrors: string[] | null;
   couldNotAssess?: number;
+  /** Rule counts for "Rules passed X/Y" (Task 18b); absent on rows scored before this was added. */
+  assessed?: number;
+  passed?: number;
   /** LLM fails without a quoted line (allowed only for "absent" verdicts): Task 25 reliability signal. */
   unevidencedFails?: number;
 };
@@ -92,7 +95,7 @@ export async function scoreCv(supabase: SupabaseClient, i: { userId: string; cvI
 
   const ruleResults: StoredRuleResults = {
     code, llm: llm.results, spellingErrors: llm.spellingErrors,
-    couldNotAssess: score.couldNotAssess, unevidencedFails: countUnevidencedFails(llm.results),
+    couldNotAssess: score.couldNotAssess, assessed: score.assessed, passed: score.passed, unevidencedFails: countUnevidencedFails(llm.results),
   };
   const row = {
     cv_id: i.cvId, user_id: i.userId, sector: i.sector, total: score.total, dimensions: score.dimensions,

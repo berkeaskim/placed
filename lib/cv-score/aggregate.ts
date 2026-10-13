@@ -25,6 +25,9 @@ export type CvScore = {
   /** LLM verdicts discarded because their evidence line was not in the CV (A1). */
   couldNotAssess: number;
 };
+/** Cap label for an image-only / unreadable PDF; the panel keys the quiz link off this exact value. */
+export const IMAGE_ONLY_CAP = "Image-only PDF: capped at 50";
+
 export type ScoreFacts = { imageOnly: boolean; spellingErrors: number; hasPhone: boolean; hasEmail: boolean };
 
 /** Severity for this sector and year: base, then sectorAdjust, then yearAdjust (most specific to the student wins). */
@@ -59,7 +62,7 @@ export function aggregateCvScore(i: { rules: CvRule[]; results: ScoredRuleResult
   let total = totalWeight ? active.reduce((n, d) => n + weights[d] * dimensions[d]!, 0) / totalWeight : 0;
 
   const capsApplied: string[] = [];
-  if (i.facts.imageOnly) { total = Math.min(total, 50); capsApplied.push("Image-only PDF: capped at 50"); }
+  if (i.facts.imageOnly) { total = Math.min(total, 50); capsApplied.push(IMAGE_ONLY_CAP); }
   if (i.facts.spellingErrors >= 3) { total = Math.min(total, 50); capsApplied.push("3+ spelling errors: capped at 50"); }
   if (!i.facts.hasPhone && !i.facts.hasEmail) { total = Math.min(total, 40); capsApplied.push("No phone or email: capped at 40"); }
 

@@ -6,7 +6,7 @@ import type { Fix } from "@/lib/cv-score/aggregate";
 import type { CvScorePanelData } from "@/lib/cv-score/panel-data";
 import {
   DIM_LABEL, IMAGE_ONLY_CAP_COPY, barColor, capBanners, couldntAssessLabel, disclaimer, isConvention, rulesPassedLabel,
-  scoreBand, sourceChip, sparklinePoints, splitFixes,
+  scoreBand, sourceChip, sparklineLabel, sparklinePoints, splitFixes,
 } from "@/lib/cv-score/present";
 import { DisagreeButton } from "@/components/cv-score/disagree-button";
 
@@ -147,7 +147,7 @@ function Sparkline({ history }: { history: number[] }) {
   const last = pts.split(" ").at(-1)!.split(",");
   return (
     <span className="inline-flex items-center gap-1.5 text-xs text-[#5B5B6B]">
-      <svg width="76" height="26" viewBox="-2 -2 76 26" role="img" aria-label={`Your past scores for this sector: ${history.join(", ")}`}>
+      <svg width="76" height="26" viewBox="-2 -2 76 26" role="img" aria-label={sparklineLabel(history)}>
         <polyline points={pts} fill="none" stroke="#5B3DF5" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
         <circle cx={last[0]} cy={last[1]} r="2.5" fill="#5B3DF5" />
       </svg>

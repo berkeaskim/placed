@@ -1,6 +1,6 @@
 import { ARCHETYPE_LABELS, type Archetype } from "@/lib/types";
 import type { Dimension } from "@/lib/cv-rules/types";
-import type { Fix } from "./aggregate";
+import { IMAGE_ONLY_CAP, type Fix } from "./aggregate";
 
 /** Pure presentation logic for the CV Score panel (Task 18b, amendments B11). Safe to import anywhere. */
 
@@ -63,7 +63,10 @@ export const IMAGE_ONLY_CAP_COPY = "We couldn't read this CV — try another fil
 
 /** Every cap is shown (never hidden); the image-only cap additionally links to the quiz. */
 export function capBanners(caps: string[]): { text: string; imageOnly: boolean }[] {
-  return caps.map((text) => ({ text, imageOnly: /^image-only/i.test(text) }));
+  return caps.map((text) => ({ text, imageOnly: text === IMAGE_ONLY_CAP }));
 }
+
+/** Screen-reader summary of the personal sparkline. */
+export const sparklineLabel = (h: number[]) => `Score history: first ${h[0]}, latest ${h[h.length - 1]}, ${h.length} points`;
 
 export const barColor = (v: number) => (v >= 75 ? "#0E8A5F" : v >= 60 ? "#5B3DF5" : "#C2410C");

@@ -1,7 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Archetype, ParsedCV, Year } from "@/lib/types";
-import type { Dimension } from "@/lib/cv-rules/types";
+import type { CvRule, Dimension } from "@/lib/cv-rules/types";
 import { rulesFor } from "@/lib/cv-rules";
 import { aggregateCvScore, type CvScore, type Fix } from "./aggregate";
 import type { ScoredRuleResult } from "./context";
@@ -27,8 +27,24 @@ export type CvScorePanelData = {
 
 type ScoreRow = {
   total: number; dimensions: Record<Dimension, number | null>; caps_applied: string[] | null; fixes: Fix[] | null;
-  rule_results: { code?: ScoredRuleResult[]; llm?: ScoredRuleResult[]; couldNotAssess?: number } | null;
+  rule_results: StoredResults | null;
 };
+type StoredResults = { code?: ScoredRuleResult[]; llm?: ScoredRuleResult[]; couldNotAssess?: number; assessed?: number; passed?: number };
+
+/**
+ * "Rules passed X/Y" counts for a stored cv_scores row. Rows scored since Task 18b persist them (run.ts);
+ * older rows fall back to re-aggregating the stored verdicts. The fallback passes neutral cap facts: caps only
+ * clamp the total, so assessed/passed/couldNotAssess never depend on them (tests/cv-score/panel-data.test.ts).
+ */
+export function storedCounts(rr: StoredResults | null, rules: CvRule[], sector: Archetype, year: Year): { assessed: number; passed: number; couldNotAssess: number } {
+  if (rr && typeof rr.assessed === "number" && typeof rr.passed === "number") {
+    return { assessed: rr.assessed, passed: rr.passed, couldNotAssess: rr.couldNotAssess ?? 0 };
+  }
+  const results = [...(rr?.code ?? []), ...(rr?.llm ?? [])];
+  const c = aggregateCvScore({ rules, results, sector, year, facts: NEUTRAL_FACTS });
+  return { assessed: c.assessed, passed: c.passed, couldNotAssess: rr?.couldNotAssess ?? c.couldNotAssess };
+}
+const NEUTRAL_FACTS = { imageOnly: false, spellingErrors: 0, hasPhone: true, hasEmail: true };
 
 /**
  * Server-only loader for the profile page (Task 19). Pass `score` straight from scoreCv() to skip the
@@ -59,16 +75,10 @@ export async function loadCvScorePanel(
   } else {
     const row = scoreRes.data as ScoreRow | null;
     if (!row) return null;
-    // Stored rows carry the verdicts but not the counts: re-aggregate (pure) for assessed/passed/couldNotAssess.
-    // Total, dimensions, caps and fixes stay exactly as stored (facts for caps aren't persisted).
-    const results = [...(row.rule_results?.code ?? []), ...(row.rule_results?.llm ?? [])];
-    const counts = aggregateCvScore({
-      rules: rulesFor(i.sector), results, sector: i.sector, year: i.year,
-      facts: { imageOnly: false, spellingErrors: 0, hasPhone: true, hasEmail: true },
-    });
+    // Total, dimensions, caps and fixes stay exactly as stored.
     core = {
       total: row.total, dimensions: row.dimensions, capsApplied: row.caps_applied ?? [], fixes: row.fixes ?? [],
-      assessed: counts.assessed, passed: counts.passed, couldNotAssess: row.rule_results?.couldNotAssess ?? counts.couldNotAssess,
+      ...storedCounts(row.rule_results, rulesFor(i.sector), i.sector, i.year),
     };
   }
 

@@ -25,12 +25,13 @@ export const DIMENSION_WEIGHTS: Record<Archetype, Record<Dimension, number>> = {
  * Sector caveats shown under the CV Score ring (spec §6.4, C19). Only where the research says the CV
  * carries less weight at first screen: cv-rules-finance-consulting.md §2 ("Big 4 often doesn't use a CV
  * at first screen"; PwC form + online assessment [S30]) and its application-format note (insight schemes
- * use forms and tests [S31][S33]); market-2026/01 §"who gates on the CV" (D). Tech, quant, product,
+ * use forms and tests [S31][S33]); market-2026/00-synthesis §1 ("Banks, MBB, quant and tech still screen on
+ * the CV") and market-2026/01 §"who gates on the CV" (D). Tech, quant, product,
  * marketing and research remain CV-central in those docs, so they get no caveat.
  */
 export const SECTOR_CAVEATS: Partial<Record<Archetype, string>> = {
   consulting:
-    "Big 4 firms screen mainly via application forms and online tests — your CV matters less at that stage. MBB and boutique firms still read your CV closely.",
+    "Big 4 firms screen mainly via application forms and online tests — your CV matters less at that stage. MBB firms still screen on the CV.",
   finance_banking:
-    "Big 4 and many insight or spring-week schemes screen mainly via application forms and online tests — your CV matters less at that stage.",
+    "Big 4 and many insight or spring-week schemes screen mainly via application forms and online tests — your CV matters less at that stage. Banks still screen on the CV.",
 };
