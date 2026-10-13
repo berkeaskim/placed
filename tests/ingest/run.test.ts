@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { ingestCompany, type IngestStore, type JobRow } from "@/lib/ingest/run";
+import { ingestCompany, jobContentHash, type IngestStore, type JobRow } from "@/lib/ingest/run";
 import type { RawJob } from "@/lib/types";
 import { heuristicTagJob } from "@/lib/ai/heuristics";
 
@@ -44,10 +44,9 @@ describe("ingestCompany", () => {
   });
 
   it("does not re-tag unchanged jobs that were tagged ok", async () => {
-    const { contentHash } = await import("@/lib/ingest/fingerprint");
     const { htmlToLines } = await import("@/lib/text/jd");
     const job = raw({});
-    const hash = contentHash(job.title + "\n" + htmlToLines(job.html).join("\n"));
+    const hash = jobContentHash(job, htmlToLines(job.html).join("\n"));
     const { store } = fakeStore(new Map([["1", { content_hash: hash, tag_status: "ok" }]]));
     const tag = vi.fn();
     const r = await ingestCompany(company, { fetchJobs: async () => [job], tagJob: tag as never, store });
@@ -62,16 +61,29 @@ describe("ingestCompany", () => {
     expect(store.markDead).not.toHaveBeenCalled();
   });
 
-  it("prefers a structured ATS deadline over the text-extracted one", async () => {
+  it("stores deterministic deadlines with provenance and ignores the tagger's deadline", async () => {
     const { store, upserted } = fakeStore();
     await ingestCompany(company, {
       fetchJobs: async () => [
-        raw({ extId: "1", deadline: "2026-11-01", html: "<p>Closing date: 5 December 2026</p>" }),
-        raw({ extId: "2", html: "<p>Closing date: 5 December 2026</p>" }),
+        raw({ extId: "1", deadline: "2026-11-01", postedAt: "2026-10-01T00:00:00Z", html: "<p>Closing date: 31 October 2026</p>" }),
+        raw({ extId: "2", postedAt: "2026-10-01T00:00:00Z", html: "<p>Closing date: 5 December 2026. We recruit on a rolling basis.</p>" }),
+        raw({ extId: "3", postedAt: "2026-10-01T00:00:00Z", html: "<p>No dates here.</p>" }),
       ],
-      tagJob: async (i) => heuristicTagJob(i), store,
+      tagJob: async (i) => ({ ...heuristicTagJob(i), deadline: "2030-01-01" }), store,
     });
-    expect(upserted.find((r) => r.ext_id === "1")?.deadline).toBe("2026-11-01");
-    expect(upserted.find((r) => r.ext_id === "2")?.deadline).toBe("2026-12-05");
+    const by = (id: string) => upserted.find((r) => r.ext_id === id)!;
+    expect(by("1")).toMatchObject({ deadline: "2026-10-31", deadline_source: "ats", rolling: false, closed_at: null });
+    expect(by("2")).toMatchObject({ deadline: "2026-12-05", deadline_source: "text", rolling: true });
+    expect(by("3")).toMatchObject({ deadline: null, deadline_source: null, rolling: false });
+  });
+
+  it("re-processes an unchanged JD when the ATS deadline moves", async () => {
+    const { htmlToLines } = await import("@/lib/text/jd");
+    const job = raw({ deadline: "2026-11-01" });
+    const old = jobContentHash({ ...job, deadline: "2026-10-20" }, htmlToLines(job.html).join("\n"));
+    const { store, upserted } = fakeStore(new Map([["1", { content_hash: old, tag_status: "ok" }]]));
+    await ingestCompany(company, { fetchJobs: async () => [job], tagJob: async (i) => heuristicTagJob(i), store });
+    expect(upserted).toHaveLength(1);
+    expect(upserted[0].deadline).toBe("2026-10-31");
   });
 });

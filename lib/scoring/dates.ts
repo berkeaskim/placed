@@ -18,3 +18,12 @@ export function deadlineLabel(deadline: string | null, today: string): string {
   if (d === 1) return "Closes tomorrow";
   return `${d} days left`;
 }
+
+/**
+ * Honest close-date label using deadline provenance. "No closing date published" is the common case
+ * (~90% of Greenhouse/Lever/Ashby postings) and must not be presented as a rolling deadline.
+ */
+export function closingLabel(job: { deadline: string | null; rolling?: boolean }, today: string): string {
+  if (job.deadline) return deadlineLabel(job.deadline, today);
+  return job.rolling ? "Rolling: apply early" : "No closing date published";
+}

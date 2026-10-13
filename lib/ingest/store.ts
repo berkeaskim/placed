@@ -13,12 +13,13 @@ export function supabaseStore(db: SupabaseClient): IngestStore {
       if (error) throw error;
     },
     async touch(companyId, extIds) {
-      const { error } = await db.from("jobs").update({ last_seen: new Date().toISOString(), is_live: true })
+      const { error } = await db.from("jobs").update({ last_seen: new Date().toISOString(), is_live: true, closed_at: null })
         .eq("company_id", companyId).in("ext_id", extIds);
       if (error) throw error;
     },
     async markDead(companyId, liveExtIds) {
-      let q = db.from("jobs").update({ is_live: false }).eq("company_id", companyId).eq("is_live", true);
+      // closed_at = first run the posting was missing: the observed close date for ATSs that publish none.
+      let q = db.from("jobs").update({ is_live: false, closed_at: new Date().toISOString() }).eq("company_id", companyId).eq("is_live", true);
       if (liveExtIds.length) q = q.not("ext_id", "in", `(${liveExtIds.map((id) => `"${id}"`).join(",")})`);
       const { data, error } = await q.select("id");
       if (error) throw error;

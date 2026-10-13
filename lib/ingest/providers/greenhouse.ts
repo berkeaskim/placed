@@ -16,7 +16,8 @@ export function normalizeGreenhouse(json: unknown, _slug: string, _host?: string
       location,
       remote: /remote/i.test(location),
       html: j.content ?? "",
-      postedAt: j.first_published ?? j.updated_at ?? null,
+      // updated_at is an edit time, not an opening date; without first_published we fall back to first_seen.
+      postedAt: j.first_published ?? null,
     };
   });
 }

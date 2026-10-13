@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { todayLondon, daysUntil, isOpen, deadlineLabel } from "@/lib/scoring/dates";
+import { todayLondon, daysUntil, isOpen, deadlineLabel, closingLabel } from "@/lib/scoring/dates";
 
 describe("dates", () => {
   it("todayLondon uses the London calendar day (BST edge)", () => {
@@ -15,5 +15,14 @@ describe("dates", () => {
     expect(deadlineLabel("2026-10-18", "2026-10-13")).toBe("5 days left");
     expect(deadlineLabel(null, "2026-10-13")).toBe("Rolling deadline");
     expect(deadlineLabel("2026-10-01", "2026-10-13")).toBe("Closed");
+  });
+});
+
+describe("closingLabel", () => {
+  it("distinguishes rolling recruitment from an unpublished date", () => {
+    expect(closingLabel({ deadline: null, rolling: true }, "2026-10-13")).toBe("Rolling: apply early");
+    expect(closingLabel({ deadline: null, rolling: false }, "2026-10-13")).toBe("No closing date published");
+    expect(closingLabel({ deadline: null }, "2026-10-13")).toBe("No closing date published");
+    expect(closingLabel({ deadline: "2026-10-18", rolling: true }, "2026-10-13")).toBe("5 days left");
   });
 });

@@ -58,3 +58,14 @@ Honest expectation: for Greenhouse, Lever and Ashby, most postings never state a
 4. ATS fingerprint script → expand `companies.yml`.
 5. Recall benchmark + coverage number in the UI or pitch.
 6. (If time) SmartRecruiters/Recruitee/Amazon, Adzuna.
+
+## Results (2026-10-13, evening)
+
+**Workday shipped:** 30 tenants, ~480 UK/Europe early-career postings, ~220 with a structured close date.
+
+**Deadline v2 shipped:** `lib/ingest/deadline.ts`, deterministic and LLM-free. The tagger's deadline is ignored.
+- Snapshot (190 Greenhouse/Lever/Ashby jobs): old regex found 10 dates, new extractor 19; 8 more flagged `rolling`.
+- **Workday `endDate` is when the posting comes down, and employers set it inconsistently.** Of 286 postings with an endDate, 111 also state a date in the text. Of those, 49 are the same day (MUFG, LSEG, AIG, Howden) and 60 are one day earlier (Barclays, FTI). Rule: a text date in [endDate−3, endDate] is used as the exact last day; otherwise endDate−1. A wrong date is then always early, never late.
+- `closed_at` is set when a posting first goes missing, and cleared if it reappears. Opening date = `coalesce(posted_at, first_seen)`. Greenhouse no longer falls back to `updated_at`.
+- The content hash is now versioned and includes the ATS close date, so an extended deadline is picked up. The first run after deploy re-processes every job once.
+- UI: use `closingLabel()`, which shows "Rolling: apply early" or "No closing date published". Not a blanket "Rolling deadline".

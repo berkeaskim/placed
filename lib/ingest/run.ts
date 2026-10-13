@@ -5,12 +5,13 @@ import { passesTitleFilter, detectCohortClash, passesLocationFilter } from "./fi
 import { normalizeUrl, jobFingerprint, contentHash } from "./fingerprint";
 import { heuristicTagJob } from "@/lib/ai/heuristics";
 import type { TaggedJob } from "@/lib/ai/tagJob";
+import { resolveDeadline, type DeadlineSource } from "./deadline";
 
 export type CompanyRow = { id: number; slug: string; name: string; ats: Ats; api_host: string | null; enabled: boolean };
 
 export type JobRow = {
   company_id: number; ext_id: string; title: string; url: string; location: string; remote: boolean;
-  deadline: string | null; posted_at: string | null; archetype: string; field_tags: string[];
+  deadline: string | null; deadline_source: DeadlineSource | null; rolling: boolean; closed_at: null; posted_at: string | null; archetype: string; field_tags: string[];
   year_eligibility: string[]; sponsors_visa: string; employment_type: string; first_year_friendly: boolean; cohort_clash: boolean;
   requirements: Requirement[]; skills: string[]; summary: string; raw_html: string; text_lines: string[];
   fingerprint: string; content_hash: string; tag_status: "ok" | "failed" | "pending"; is_live: boolean; last_seen: string;
@@ -33,6 +34,13 @@ export type IngestDeps = {
 };
 
 export const MAX_TAGS_PER_COMPANY = 25;
+/** Bump to force every job to be re-processed once (e.g. after changing deterministic extraction). */
+export const HASH_VERSION = "v2";
+
+/** Versioned, and includes the ATS close date: an extended deadline with an unchanged JD must still re-process. */
+export function jobContentHash(j: Pick<RawJob, "title" | "deadline">, text: string): string {
+  return contentHash(`${HASH_VERSION}\n${j.title}\n${j.deadline ?? ""}\n${text}`);
+}
 
 export async function ingestCompany(c: CompanyRow, deps: IngestDeps) {
   const now = (deps.now ?? (() => new Date()))().toISOString();
@@ -51,7 +59,7 @@ export async function ingestCompany(c: CompanyRow, deps: IngestDeps) {
     const text = lines.join("\n");
     if (!passesLocationFilter(j.location, j.remote, text).pass) continue;
     keptIds.push(j.extId);
-    const hash = contentHash(j.title + "\n" + text);
+    const hash = jobContentHash(j, text);
     const prev = existing.get(j.extId);
     if (prev && prev.content_hash === hash && prev.tag_status === "ok") {
       unchanged.push(j.extId); // only "ok" is skipped; "failed" and "pending" are retried
@@ -69,9 +77,11 @@ export async function ingestCompany(c: CompanyRow, deps: IngestDeps) {
       tagged++;
       if (t.status === "failed") failed++;
     }
+    // Dates are deterministic only; the tagger's (possibly LLM) deadline is ignored on purpose.
+    const dl = resolveDeadline(j.deadline, text, j.postedAt ? new Date(j.postedAt) : new Date(now));
     rows.push({
       company_id: c.id, ext_id: j.extId, title: j.title, url: normalizeUrl(j.url), location: j.location, remote: j.remote,
-      deadline: j.deadline ?? t.deadline, posted_at: j.postedAt, archetype: t.archetype, field_tags: t.fieldTags,
+      deadline: dl.deadline, deadline_source: dl.source, rolling: dl.rolling, closed_at: null, posted_at: j.postedAt, archetype: t.archetype, field_tags: t.fieldTags,
       year_eligibility: t.yearEligibility, sponsors_visa: t.sponsorsVisa, employment_type: t.employmentType,
       first_year_friendly: t.firstYearFriendly, cohort_clash: cohortClash, requirements: t.requirements,
       skills: [...new Set(t.requirements.map((r) => r.skill).filter((s): s is string => Boolean(s)))],
