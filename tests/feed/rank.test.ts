@@ -36,6 +36,55 @@ describe("rankJobs", () => {
   });
 });
 
+describe("rankJobs unreadable-requirements tie-break", () => {
+  const cv = { skillsList: ["SQL"], bulletText: "", otherText: "" };
+  // Student is 2nd year, so firstYearFriendly adds +0.5 accessibility: an unreadable (coverage 3) job with a matching
+  // archetype and location then lands exactly on the Strong-fit threshold (4.5).
+  const unreadable = (id: string, over: Partial<JobListItem> = {}) => job(id, { requirements: [], textLines: [], ...over });
+  const run = (jobs: JobListItem[]) => rankJobs(student, cv, jobs, "2026-10-13");
+  const byId = (r: ReturnType<typeof run>, id: string) => r.find((x) => x.job.id === id)!;
+
+  it("ranks a readable job above an unreadable job of the same label even when the unreadable score is higher", () => {
+    // Far deadline: access 4. Unreadable scores 4.3 (Good); readable with an adjacent archetype scores 4.2 (Good).
+    const r = run([
+      unreadable("unread", { deadline: "2026-12-01" }),
+      job("read", { deadline: "2026-10-20", archetype: "software_eng" }),
+    ]);
+    const u = byId(r, "unread"), d = byId(r, "read");
+    expect(u.coverage.readable).toBe(false);
+    expect(d.coverage.readable).toBe(true);
+    expect(u.fit.label).toBe("Good fit");
+    expect(d.fit.label).toBe("Good fit");
+    expect(u.fit.global).toBeGreaterThan(d.fit.global);
+    expect(r.map((x) => x.job.id)).toEqual(["read", "unread"]);
+  });
+
+  it("ranks an unreadable Strong fit below readable Strong fits but above a readable Good fit", () => {
+    const r = run([
+      job("good", { archetype: "software_eng", deadline: "2026-12-01" }),
+      unreadable("unreadStrong", { firstYearFriendly: true }),
+      job("readStrong"),
+    ]);
+    expect(byId(r, "unreadStrong").coverage.readable).toBe(false);
+    expect(byId(r, "unreadStrong").fit.label).toBe("Strong fit");
+    expect(byId(r, "readStrong").fit.label).toBe("Strong fit");
+    expect(byId(r, "good").fit.label).toBe("Good fit");
+    expect(r.map((x) => x.job.id)).toEqual(["readStrong", "unreadStrong", "good"]);
+  });
+
+  it("keeps gated jobs last and leaves scores and labels untouched", () => {
+    const r = run([
+      unreadable("gatedU", { yearEligibility: ["final"], firstYearFriendly: true }),
+      unreadable("u", { firstYearFriendly: true }),
+      job("r"),
+    ]);
+    expect(r.map((x) => x.job.id)).toEqual(["r", "u", "gatedU"]);
+    expect(byId(r, "u").fit.label).toBe("Strong fit");
+    expect(byId(r, "u").fit.global).toBe(4.5);
+    expect(byId(r, "gatedU").fit.capped).toBe(true);
+  });
+});
+
 describe("applyXp", () => {
   it("matches the gamification table", () => {
     expect(applyXp("Strong fit")).toBe(50);
