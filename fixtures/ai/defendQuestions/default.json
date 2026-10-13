@@ -1,0 +1,22 @@
+{
+  "questions": [
+    {
+      "bulletId": "p0-b0",
+      "question": "You cleaned 50,000 house-price records with pandas. What problems did you find in the data, and how did you decide what to drop or fix?",
+      "whyTheyAsk": "Data analyst interviewers check that you really handled the dataset and understand data cleaning, not just that you ran a script.",
+      "prepTip": "Have two or three concrete cleaning steps ready (for example missing values, duplicates, outliers) and the pandas functions you used. Know roughly how many rows you removed and why."
+    },
+    {
+      "bulletId": "l0-b0",
+      "question": "Attendance grew to 120. What was it before you took over, and what did you personally change to grow it?",
+      "whyTheyAsk": "They want the baseline behind the number and proof that the growth came from your actions as Events Officer, not the committee as a whole.",
+      "prepTip": "Know the starting attendance and how you counted it. Pick one change you made yourself, such as a new speaker or a better promotion channel, and explain its effect."
+    },
+    {
+      "bulletId": "x0-b0",
+      "question": "How did you set up the stock spreadsheet, and how do you know it cut stock-count errors?",
+      "whyTheyAsk": "Excel is central to the role, so they test whether you can explain your VLOOKUP and pivot-table set-up and back up the claim about fewer errors.",
+      "prepTip": "Be ready to describe the sheet's layout and one formula in plain words. If you have no exact error figure, say what you noticed (for example fewer manual recounts) rather than guessing a number."
+    }
+  ]
+}

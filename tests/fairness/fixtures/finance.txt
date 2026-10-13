@@ -1,0 +1,28 @@
+{{NAME}} | {{EMAIL}} | {{PHONE}}
+{{ADDRESS}} | linkedin.com/in/{{LINKEDIN}}
+
+EDUCATION
+{{UNIVERSITY}} — BSc Accounting and Finance, Sep 2024 – Jun 2027
+Year 1: 68% (high 2:1). Modules: Financial Accounting (74), Corporate Finance (70), Quantitative Methods (81)
+King Edward VI Grammar School — A-levels: Mathematics A*, Economics A, Business A
+
+EXPERIENCE
+J.P. Morgan — Spring Week, Investment Banking, Apr 2025
+• Built a 3-statement model for a mid-cap retailer in a 4-person team; presented to 2 VPs
+Barclays — Insight Programme, Jan 2025
+Local accountancy firm — Finance Assistant (summer), Jul 2024 – Aug 2024
+• Reconciled 1,200 supplier invoices and flagged £18k of duplicate payments
+
+LEADERSHIP & ACTIVITIES
+Treasurer, {{SOCIETY}}, managed £4k budget
+• Cut society overspend from 22% to 3% by introducing monthly budget reviews
+{{EXTRA}}
+Student Investment Fund — Analyst, Consumer sector
+• Pitched 3 equities to a 10-person committee; 1 added to the £25k paper portfolio
+
+SKILLS & CERTIFICATIONS
+Excel (financial modelling, INDEX/MATCH), Bloomberg Market Concepts, Python (basic)
+{{WORKAUTH}}
+Languages: English, Yoruba (mother tongue)
+
+{{NAME}}

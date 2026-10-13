@@ -1,0 +1,37 @@
+{{NAME}}
+{{ADDRESS}} | {{PHONE}} | {{EMAIL}}
+linkedin.com/in/{{LINKEDIN}} | github.com/{{GITHUB}} | {{PORTFOLIO}}
+{{WORKAUTH}}
+
+EDUCATION
+{{UNIVERSITY}} — BSc Computer Science, Sep 2024 – Jun 2027
+Predicted First Class (current average 74%)
+Modules: Algorithms (81), Databases (77), Machine Learning (72), Distributed Systems
+Westfield Sixth Form College — A-levels: Mathematics A*, Further Mathematics A, Physics A
+
+EXPERIENCE
+Monzo — Software Engineering Intern, Jun 2025 – Aug 2025
+• Built a Go service that reconciles card refunds, cutting manual review time by 40%
+• Added 120 unit tests to the payments ledger, raising coverage from 61% to 83%
+Visa — Technology Spring Insight Programme, Apr 2025
+• Shadowed a platform team and presented a 5-minute pitch on fraud-alert latency
+
+PROJECTS
+Rent Radar — TypeScript, Next.js, PostgreSQL
+• Scraped 3,000 London listings weekly and flagged rents 15% above the borough median
+StudyBuddy — React Native, Firebase
+• Shipped a revision-planner app used by 450 students across 3 universities
+
+LEADERSHIP & ACTIVITIES
+Treasurer, {{SOCIETY}} — Sep 2025 – present
+• Managed a £4k annual budget across 12 events, cutting venue costs by 15%
+{{EXTRA}}
+Hackathon organiser, HackLondon 2025
+• Secured £3k from 4 corporate sponsors for a 200-person hackathon
+
+SKILLS
+Languages: TypeScript, Python, Go, SQL, Java
+Tools: Git, Docker, AWS (EC2, S3), Linux; data structures & algorithms (DSA)
+Spoken: English (native), Spanish (B2)
+
+— {{NAME}}
