@@ -191,9 +191,15 @@ function dateFieldValues(cv: ParsedCV): Set<string> {
   return out;
 }
 
-const MONTH_OR_SEASON = "jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|june?|july?|aug(?:ust)?|sept?(?:ember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?|spring|summer|autumn|fall|winter";
-const YEAR_BEFORE = new RegExp(`(?:\\b(?:in|since|of|by|from|until|till|to|through|graduating|graduated|graduation|graduate|expected|during|before|after|circa|c\\.|${MONTH_OR_SEASON})|[(\\[–—-]|\\d{4}\\s*[–—-])\\s*$`, "i");
-const YEAR_AFTER = /^\s*(?:[–—-]\s*(?:\d{2,4}|present|now|current)|[)\]])/i;
+/** A year-shaped number followed by a dash and another year (or "present") is the start of a range, not a count. */
+const RANGE_AFTER = /^\s*[–—-]\s*(?:\d{2,4}|present|now|current)\b/i;
+/** Count verbs (round 4 ruling, plus amount verbs): directly before a CV year they make it a count ("Served 2025", "Raised 2025"). */
+const COUNT_VERB = "(?:serv|mentor|train|host|welcom|reach|manag|recruit|teach|support|attract|engag|onboard|coach|" +
+  "rais|generat|sav|collect|process|secur|earn|donat|sell)(?:e|es|ed|s|ing)?|led|leads?|leading|taught|sold";
+/** Quantity phrases directly before a number: "over 2025", "for up to 2025", "attendance of 2025", "£2025". */
+const QUANTIFIER = "over|more\\s+than|at\\s+least|up\\s+to|nearly|almost|approximately|approx\\.?|roughly|upwards\\s+of|in\\s+excess\\s+of|" +
+  "(?:a\\s+)?total\\s+of|(?:attendance|audience|turnout|crowd|footfall|membership|reach)\\s+of";
+const COUNT_BEFORE = new RegExp(`(?:\\b(?:${COUNT_VERB})(?:\\s+(?:${QUANTIFIER}))?|\\borgani[sz](?:e|es|ed|ing)\\s+for|\\b(?:${QUANTIFIER})|[£$€#~+×]|(?<![A-Za-z])x)\\s*$`, "i");
 /**
  * Words after a year-shaped number that make it a count (round 3). Case-sensitive on purpose: only a lowercase
  * plural ("students", "venues") or an irregular plural counts. Capitalised words ("Economics", "Physics") and
@@ -204,11 +210,12 @@ const IRREG_PLURAL = new Set(["people", "staff", "children", "alumni", "personne
 const NOT_COUNT = new Set(("as is was has his its this thus plus across towards alongside besides whereas does goes always various previous " +
   "gas bus yes us").split(" "));
 const FUNCTION_WORD = new Set("with as at in on for and or to of by from the a an while during under over into via when where who which that".split(" "));
-const isCountNoun = (w: string) => IRREG_PLURAL.has(w) || (PLURAL.test(w) && !NOT_COUNT.has(w) && !/(?:ss|ics|us|is)$/.test(w));
+/** Skill names that look plural ("pandas", "Sheets") are tools, not counted things (round 4). */
+const isCountNoun = (w: string) => IRREG_PLURAL.has(w) || (PLURAL.test(w) && !NOT_COUNT.has(w) && !/(?:ss|ics|us|is)$/.test(w) && extractSkills(w).length === 0);
 /** True when the words after a number read as a count: a plural noun within 2 tokens (past closing brackets), or "in total". */
 function countAfter(after: string): boolean {
   const rest = after.replace(/^\s*[)\]]+/, " ");
-  if (/^\s+in\s+total\b/i.test(rest)) return true;
+  if (/^\s+(?:in\s+total|total\b|per\b|each\b|every\b|a\s+(?:day|week|weekend|month|term|year|session|shift|night)\b)/i.test(rest)) return true;
   const toks = rest.match(/^\s+([A-Za-z][A-Za-z-]*)(?:\s+([A-Za-z][A-Za-z-]*))?/);
   if (!toks) return false;
   const last = (w: string) => w.split("-").pop()!;
@@ -223,17 +230,22 @@ function growthTarget(before: string): boolean {
   return nonYearNumber || /\b(?:grow\w*|grew|increas\w*|rais\w*|expand\w*|boost\w*|reach\w*|doubl\w*|tripl\w*|scal\w*|membership|attendance|audience|followers|sign-?ups?|users|revenue|sales)\b/i.test(win);
 }
 /**
- * Round 2: a year-shaped value from the CV's own date fields, used as a year ("graduating in 2027", "(2024–2027)",
- * "since 2024", "Sep 2023"), is a date, not a metric. Followed by a count noun it is still a count and still blocks.
+ * Round 4: a year-shaped value from the CV's own date fields is a YEAR by default ("2027 Economics student",
+ * "UCL | 2027", "Events Officer 2025", "Class of '27"). It is a COUNT only when a count verb or quantity phrase
+ * directly precedes it ("Served 2025", "for up to 2025"), a count noun / "in total" / "per" follows it
+ * ("2024 users", "2025 per weekend"), or it closes a growth phrase ("growing membership to 2025").
  */
 function isYearUse(text: string, index: number, raw: string, dateVals: Set<string>): boolean {
   const before = text.slice(0, index), after = text.slice(index + raw.length);
-  // "2024-27": the short end of a range takes the century of its start
-  const short = /^\d{2}$/.test(raw) ? before.match(/(\d{2})\d{2}\s*[–—-]\s*$/) : null;
-  const v = short ? short[1] + raw : numValues(raw)[0];
-  if (!v || !isYearLike(v) || !dateVals.has(v) || /%|k|m|bn|x/i.test(raw.replace(/\d/g, ""))) return false;
+  if (!/^\d{2}$|^\d{4}$/.test(raw)) return false; // "2,025", "2025%", "2025k" are never years
+  // "2024-27": the short end of a range takes the century of its start; "'27" is a CV year written short
+  const rangeStart = /^\d{2}$/.test(raw) ? before.match(/(\d{2})\d{2}\s*[–—-]\s*$/) : null;
+  const v = rangeStart ? rangeStart[1] + raw : /^\d{2}$/.test(raw) ? (/['’‘]$/.test(before) ? `20${raw}` : null) : raw;
+  if (!v || !isYearLike(v) || !dateVals.has(v)) return false;
   if (countAfter(after) || growthTarget(before)) return false;
-  return YEAR_BEFORE.test(before) || YEAR_AFTER.test(after);
+  if (/^\s*\+/.test(after)) return false; // "2025+"
+  // a count verb before a range start ("Served 2024–2025 as …") still reads as a date
+  return !COUNT_BEFORE.test(before) || RANGE_AFTER.test(after);
 }
 
 /** Content units a summary/interests number can be scoped to (fix 5). */
@@ -345,11 +357,19 @@ const ADJECTIVES = new Set((
   "thoughtful tireless trustworthy upbeat vibrant warm keen eager friendly hard fast high low multi tech results detail people customer client " +
   "class cross well"
 ).split(" "));
-/** Ordinary heads of capitalised hyphen compounds (round 3): Hands-on, Part-time, Client-facing, Long-term… */
+/**
+ * Ordinary heads that may take an affiliation tail without naming anyone (round 4): "Till-trained", "Self-funded",
+ * "Student-run", "Industry-backed". Any other capitalised compound is ordinary by default (Policy-focused, Tax-savvy).
+ */
 const HYPHEN_HEADS = new Set(("hands hand detail fast self high low multi tech results client customer cross data team well long short full part " +
   "year time first second third final top mid non pre post re co sub semi over under open end real large small cost user people problem goal " +
   "award student community quick hard easy fact number numbers market public private front back side one two three four five half " +
-  "forward future solution value risk time budget deadline people").split(" "));
+  "forward future solution value risk budget deadline till crowd industry peer government council family employee charity state " +
+  "dry trial test home barista retail sales staff volunteer club society university college school field site job").split(" "));
+/** Tails that turn a capitalised compound head into an affiliation claim: "Zorblax-trained", "Ocado-sponsored" (round 4). */
+const AFFILIATION_TAIL = /^(?:(?:train|sponsor|fund|back|accredit|endors|affiliat|own|plac|hir|approv|partner)(?:ed|ing)|certified|certifying|run|running)$/;
+/** Suffixes strong enough to mark an affiliation-tail head as an ordinary word rather than a name ("Leadership-trained"). */
+const STRONG_WORDISH = /(?:ing|ed|ment|ness|tion|sion|ship|ology|ism)$/;
 /** Morphology that marks an ordinary verb/adjective/noun rather than a name ("Cleaned", "Analytical", "Leadership"). */
 const WORDISH = /(?:ed|ing|ise|ize|ises|izes|ly|ive|ful|ous|able|ible|ment|ments|ness|tion|tions|sion|ity|ship|ist|ists|ism|ics|ical|al|ent|ents|ant|ants|ary|ory|ic|er|ers|or|ors|ian|ians|ate|ates|ance|ence|ology|age)$/;
 
@@ -633,10 +653,12 @@ export function verifyTailoring(i: VerifyInput): VerifyReport {
       const allCaps = /^[A-Z0-9&+#]+$/.test(tok) && /[A-Z].*[A-Z]|[A-Z]\d/.test(tok);
       const before = u.text.slice(0, index).trimEnd();
       const sentenceStart = before === "" || /[.!?:;•▪|–—(]$/.test(before) || /\s-$/.test(` ${before}`);
-      // "Hands-on", "Part-time": a capitalised compound is ordinary only when its head is ordinary vocabulary
-      // ("Zorblax-trained", "Ocado-sponsored" stay name candidates)
-      const compound = isCap(tok) && !allCaps && /^-[a-z]/.test(u.text.slice(index + len, index + len + 2))
-        && (COMMON.has(lower) || ADJECTIVES.has(lower) || HYPHEN_HEADS.has(lower));
+      // Round 4: a capitalised compound ("Policy-focused", "Hands-on") is ordinary by default. Its head is a name
+      // candidate only when an affiliation tail follows and the head isn't ordinary vocabulary ("Zorblax-trained",
+      // "Ocado-sponsored"; "Till-trained" passes). Known employers block in any form via the employer list.
+      const tail = isCap(tok) && !allCaps ? u.text.slice(index + len).match(/^-([a-z]+)/)?.[1] : undefined;
+      const compound = tail !== undefined && !(AFFILIATION_TAIL.test(tail)
+        && !(COMMON.has(lower) || ADJECTIVES.has(lower) || HYPHEN_HEADS.has(lower) || IRREGULAR_PAST.has(lower) || STRONG_WORDISH.test(lower)));
       // "UCL, Class of 2027": a cohort, not a name
       if (lower === "class" && /^\s+of\s+\d{4}\b/.test(u.text.slice(index + len))) continue;
       const ordinary = COMMON.has(lower) || ADJECTIVES.has(lower) || IRREGULAR_PAST.has(lower) || WORDISH.test(lower) || authorshipLevel(lower) !== null || IRREGULAR.has(lower);

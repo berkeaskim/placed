@@ -580,3 +580,120 @@ describe("fix round 3 #2: hyphen compounds exempt only ordinary heads", () => {
     expect(has(ex((t) => { t.summary = s; }).issues, "unsupportedFacts")).toBe(false);
   });
 });
+
+// ---------- Fix round 4 (Economics fixture: events, retail, pandas project, charity volunteering) ----------
+
+const econ4: ParsedCV = {
+  name: "D", email: null, phone: null, location: "London", links: [], summary: null,
+  education: [{ id: "e0", institution: "UCL", degree: "BSc Economics", dates: "2024–2027", grade: "Predicted 2:1", details: [] }],
+  experience: [
+    { id: "x0", org: "Economics Society", title: "Events Officer", dates: "Sep 2025 – Jun 2026", location: "London", bullets: [
+      { id: "x0-b0", text: "Organised weekly society events for 60 members" },
+    ] },
+    { id: "x1", org: "Northside Market", title: "Retail Assistant", dates: "Jun 2024 – Aug 2025", location: "London", bullets: [
+      { id: "x1-b0", text: "Served customers on the till during weekend shifts" },
+    ] },
+  ],
+  projects: [{ id: "p0", org: "", title: "Footfall Analysis", dates: "2025", location: "", bullets: [
+    { id: "p0-b0", text: "Analysed shop footfall data with pandas to suggest staffing changes" },
+  ] }],
+  leadership: [{ id: "l0", org: "Food Bank", title: "Volunteer", dates: "2025", location: "London", bullets: [
+    { id: "l0-b0", text: "Tracked weekly donations in Excel" },
+  ] }],
+  skills: [{ group: "Skills", items: ["Excel", "Python", "pandas"] }], interests: null, sectionOrder: [], yearGuess: null, archetypes: [],
+};
+const econ4Text = "UCL BSc Economics 2024–2027 Predicted 2:1\nEconomics Society Events Officer Sep 2025 – Jun 2026\nOrganised weekly society events for 60 members\n" +
+  "Northside Market Retail Assistant Jun 2024 – Aug 2025\nServed customers on the till during weekend shifts\nFootfall Analysis 2025\n" +
+  "Analysed shop footfall data with pandas to suggest staffing changes\nFood Bank Volunteer 2025\nTracked weekly donations in Excel\nExcel, Python, pandas";
+const ex4 = (edit: (t: TailoredCV) => void) => {
+  const t = toTailored(econ4);
+  edit(t);
+  return verifyTailoring({ source: econ4, sourceText: econ4Text, confirmedFacts: [], tailored: t, jdKeywords: ["Excel", "stakeholder"], coverageBefore: 0.3, coverageAfter: 0.5 });
+};
+const ex4Bullet = (text: string, section: "experience" | "projects" | "leadership" = "experience", e = 0) => (t: TailoredCV) => {
+  t[section][e].bullets[0] = { ...t[section][e].bullets[0], text, changeType: "rephrased" };
+};
+const blocks4 = (r: ReturnType<typeof verifyTailoring>) => r.issues.filter((i) => i.severity === "block");
+
+describe("fix round 4 A: capitalised compounds are ordinary unless an unknown head takes an affiliation tail", () => {
+  const compounds = ["Policy-focused", "Policy-minded", "Impact-driven", "Purpose-driven", "Growth-minded", "Insight-driven", "Outcome-focused",
+    "Strategy-focused", "Profit-driven", "Values-driven", "Process-driven", "Service-oriented", "Sales-focused", "Accuracy-focused", "Brand-aware",
+    "Trade-focused", "Tax-savvy", "Stats-savvy", "Code-literate", "Spreadsheet-savvy", "Money-savvy", "Safety-conscious", "Health-conscious",
+    "Till-trained", "Hands-on", "Detail-focused", "Self-motivated", "Part-time", "Full-time"];
+  it.each(compounds)("summary opener '%s' is not an unsupported fact", (c) => {
+    const r = ex4((t) => { t.summary = `${c} Economics student at UCL`; });
+    expect(has(r.issues, "unsupportedFacts")).toBe(false);
+  });
+  it.each(compounds)("mid-sentence '%s' is not an unsupported fact", (c) => {
+    const r = ex4((t) => { t.summary = `Economics student at UCL, ${c} and numerate`; });
+    expect(has(r.issues, "unsupportedFacts")).toBe(false);
+  });
+  it.each([
+    ["summary", "Zorblax-trained Economics student at UCL"],
+    ["summary", "Economics student at UCL, Zorblax-sponsored, with event experience"],
+    ["bullet", "Organised weekly Ocado-sponsored society events for 60 members"],
+    ["bullet", "Organised weekly Barclays-sponsored society events for 60 members"],
+    ["bullet", "Organised weekly Deloitte-sponsored society events for 60 members"],
+    ["summary", "Ex-Deloitte Economics student at UCL"],
+    ["summary", "Economics student at UCL, goldman-trained in Excel"],
+    ["summary", "Zorblax-funded Economics student at UCL"],
+    ["summary", "Zorblax-certified Economics student at UCL"],
+    ["bullet", "Organised weekly Acmecorp-backed society events for 60 members"],
+  ])("%s '%s' blocks as an unsupported fact", (where, text) => {
+    const r = ex4(where === "summary" ? (t) => { t.summary = text; } : ex4Bullet(text));
+    expect(blocksWith(r, "unsupportedFacts")).toBe(true);
+  });
+});
+
+describe("fix round 4 B: the CV's own years are years by default", () => {
+  it.each([
+    "2027 Economics student at UCL",
+    "2027 Economics graduate from UCL",
+    "Economics student at UCL, 2027 graduate",
+    "Economics student | UCL | 2027",
+    "UCL Economics, 2027",
+    "Economics student at UCL, Events Officer 2025",
+    "Retail Assistant at Northside Market, starting 2024",
+    "Class of '27 Economics student at UCL",
+    "Economics student at UCL; 2025 pandas footfall project and 2025 Excel volunteering",
+  ])("summary '%s' doesn't block", (s) => {
+    expect(blocks4(ex4((t) => { t.summary = s; }))).toEqual([]);
+  });
+  it.each([
+    ["Organised weekly society events for 60 members as Events Officer 2025", "experience", 0],
+    ["Served customers on the till during weekend shifts, starting 2024", "experience", 1],
+    ["2025 project: analysed shop footfall data with pandas to suggest staffing changes", "projects", 0],
+    ["Tracked weekly donations in Excel, 2025", "leadership", 0],
+  ] as const)("bullet '%s' doesn't block", (text, section, e) => {
+    expect(blocks4(ex4(ex4Bullet(text, section, e)))).toEqual([]);
+  });
+  it.each([
+    "Organised weekly society events for 2026 first-year students",
+    "Organised weekly society events for 2024 users",
+    "Led 2025 volunteers at weekly society events",
+    "Organised weekly society events in 2027 venues",
+    "Organised weekly society events (2024–2025 attendees)",
+    "Organised weekly society events for (2024) users",
+    "Organised weekly society events, growing membership to 2025",
+    "Organised weekly society events attended by 2024 in total",
+    "Organised weekly society events, growing from 40 to 2025 members",
+    "Served 2025 customers on the till",
+    "Welcomed 2024 guests to weekly society events",
+    "Organised weekly society events, reaching 2026 students",
+    "Organised weekly society events, 2025 per weekend",
+    "Organised weekly society events and doubled attendance to 2025",
+    "Mentored 2026 first-year students at society events",
+    "Mentored 2026 at weekly society events",
+    "Organised for 2025 at weekly society events",
+    "Organised weekly society events for up to 2025",
+    "Organised weekly society events with attendance of 2025",
+    "Organised weekly society events for over 2025",
+    "Raised £2025 at weekly society events",
+    "Organised weekly society events for 2,025 members",
+    "Raised 2025 for the food bank at weekly society events",
+    "Organised weekly society events, raising 2025 in donations",
+    "Organised weekly society events, 2025 total",
+  ])("bullet '%s' blocks as a count", (text) => {
+    expect(blocksWith(ex4(ex4Bullet(text)), "inventedMetrics")).toBe(true);
+  });
+});
