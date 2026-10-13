@@ -85,7 +85,17 @@ function makeEnv(opts: {
     b.then = (res: (v: unknown) => unknown, rej: (e: unknown) => unknown) => exec().then(res, rej);
     return b;
   };
-  state.supabase = { from };
+  // activate_cv (0007): one transaction, serialised per user — modelled as a synchronous swap.
+  const rpc = async (name: string, args: { p_cv: string }) => {
+    await tick();
+    if (name !== "activate_cv") throw new Error(`unexpected rpc ${name}`);
+    if (opts.deactivateError) return { data: null, error: { message: "activate failed" } };
+    const row = db.cvs.find((r) => r.id === args.p_cv && r.user_id === "u1");
+    if (!row) return { data: null, error: { message: "not found" } };
+    db.cvs.filter((r) => r.user_id === "u1").forEach((r) => (r.is_active = r.id === args.p_cv));
+    return { data: null, error: null };
+  };
+  state.supabase = { from, rpc };
   state.admin = {
     storage: {
       from: () => ({
@@ -278,9 +288,8 @@ describe("uploadCv — image-only / empty CVs keep the prior profile", () => {
     expect(db.profile.year).toBe("1st");
   }, 30_000);
 
-  // BUG: if the profile read fails (prof === null) the update writes `year: parsed.yearGuess ?? null`
-  // and `target_archetype: scored[0]`, clobbering the onboarding year / chosen target with null/guess.
-  it.fails("a failed profile read does not overwrite the onboarding year or chosen target", async () => {
+  // Fixed: a failed profile read used to clobber the onboarding year / chosen target.
+  it("a failed profile read does not overwrite the onboarding year or chosen target", async () => {
     const db = makeEnv({ profileReadError: true, profile: { year: "final", target_archetype: "consulting" } });
     state.parseCV = vi.fn(async () => parsed({ yearGuess: null }));
     await uploadCv(form(textPdf));
@@ -313,7 +322,7 @@ describe("uploadCv — active-CV swap", () => {
     expect(db.storage.size).toBe(0);
     expect(db.cvs).toEqual([PRIOR]);
   }, 30_000);
-  it("deactivate failure → new row rolled back, storage removed, prior remains the single active CV", async () => {
+  it("activate failure → new row rolled back, storage removed, prior remains the single active CV", async () => {
     const db = makeEnv({ cvs: [{ ...PRIOR }], deactivateError: true });
     expect(await uploadCv(form(textPdf))).toEqual({ error: "Couldn't save your CV — try again." });
     expect(db.cvs.filter((c) => c.is_active).map((c) => c.id)).toEqual(["cv-old"]);
@@ -321,9 +330,8 @@ describe("uploadCv — active-CV swap", () => {
     expect(state.awardXP).not.toHaveBeenCalled();
   }, 30_000);
 
-  // BUG: insert-then-deactivate-others is not atomic. Two concurrent uploads (double submit / two tabs) each
-  // insert, then each deactivates "everything except mine" → both new rows end up inactive → zero active CVs.
-  it.fails("two concurrent uploads leave exactly one active CV", async () => {
+  // Fixed: insert-then-deactivate-others used to leave zero active CVs on a double submit.
+  it("two concurrent uploads leave exactly one active CV", async () => {
     const db = makeEnv({ cvs: [{ ...PRIOR }], insertBarrier: 2 });
     const rs = await Promise.all([uploadCv(form(textPdf)), uploadCv(form(textPdf))]);
     expect(rs.every((r) => "ok" in r)).toBe(true);
@@ -351,9 +359,8 @@ describe("uploadCv — filenames and awards", () => {
     expect(arg.fixtureKey).toMatch(/^[0-9a-f]{12}$/);
   }, 30_000);
 
-  // BUG: awardXP is not wrapped in try/catch (unlike saveOnboarding). A transient XP failure after the CV has been
-  // committed makes the action reject → the user sees a generic error although their CV was saved.
-  it.fails("an awardXP failure after a successful save still resolves ok (award: null)", async () => {
+  // Fixed: an XP failure after the CV is committed used to reject the whole action.
+  it("an awardXP failure after a successful save still resolves ok (award: null)", async () => {
     const db = makeEnv();
     state.awardXP = vi.fn(async () => { throw new Error("awardXP: incrementing xp failed: timeout"); });
     const r = await uploadCv(form(textPdf));

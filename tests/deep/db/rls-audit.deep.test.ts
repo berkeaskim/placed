@@ -77,7 +77,7 @@ describe("migration parser sanity", () => {
     expect(userOwned.sort()).toEqual(["applications", "badges", "confirmed_facts", "cv_scores", "cvs", "matches", "profiles", "xp_events"]);
     // 8 user-owned tables × 4 ops + 2 public reads, minus profiles.own_insert and xp_events/badges writes (0003)
     expect(policies.length).toBe(8 * 4 + 2 - 7);
-    expect(functions.map((f) => f.name).sort()).toEqual(["public.award_xp", "public.handle_new_user"]);
+    expect(functions.map((f) => f.name).sort()).toEqual(["public.activate_cv", "public.award_xp", "public.handle_new_user"]);
   });
 });
 
@@ -148,6 +148,13 @@ describe("privileges and functions", () => {
     expect(n).toMatch(/revoke execute on function public\.award_xp\(uuid, int\) from public, anon, authenticated/);
     expect(n).toMatch(/grant execute on function public\.award_xp\(uuid, int\) to service_role/);
     expect(n).not.toMatch(/grant execute on function public\.award_xp[^;]*to (anon|authenticated|public)/);
+  });
+  it("activate_cv swaps the caller's own CVs only, serialised, behind a one-active-CV unique index", () => {
+    const f = functions.find((x) => x.name === "public.activate_cv")!;
+    expect(f.header).toMatch(/security invoker/);
+    expect(f.body).toMatch(/pg_advisory_xact_lock/);
+    for (const m of f.body.matchAll(/update public\.cvs [^;]*;/g)) expect(m[0]).toMatch(/user_id = auth\.uid\(\)/);
+    expect(norm(sql)).toMatch(/create unique index if not exists cvs_one_active_per_user on public\.cvs \(user_id\) where is_active/);
   });
   it("storage buckets are private", () => {
     const m = /insert into storage\.buckets[^;]*values([^;]*);/i.exec(sql)!;
