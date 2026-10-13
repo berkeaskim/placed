@@ -427,16 +427,36 @@ const headStem = (w: string) => { const s = w.toLowerCase(); const t = s.replace
 const AFFIL_PARTICIPLE = /^\s+(sponsored|trained|backed|funded|led|mentored|certified|accredited|hosted|employed|commissioned|endorsed|run|owned|hired|placed|partnered|approved)\b/i;
 /** Fix round 2: role/claim nouns that make the capitalised words before them an employer claim ("Unilever summer intern"). */
 const ROLE_NOUN = "interns?|internships?|placements?|schemes?|trainees?|traineeships?|programmes?|programs?|alumn(?:us|a|i|ae)|analysts?|associates?|" +
-  "graduates?|apprentices?|apprenticeships?|insight|spring\\s+weeks?|summer\\s+analysts?|work\\s+experience";
+  "graduates?|apprentices?|apprenticeships?|insight|spring\\s+weeks?|summer\\s+analysts?|work\\s+experience|employees?";
 /** A role noun directly after, or one word after, a name ("Mercer placement", "Unilever summer intern"). */
 /**
  * Fix round 3 (ruling C): what may sit between a name and its role noun — a possessive ('s / ’s), a comma, colon, dash
  * or plain space, a year or "(year)", and one more word ("Prudential, summer intern", "Prudential (2025) internship").
  */
-const ROLE_GAP = "(?:['’]s)?(?:\\s*[,:–—]\\s*|\\s+-\\s+|\\s+)(?:\\(?(?:19|20)\\d{2}\\)?\\s+)?(?:[A-Za-z]+\\s+)?";
+/**
+ * Fix round 4 (ruling 3): up to two gap tokens from a closed set — a season, a year, "(Season Year)", a city/region, a company
+ * suffix — each followed by a separator (; | / — – , : or spaced hyphen); or (round 3) an optional gap token then one free word.
+ */
+const ROLE_SEP = "(?:\\s*[,:;|/–—]\\s*|\\s+-\\s+|\\s+)";
+const GAP_YEAR = "(?:19|20)\\d{2}(?:\\s*[–—-]\\s*(?:19|20)?\\d{2})?";
+const GAP_TOKEN = `\\(?(?:(?:[Ss]ummer|[Ss]pring|[Aa]utumn|[Ww]inter|[Vv]acation)(?:\\s+${GAP_YEAR})?|${GAP_YEAR}|` +
+  "London|UK|Manchester|Edinburgh|Europe|EMEA|plc|PLC|Plc|Ltd|LTD|LLP|Group)\\)?";
+/** Round-3 separators only (no ; | /) before a free word, so "Bloomberg / Excel analyst tools" stays tool use. */
+const ROLE_SEP_FREE = "(?:\\s*[,:–—]\\s*|\\s+-\\s+|\\s+)";
+const ROLE_GAP = `(?:['’]s)?(?:${ROLE_SEP}(?:${GAP_TOKEN}${ROLE_SEP}){1,2}|${ROLE_SEP_FREE}(?:${GAP_TOKEN}${ROLE_SEP})?(?:[A-Za-z]+\\s+)?)`;
 const ROLE_AFTER = new RegExp(`^${ROLE_GAP}(?:${ROLE_NOUN}|employees?|staff|sponsorships?)\\b`, "i");
-/** Fix round 3 (ruling B): role nouns a CV tool may modify directly ("Python analyst", "Bloomberg analyst consensus"). */
-const TOOL_MODIFIER = /^\s+(?:analysts?|associates?|insight|programmes?|programs?|graduates?)\b/i;
+/**
+ * Fix round 4 (ruling 1): a CV tool may modify only a bare "analyst" ("Bloomberg analyst consensus", "Tableau analyst for
+ * society events"). A year, "(year)", "since", intern/internship, programme or scheme within two tokens makes it a role.
+ */
+function toolModifier(after: string): boolean {
+  const m = after.match(/^\s+analysts?\b/i);
+  if (!m) return false;
+  const next = after.slice(m[0].length).match(/[A-Za-z0-9]+/g)?.slice(0, 2) ?? [];
+  return !next.some((w) => /^(?:19|20)\d{2}$/.test(w) || /^(?:since|interns?|internships?|programmes?|programs?|schemes?)$/i.test(w));
+}
+/** Fix round 4 (ruling 2): work words that make "for/with/at <tool>" an employer claim ("worked for Bloomberg"). */
+const WORK_WORD = /^(?:work|works|worked|working|interns?|interned|interning|internships?|placements?|roles?|employed|employees?|analysts?|associates?|positions?|jobs?|contracts?|apprentices?|apprenticeships?|trainees?)$/i;
 /** A 1–3-word capitalised run ("Slaughter and May", "Silverwater Partners") opening a sentence, followed by a role noun. */
 const ROLE_RUN = new RegExp(`(?:^|[.!?:;•▪|–—(\\n])\\s*(?:-\\s+)?([A-Z][A-Za-z0-9&.]*(?:\\s+(?:(?:and|&)\\s+)?[A-Z][A-Za-z0-9&.]*){0,2})(?=${ROLE_GAP}(?:${ROLE_NOUN})\\b)`, "g");
 /** Fix round 3 (ruling A): sector/programme words that open role phrases ("Consulting internship", "Insurance graduate scheme"). */
@@ -454,7 +474,10 @@ function employerClaim(text: string, start: number, end: number, cvTool: boolean
   if (/(?:\binterned\s+(?:at|with|for)\s+|\b(?:at|former|formerly|joined|joining|secured|won)\s+|\bex\s*-\s*|\bex\s+)$/i.test(before)) return true;
   // fix round 3 (ruling B): "for/with <tool>" and "<tool> analyst" are tool use when the CV lists the tool
   if (/\bfor\s+$/i.test(before) && !cvTool) return true;
-  if (cvTool && TOOL_MODIFIER.test(after)) return false;
+  // fix round 4 (ruling 2): …unless a work word sits within 3 tokens before the preposition ("worked for", "placement with")
+  const prep = before.match(/\b(?:for|with|at)\s+$/i);
+  if (prep && (before.slice(0, prep.index).match(/[A-Za-z]+/g) ?? []).slice(-3).some((w) => WORK_WORD.test(w))) return true;
+  if (cvTool && toolModifier(after)) return false;
   return ROLE_AFTER.test(after) ||
     /^(?:-| - |\s+)(?:sponsored|funded|backed|mentored|commissioned|trained|hosted|employed|certified|accredited|endorsed|led|run|owned|hired|placed|partnered|approved)\b/i.test(after);
 }
@@ -514,6 +537,8 @@ export const KNOWN_EMPLOYERS: KnownEmployer[] = [
   E("Lloyds"),
   // fix round 2: employers whose names look like ordinary words (-er/-ers/-ian/-ing) at sentence start
   E("Unilever"), E("Mercer"), E("Linklaters"), E("Boeing"), E("Schroders"), E("Gartner"), E("Experian"), E("Ocado"), E("Slaughter and May", [], true),
+  // fix round 4: tool companies that also employ graduates
+  E("Tableau"), E("Salesforce"),
 ];
 /** Single-word employer names/aliases, lowercased: never an ordinary affiliation head (fix round 1, ruling 3). */
 const EMPLOYER_WORDS = new Set(KNOWN_EMPLOYERS.flatMap((k) => [k.name, ...(k.aliases ?? [])]).filter((n) => /^[A-Za-z0-9.]+$/.test(n)).map((n) => n.toLowerCase()));

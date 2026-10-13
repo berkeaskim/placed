@@ -386,3 +386,66 @@ describe("fix round 3 ruling C: punctuation, years and possessives between name 
     expect(runCv(same, where, text).verdict).toBe("block");
   });
 });
+
+// ---------- Task 22b fix round 4 ----------
+
+const r4ToolCv = (c: ParsedCV) => {
+  c.skills = [{ group: "Skills", items: ["Excel", "Python", "pandas", "SQL", "Snowflake", "Figma", "Bloomberg", "Tableau", "Salesforce"] }];
+};
+const R4_TOOLS = ["Bloomberg", "Snowflake", "Figma", "Tableau", "Salesforce"];
+
+describe("fix round 4 ruling 1: the tool-modifier shortcut is only a bare 'analyst'", () => {
+  const claims = (x: string) => [
+    `${x} graduate scheme; Economics student at UCL`, `Economics student at UCL and ${x} graduate`,
+    `${x} insight programme attendee; Economics student at UCL`, `Economics student at UCL; ${x} analyst (2025)`,
+    `Economics student at UCL; ${x} analyst since 2025`, `${x} analyst intern; Economics student at UCL`,
+    `Economics student at UCL; ${x} associate 2024–2025`, `Economics student at UCL; ${x} analyst programme 2025`,
+    `Economics student at UCL; ${x} Analyst, 2025`, `Economics student at UCL and ${x} Associate`,
+  ];
+  it.each(R4_TOOLS.flatMap((x) => claims(x).map((t) => [x, t])))("skills-only %s: '%s' blocks", (_x, text) => {
+    expect(runCv(r4ToolCv, "summary", text).verdict).toBe("block");
+  });
+  it.each([
+    "Python analyst for the Economics Society; Economics student at UCL",
+    "Excel analyst for the food bank; Economics student at UCL",
+    "Tableau analyst for society events; Economics student at UCL",
+    "Economics student at UCL who compared forecasts with Bloomberg analyst consensus",
+    "Economics student at UCL using Bloomberg / Excel analyst tools",
+  ])("CV skills include the tool: '%s' passes", (text) => {
+    expect(runCv(r4ToolCv, "summary", text).issues.filter((i) => i.severity === "block")).toEqual([]);
+  });
+});
+
+describe("fix round 4 ruling 2: for/with/at a tool after a work word is an employer claim", () => {
+  const claims = (x: string) => [
+    `Economics student at UCL who worked for ${x}`, `Economics student at UCL who worked for ${x} as a summer analyst`,
+    `Economics student at UCL interning for ${x}`, `Economics student at UCL; summer internship for ${x} in 2025`,
+    `Economics student at UCL; analyst for ${x}, 2025`, `Economics student at UCL; placement with ${x}`,
+  ];
+  it.each(R4_TOOLS.flatMap((x) => claims(x).map((t) => [x, t])))("skills-only %s: '%s' blocks", (_x, text) => {
+    expect(runCv(r4ToolCv, "summary", text).verdict).toBe("block");
+  });
+  it.each([
+    "Wrote SQL queries for Snowflake data warehouse; Economics student at UCL",
+    "Economics student at UCL who designed event posters for Figma prototypes",
+    "Economics student at UCL who pulled prices with Bloomberg",
+  ])("CV skills include the tool: '%s' passes", (text) => {
+    expect(runCv(r4ToolCv, "summary", text).issues.filter((i) => i.severity === "block")).toEqual([]);
+  });
+});
+
+describe("fix round 4 ruling 3: seasons, years, places, company suffixes and separators between name and role", () => {
+  const forms = (x: string) => [
+    `${x} summer 2025 internship; Economics student at UCL`, `${x} (Summer 2025) internship; Economics student at UCL`,
+    `${x}; summer intern. Economics student at UCL`, `${x} | summer intern. Economics student at UCL`,
+    `${x} / summer intern. Economics student at UCL`, `${x} — 2025 — summer intern. Economics student at UCL`,
+    `${x}, London summer intern. Economics student at UCL`, `${x} (London) internship; Economics student at UCL`,
+    `${x} plc summer intern; Economics student at UCL`,
+  ];
+  it.each(["Prudential", "Harrowgate"].flatMap((x) => forms(x)))("'%s' blocks", (text) => {
+    expect(runCv(same, "summary", text).verdict).toBe("block");
+  });
+  it.each(["Prudential", "Admiral", "Brightwater", "Harrowgate"])("'%s employee since 2025' blocks", (x) => {
+    expect(runCv(same, "summary", `${x} employee since 2025; Economics student at UCL`).verdict).toBe("block");
+  });
+});
