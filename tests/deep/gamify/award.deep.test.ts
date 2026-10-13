@@ -9,7 +9,7 @@ vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: () => admin.current 
  * In-memory fake of the slice of Supabase that awardXP touches. It models:
  * - the partial unique indexes from 0002_gamify_hardening.sql (23505 on duplicates)
  * - award_xp as an atomic `xp = xp + delta` returning the new value
- * - badges upsert with ignoreDuplicates
+ * - badges upsert with ignoreDuplicates + .select(): ON CONFLICT DO NOTHING RETURNING yields only inserted rows
  * Each awaited call yields a macrotask so concurrent awardXP calls interleave.
  */
 type Ev = { user_id: string; type: string; xp: number; job_id: string | null; created_at: string };
@@ -43,8 +43,13 @@ function makeDb(init?: { xp?: number; streak?: number; last?: string | null; bad
       if (table === "profiles" && op === "update") { Object.assign(db.profile, payload); return { error: null }; }
       if (table === "badges" && op === "select") return { data: db.badges.map((x) => ({ badge_key: x.badge_key })), error: null };
       if (table === "badges" && op === "upsert") {
-        for (const row of payload as { user_id: string; badge_key: string }[]) if (!db.badges.some((x) => x.badge_key === row.badge_key)) db.badges.push(row);
-        return { error: null };
+        const inserted: { badge_key: string }[] = [];
+        for (const row of payload as { user_id: string; badge_key: string }[]) {
+          if (db.badges.some((x) => x.user_id === row.user_id && x.badge_key === row.badge_key)) continue;
+          db.badges.push(row);
+          inserted.push({ badge_key: row.badge_key });
+        }
+        return { data: inserted, error: null };
       }
       if (table === "xp_events" && op === "select" && head) {
         const n = db.events.filter((e) => filters.every(([k, c, v]) => k === "eq" ? (e as Record<string, unknown>)[c] === v : String((e as Record<string, unknown>)[c]) >= String(v))).length;
@@ -156,7 +161,8 @@ describe("awardXP idempotency", () => {
 
   // BUG: levelUp is computed from the pre-read XP, not from what award_xp returned. If a concurrent award
   // already crossed the boundary, both callers report levelUp → double "level up" confetti.
-  it.fails("levelUp reflects the atomic increment result under concurrency", async () => {
+  // Fixed: levelUp is derived from award_xp's returned XP (newXp - xpGained → newXp).
+  it("levelUp reflects the atomic increment result under concurrency", async () => {
     const f = makeDb({ xp: 95 });
     const rs = await Promise.all([
       awardXP(f.supabase, "u1", { type: "job_saved" }, "a"),
@@ -168,7 +174,8 @@ describe("awardXP idempotency", () => {
 
   // BUG: concurrent first applications both read appliedCount=0 and both return newBadges:["first_shot"]
   // (DB dedupes via upsert, but the UI shows the unlock toast twice).
-  it.fails("first_shot is reported as newly unlocked to exactly one of two concurrent applications", async () => {
+  // Fixed: only badges this call's upsert actually inserted (RETURNING rows) are reported as new.
+  it("first_shot is reported as newly unlocked to exactly one of two concurrent applications", async () => {
     const f = makeDb();
     const rs = await Promise.all([
       awardXP(f.supabase, "u1", { type: "applied", fitLabel: "Good fit" }, "a"),
@@ -180,11 +187,15 @@ describe("awardXP idempotency", () => {
 
   // BUG: cv_uploaded is once-per-user (unique index). If the first upload is image-only (profileComplete=false),
   // it burns the one-time event; a later readable CV hits 23505 → noAward → profile_pro can never be earned via CV.
-  it.fails("a readable CV after an image-only first upload still unlocks profile_pro", async () => {
+  // Fixed: an image-only upload records no event and awards nothing; the readable one pays.
+  it("a readable CV after an image-only first upload still unlocks profile_pro", async () => {
     const f = makeDb();
     await awardXP(f.supabase, "u1", { type: "cv_uploaded", profileComplete: false });
+    expect(f.db.events).toHaveLength(0);
+    expect(f.rpc).not.toHaveBeenCalled();
     const second = await awardXP(f.supabase, "u1", { type: "cv_uploaded", profileComplete: true });
     expect(second.newBadges).toContain("profile_pro");
+    expect(second.xpGained).toBe(100);
   });
 
   it("never increments XP or writes when the session user differs", async () => {

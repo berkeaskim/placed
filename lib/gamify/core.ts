@@ -24,6 +24,9 @@ export function levelFromXp(xp: number) {
   return { level, name: LEVEL_NAMES[Math.min(level - 1, LEVEL_NAMES.length - 1)], intoLevel: rem, needed: 100 * level };
 }
 
+/** Programme phrases only, on word boundaries: "Data Insights Analyst" and "Springer Nature" don't count. */
+const SPRING_PROGRAMME = /\b(spring\s+(week|insights?|internship|programme|program|scheme)|insights?\s+(day|days|week|weeks|programme|program|event|scheme))\b/i;
+
 export const APPLY_XP: Record<FitLabel, number> = { "Strong fit": 50, "Good fit": 50, Stretch: 25, "Not recommended": 10 };
 
 export function xpFor(e: GamifyEvent, s: GamifyState): number {
@@ -52,7 +55,7 @@ export function computeAward(state: GamifyState, e: GamifyEvent, today: string) 
   if ((e.type === "cv_uploaded" || e.type === "quiz_done") && e.profileComplete) candidates.push("profile_pro");
   if (e.type === "applied") {
     if (s.appliedCount === 0) candidates.push("first_shot");
-    if (e.jobTitle && /spring|insight/i.test(e.jobTitle)) candidates.push("spring_week_hunter");
+    if (e.jobTitle && SPRING_PROGRAMME.test(e.jobTitle)) candidates.push("spring_week_hunter");
     if (e.deadline && daysUntil(e.deadline, today) > 7) candidates.push("early_bird");
     if (s.rejectedCount > 0) candidates.push("bounce_back");
   }

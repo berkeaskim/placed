@@ -39,6 +39,10 @@ export async function awardXP(
   if (rejected.error) fail("counting rejections", rejected.error);
   if (saves.error) fail("counting saves", saves.error);
 
+  // An image-only CV builds no profile: don't burn the once-per-user cv_uploaded event, so a later
+  // readable CV can still earn the XP and profile_pro.
+  if (e.type === "cv_uploaded" && !e.profileComplete) return noAward(p.data?.xp ?? 0, p.data?.streak_days ?? 0);
+
   const { result, next } = computeAward({
     xp: p.data?.xp ?? 0, streakDays: p.data?.streak_days ?? 0, lastActiveDate: p.data?.last_active_date ?? null,
     badges: (badges.data ?? []).map((b) => b.badge_key as BadgeKey),
@@ -59,12 +63,21 @@ export async function awardXP(
     if (typeof inc.data === "number") newXp = inc.data;
   }
   const level = levelFromXp(newXp).level;
+  // From award_xp's result, not the pre-read XP: a concurrent award may already have crossed the boundary.
+  const levelUp = level > levelFromXp(newXp - result.xpGained).level;
   const upd = await admin.from("profiles").update({ level, streak_days: next.streakDays, last_active_date: today }).eq("user_id", userId);
   if (upd.error) fail("updating profile", upd.error);
 
+  // ON CONFLICT DO NOTHING ... RETURNING yields only the rows this call inserted, so a badge a concurrent
+  // award already saved isn't reported as new twice.
+  let newBadges: BadgeKey[] = [];
   if (result.newBadges.length) {
-    const b = await admin.from("badges").upsert(result.newBadges.map((badge_key) => ({ user_id: userId, badge_key })), { onConflict: "user_id,badge_key", ignoreDuplicates: true });
+    const b = await admin.from("badges")
+      .upsert(result.newBadges.map((badge_key) => ({ user_id: userId, badge_key })), { onConflict: "user_id,badge_key", ignoreDuplicates: true })
+      .select("badge_key");
     if (b.error) fail("saving badges", b.error);
+    const inserted = new Set((b.data ?? []).map((r) => r.badge_key as BadgeKey));
+    newBadges = result.newBadges.filter((k) => inserted.has(k));
   }
-  return { ...result, newXp, level, levelName: levelFromXp(newXp).name };
+  return { ...result, newXp, level, levelName: levelFromXp(newXp).name, levelUp, newBadges };
 }
