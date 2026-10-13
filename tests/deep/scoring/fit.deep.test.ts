@@ -143,11 +143,11 @@ describe("gates (spec §5 stage 0)", () => {
     expect(res.global).toBeLessThan(2.5);
   });
 
-  // GAP: lib/scoring/fit.ts:49,74 — an empty/unknown location classifies as "other" → location sub 2 → hard gate
+  // FIXED (was GAP): lib/scoring/fit.ts:49,74 — an empty/unknown location classifies as "other" → location sub 2 → hard gate
   // "Outside your locations (unknown)". The ingest filter deliberately lets empty locations through
   // (lib/ingest/filter.ts passesLocationFilter), and the spec's "silence is absence of signal" principle
   // suggests missing data should be neutral, not a blocker.
-  it.fails("unknown (empty) job location does not fail the location gate", () => {
+  it("unknown (empty) job location does not fail the location gate", () => {
     const res = scoreFit(student(), job({ location: "" }), cov(1), today);
     expect(gate(res, "location").passed).toBe(true);
   });
@@ -190,9 +190,9 @@ describe("accessibility sub-score", () => {
     expect(Number.isFinite(res.global)).toBe(true);
   });
 
-  // BUG: lib/scoring/fit.ts:57 — a malformed deadline gives daysUntil = NaN, which falls through every
+  // FIXED (was BUG): lib/scoring/fit.ts:57 — a malformed deadline gives daysUntil = NaN, which falls through every
   // comparison into the "> 30 days" bucket (4), i.e. it scores BETTER than an honest rolling deadline (3.5).
-  it.fails("a malformed deadline is treated like an unknown (rolling) deadline, not a far-future one", () => {
+  it("a malformed deadline is treated like an unknown (rolling) deadline, not a far-future one", () => {
     expect(acc({ deadline: "TBC" })).toBe(acc({ deadline: null }));
   });
 });

@@ -129,15 +129,11 @@ describe("skills inside other words (false-positive guards)", () => {
 });
 
 describe("overlapping matches (longest match should win)", () => {
-  // BUG: lib/skills/extract.ts:101 — matches are de-duplicated by canonical name only, never by text span,
-  // so a sub-term inside a longer matched term is ALSO emitted. A marketing JD asking for "search engine
-  // optimisation" therefore gains a phantom must-have "Optimisation" (a quant/research skill), which a student
-  // who wrote "SEO" will show as a gap. The PostgreSQL→SQL case is already guarded by word boundaries;
-  // multi-word phrases are not.
-  it.fails("'search engine optimisation' and 'conversion rate optimisation' do not also yield 'Optimisation'", () => {
+  // Fixed: a term nested in a longer matched term is dropped (except implied parents, pinned below).
+  it("'search engine optimisation' and 'conversion rate optimisation' do not also yield 'Optimisation'", () => {
     expect(extractSkills("Search engine optimisation and conversion rate optimisation")).toEqual(["SEO", "Conversion Rate Optimisation"]);
   });
-  it.fails("'stakeholder communication' yields only Stakeholder Management", () => {
+  it("'stakeholder communication' yields only Stakeholder Management", () => {
     expect(extractSkills("stakeholder communication")).toEqual(["Stakeholder Management"]);
   });
   it("documents current overlap behaviour for '.js' frameworks and React Native (implied parents emitted)", () => {

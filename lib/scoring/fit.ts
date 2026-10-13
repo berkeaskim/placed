@@ -1,7 +1,7 @@
 import type { Archetype, FitLabel, JobForScoring, Region, StudentProfile, Year } from "@/lib/types";
 import { classifyRegion } from "@/lib/ingest/filter";
 import type { CoverageResult } from "./coverage";
-import { daysUntil } from "./dates";
+import { daysUntil, isValidDate } from "./dates";
 
 export const FIT_WEIGHTS = { archetype: 0.35, coverage: 0.25, location: 0.15, accessibility: 0.25 } as const;
 const GATE_CAP = 2.5;
@@ -40,6 +40,8 @@ function archetypeSub(student: StudentProfile, job: JobForScoring): number {
 
 function locationSub(region: Region, job: JobForScoring, prefs: Region[]): number {
   if (prefs.length === 0) return 4;
+  // No location published is absence of signal, not a mismatch: neutral, and it passes the gate.
+  if (!job.location.trim() && !job.remote) return 3.5;
   if (prefs.includes(region)) return 5;
   if ((job.remote || region === "remote") && prefs.includes("remote")) return 5;
   if (region === "london" && prefs.includes("uk")) return 5;
@@ -51,7 +53,7 @@ function locationSub(region: Region, job: JobForScoring, prefs: Region[]): numbe
 
 function accessibilitySub(student: StudentProfile, job: JobForScoring, today: string): number {
   let s: number;
-  if (!job.deadline) s = 3.5;
+  if (!isValidDate(job.deadline)) s = 3.5;
   else {
     const d = daysUntil(job.deadline, today);
     s = d < 0 ? 1 : d <= 3 ? 3 : d <= 30 ? 4.5 : 4;
