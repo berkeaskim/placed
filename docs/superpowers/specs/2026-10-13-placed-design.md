@@ -325,12 +325,29 @@ generateStructured<T>({ tier: "fast" | "smart", system, parts: (Text | Pdf)[], s
 8. **Header:** level, XP bar, 🔥 streak, badges modal.
 9. **`/settings`:** "Delete my CV & data" (removes storage objects and the user's rows).
 
-**Design language:**
-- light background, one vivid accent (electric blue/violet), rounded cards
-- one strong sans-serif
-- micro-animations
-- tone: friendly and encouraging, with sparing emoji ("You're a strong fit 💪") — Duolingo energy, but professional
-- mobile-responsive
+**Design language (chosen 2026-10-13: "Violet structure + Quest rewards"):** Reference mockup: `docs/design/chosen-direction.dc.html` (canvas: https://claude.ai/artifact/DiavTBS9NEuxdXXytSBNvZ, board 7).
+
+- **Structure from "Electric Violet":** light ground `#F6F6FA`, white cards with a `#E6E6EF` 1px border and 18–20px radius; text `#16161D`, muted text `#5B5B6B`; accent violet `#5B3DF5` (pressed or dark shade `#3A20C4`, tint `#EFEBFF`); font Plus Jakarta Sans for all UI text; pill filter chips (the active chip is filled black).
+- **Reward moments from "Playful Quest":**
+  - Fredoka (600/700) is used **only** for numbers in game moments: XP, level badge, streak count, the CV Score number, +pts.
+  - Primary action buttons are chunky: violet fill with a 4px `#3A20C4` bottom border and weight 800.
+  - Each job card carries a gold XP chip (`#FFF4D6` background, `#9A6B00` text).
+  - The level shows as a round violet badge with a hard drop shadow.
+  - The streak is an orange flame icon with a count; XP is a gold star icon with a count.
+  - The next-badge card has a 2px border with a 5px bottom border.
+  - Rewards appear as a bottom-right toast ("+50 XP · Badge unlocked: First Shot").
+- **Fit badge colours:**
+
+  | Label | Background | Text |
+  |---|---|---|
+  | Strong | `#E3F6EE` | `#0B6B49` |
+  | Good | `#E6EEFF` | `#2340A8` |
+  | Stretch | `#FFF1DC` | `#7A4100` |
+  | Not recommended | `#EEEEF2` | `#3F3F4C` |
+
+- **Other rules:**
+  - Icons are inline stroke SVG; no emoji in UI chrome (emoji are allowed in copy only, sparingly).
+  - Tone is friendly and encouraging; mobile-responsive; touch targets ≥ 44px.
 
 ## 10. Gamification (`lib/gamify`)
 
