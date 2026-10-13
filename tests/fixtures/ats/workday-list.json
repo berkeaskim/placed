@@ -1,0 +1,257 @@
+{
+ "total": 72,
+ "jobPostings": [
+  {
+   "title": "Private Bank and Wealth Management Off Cycle Internship Programme 2027 Geneva",
+   "externalPath": "/job/Geneva-18-20-Chemin-de-Grange-Canal/Private-Bank-and-Wealth-Management-Off-Cycle-Internship-Programme-2027-Geneva_JR-0000124673",
+   "timeType": "Full time",
+   "locationsText": "Geneva, 18-20 Chemin de Grange-Canal",
+   "postedOn": "Posted Today",
+   "bulletFields": [
+    "JR-0000124673"
+   ]
+  },
+  {
+   "title": "2027 Operations Analyst Summer Internship Programme Knutsford",
+   "externalPath": "/job/Knutsford-Radbroke-Hall/XMLNAME-2027-Operations-Analyst-Summer-Internship-Programme-Knutsford_JR-0000129124",
+   "timeType": "Full time",
+   "locationsText": "Knutsford, Radbroke Hall",
+   "postedOn": "Posted 7 Days Ago",
+   "bulletFields": [
+    "JR-0000129124"
+   ]
+  },
+  {
+   "title": "2027 Operations Analyst Summer Internship Programme Glasgow",
+   "externalPath": "/job/Glasgow-Campus/XMLNAME-2027-Operations-Analyst-Summer-Internship-Programme-Glasgow_JR-0000129111",
+   "timeType": "Full time",
+   "locationsText": "Glasgow Campus",
+   "postedOn": "Posted 7 Days Ago",
+   "bulletFields": [
+    "JR-0000129111"
+   ]
+  },
+  {
+   "title": "Trading Analyst Summer Internship Program 2027 Mexico City",
+   "externalPath": "/job/Mexico-City-Avenida-Paseo-de-la-Reforma-505/Trading-Analyst-Summer-Internship-Program-2027-Mexico-City_JR-0000134430",
+   "timeType": "Full time",
+   "locationsText": "Mexico City, Avenida Paseo de la Reforma 505",
+   "postedOn": "Posted 11 Days Ago",
+   "bulletFields": [
+    "JR-0000134430"
+   ]
+  },
+  {
+   "title": "Banking Associate Summer Internship Program 2027 Houston",
+   "externalPath": "/job/Houston-609-Main-Street/Banking-Associate-Summer-Internship-Program-2027-Houston_JR-0000130641",
+   "timeType": "Full time",
+   "locationsText": "Houston, 609 Main Street",
+   "postedOn": "Posted 11 Days Ago",
+   "bulletFields": [
+    "JR-0000130641"
+   ]
+  }
+ ],
+ "facets": [
+  {
+   "facetParameter": "timeType",
+   "descriptor": "Full/Part-time",
+   "values": [
+    {
+     "descriptor": "Full time",
+     "id": "259ef6e735f8101411549dcf4d1e0003",
+     "count": 72
+    }
+   ]
+  },
+  {
+   "facetParameter": "workerSubType",
+   "descriptor": "Job Type",
+   "values": [
+    {
+     "descriptor": "Intern",
+     "id": "6139d325cdcc1001a72ceb63d5d60001",
+     "count": 71
+    },
+    {
+     "descriptor": "Permanent/Regular",
+     "id": "6139d325cdcc1001a72ceb63d5d60000",
+     "count": 1
+    }
+   ]
+  },
+  {
+   "facetParameter": "jobFamilyGroup",
+   "descriptor": "Job Category",
+   "values": [
+    {
+     "descriptor": "Early Careers",
+     "id": "1ab48a98eb7c1001e8e0c2947eeb0000",
+     "count": 70
+    },
+    {
+     "descriptor": "Investment Banking",
+     "id": "112c054282011001e915f210568e0000",
+     "count": 1
+    },
+    {
+     "descriptor": "Markets",
+     "id": "112c054282011001e91601afc8d90000",
+     "count": 1
+    }
+   ]
+  },
+  {
+   "facetParameter": "locationMainGroup",
+   "values": [
+    {
+     "facetParameter": "locations",
+     "descriptor": "Locations",
+     "values": [
+      {
+       "descriptor": "Amsterdam, SOM Building",
+       "id": "1ab48a98eb7c10016341292153db0000",
+       "count": 1
+      },
+      {
+       "descriptor": "Birmingham, One Snow Hill",
+       "id": "1ab48a98eb7c100163437710797a0000",
+       "count": 1
+      },
+      {
+       "descriptor": "Building 400-Whippany Campus, Jefferson Park",
+       "id": "09eec88a8d151001b79dff127e170000",
+       "count": 1
+      },
+      {
+       "descriptor": "Canary Wharf, 1 Churchill Place",
+       "id": "1ab48a98eb7c1001633eb0711e740000",
+       "count": 19
+      },
+      {
+       "descriptor": "Chicago, 190 South LaSalle Street",
+       "id": "1ab48a98eb7c10016340c1c9feed0000",
+       "count": 1
+      },
+      {
+       "descriptor": "Dubai International Financial Centre, Dubai",
+       "id": "112c054282011001637b94e1ddfc0000",
+       "count": 1
+      },
+      {
+       "descriptor": "Frankfurt, Taunus Turm",
+       "id": "112c0542820110016376aa9493390000",
+       "count": 5
+      },
+      {
+       "descriptor": "Geneva, 18-20 Chemin de Grange-Canal",
+       "id": "1ab48a98eb7c10016342e461a0210000",
+       "count": 1
+      },
+      {
+       "descriptor": "Glasgow Campus",
+       "id": "1ab48a98eb7c100163411a1947370000",
+       "count": 7
+      },
+      {
+       "descriptor": "Hong Kong, Cheung Kong Center",
+       "id": "112c054282011001637824970f090000",
+       "count": 2
+      },
+      {
+       "descriptor": "Houston, 609 Main Street",
+       "id": "1ab48a98eb7c100163410baf3ab70000",
+       "count": 1
+      },
+      {
+       "descriptor": "Knutsford, Radbroke Hall",
+       "id": "1ab48a98eb7c1001633623b929e80000",
+       "count": 6
+      },
+      {
+       "descriptor": "Madrid, Calle de Jose Abascal",
+       "id": "1ab48a98eb7c100163418896e4fc0000",
+       "count": 1
+      },
+      {
+       "descriptor": "Manchester, 4 Piccadilly Place",
+       "id": "1ab48a98eb7c10016341f1b145a90000",
+       "count": 1
+      },
+      {
+       "descriptor": "Mexico City, Avenida Paseo de la Reforma 505",
+       "id": "112c0542820110016380ed6257dc0000",
+       "count": 2
+      },
+      {
+       "descriptor": "Monaco - Default Legacy Site",
+       "id": "112c054282011001637ec6e246d80000",
+       "count": 1
+      },
+      {
+       "descriptor": "Mumbai, Nirlon Knowledge Park (BX) 9th & 11-12 floor",
+       "id": "b8f75d1cb9781000cd91027a85e30000",
+       "count": 1
+      },
+      {
+       "descriptor": "New York, 745 7th Avenue",
+       "id": "1ab48a98eb7c10016340ac23e4860000",
+       "count": 1
+      },
+      {
+       "descriptor": "Northampton, Barclays Campus, Pavilion Drive",
+       "id": "1ab48a98eb7c1001633ecfadb9d70000",
+       "count": 3
+      },
+      {
+       "descriptor": "Paris, 52 avenue Hoche",
+       "id": "5311bdbd43ba1001934579bf54400000",
+       "count": 3
+      },
+      {
+       "descriptor": "Paris, Origami",
+       "id": "1ab48a98eb7c10016342fa9f60770000",
+       "count": 1
+      },
+      {
+       "descriptor": "San Francisco, Four Embarcadero Center",
+       "id": "112c05428201100163762d1061590000",
+       "count": 1
+      },
+      {
+       "descriptor": "Singapore, Marina Bay Financial Tower 2",
+       "id": "112c0542820110016378d8a615cf0000",
+       "count": 3
+      },
+      {
+       "descriptor": "Stockholm, Katthavet",
+       "id": "1ab48a98eb7c1001634130ee6e8c0000",
+       "count": 2
+      },
+      {
+       "descriptor": "Tel Aviv, The Platinum Building",
+       "id": "1ab48a98eb7c10016343ad2619a50000",
+       "count": 1
+      },
+      {
+       "descriptor": "The Medelan Building, Milan",
+       "id": "1ab48a98eb7c1001634b7fdeeb170000",
+       "count": 3
+      },
+      {
+       "descriptor": "Wilmington, 125 South West Street",
+       "id": "1ab48a98eb7c10016346632ee73f0000",
+       "count": 1
+      },
+      {
+       "descriptor": "Zurich, Beethovenstrasse 19",
+       "id": "112c0542820110016378996414070000",
+       "count": 1
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "userAuthenticated": false
+}

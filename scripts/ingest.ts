@@ -7,7 +7,11 @@ import { tagJob } from "@/lib/ai/tagJob";
 async function main() {
   const db = scriptClient();
   const store = supabaseStore(db);
-  const { data, error } = await db.from("companies").select("*").eq("enabled", true).order("id");
+  // Optional filter: `npm run ingest -- workday` ingests only that ATS.
+  const ats = process.argv[2];
+  let query = db.from("companies").select("*").eq("enabled", true).order("id");
+  if (ats) query = query.eq("ats", ats);
+  const { data, error } = await query;
   if (error) throw error;
   const queue = [...((data ?? []) as CompanyRow[])];
   let total = 0;

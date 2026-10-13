@@ -91,3 +91,36 @@
 - { slug: harrisonst, name: Harrison Street, ats: lever, enabled: true }
 - { slug: sophos, name: Sophos, ats: lever, enabled: true }
 - { slug: cirrus, name: Cirrus Logic, ats: lever, apiHost: api.eu.lever.co, enabled: true } # EU host
+
+# Workday (public cxs JSON). slug = "{tenant}/{site}", apiHost = "{tenant}.wdN.myworkdayjobs.com".
+# Validated live 2026-10-13; counts = UK/Europe early-career postings kept / with exact endDate.
+- { slug: barclays/External_Career_Site_Barclays, name: Barclays, ats: workday, apiHost: barclays.wd3.myworkdayjobs.com, enabled: true } # 94 / 44
+- { slug: citi/2, name: Citi, ats: workday, apiHost: citi.wd5.myworkdayjobs.com, enabled: true } # 34 / 9; 2000-posting board, ~45s
+- { slug: ms/External, name: Morgan Stanley, ats: workday, apiHost: ms.wd5.myworkdayjobs.com, enabled: true } # 0 today: MS site says no campus roles open yet
+- { slug: db/DBWebSite, name: Deutsche Bank, ats: workday, apiHost: db.wd3.myworkdayjobs.com, enabled: true } # 15 / 0
+- { slug: blackrock/BlackRock_Professional, name: BlackRock, ats: workday, apiHost: blackrock.wd1.myworkdayjobs.com, enabled: true } # 2 / 2
+- { slug: pwc/Global_Experienced_Careers, name: PwC, ats: workday, apiHost: pwc.wd3.myworkdayjobs.com, enabled: true } # 12 / 1; global board truncated at 3000; UK student site not found yet
+- { slug: lbg/LBG_Careers, name: Lloyds Banking Group, ats: workday, apiHost: lbg.wd3.myworkdayjobs.com, enabled: false } # 0 early-career; grad schemes live elsewhere
+- { slug: hl/Campus, name: Houlihan Lokey, ats: workday, apiHost: hl.wd1.myworkdayjobs.com, enabled: true } # 10 / 1
+- { slug: guggenheim/Guggenheim_Careers_Campus, name: Guggenheim Securities, ats: workday, apiHost: guggenheim.wd1.myworkdayjobs.com, enabled: true } # 1 / 0
+- { slug: aig/early_careers, name: AIG, ats: workday, apiHost: aig.wd1.myworkdayjobs.com, enabled: true } # 8 / 8
+- { slug: pjtpartners/Students, name: PJT Partners, ats: workday, apiHost: pjtpartners.wd1.myworkdayjobs.com, enabled: true } # 3 / 1
+- { slug: hyperiongrp/Hyperion_External, name: Howden, ats: workday, apiHost: hyperiongrp.wd3.myworkdayjobs.com, enabled: true } # 49 / 49
+- { slug: blackstone/Blackstone_Campus_Careers, name: Blackstone, ats: workday, apiHost: blackstone.wd1.myworkdayjobs.com, enabled: true } # 16 / 0
+- { slug: mufgub/MUFG-Careers, name: MUFG, ats: workday, apiHost: mufgub.wd3.myworkdayjobs.com, enabled: true } # 29 / 21
+- { slug: pru/Careers, name: PGIM, ats: workday, apiHost: pru.wd5.myworkdayjobs.com, enabled: true } # 3 / 0
+- { slug: econicpartners/econicpartnerscareers, name: Econic Partners, ats: workday, apiHost: econicpartners.wd501.myworkdayjobs.com, enabled: true } # 6 / 0
+- { slug: equinor/EQNR, name: Equinor, ats: workday, apiHost: equinor.wd3.myworkdayjobs.com, enabled: true } # 6 / 6
+- { slug: td/TD_Bank_Careers, name: TD Securities, ats: workday, apiHost: td.wd3.myworkdayjobs.com, enabled: true } # 10 / 10
+- { slug: freshfields/FBD_101, name: Freshfields, ats: workday, apiHost: freshfields.wd3.myworkdayjobs.com, enabled: true } # 9 / 2
+- { slug: capgroup/capitalgroupcareers, name: Capital Group, ats: workday, apiHost: capgroup.wd1.myworkdayjobs.com, enabled: true } # 4 / 4
+- { slug: shell/ShellCareers, name: Shell, ats: workday, apiHost: shell.wd3.myworkdayjobs.com, enabled: true } # 9 / 9
+- { slug: fticonsulting/FTIConsultingCareers, name: FTI Consulting, ats: workday, apiHost: fticonsulting.wd108.myworkdayjobs.com, enabled: true } # 31 / 31
+- { slug: fastretailing/graduates_eu_Uniqlo, name: UNIQLO, ats: workday, apiHost: fastretailing.wd3.myworkdayjobs.com, enabled: true } # 10 / 0
+- { slug: lseg/Graduate_Careers, name: LSEG, ats: workday, apiHost: lseg.wd3.myworkdayjobs.com, enabled: true } # 13 / 3
+- { slug: wellington/Campus, name: Wellington Management, ats: workday, apiHost: wellington.wd5.myworkdayjobs.com, enabled: true } # 4 / 0
+- { slug: cgg/viridiengraduate, name: Viridien, ats: workday, apiHost: cgg.wd103.myworkdayjobs.com, enabled: true } # 7 / 0
+- { slug: gsk/GSKCareers, name: GSK, ats: workday, apiHost: gsk.wd5.myworkdayjobs.com, enabled: true } # 57 / 5
+- { slug: cw/External, name: Cushman & Wakefield, ats: workday, apiHost: cw.wd1.myworkdayjobs.com, enabled: true } # 18 / 0; 2000-posting board, ~60s
+- { slug: jll/jllcareers, name: JLL, ats: workday, apiHost: jll.wd1.myworkdayjobs.com, enabled: true } # 8 / 8; 2000-posting board, ~65s
+- { slug: fca/FCA_earlycareers, name: Financial Conduct Authority, ats: workday, apiHost: fca.wd3.myworkdayjobs.com, enabled: true } # 3 / 3

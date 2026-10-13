@@ -61,4 +61,17 @@ describe("ingestCompany", () => {
     await expect(ingestCompany(company, { fetchJobs: async () => { throw new Error("HTTP 500"); }, tagJob: vi.fn() as never, store })).rejects.toThrow();
     expect(store.markDead).not.toHaveBeenCalled();
   });
+
+  it("prefers a structured ATS deadline over the text-extracted one", async () => {
+    const { store, upserted } = fakeStore();
+    await ingestCompany(company, {
+      fetchJobs: async () => [
+        raw({ extId: "1", deadline: "2026-11-01", html: "<p>Closing date: 5 December 2026</p>" }),
+        raw({ extId: "2", html: "<p>Closing date: 5 December 2026</p>" }),
+      ],
+      tagJob: async (i) => heuristicTagJob(i), store,
+    });
+    expect(upserted.find((r) => r.ext_id === "1")?.deadline).toBe("2026-11-01");
+    expect(upserted.find((r) => r.ext_id === "2")?.deadline).toBe("2026-12-05");
+  });
 });

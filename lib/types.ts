@@ -30,6 +30,8 @@ export interface RawJob {
   remote: boolean;
   html: string;
   postedAt: string | null;
+  /** YYYY-MM-DD close date from a structured ATS field (e.g. Workday endDate); wins over text extraction. */
+  deadline?: string | null;
 }
 
 export type Importance = "critical" | "high" | "meaningful" | "preferred" | "low_signal";

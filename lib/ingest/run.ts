@@ -1,12 +1,12 @@
 import type { RawJob, Requirement } from "@/lib/types";
-import type { CompanySeed } from "./providers";
+import type { Ats, CompanySeed } from "./providers";
 import { htmlToLines } from "@/lib/text/jd";
 import { passesTitleFilter, detectCohortClash, passesLocationFilter } from "./filter";
 import { normalizeUrl, jobFingerprint, contentHash } from "./fingerprint";
 import { heuristicTagJob } from "@/lib/ai/heuristics";
 import type { TaggedJob } from "@/lib/ai/tagJob";
 
-export type CompanyRow = { id: number; slug: string; name: string; ats: "greenhouse" | "lever" | "ashby"; api_host: string | null; enabled: boolean };
+export type CompanyRow = { id: number; slug: string; name: string; ats: Ats; api_host: string | null; enabled: boolean };
 
 export type JobRow = {
   company_id: number; ext_id: string; title: string; url: string; location: string; remote: boolean;
@@ -71,7 +71,7 @@ export async function ingestCompany(c: CompanyRow, deps: IngestDeps) {
     }
     rows.push({
       company_id: c.id, ext_id: j.extId, title: j.title, url: normalizeUrl(j.url), location: j.location, remote: j.remote,
-      deadline: t.deadline, posted_at: j.postedAt, archetype: t.archetype, field_tags: t.fieldTags,
+      deadline: j.deadline ?? t.deadline, posted_at: j.postedAt, archetype: t.archetype, field_tags: t.fieldTags,
       year_eligibility: t.yearEligibility, sponsors_visa: t.sponsorsVisa, employment_type: t.employmentType,
       first_year_friendly: t.firstYearFriendly, cohort_clash: cohortClash, requirements: t.requirements,
       skills: [...new Set(t.requirements.map((r) => r.skill).filter((s): s is string => Boolean(s)))],
