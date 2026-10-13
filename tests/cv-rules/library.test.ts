@@ -8,7 +8,7 @@ const EXPECTED_PER_PREFIX: Record<string, number> = {
   G: 37, GEN: 12, FCQ: 12, FIN: 14, QNT: 12, CON: 13, SWE: 17, DAT: 12, PRD: 9, MKT: 12, RES: 11,
 };
 /** Prefixes not yet transcribed — their count assertions are todo until their chunk lands. */
-const PENDING = new Set<string>(["FCQ", "FIN", "QNT", "CON", "SWE", "DAT", "PRD", "MKT", "RES"]);
+const PENDING = new Set<string>(["SWE", "DAT", "PRD", "MKT", "RES"]);
 
 const prefixOf = (id: string) => id.split("-")[0];
 
