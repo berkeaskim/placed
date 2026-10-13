@@ -4,7 +4,7 @@ import { getActiveCv, getJob, getProfile, toStudent } from "@/lib/db/queries";
 import { coverageFor } from "@/lib/scoring/coverage";
 import { scoreFit } from "@/lib/scoring/fit";
 import { todayLondon } from "@/lib/scoring/dates";
-import { explainMatch, readCachedExplanation, toCacheRecord } from "@/lib/ai/explainMatch";
+import { explainCacheKey, explainMatchWithSource, readCachedExplanation, shouldCacheExplanation, toCacheRecord } from "@/lib/ai/explainMatch";
 import { aiMode } from "@/lib/env";
 import { awardXP } from "@/lib/gamify/award";
 import { isUuid } from "@/lib/feed/save-result";
@@ -26,21 +26,23 @@ export async function getExplanation(jobId: string): Promise<ExplanationResult> 
     supabase.from("matches").select("explanation_json").eq("user_id", user.id).eq("job_id", jobId).maybeSingle(),
   ]);
   if (!job) return { error: "This role is no longer available." };
-  const mode = aiMode();
-  const hit = readCachedExplanation(cached.data?.explanation_json, cv?.id ?? null, mode);
+  const student = toStudent(profile);
+  const key = explainCacheKey({ mode: aiMode(), cvId: cv?.id ?? null, requirements: job.requirements, skills: student.skills });
+  const hit = readCachedExplanation(cached.data?.explanation_json, key);
   if (hit) return hit;
 
-  const student = toStudent(profile);
   const coverage = coverageFor(job, cv?.parsed ?? null, student.skills);
-  let e: Explanation;
+  let r: Awaited<ReturnType<typeof explainMatchWithSource>>;
   try {
-    e = await explainMatch({ cv: cv?.parsed ?? null, cvText: cv?.rawText ?? "", student, job, coverage });
+    r = await explainMatchWithSource({ cv: cv?.parsed ?? null, cvText: cv?.rawText ?? "", student, job, coverage });
   } catch (err) {
     console.error("getExplanation: explainMatch failed", err instanceof Error ? err.message : err);
     return { error: EXPLAIN_FAILED };
   }
+  const { explanation: e, source } = r;
+  if (!shouldCacheExplanation(source)) return e; // heuristic: cheap, and must not mask a fixture/live answer later
   const { error } = await supabase.from("matches")
-    .upsert({ user_id: user.id, job_id: jobId, explanation_json: toCacheRecord(e, cv?.id ?? null, mode), created_at: new Date().toISOString() }, { onConflict: "user_id,job_id" });
+    .upsert({ user_id: user.id, job_id: jobId, explanation_json: toCacheRecord(e, key, source), created_at: new Date().toISOString() }, { onConflict: "user_id,job_id" });
   if (error) console.error("getExplanation: cache write failed", error.message); // the explanation itself is fine
   return e;
 }

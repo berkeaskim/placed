@@ -8,7 +8,10 @@ vi.mock("@/lib/ai/fixtures", () => ({ loadFixture: vi.fn() }));
 
 import { AiError, generateStructured } from "@/lib/ai/provider";
 import { loadFixture } from "@/lib/ai/fixtures";
-import { explainMatch, toExplanation, buildExplainPrompt, requirementsFor, toCacheRecord, readCachedExplanation } from "@/lib/ai/explainMatch";
+import {
+  explainMatch, explainMatchWithSource, toExplanation, buildExplainPrompt, requirementsFor, toCacheRecord, readCachedExplanation,
+  cvEvidenceLines, explainCacheKey, shouldCacheExplanation, MISSING_GAP_HOW_TO_CLOSE,
+} from "@/lib/ai/explainMatch";
 import { SYSTEM_EXPLAIN, UNTRUSTED_CV_RULE, UNTRUSTED_JD_RULE } from "@/lib/ai/prompts";
 import type { ExplainOutputT } from "@/lib/ai/schemas";
 import type { JobListItem } from "@/lib/db/queries";
@@ -60,6 +63,8 @@ const CV = {
 } as unknown as ParsedCV;
 const CV_TEXT = "Ayse Demir\nayse@example.com\nBuilt a Python script to analyse London house prices\nPitched two stocks at the investing society";
 
+const LINES = cvEvidenceLines(CV, CV_TEXT);
+
 const STUDENT: StudentProfile = { year: "2nd", locationPref: ["london"], needsVisa: false, archetypes: [{ key: "data_analytics", score: 90, why: [] }], skills: [] };
 const COVERAGE = coverageFor(JOB, CV, STUDENT.skills);
 const INPUT = { cv: CV, cvText: CV_TEXT, student: STUDENT, job: JOB, coverage: COVERAGE };
@@ -101,14 +106,14 @@ function expectMapped(e: Awaited<ReturnType<typeof explainMatch>>) {
 
 describe("toExplanation (index -> row mapping onto the tagJob requirements)", () => {
   it("keeps tagJob importance, caps inferred, verifies quotes, drops bad indices and orders rows", () => {
-    expectMapped(toExplanation(RAW, REQS, CV_TEXT));
+    expectMapped(toExplanation(RAW, REQS, LINES));
   });
   it("a requirement the model skipped is partial, never strong", () => {
-    const e = toExplanation({ rows: [], why_fit: [], gaps: [] }, REQS, CV_TEXT);
+    const e = toExplanation({ rows: [], why_fit: [], gaps: [] }, REQS, LINES);
     expect(e.rows.every((r) => r.match === "partial" && r.cvEvidence === null)).toBe(true);
   });
   it("quote verification ignores whitespace and case", () => {
-    const e = toExplanation({ rows: [{ index: 0, match: "strong", cv_evidence: "  built a python   script " }], why_fit: [], gaps: [] }, REQS, CV_TEXT);
+    const e = toExplanation({ rows: [{ index: 0, match: "strong", cv_evidence: "  built a python   script " }], why_fit: [], gaps: [] }, REQS, LINES);
     expect(e.rows.find((r) => r.skill === "Python")?.match).toBe("strong");
   });
 });
@@ -232,18 +237,110 @@ describe("heuristicExplain", () => {
 
 describe("explanation cache (matches.explanation_json)", () => {
   const e = { rows: [{ text: "a", skill: null, importance: "high", evidenceTier: "stated", match: "strong", cvEvidence: "x" }], whyFit: [], gaps: [] } as const;
-  it("round-trips for the same CV and AI mode", () => {
-    const json = toCacheRecord(e as never, "cv-1", "fixture");
-    expect(readCachedExplanation(json, "cv-1", "fixture")).toEqual(e);
+  const base = { mode: "fixture" as const, cvId: "cv-1", requirements: REQS, skills: ["Excel"] };
+  const KEY = explainCacheKey(base);
+  it("round-trips for the same key", () => {
+    expect(readCachedExplanation(toCacheRecord(e as never, KEY, "fixture"), KEY)).toEqual(e);
   });
-  it("misses when the active CV, AI mode or cache version changed, or the row is malformed", () => {
-    const json = toCacheRecord(e as never, "cv-1", "fixture");
-    expect(readCachedExplanation(json, "cv-2", "fixture")).toBeNull();
-    expect(readCachedExplanation(json, null, "fixture")).toBeNull();
-    expect(readCachedExplanation(json, "cv-1", "live")).toBeNull();
-    expect(readCachedExplanation({ ...json, v: -1 }, "cv-1", "fixture")).toBeNull();
-    expect(readCachedExplanation({ rows: [] }, "cv-1", "fixture")).toBeNull();
-    expect(readCachedExplanation(null, "cv-1", "fixture")).toBeNull();
-    expect(readCachedExplanation({ ...json, explanation: { rows: "x" } }, "cv-1", "fixture")).toBeNull();
+  it("misses on a different key, an old version, a heuristic source or a malformed row", () => {
+    const json = toCacheRecord(e as never, KEY, "ai");
+    expect(readCachedExplanation(json, "other")).toBeNull();
+    expect(readCachedExplanation({ ...json, v: -1 }, KEY)).toBeNull();
+    expect(readCachedExplanation(toCacheRecord(e as never, KEY, "heuristic"), KEY)).toBeNull();
+    expect(readCachedExplanation({ ...json, source: undefined }, KEY)).toBeNull();
+    expect(readCachedExplanation({ rows: [] }, KEY)).toBeNull();
+    expect(readCachedExplanation(null, KEY)).toBeNull();
+    expect(readCachedExplanation({ ...json, explanation: { rows: "x" } }, KEY)).toBeNull();
+  });
+  it("the key changes with the CV, the AI mode and re-tagged requirements", () => {
+    expect(explainCacheKey({ ...base, cvId: "cv-2" })).not.toBe(KEY);
+    expect(explainCacheKey({ ...base, mode: "live" })).not.toBe(KEY);
+    expect(explainCacheKey({ ...base, requirements: [{ ...REQS[0], importance: "critical" }, ...REQS.slice(1)] })).not.toBe(KEY);
+    expect(explainCacheKey({ ...base })).toBe(KEY);
+  });
+  it("profile skills are part of the key only when there is no CV", () => {
+    expect(explainCacheKey({ ...base, skills: ["SQL"] })).toBe(KEY);
+    const noCv = { ...base, cvId: null };
+    expect(explainCacheKey({ ...noCv, skills: ["SQL"] })).not.toBe(explainCacheKey(noCv));
+    expect(explainCacheKey({ ...noCv, skills: ["B", "A"] })).toBe(explainCacheKey({ ...noCv, skills: ["A", "B"] }));
+  });
+  it("heuristic results are never cached; fixture and live results are", () => {
+    expect(shouldCacheExplanation("heuristic")).toBe(false);
+    expect(shouldCacheExplanation("fixture")).toBe(true);
+    expect(shouldCacheExplanation("ai")).toBe(true);
+  });
+});
+
+describe("explainMatchWithSource", () => {
+  it("reports fixture, heuristic (no fixture / no CV) and ai sources", async () => {
+    fixtureMode();
+    vi.mocked(loadFixture).mockReturnValue(RAW);
+    expect((await explainMatchWithSource(INPUT)).source).toBe("fixture");
+    vi.mocked(loadFixture).mockReturnValue(null);
+    expect((await explainMatchWithSource(INPUT)).source).toBe("heuristic");
+    liveMode();
+    expect((await explainMatchWithSource({ ...INPUT, cv: null, cvText: "" })).source).toBe("heuristic");
+    vi.mocked(generateStructured).mockResolvedValue(RAW);
+    expect((await explainMatchWithSource(INPUT)).source).toBe("ai");
+  });
+});
+
+describe("Strong needs a substantive, skill-bearing quote from real CV content (fix round 1)", () => {
+  const strongAll = (quote: string): ExplainOutputT => ({
+    rows: REQS.map((_, index) => ({ index, match: "strong" as const, cv_evidence: quote })), why_fit: [], gaps: [],
+  });
+  it.each(["CV", "a", "SKILLS", "EDUCATION", "(none)", "Python", "london"])("an injected quote %j makes nothing Strong", (q) => {
+    const e = toExplanation(strongAll(q), REQS, LINES);
+    expect(e.rows.every((r) => r.match === "partial")).toBe(true);
+    expect(e.rows.every((r) => r.cvEvidence === null)).toBe(true);
+  });
+  it("a genuine quote of a real bullet naming the skill is Strong", () => {
+    const e = toExplanation(strongAll("Built a Python script to analyse London house prices"), REQS, LINES);
+    expect(e.rows.find((r) => r.skill === "Python")?.match).toBe("strong");
+  });
+  it("a long real quote that doesn't mention the required skill is Partial", () => {
+    const e = toExplanation(strongAll("Built a Python script to analyse London house prices"), REQS, LINES);
+    expect(e.rows.find((r) => r.skill === "SQL")).toMatchObject({ match: "partial", cvEvidence: null });
+    expect(e.rows.find((r) => r.skill === "Tableau")).toMatchObject({ match: "partial", cvEvidence: null });
+  });
+  it("a row with no skill only needs the length rule", () => {
+    const e = toExplanation(strongAll("Pitched two stocks at the investing society"), REQS, LINES);
+    expect(e.rows.find((r) => r.skill === null)?.match).toBe("strong");
+  });
+  it("a short quote covering ≥60% of its CV line counts (skills line)", () => {
+    const lines = cvEvidenceLines(CV, "Python, SQL");
+    const e = toExplanation({ rows: [{ index: 1, match: "strong", cv_evidence: "Python, SQL" }], why_fit: [], gaps: [] }, REQS, lines);
+    expect(e.rows.find((r) => r.skill === "SQL")?.match).toBe("strong");
+  });
+  it("a quote must sit inside one line, not straddle two", () => {
+    const e = toExplanation({ rows: [{ index: 0, match: "strong", cv_evidence: "house prices Pitched two stocks" }], why_fit: [], gaps: [] },
+      [{ ...REQS[2], skill: null }], cvEvidenceLines(null, CV_TEXT));
+    expect(e.rows[0].match).toBe("partial");
+  });
+  it("evidence lines never include renderCvContent's fixed headings or placeholders", () => {
+    expect(LINES).not.toContain("cv");
+    expect(LINES).not.toContain("skills");
+    expect(LINES).not.toContain("(none)");
+  });
+});
+
+describe("gaps cover every unmet must-have (fix round 1)", () => {
+  it("fills a deterministic gap for a Partial/Missing critical/high row the model omitted", () => {
+    const e = toExplanation({ rows: [{ index: 1, match: "missing", cv_evidence: null }], why_fit: [], gaps: [] }, REQS, LINES);
+    const sql = e.gaps.find((g) => g.requirement === "Strong SQL");
+    expect(sql).toEqual({ requirement: "Strong SQL", blocking: true, adjacentExperience: null, howToClose: MISSING_GAP_HOW_TO_CLOSE });
+    // Python (high) was skipped by the model -> partial -> also needs a gap
+    expect(e.gaps.some((g) => g.requirement === "Python for data analysis")).toBe(true);
+  });
+  it("drops gaps that point at rows trimmed from the table", () => {
+    const reqs: Requirement[] = [
+      ...[...Array(12)].map((_, n): Requirement => ({ text: `High ${n}`, skill: null, importance: "high", section: "must", evidenceTier: "stated" })),
+      { text: "Nice extra", skill: null, importance: "preferred", section: "nice", evidenceTier: "stated" },
+    ];
+    const rows: ExplainOutputT["rows"] = reqs.map((_, index) => ({ index, match: "strong", cv_evidence: "Pitched two stocks at the investing society" }));
+    rows[12] = { index: 12, match: "missing", cv_evidence: null };
+    const e = toExplanation({ rows, why_fit: [], gaps: [{ index: 12, blocking: false, adjacent_experience: null, how_to_close: "x" }] }, reqs, LINES);
+    expect(e.rows).toHaveLength(12);
+    expect(e.gaps).toEqual([]);
   });
 });
