@@ -6,11 +6,19 @@ export type { SkillEntry };
 
 const ALIAS = new Map<string, string>();
 for (const s of SKILLS) {
-  ALIAS.set(s.canonical.toLowerCase(), s.canonical);
+  const canonicalLower = s.canonical.toLowerCase();
+
+  // Check for collision on canonical name
+  if (ALIAS.has(canonicalLower) && ALIAS.get(canonicalLower) !== s.canonical) {
+    throw new Error(`Collision: "${canonicalLower}" already maps to "${ALIAS.get(canonicalLower)}", cannot map to "${s.canonical}"`);
+  }
+  ALIAS.set(canonicalLower, s.canonical);
+
+  // Check for collisions on aliases
   for (const a of s.aliases) {
     const lower = a.toLowerCase();
     if (ALIAS.has(lower) && ALIAS.get(lower) !== s.canonical) {
-      throw new Error(`Duplicate alias "${a}" maps to both "${ALIAS.get(lower)}" and "${s.canonical}"`);
+      throw new Error(`Collision: "${lower}" (alias "${a}") already maps to "${ALIAS.get(lower)}", cannot map to "${s.canonical}"`);
     }
     ALIAS.set(lower, s.canonical);
   }

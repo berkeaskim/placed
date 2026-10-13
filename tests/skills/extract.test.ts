@@ -35,19 +35,17 @@ describe("extractSkills", () => {
   it("does not match common prose with skill-like words", () => {
     const text = "Improved retention and increased revenue; launched a new brand";
     const skills = extractSkills(text);
-    expect(skills).not.toContain("Retention");
-    expect(skills).not.toContain("Brand Strategy");
+    expect(skills).toEqual([]);
   });
   it("does not match generic prose containing framework-like words", () => {
     const text = "The nature of the role: express interest, spring term, rest of team. Science fair… macro team on rates and credit; the fund signal later published a paper";
     const skills = extractSkills(text);
-    expect(skills).not.toContain("Computer Vision");
-    expect(skills).not.toContain("Express.js");
-    expect(skills).not.toContain("Spring Boot");
-    expect(skills).not.toContain("REST API");
-    expect(skills).not.toContain("Science");
-    expect(skills).not.toContain("Macro");
-    expect(skills).not.toContain("Hootsuite");
+    expect(skills).toEqual([]);
+  });
+  it("does not match prose with removed ambiguous aliases", () => {
+    const text = "We did a hack on the framework, then synthesis of slides for the cluster launch; the ra wrote a paper";
+    const skills = extractSkills(text);
+    expect(skills).toEqual([]);
   });
   it("does not match C as a skill in C-suite", () => {
     expect(extractSkills("C-suite leadership")).not.toContain("C");
@@ -69,28 +67,41 @@ describe("extractSkills", () => {
     const skills = extractSkills("Designing REST APIs and RESTful services");
     expect(skills).toContain("REST API");
   });
-  it("matches PostgreSQL deterministically", () => {
+  it("does not match CV as Computer Vision", () => {
+    expect(extractSkills("See my CV for details")).toEqual([]);
+  });
+  it("matches Excel when mentioned", () => {
+    const skills = extractSkills("Proficient in Excel and data analysis");
+    expect(skills).toContain("Excel");
+  });
+  it("matches Python when mentioned", () => {
+    const skills = extractSkills("Experience with Python and data science");
+    expect(skills).toContain("Python");
+  });
+  it("matches PostgreSQL only, not SQL alias", () => {
     const skills = extractSkills("Using PostgreSQL and postgresql databases");
-    const pgCount = skills.filter((x) => x === "SQL" || x === "PostgreSQL").length;
-    expect(pgCount).toBeGreaterThan(0);
+    expect(skills).toEqual(["PostgreSQL"]);
   });
 });
 
 describe("SKILLS vocabulary", () => {
   it("has no duplicate alias mappings", () => {
     const aliasMap = new Map<string, string>();
+    const collisions: string[] = [];
     for (const skill of SKILLS) {
       const canonical = skill.canonical.toLowerCase();
+      if (aliasMap.has(canonical) && aliasMap.get(canonical) !== skill.canonical) {
+        collisions.push(canonical);
+      }
       aliasMap.set(canonical, skill.canonical);
       for (const alias of skill.aliases) {
         const lower = alias.toLowerCase();
-        const existing = aliasMap.get(lower);
-        if (existing && existing !== skill.canonical) {
-          throw new Error(`Duplicate alias "${alias}" maps to both "${existing}" and "${skill.canonical}"`);
+        if (aliasMap.has(lower) && aliasMap.get(lower) !== skill.canonical) {
+          collisions.push(lower);
         }
         aliasMap.set(lower, skill.canonical);
       }
     }
-    expect(aliasMap.size).toBeGreaterThan(0);
+    expect(collisions).toEqual([]);
   });
 });
