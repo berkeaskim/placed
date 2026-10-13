@@ -1,0 +1,2222 @@
+{
+  "_meta": {
+    "compiled": "2026-10-13",
+    "status": "research input for Placed Role Playbooks; not recruiting advice",
+    "gradeScale": {
+      "A": "employer's own guidance corroborated by a second independent source (firm, ISE, Prospects, TARGETjobs)",
+      "B": ">=2 independent sources, at least one primary, but corroboration is partial (e.g. non-UK office page)",
+      "C": "convention: a single source states it",
+      "D": "synthesis, no direct source"
+    },
+    "verified": "true = URL fetched on 2026-10-13, content confirmed live, free/free-to-audit where marked, open to UK students; null = generic action with no named programme or URL",
+    "effortScale": [
+      "weekend",
+      "2-4 weeks",
+      "term"
+    ],
+    "quotes": "verbatim from the fetched page, <=25 words; curly quotes/dashes normalised when checking",
+    "ruleIdsSource": "docs/research/cv-rules-finance-consulting.md",
+    "dateFields": "expiresOn = hide the item after this date (inclusive last day). reviewBy = re-check the source by this date; hide if not re-verified. yearGuidanceDated holds the dated year-guidance lines so the evergreen yearGuidance text never goes stale.",
+    "verification": "Adversarial verification 2026-10-13: every quote re-fetched and string-matched; see '## Verification log (2026-10-13)' in the .md."
+  },
+  "finance_banking": {
+    "signals": [
+      {
+        "id": "PB-FIN-S01",
+        "text": "Spring weeks and insight programmes are the main early pipeline into summer internships. Attendance can lead to internship consideration or a fast-track, but firms rarely publish conversion rates.",
+        "ruleIds": [
+          "FIN-04"
+        ],
+        "grade": "A",
+        "sources": [
+          {
+            "title": "Spring Insights",
+            "publisher": "JPMorganChase",
+            "url": "https://www.jpmorganchase.com/careers/explore-opportunities/programs/spring-insights",
+            "primary": true,
+            "quote": "Participants may be considered for next steps linked to summer internship opportunities, depending on the pathway and programme process.",
+            "accessed": "2026-10-13"
+          },
+          {
+            "title": "What is a spring week, insight day or insight programme? (Abigail Lewis, 2 May 2025)",
+            "publisher": "TARGETjobs",
+            "url": "https://targetjobs.co.uk/careers-advice/internships/what-spring-week-insight-day-or-insight-programme",
+            "primary": true,
+            "quote": "If you make a great impression, you're likely to be offered a place on their internship the following year",
+            "accessed": "2026-10-13"
+          },
+          {
+            "title": "Banking & Financial Markets: Short Guide to Recruitment 2025-2026 (PDF)",
+            "publisher": "University of Cambridge Careers Service",
+            "url": "https://www.careers.cam.ac.uk/sites/default/files/Banking%20and%20Financial%20Markets%20Short%20Guide%20to%20Recruitment%202025%20-%202026.pdf",
+            "primary": false,
+            "quote": "Many graduate roles are filled by interns from Spring weeks.",
+            "accessed": "2026-10-13"
+          },
+          {
+            "title": "Spring Week Timeline 2027: When UK Finance Firms Open Applications (9 Sep 2026)",
+            "publisher": "Trackr (the-trackr.com)",
+            "url": "https://the-trackr.com/blog/spring-week-timeline-2027-when-uk-finance-firms-open-applications/",
+            "primary": false,
+            "quote": "Conversion rates vary enormously between firms and are rarely published, so treat any specific figure you read with suspicion.",
+            "accessed": "2026-10-13"
+          }
+        ]
+      },
+      {
+        "id": "PB-FIN-S02",
+        "text": "Grades matter: Prospects says banking employers usually look for at least a 2:1, and Barclays says it does not select purely on academic record but also on activities and work experience. Across all graduate employers, ISE reports the share requiring a 2:1 fell from 71% (2015/16) to 47% (2024/25).",
+        "ruleIds": [
+          "FCQ-04",
+          "FIN-02"
+        ],
+        "grade": "A",
+        "sources": [
+          {
+            "title": "Job profile: Corporate investment banker",
+            "publisher": "Prospects",
+            "url": "https://www.prospects.ac.uk/job-profiles/corporate-investment-banker",
+            "primary": true,
+            "quote": "employers usually look for at least a 2:1 degree, strong academic results and evidence of commercial awareness, analytical ability and teamwork skills",
+            "accessed": "2026-10-13"
+          },
+          {
+            "title": "Hints and tips",
+            "publisher": "Barclays",
+            "url": "https://search.jobs.barclays/hints-and-tips",
+            "primary": true,
+            "quote": "We don't select people purely on academic record, so tell us about your extra-curricular activities, work experience",
+            "accessed": "2026-10-13"
+          },
+          {
+            "title": "Early careers recruitment in 2025: integrity, inclusion, entry standards (ISE Student Recruitment Survey 2025)",
+            "publisher": "Prospects Luminate / Institute of Student Employers",
+            "url": "https://luminate.prospects.ac.uk/early-careers-recruitment-in-2025-integrity-inclusion-entry-standards",
+            "primary": true,
+            "quote": "the share demanding a 2:1 degree has fallen from 71% to 47% over the same period.",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "note": "The ISE figure covers all graduate employers (not banking specifically) and compares 2015/16 with 2024/25."
+      },
+      {
+        "id": "PB-FIN-S03",
+        "text": "Commercial awareness: following markets, deals and the firm's business, then using that knowledge in interviews and scenario questions.",
+        "ruleIds": [
+          "FIN-04"
+        ],
+        "grade": "A",
+        "sources": [
+          {
+            "title": "Job profile: Corporate investment banker",
+            "publisher": "Prospects",
+            "url": "https://www.prospects.ac.uk/job-profiles/corporate-investment-banker",
+            "primary": true,
+            "quote": "commercial awareness and an understanding of financial markets, business trends and the wider economy",
+            "accessed": "2026-10-13"
+          },
+          {
+            "title": "Banking & Financial Markets: Short Guide to Recruitment 2025-2026 (PDF)",
+            "publisher": "University of Cambridge Careers Service",
+            "url": "https://www.careers.cam.ac.uk/sites/default/files/Banking%20and%20Financial%20Markets%20Short%20Guide%20to%20Recruitment%202025%20-%202026.pdf",
+            "primary": false,
+            "quote": "Commercial awareness is important. Keep up with the news - this can be in relation to the firm, the sector or the industry(s)",
+            "accessed": "2026-10-13"
+          },
+          {
+            "title": "What is commercial awareness?",
+            "publisher": "TARGETjobs",
+            "url": "https://targetjobs.co.uk/careers-advice/skills-for-getting-a-job/what-commercial-awareness",
+            "primary": true,
+            "quote": "by whether you factor in commercial considerations when approaching scenario-based interview questions or exercises.",
+            "accessed": "2026-10-13"
+          }
+        ]
+      },
+      {
+        "id": "PB-FIN-S04",
+        "text": "Early screening relies on online tests (situational judgement, numerical/verbal reasoning, games) and video interviews. This is the process, not the CV, so prepare for it separately.",
+        "ruleIds": [],
+        "grade": "A",
+        "sources": [
+          {
+            "title": "Banking & Financial Markets: Short Guide to Recruitment 2025-2026 (PDF)",
+            "publisher": "University of Cambridge Careers Service",
+            "url": "https://www.careers.cam.ac.uk/sites/default/files/Banking%20and%20Financial%20Markets%20Short%20Guide%20to%20Recruitment%202025%20-%202026.pdf",
+            "primary": false,
+            "quote": "You may encounter tests such as Pymetrics (games), psychometric tests (situational judgement), and numerical and verbal reasoning assessments.",
+            "accessed": "2026-10-13"
+          },
+          {
+            "title": "Students",
+            "publisher": "Goldman Sachs",
+            "url": "https://www.goldmansachs.com/careers/students",
+            "primary": true,
+            "quote": "If you're selected to interview, your first step is a 30-minute video meeting.",
+            "accessed": "2026-10-13"
+          },
+          {
+            "title": "Hints and tips",
+            "publisher": "Barclays",
+            "url": "https://search.jobs.barclays/hints-and-tips",
+            "primary": true,
+            "quote": "When completing assessments online, read through the instructions carefully and complete all practise and example questions.",
+            "accessed": "2026-10-13"
+          }
+        ]
+      },
+      {
+        "id": "PB-FIN-S05",
+        "text": "Leadership, teamwork and judgement, shown through concrete examples (society roles, captaincy, team projects).",
+        "ruleIds": [
+          "FIN-06"
+        ],
+        "grade": "A",
+        "sources": [
+          {
+            "title": "Hints and tips",
+            "publisher": "Barclays",
+            "url": "https://search.jobs.barclays/hints-and-tips",
+            "primary": true,
+            "quote": "Illustrate your answers with clear examples of how you've shown good judgment, innovation, teamwork, commitment and leadership.",
+            "accessed": "2026-10-13"
+          },
+          {
+            "title": "Resume Advice: recruiter video transcript (PDF)",
+            "publisher": "Goldman Sachs",
+            "url": "https://www.goldmansachs.com/careers/materials/Resume-Advice-Transcript.pdf",
+            "primary": true,
+            "quote": "What have you done, what are some of the activities you have been involved with, where have you shown leadership.",
+            "accessed": "2026-10-13"
+          },
+          {
+            "title": "Job profile: Corporate investment banker",
+            "publisher": "Prospects",
+            "url": "https://www.prospects.ac.uk/job-profiles/corporate-investment-banker",
+            "primary": true,
+            "quote": "positions of responsibility, involvement in student societies or holiday work can also strengthen your applications, particularly if they show teamwork, leadership",
+            "accessed": "2026-10-13"
+          }
+        ]
+      },
+      {
+        "id": "PB-FIN-S06",
+        "text": "Any job counts (retail, hospitality, tutoring) if you quantify what you achieved in it.",
+        "ruleIds": [
+          "FIN-05",
+          "FCQ-08"
+        ],
+        "grade": "A",
+        "sources": [
+          {
+            "title": "Resume Advice: recruiter video transcript (PDF)",
+            "publisher": "Goldman Sachs",
+            "url": "https://www.goldmansachs.com/careers/materials/Resume-Advice-Transcript.pdf",
+            "primary": true,
+            "quote": "if you are in fast food, you can leverage those experiences and quantify them to make them impactful.",
+            "accessed": "2026-10-13"
+          },
+          {
+            "title": "How we hire",
+            "publisher": "JPMorganChase",
+            "url": "https://www.jpmorganchase.com/careers/how-we-hire",
+            "primary": true,
+            "quote": "Let us know what you're passionate about and what you've accomplished, using measurable data when applicable.",
+            "accessed": "2026-10-13"
+          }
+        ]
+      },
+      {
+        "id": "PB-FIN-S07",
+        "text": "Tailored, error-free applications that use the job description's key words and name the division and role you want.",
+        "ruleIds": [
+          "FCQ-05",
+          "FCQ-10"
+        ],
+        "grade": "A",
+        "sources": [
+          {
+            "title": "Hints and tips",
+            "publisher": "Barclays",
+            "url": "https://search.jobs.barclays/hints-and-tips",
+            "primary": true,
+            "quote": "Study the job description and pull-out key words, then ensure these are highlighted throughout your CV/Resume.",
+            "accessed": "2026-10-13"
+          },
+          {
+            "title": "Banking & Financial Markets: Short Guide to Recruitment 2025-2026 (PDF)",
+            "publisher": "University of Cambridge Careers Service",
+            "url": "https://www.careers.cam.ac.uk/sites/default/files/Banking%20and%20Financial%20Markets%20Short%20Guide%20to%20Recruitment%202025%20-%202026.pdf",
+            "primary": false,
+            "quote": "Articulate why you are applying to that specific division and that specific role.",
+            "accessed": "2026-10-13"
+          },
+          {
+            "title": "Banking & Financial Markets: Short Guide to Recruitment 2025-2026 (PDF)",
+            "publisher": "University of Cambridge Careers Service",
+            "url": "https://www.careers.cam.ac.uk/sites/default/files/Banking%20and%20Financial%20Markets%20Short%20Guide%20to%20Recruitment%202025%20-%202026.pdf",
+            "primary": false,
+            "quote": "Use correct spelling, punctuation, and grammar - this is important for the sector (think pitch-decks, research reports, presentations)",
+            "accessed": "2026-10-13"
+          }
+        ]
+      },
+      {
+        "id": "PB-FIN-S08",
+        "text": "Numerical and financial-modelling ability. Prospects lists it as a core skill of the job. No bank source we fetched requires modelling from first- or second-year applicants.",
+        "ruleIds": [
+          "FIN-07"
+        ],
+        "grade": "C",
+        "sources": [
+          {
+            "title": "Job profile: Corporate investment banker",
+            "publisher": "Prospects",
+            "url": "https://www.prospects.ac.uk/job-profiles/corporate-investment-banker",
+            "primary": true,
+            "quote": "strong numerical, analytical and financial modelling skills",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "note": "Convention: only one independent source states it. Modelling is taught on the job; treat it as a differentiator for penultimate-year IBD applicants, not a gate."
+      }
+    ],
+    "actions": [
+      {
+        "id": "PB-FIN-P01",
+        "type": "project",
+        "title": "Stock pitch / investment thesis write-up",
+        "description": "Pick a UK-listed company. Write a 2-page buy/sell thesis covering business model, 3 key drivers, valuation (multiples plus a simple DCF), risks and catalysts. Present it at your investment society or a pitch competition, then record the outcome and what you would change.",
+        "skills": [
+          "Stock Pitch",
+          "Valuation",
+          "Equity Research",
+          "Commercial Awareness",
+          "Excel",
+          "PowerPoint"
+        ],
+        "signals": [
+          "PB-FIN-S03",
+          "PB-FIN-S05"
+        ],
+        "effort": "2-4 weeks",
+        "minYear": 1,
+        "evidence": "PDF thesis + slide deck; a CV line built only from what actually happened, e.g. 'Pitched [company] ([BUY/SELL], [x]% target) to [audience]; [result, if any]'.",
+        "verified": null,
+        "sources": [
+          {
+            "title": "Job profile: Corporate investment banker",
+            "publisher": "Prospects",
+            "url": "https://www.prospects.ac.uk/job-profiles/corporate-investment-banker",
+            "primary": true,
+            "quote": "commercial awareness and an understanding of financial markets, business trends and the wider economy",
+            "accessed": "2026-10-13"
+          },
+          {
+            "title": "What is commercial awareness?",
+            "publisher": "TARGETjobs",
+            "url": "https://targetjobs.co.uk/careers-advice/skills-for-getting-a-job/what-commercial-awareness",
+            "primary": true,
+            "quote": "by whether you factor in commercial considerations when approaching scenario-based interview questions or exercises.",
+            "accessed": "2026-10-13"
+          }
+        ]
+      },
+      {
+        "id": "PB-FIN-P02",
+        "type": "project",
+        "title": "Three-statement + DCF model from a real annual report",
+        "description": "Build a linked income statement, balance sheet and cash-flow forecast for one listed company from its annual report, then a DCF with a sensitivity table. Keep it simple enough to defend line by line, because interviewers probe anything on the CV (FCQ-11).",
+        "skills": [
+          "Financial Modelling",
+          "DCF",
+          "Accounting",
+          "Excel",
+          "Valuation"
+        ],
+        "signals": [
+          "PB-FIN-S08"
+        ],
+        "effort": "2-4 weeks",
+        "minYear": 1,
+        "evidence": "Excel model + 1-page summary of assumptions and value range; can be discussed in interviews.",
+        "verified": null,
+        "sources": [
+          {
+            "title": "Job profile: Corporate investment banker",
+            "publisher": "Prospects",
+            "url": "https://www.prospects.ac.uk/job-profiles/corporate-investment-banker",
+            "primary": true,
+            "quote": "carry out financial modelling and develop tailored financial solutions for clients",
+            "accessed": "2026-10-13"
+          },
+          {
+            "title": "Investment Banking job simulation",
+            "publisher": "Forage / JPMorganChase",
+            "url": "https://www.theforage.com/simulations/jpmorgan/investment-banking-hkyd",
+            "primary": true,
+            "quote": "Financial Modeling DCF Modeling",
+            "accessed": "2026-10-13"
+          }
+        ]
+      },
+      {
+        "id": "PB-FIN-P03",
+        "type": "project",
+        "title": "Weekly markets / deal note",
+        "description": "Every week, publish a 300-word note on one market move or UK deal: what happened, why, who wins or loses, and what you would watch next. Use the archive for 'why banking' answers and commercial-awareness questions.",
+        "skills": [
+          "Commercial Awareness",
+          "Communication",
+          "M&A",
+          "Capital Markets"
+        ],
+        "signals": [
+          "PB-FIN-S03"
+        ],
+        "effort": "term",
+        "minYear": 1,
+        "evidence": "Archive of 8+ dated notes (blog, LinkedIn or society newsletter); CV line with readership if you have it.",
+        "verified": null,
+        "sources": [
+          {
+            "title": "Banking & Financial Markets: Short Guide to Recruitment 2025-2026 (PDF)",
+            "publisher": "University of Cambridge Careers Service",
+            "url": "https://www.careers.cam.ac.uk/sites/default/files/Banking%20and%20Financial%20Markets%20Short%20Guide%20to%20Recruitment%202025%20-%202026.pdf",
+            "primary": false,
+            "quote": "Commercial awareness is important. Keep up with the news - this can be in relation to the firm, the sector or the industry(s)",
+            "accessed": "2026-10-13"
+          },
+          {
+            "title": "What is commercial awareness?",
+            "publisher": "TARGETjobs",
+            "url": "https://targetjobs.co.uk/careers-advice/skills-for-getting-a-job/what-commercial-awareness",
+            "primary": true,
+            "quote": "a range of business magazines, including The Economist and the Financial Times",
+            "accessed": "2026-10-13"
+          }
+        ]
+      },
+      {
+        "id": "PB-FIN-P04",
+        "type": "project",
+        "title": "M&A deal teardown",
+        "description": "Take one recently announced UK deal. In 2 pages cover the strategic rationale, the implied valuation multiple versus peers, how it was financed, and whether you would have advised the target to accept.",
+        "skills": [
+          "M&A",
+          "Valuation",
+          "Commercial Awareness",
+          "Due Diligence"
+        ],
+        "signals": [
+          "PB-FIN-S03",
+          "PB-FIN-S08"
+        ],
+        "effort": "weekend",
+        "minYear": 1,
+        "evidence": "2-page teardown; reusable as an interview 'deal you followed' answer.",
+        "verified": null,
+        "sources": [
+          {
+            "title": "Investment Banking job simulation",
+            "publisher": "Forage / JPMorganChase",
+            "url": "https://www.theforage.com/simulations/jpmorgan/investment-banking-hkyd",
+            "primary": true,
+            "quote": "Advise your client, WorldWide Brewing Co., on a suitable M&A target to expand their operations in Asia as a junior Investment Banker.",
+            "accessed": "2026-10-13"
+          },
+          {
+            "title": "Job profile: Corporate investment banker",
+            "publisher": "Prospects",
+            "url": "https://www.prospects.ac.uk/job-profiles/corporate-investment-banker",
+            "primary": true,
+            "quote": "commercial awareness and an understanding of financial markets, business trends and the wider economy",
+            "accessed": "2026-10-13"
+          }
+        ]
+      },
+      {
+        "id": "PB-FIN-C01",
+        "type": "course",
+        "title": "MIT OpenCourseWare 15.401 Finance Theory I",
+        "description": "Free lecture videos, notes and problem sets (Andrew Lo) covering present value, fixed income, equities, options, portfolio theory and CAPM. Signal value: builds technical-interview knowledge, but not a CV credential by itself.",
+        "skills": [
+          "Valuation",
+          "Fixed Income",
+          "Derivatives",
+          "Portfolio Management"
+        ],
+        "signals": [
+          "PB-FIN-S08"
+        ],
+        "effort": "term",
+        "minYear": 1,
+        "evidence": "Completed problem sets; ability to answer valuation and markets questions.",
+        "url": "https://ocw.mit.edu/courses/15-401-finance-theory-i-fall-2008/",
+        "verified": true,
+        "cost": "free",
+        "signalValue": "low on CV, medium for interviews",
+        "sources": [
+          {
+            "title": "15.401 Finance Theory I (Fall 2008)",
+            "publisher": "MIT OpenCourseWare",
+            "url": "https://ocw.mit.edu/courses/15-401-finance-theory-i-fall-2008/",
+            "primary": true,
+            "quote": "This course introduces the core theory of modern financial economics and financial management, with a focus on capital markets and investments.",
+            "accessed": "2026-10-13"
+          },
+          {
+            "title": "15.401 Finance Theory I (Fall 2008)",
+            "publisher": "MIT OpenCourseWare",
+            "url": "https://ocw.mit.edu/courses/15-401-finance-theory-i-fall-2008/",
+            "primary": true,
+            "quote": "Freely sharing knowledge with learners and educators around the world.",
+            "accessed": "2026-10-13"
+          }
+        ]
+      },
+      {
+        "id": "PB-FIN-C02",
+        "type": "course",
+        "title": "Corporate Finance Institute: Careers in Finance",
+        "description": "A free 1h30 self-paced course mapping finance careers. Use it to choose a division (IBD vs markets vs asset management) before you tailor applications. Its CV signal is very low, so don't list it as a credential.",
+        "skills": [
+          "Commercial Awareness"
+        ],
+        "signals": [
+          "PB-FIN-S07"
+        ],
+        "effort": "weekend",
+        "minYear": 1,
+        "evidence": "A clear division choice to state in applications (FCQ-10).",
+        "url": "https://corporatefinanceinstitute.com/course/careers-in-finance/",
+        "verified": true,
+        "cost": "free",
+        "signalValue": "very low",
+        "sources": [
+          {
+            "title": "Careers in Finance (free course)",
+            "publisher": "Corporate Finance Institute",
+            "url": "https://corporatefinanceinstitute.com/course/careers-in-finance/",
+            "primary": true,
+            "quote": "Enroll For Free",
+            "accessed": "2026-10-13"
+          }
+        ]
+      },
+      {
+        "id": "PB-FIN-E01",
+        "type": "experience",
+        "title": "JPMorganChase Spring Insights",
+        "description": "A spring insight programme with five pathways (technology, banking, markets, asset and wealth management, operations). Participants may be considered for summer-internship next steps.",
+        "skills": [
+          "Commercial Awareness",
+          "Communication",
+          "Teamwork"
+        ],
+        "signals": [
+          "PB-FIN-S01",
+          "PB-FIN-S04"
+        ],
+        "effort": "weekend",
+        "minYear": 1,
+        "evidence": "Insight programme line on the CV; possible route into internship consideration.",
+        "url": "https://www.jpmorganchase.com/careers/explore-opportunities/programs/spring-insights",
+        "verified": true,
+        "howToFind": "Firm programmes page. The page gives no 2026/27 dates; use a tracker (the-trackr.com UK Finance) to spot when it opens.",
+        "sources": [
+          {
+            "title": "Spring Insights",
+            "publisher": "JPMorganChase",
+            "url": "https://www.jpmorganchase.com/careers/explore-opportunities/programs/spring-insights",
+            "primary": true,
+            "quote": "If you're planning to start your full-time career in two years' time, Spring Insights gives you the chance to take a closer look",
+            "accessed": "2026-10-13"
+          },
+          {
+            "title": "Spring Insights",
+            "publisher": "JPMorganChase",
+            "url": "https://www.jpmorganchase.com/careers/explore-opportunities/programs/spring-insights",
+            "primary": true,
+            "quote": "Participants may be considered for next steps linked to summer internship opportunities, depending on the pathway and programme process.",
+            "accessed": "2026-10-13"
+          }
+        ]
+      },
+      {
+        "id": "PB-FIN-E02",
+        "type": "experience",
+        "title": "Forage: JPMorganChase Investment Banking job simulation",
+        "description": "A free, self-paced virtual simulation (3-4 hours): pick M&A targets for a client and build a DCF. Gives a certificate of completion. Low signal on its own; most useful for motivation answers and a first look at the work.",
+        "skills": [
+          "M&A",
+          "DCF",
+          "Financial Modelling",
+          "Communication"
+        ],
+        "signals": [
+          "PB-FIN-S01",
+          "PB-FIN-S08"
+        ],
+        "effort": "weekend",
+        "minYear": 1,
+        "evidence": "Forage certificate (list under extracurriculars/courses, not work experience).",
+        "url": "https://www.theforage.com/simulations/jpmorgan/investment-banking-hkyd",
+        "verified": true,
+        "cost": "free",
+        "signalValue": "low",
+        "sources": [
+          {
+            "title": "Investment Banking job simulation",
+            "publisher": "Forage / JPMorganChase",
+            "url": "https://www.theforage.com/simulations/jpmorgan/investment-banking-hkyd",
+            "primary": true,
+            "quote": "Complete work that simulates life on the job. 3-4 hours and self-paced.",
+            "accessed": "2026-10-13"
+          },
+          {
+            "title": "Investment Banking job simulation",
+            "publisher": "Forage / JPMorganChase",
+            "url": "https://www.theforage.com/simulations/jpmorgan/investment-banking-hkyd",
+            "primary": true,
+            "quote": "No applications, self paced and can participate from anywhere in the world",
+            "accessed": "2026-10-13"
+          }
+        ]
+      },
+      {
+        "id": "PB-FIN-E03",
+        "type": "experience",
+        "title": "Investment / finance society: committee role and pitch competitions",
+        "description": "Join your university's investment or finance society. Aim for a committee or analyst-team role, and enter its stock-pitch or trading competitions. This is generic advice, not a named programme.",
+        "skills": [
+          "Leadership",
+          "Teamwork",
+          "Stock Pitch",
+          "Commercial Awareness"
+        ],
+        "signals": [
+          "PB-FIN-S05",
+          "PB-FIN-S03"
+        ],
+        "effort": "term",
+        "minYear": 1,
+        "evidence": "Committee title + quantified outcome (events run, members, competition placing).",
+        "verified": null,
+        "howToFind": "Your students' union society directory.",
+        "sources": [
+          {
+            "title": "Job profile: Corporate investment banker",
+            "publisher": "Prospects",
+            "url": "https://www.prospects.ac.uk/job-profiles/corporate-investment-banker",
+            "primary": true,
+            "quote": "positions of responsibility, involvement in student societies or holiday work can also strengthen your applications, particularly if they show teamwork, leadership",
+            "accessed": "2026-10-13"
+          },
+          {
+            "title": "Banking & Financial Markets: Short Guide to Recruitment 2025-2026 (PDF)",
+            "publisher": "University of Cambridge Careers Service",
+            "url": "https://www.careers.cam.ac.uk/sites/default/files/Banking%20and%20Financial%20Markets%20Short%20Guide%20to%20Recruitment%202025%20-%202026.pdf",
+            "primary": false,
+            "quote": "See what societies in this space are offering in terms of alumni and recruiter talks.",
+            "accessed": "2026-10-13"
+          }
+        ]
+      },
+      {
+        "id": "PB-FIN-E04",
+        "type": "experience",
+        "title": "Jane Street Bridge (London): Institutional Sales and Trading / Strategy and Product",
+        "description": "An interactive inside look at Jane Street's Institutional Sales and Trading or Strategy and Product work. The London session is open to first- and second-year students who will graduate in 2029 (first years on 3-year degrees, second years on 4-year degrees). The programme page calls it daylong, while the London session in the data feed runs 1-3 April 2027.",
+        "skills": [
+          "Sales and Trading",
+          "Commercial Awareness",
+          "Communication"
+        ],
+        "signals": [
+          "PB-FIN-S01"
+        ],
+        "effort": "weekend",
+        "minYear": 1,
+        "evidence": "Insight programme line on the CV.",
+        "url": "https://www.janestreet.com/join-jane-street/programs-and-events/",
+        "verified": true,
+        "howToFind": "Jane Street Programs and Events page, Bridge, London.",
+        "timing": "London session 1-3 April 2027; apply by 3 January 2027, 23:59 GMT (Jane Street programmes data, accessed 2026-10-13).",
+        "sources": [
+          {
+            "title": "Programs data feed behind the Programs and Events page (London sessions)",
+            "publisher": "Jane Street",
+            "url": "https://www.janestreet.com/jobs/programs-endpoint.json",
+            "primary": true,
+            "quote": "is open to first and second year students who will graduate in 2029. The deadline to apply is Sunday, January 3rd, 2027 at 11:59pm GMT.",
+            "accessed": "2026-10-13"
+          },
+          {
+            "title": "Programs and Events",
+            "publisher": "Jane Street",
+            "url": "https://www.janestreet.com/join-jane-street/programs-and-events/",
+            "primary": true,
+            "quote": "Take an inside look at our Strategy and Product or Institutional Sales and Trading in this interactive, daylong program for first- and second-year university students.",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "expiresOn": "2027-01-03"
+      },
+      {
+        "id": "PB-FIN-E05",
+        "type": "experience",
+        "title": "Goldman Sachs 2027 Summer Analyst Programme (EMEA)",
+        "description": "A 9-10 week summer internship for penultimate- or final-year Bachelor's/Master's students. Applications are open and reviewed on a rolling basis.",
+        "skills": [
+          "Financial Modelling",
+          "Teamwork",
+          "Communication"
+        ],
+        "signals": [
+          "PB-FIN-S01",
+          "PB-FIN-S04"
+        ],
+        "effort": "term",
+        "minYear": 2,
+        "evidence": "Summer internship; the main route to a graduate offer.",
+        "url": "https://www.goldmansachs.com/careers/students/programs-and-internships/emea/summer-analyst-programme",
+        "verified": true,
+        "howToFind": "Goldman Sachs Students page, 2027 Summer Internships.",
+        "timing": "Applications open now, reviewed on a rolling basis (firm page, accessed 2026-10-13). No closing date published.",
+        "sources": [
+          {
+            "title": "2027 Summer Analyst Programme (EMEA)",
+            "publisher": "Goldman Sachs",
+            "url": "https://www.goldmansachs.com/careers/students/programs-and-internships/emea/summer-analyst-programme",
+            "primary": true,
+            "quote": "The Summer Analyst role is for candidates currently pursuing a Bachelors or Masters university degree and in their penultimate or final year of study.",
+            "accessed": "2026-10-13"
+          },
+          {
+            "title": "2027 Summer Analyst Programme (EMEA)",
+            "publisher": "Goldman Sachs",
+            "url": "https://www.goldmansachs.com/careers/students/programs-and-internships/emea/summer-analyst-programme",
+            "primary": true,
+            "quote": "We review applications on a rolling basis and encourage you to apply as soon as you are ready.",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "reviewBy": "2026-12-31"
+      }
+    ],
+    "yearGuidance": {
+      "year1": "Apply to spring weeks/insight programmes (JPMorganChase Spring Insights targets students starting full-time work in two years; Jane Street Bridge London, for students graduating in 2029, closes 3 Jan 2027), join the investment society, and start a stock pitch or weekly markets note.",
+      "year2_penultimate": "Apply for summer analyst internships (GS 2027 EMEA is open now, reviewed on a rolling basis). Go in with one finished model or pitch, a committee role, and practice for online tests and video interviews.",
+      "final": "If you have no internship offer, apply to programmes that admit final-year students (GS Summer Analyst eligibility includes final year) and to graduate roles. Lead with quantified experience of any kind.",
+      "postgrad": "Master's students can apply to the GS Summer Analyst Programme if they are in the penultimate or final year of study. Check each firm's eligibility page.",
+      "note": "For 4-year courses, shift each line by one year (spring weeks are for the second year of a four-year degree)."
+    },
+    "yearGuidanceDated": [
+      {
+        "year": "year1",
+        "text": "Jane Street Bridge London (1-3 April 2027) closes 3 Jan 2027, 23:59 GMT; open to students graduating in 2029.",
+        "expiresOn": "2027-01-03",
+        "ref": "PB-FIN-E04"
+      }
+    ]
+  },
+  "quant_trading": {
+    "signals": [
+      {
+        "id": "PB-QNT-S01",
+        "text": "Strong quantitative reasoning matters more than finance knowledge or a particular degree. Jane Street says it won't test finance or economics, and IMC says you don't need a wealth of financial knowledge.",
+        "ruleIds": [
+          "QNT-01",
+          "QNT-08"
+        ],
+        "grade": "A",
+        "sources": [
+          {
+            "title": "Interviewing",
+            "publisher": "Jane Street",
+            "url": "https://www.janestreet.com/join-jane-street/interviewing/",
+            "primary": true,
+            "quote": "We won't test you on knowledge of finance or economics.",
+            "accessed": "2026-10-13"
+          },
+          {
+            "title": "Quantitative Trader Internship, London (June-September)",
+            "publisher": "Jane Street",
+            "url": "https://www.janestreet.com/join-jane-street/position/8474407002/",
+            "primary": true,
+            "quote": "A strong quantitative thinker (no specific degree or major is required)",
+            "accessed": "2026-10-13"
+          },
+          {
+            "title": "Quantitative Trading Internship (2027 Start), Amsterdam",
+            "publisher": "Optiver",
+            "url": "https://www.optiver.com/join-us/jobs/trading/amsterdam/quantitative-trading-internship-2027-start/",
+            "primary": true,
+            "quote": "Possess exceptional quantitative and logical reasoning skills",
+            "accessed": "2026-10-13"
+          },
+          {
+            "title": "How to prepare for an interview at IMC (APAC campus recruiter interview)",
+            "publisher": "IMC Trading",
+            "url": "https://www.imc.com/ap/articles/how-to-prepare-for-an-interview-at-imc",
+            "primary": true,
+            "quote": "You don't need a wealth of financial knowledge to join IMC; we're looking for candidates with a passion for solving quantitative problems",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "note": "The IMC quote comes from an APAC page."
+      },
+      {
+        "id": "PB-QNT-S02",
+        "text": "Intuition for probability, expected value and market-making. This is the core interview content.",
+        "ruleIds": [
+          "QNT-06",
+          "QNT-07"
+        ],
+        "grade": "A",
+        "sources": [
+          {
+            "title": "Interviewing",
+            "publisher": "Jane Street",
+            "url": "https://www.janestreet.com/join-jane-street/interviewing/",
+            "primary": true,
+            "quote": "Many of the core concepts you may encounter in our interviews are covered in this pdf.",
+            "accessed": "2026-10-13"
+          },
+          {
+            "title": "Probability & Markets guide (PDF)",
+            "publisher": "Jane Street",
+            "url": "https://www.janestreet.com/static/pdfs/trading-interview.pdf",
+            "primary": true,
+            "quote": "Having an intuitive understanding of these things is an important part of our day-to-day jobs",
+            "accessed": "2026-10-13"
+          },
+          {
+            "title": "Quantitative Trading Internship (2027 Start), Amsterdam",
+            "publisher": "Optiver",
+            "url": "https://www.optiver.com/join-us/jobs/trading/amsterdam/quantitative-trading-internship-2027-start/",
+            "primary": true,
+            "quote": "Deep dive into trading fundamentals, from probability, market structure and strategy to the technology used to make decisions in fast-moving markets",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "note": "The Optiver quote describes what interns are taught, not an entry requirement."
+      },
+      {
+        "id": "PB-QNT-S03",
+        "text": "Online assessments are an early screen: Optiver sends them to applicants selected for the next round (applicants confirm they can take the assessment within 7 days), and IMC says it always starts with one. Practise before applying.",
+        "ruleIds": [
+          "QNT-07"
+        ],
+        "grade": "B",
+        "sources": [
+          {
+            "title": "Quantitative Trading Internship (2027 Start), Amsterdam",
+            "publisher": "Optiver",
+            "url": "https://www.optiver.com/join-us/jobs/trading/amsterdam/quantitative-trading-internship-2027-start/",
+            "primary": true,
+            "quote": "If your application is selected to proceed to the next round, you will be required to complete online assessments.",
+            "accessed": "2026-10-13"
+          },
+          {
+            "title": "Quantitative Trading Internship (2027 Start), Amsterdam",
+            "publisher": "Optiver",
+            "url": "https://www.optiver.com/join-us/jobs/trading/amsterdam/quantitative-trading-internship-2027-start/",
+            "primary": true,
+            "quote": "By submitting your application you are confirming that you will be able to take the assessment within 7 days.",
+            "accessed": "2026-10-13"
+          },
+          {
+            "title": "How to prepare for an interview at IMC (APAC campus recruiter interview)",
+            "publisher": "IMC Trading",
+            "url": "https://www.imc.com/ap/articles/how-to-prepare-for-an-interview-at-imc",
+            "primary": true,
+            "quote": "We always kick off with an online assessment to ensure that only suitable candidates are invited to interview.",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "note": "Grade B because the IMC corroboration is an APAC page."
+      },
+      {
+        "id": "PB-QNT-S04",
+        "text": "Interest in strategic games, puzzles and competitive activities.",
+        "ruleIds": [
+          "QNT-02"
+        ],
+        "grade": "A",
+        "sources": [
+          {
+            "title": "Quantitative Trading Internship (2027 Start), Amsterdam",
+            "publisher": "Optiver",
+            "url": "https://www.optiver.com/join-us/jobs/trading/amsterdam/quantitative-trading-internship-2027-start/",
+            "primary": true,
+            "quote": "Interested in strategic games and/or competitive activities",
+            "accessed": "2026-10-13"
+          },
+          {
+            "title": "Puzzles",
+            "publisher": "Jane Street",
+            "url": "https://www.janestreet.com/puzzles/",
+            "primary": true,
+            "quote": "Prime among the skills necessary to stay successful, then, is creative problem solving, or puzzling.",
+            "accessed": "2026-10-13"
+          }
+        ]
+      },
+      {
+        "id": "PB-QNT-S05",
+        "text": "Programming (usually Python) is a plus for trading roles but not a requirement (Optiver, Jane Street). On Optiver's trading internship, interns implement strategies in Python and run them against historical data.",
+        "ruleIds": [
+          "QNT-03",
+          "QNT-05"
+        ],
+        "grade": "A",
+        "sources": [
+          {
+            "title": "Quantitative Trading Internship (2027 Start), Amsterdam",
+            "publisher": "Optiver",
+            "url": "https://www.optiver.com/join-us/jobs/trading/amsterdam/quantitative-trading-internship-2027-start/",
+            "primary": true,
+            "quote": "Experience in programming or scripting in Python is a plus",
+            "accessed": "2026-10-13"
+          },
+          {
+            "title": "Quantitative Trader Internship, London (June-September)",
+            "publisher": "Jane Street",
+            "url": "https://www.janestreet.com/join-jane-street/position/8474407002/",
+            "primary": true,
+            "quote": "General programming experience is a plus, but knowing a particular programming language is not required.",
+            "accessed": "2026-10-13"
+          },
+          {
+            "title": "Trading Internship Program",
+            "publisher": "Optiver",
+            "url": "https://www.optiver.com/join-us/students/internships/trading/",
+            "primary": true,
+            "quote": "Implement your strategy in Python and run it against historical market data.",
+            "accessed": "2026-10-13"
+          }
+        ]
+      },
+      {
+        "id": "PB-QNT-S06",
+        "text": "Collaboration and clear communication. Interviews are run as joint problem-solving.",
+        "ruleIds": [
+          "QNT-10"
+        ],
+        "grade": "A",
+        "sources": [
+          {
+            "title": "Interviewing",
+            "publisher": "Jane Street",
+            "url": "https://www.janestreet.com/join-jane-street/interviewing/",
+            "primary": true,
+            "quote": "We focus on collaborative problem solving during the interview",
+            "accessed": "2026-10-13"
+          },
+          {
+            "title": "Quantitative Trader Internship, London (June-September)",
+            "publisher": "Jane Street",
+            "url": "https://www.janestreet.com/join-jane-street/position/8474407002/",
+            "primary": true,
+            "quote": "A clear and effective verbal and written communicator",
+            "accessed": "2026-10-13"
+          },
+          {
+            "title": "How to prepare for an interview at IMC (APAC campus recruiter interview)",
+            "publisher": "IMC Trading",
+            "url": "https://www.imc.com/ap/articles/how-to-prepare-for-an-interview-at-imc",
+            "primary": true,
+            "quote": "how well you work with everyone you meet in the interviews.",
+            "accessed": "2026-10-13"
+          }
+        ]
+      },
+      {
+        "id": "PB-QNT-S07",
+        "text": "A concise CV with honestly calibrated skill levels: rate yourself against professionals, not classmates.",
+        "ruleIds": [
+          "QNT-04",
+          "QNT-09",
+          "FCQ-11"
+        ],
+        "grade": "C",
+        "sources": [
+          {
+            "title": "Recruitment process (APAC careers page)",
+            "publisher": "IMC Trading",
+            "url": "https://www.imc.com/ap/careers/recruitment-process",
+            "primary": true,
+            "quote": "For interns and graduates, if you include a level of proficiency, compare yourself to professionals and not fellow students.",
+            "accessed": "2026-10-13"
+          },
+          {
+            "title": "Recruitment process (APAC careers page)",
+            "publisher": "IMC Trading",
+            "url": "https://www.imc.com/ap/careers/recruitment-process",
+            "primary": true,
+            "quote": "We like clear, concise resumes.",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "note": "Convention: one firm (IMC, APAC page) states it. No second independent source fetched."
+      }
+    ],
+    "actions": [
+      {
+        "id": "PB-QNT-P01",
+        "type": "project",
+        "title": "Backtest a simple systematic strategy, honestly",
+        "description": "Choose one testable hypothesis (e.g. short-term mean reversion in an index ETF). Clean the data, backtest in Python with transaction costs, keep a held-out period, and report Sharpe, drawdown and what failed. Follow the same frame / validate / backtest / present loop Optiver describes.",
+        "skills": [
+          "Python",
+          "Pandas",
+          "NumPy",
+          "Backtesting",
+          "Statistics",
+          "Sharpe Ratio",
+          "Git"
+        ],
+        "signals": [
+          "PB-QNT-S05",
+          "PB-QNT-S02"
+        ],
+        "effort": "2-4 weeks",
+        "minYear": 1,
+        "evidence": "Public GitHub repo + README with out-of-sample results (including negative ones).",
+        "verified": null,
+        "sources": [
+          {
+            "title": "Trading Internship Program",
+            "publisher": "Optiver",
+            "url": "https://www.optiver.com/join-us/students/internships/trading/",
+            "primary": true,
+            "quote": "Define a clear, testable hypothesis.",
+            "accessed": "2026-10-13"
+          },
+          {
+            "title": "Trading Internship Program",
+            "publisher": "Optiver",
+            "url": "https://www.optiver.com/join-us/students/internships/trading/",
+            "primary": true,
+            "quote": "Learn what holds up out of sample, what breaks and why.",
+            "accessed": "2026-10-13"
+          }
+        ]
+      },
+      {
+        "id": "PB-QNT-P02",
+        "type": "project",
+        "title": "Market-making simulator",
+        "description": "Simulate a limit order book with noise traders and one informed trader. Write a market maker that quotes around a fair value, manages inventory, and shows adverse selection in its PnL. Write up what changed when you widened or skewed quotes.",
+        "skills": [
+          "Market Making",
+          "Order Book",
+          "Python",
+          "Probability",
+          "PnL",
+          "Monte Carlo"
+        ],
+        "signals": [
+          "PB-QNT-S02",
+          "PB-QNT-S05"
+        ],
+        "effort": "2-4 weeks",
+        "minYear": 2,
+        "evidence": "Repo + short write-up with PnL/inventory plots; strong talking point in trading interviews.",
+        "verified": null,
+        "sources": [
+          {
+            "title": "Quantitative Trader Internship, London (June-September)",
+            "publisher": "Jane Street",
+            "url": "https://www.janestreet.com/join-jane-street/position/8474407002/",
+            "primary": true,
+            "quote": "You'll analyse market data to develop a tradable fair value and implement a trading strategy in Python.",
+            "accessed": "2026-10-13"
+          },
+          {
+            "title": "Probability & Markets guide (PDF)",
+            "publisher": "Jane Street",
+            "url": "https://www.janestreet.com/static/pdfs/trading-interview.pdf",
+            "primary": true,
+            "quote": "Making Markets Adverse Selection",
+            "accessed": "2026-10-13"
+          }
+        ]
+      },
+      {
+        "id": "PB-QNT-P03",
+        "type": "project",
+        "title": "Puzzle and probability log",
+        "description": "Work through Jane Street's puzzle page (a new puzzle every month or two) and the Probability & Markets guide. Write a clear solution for each problem you crack (expected value, conditional probability, betting/market questions). Do this every week across a term.",
+        "skills": [
+          "Probability",
+          "Problem Solving",
+          "Mental Maths"
+        ],
+        "signals": [
+          "PB-QNT-S04",
+          "PB-QNT-S02"
+        ],
+        "effort": "term",
+        "minYear": 1,
+        "evidence": "Solutions notebook; mention any accepted puzzle submissions. Mainly builds interview readiness.",
+        "url": "https://www.janestreet.com/puzzles/",
+        "verified": true,
+        "cost": "free",
+        "sources": [
+          {
+            "title": "Puzzles",
+            "publisher": "Jane Street",
+            "url": "https://www.janestreet.com/puzzles/",
+            "primary": true,
+            "quote": "Every month or two, we'll post a new puzzle to this page.",
+            "accessed": "2026-10-13"
+          },
+          {
+            "title": "Puzzles",
+            "publisher": "Jane Street",
+            "url": "https://www.janestreet.com/puzzles/",
+            "primary": true,
+            "quote": "Prime among the skills necessary to stay successful, then, is creative problem solving, or puzzling.",
+            "accessed": "2026-10-13"
+          }
+        ]
+      },
+      {
+        "id": "PB-QNT-P04",
+        "type": "project",
+        "title": "Monte Carlo option pricer vs Black-Scholes",
+        "description": "Price European options by Monte Carlo and compare against the closed form. Show convergence, add a variance-reduction trick, then extend to one path-dependent payoff. This is a foundation project: interns are taught options theory, so it is not an entry requirement.",
+        "skills": [
+          "Monte Carlo",
+          "Black-Scholes",
+          "Derivatives",
+          "Python",
+          "NumPy",
+          "Stochastic Processes"
+        ],
+        "signals": [
+          "PB-QNT-S02"
+        ],
+        "effort": "2-4 weeks",
+        "minYear": 2,
+        "evidence": "Repo + notebook with convergence plots.",
+        "verified": null,
+        "sources": [
+          {
+            "title": "Trading Internship Program",
+            "publisher": "Optiver",
+            "url": "https://www.optiver.com/join-us/students/internships/trading/",
+            "primary": true,
+            "quote": "starting with an options theory course led by our education team of former traders and researchers.",
+            "accessed": "2026-10-13"
+          },
+          {
+            "title": "18.S096 Topics in Mathematics with Applications in Finance (Fall 2013)",
+            "publisher": "MIT OpenCourseWare",
+            "url": "https://ocw.mit.edu/courses/18-s096-topics-in-mathematics-with-applications-in-finance-fall-2013/",
+            "primary": true,
+            "quote": "The purpose of the class is to expose undergraduate and graduate students to the mathematical concepts and techniques used in the financial industry.",
+            "accessed": "2026-10-13"
+          }
+        ]
+      },
+      {
+        "id": "PB-QNT-C01",
+        "type": "course",
+        "title": "MIT OpenCourseWare 18.05 Introduction to Probability and Statistics",
+        "description": "Free full course (readings, problem sets with solutions, exams) covering combinatorics, random variables, Bayesian inference, hypothesis testing and regression. Medium signal: it gives you the probability fluency firms test. Cite the work you did, not the course.",
+        "skills": [
+          "Probability",
+          "Statistics",
+          "Hypothesis Testing",
+          "Bayesian",
+          "R"
+        ],
+        "signals": [
+          "PB-QNT-S02"
+        ],
+        "effort": "term",
+        "minYear": 1,
+        "evidence": "Completed problem sets; probability interview readiness.",
+        "url": "https://ocw.mit.edu/courses/18-05-introduction-to-probability-and-statistics-spring-2022/",
+        "verified": true,
+        "cost": "free",
+        "signalValue": "medium for interviews, low on CV",
+        "sources": [
+          {
+            "title": "18.05 Introduction to Probability and Statistics (Spring 2022)",
+            "publisher": "MIT OpenCourseWare",
+            "url": "https://ocw.mit.edu/courses/18-05-introduction-to-probability-and-statistics-spring-2022/",
+            "primary": true,
+            "quote": "Topics include basic combinatorics, random variables, probability distributions, Bayesian inference, hypothesis testing, confidence intervals, and linear regression.",
+            "accessed": "2026-10-13"
+          },
+          {
+            "title": "18.05 Introduction to Probability and Statistics (Spring 2022)",
+            "publisher": "MIT OpenCourseWare",
+            "url": "https://ocw.mit.edu/courses/18-05-introduction-to-probability-and-statistics-spring-2022/",
+            "primary": true,
+            "quote": "which is free to use.",
+            "accessed": "2026-10-13"
+          }
+        ]
+      },
+      {
+        "id": "PB-QNT-C02",
+        "type": "course",
+        "title": "Jane Street Probability & Markets guide (PDF)",
+        "description": "Jane Street's own 13-page primer: randomness, counting, expected value, conditional probability, making markets, adverse selection. Jane Street says it covers many core concepts in its interviews.",
+        "skills": [
+          "Probability",
+          "Market Making"
+        ],
+        "signals": [
+          "PB-QNT-S02"
+        ],
+        "effort": "weekend",
+        "minYear": 1,
+        "evidence": "Interview readiness (not a CV item).",
+        "url": "https://www.janestreet.com/static/pdfs/trading-interview.pdf",
+        "verified": true,
+        "cost": "free",
+        "signalValue": "high for interview prep",
+        "sources": [
+          {
+            "title": "Interviewing",
+            "publisher": "Jane Street",
+            "url": "https://www.janestreet.com/join-jane-street/interviewing/",
+            "primary": true,
+            "quote": "Many of the core concepts you may encounter in our interviews are covered in this pdf.",
+            "accessed": "2026-10-13"
+          },
+          {
+            "title": "Probability & Markets guide (PDF)",
+            "publisher": "Jane Street",
+            "url": "https://www.janestreet.com/static/pdfs/trading-interview.pdf",
+            "primary": true,
+            "quote": "The goal of this document is to present an introduction to probability and markets in what we hope is a fairly intuitive and accessible way.",
+            "accessed": "2026-10-13"
+          }
+        ]
+      },
+      {
+        "id": "PB-QNT-C03",
+        "type": "course",
+        "title": "MIT OpenCourseWare 18.S096 Topics in Mathematics with Applications in Finance",
+        "description": "Free lectures pairing maths (linear algebra, probability, stochastic processes, time series) with finance applications; MIT says industry professionals give the application lectures. Suits second years who already have the probability basics.",
+        "skills": [
+          "Linear Algebra",
+          "Stochastic Processes",
+          "Time Series"
+        ],
+        "signals": [
+          "PB-QNT-S01",
+          "PB-QNT-S02"
+        ],
+        "effort": "term",
+        "minYear": 2,
+        "evidence": "Lecture notes + problem sets; supports QR-leaning projects.",
+        "url": "https://ocw.mit.edu/courses/18-s096-topics-in-mathematics-with-applications-in-finance-fall-2013/",
+        "verified": true,
+        "cost": "free",
+        "signalValue": "low on CV, medium for QR interviews",
+        "sources": [
+          {
+            "title": "18.S096 Topics in Mathematics with Applications in Finance (Fall 2013)",
+            "publisher": "MIT OpenCourseWare",
+            "url": "https://ocw.mit.edu/courses/18-s096-topics-in-mathematics-with-applications-in-finance-fall-2013/",
+            "primary": true,
+            "quote": "Mathematics lectures are mixed with lectures illustrating the corresponding application in the financial industry.",
+            "accessed": "2026-10-13"
+          },
+          {
+            "title": "18.S096 Topics in Mathematics with Applications in Finance (Fall 2013)",
+            "publisher": "MIT OpenCourseWare",
+            "url": "https://ocw.mit.edu/courses/18-s096-topics-in-mathematics-with-applications-in-finance-fall-2013/",
+            "primary": true,
+            "quote": "Freely sharing knowledge with learners and educators around the world.",
+            "accessed": "2026-10-13"
+          }
+        ]
+      },
+      {
+        "id": "PB-QNT-C04",
+        "type": "course",
+        "title": "Zetamac Arithmetic Game (speed drill)",
+        "description": "A 2-minute timed arithmetic drill you can use in the browser without an account. No trading firm endorses it. It is only practice for timed numerical assessments.",
+        "skills": [
+          "Mental Maths"
+        ],
+        "signals": [
+          "PB-QNT-S03"
+        ],
+        "effort": "weekend",
+        "minYear": 1,
+        "evidence": "Personal score trend (not a CV item).",
+        "url": "https://arithmetic.zetamac.com/",
+        "verified": true,
+        "cost": "free",
+        "signalValue": "none on CV; test practice only",
+        "sources": [
+          {
+            "title": "Arithmetic Game (online speed drill)",
+            "publisher": "Zetamac",
+            "url": "https://arithmetic.zetamac.com/",
+            "primary": false,
+            "quote": "The Arithmetic Game is a fast-paced speed drill where you are given two minutes to solve as many arithmetic problems as you can.",
+            "accessed": "2026-10-13"
+          }
+        ]
+      },
+      {
+        "id": "PB-QNT-E01",
+        "type": "experience",
+        "title": "Jane Street FTTP (London)",
+        "description": "A multi-day programme for first-year undergraduates (aimed at students planning maths, physics, computer science or other STEM majors): classes plus a team mock-trading game. No finance knowledge needed. Travel, meals and housing are covered.",
+        "skills": [
+          "Probability",
+          "Market Making",
+          "Teamwork"
+        ],
+        "signals": [
+          "PB-QNT-S01",
+          "PB-QNT-S04"
+        ],
+        "effort": "weekend",
+        "minYear": 1,
+        "evidence": "Insight programme line on the CV; early contact with the firm.",
+        "url": "https://www.janestreet.com/join-jane-street/programs-and-events/fttp/",
+        "verified": true,
+        "howToFind": "Jane Street Programs and Events page, FTTP, London.",
+        "timing": "London session 21-25 March 2027; apply by 3 January 2027, 23:59 GMT (Jane Street programmes data, accessed 2026-10-13).",
+        "sources": [
+          {
+            "title": "FTTP programme page",
+            "publisher": "Jane Street",
+            "url": "https://www.janestreet.com/join-jane-street/programs-and-events/fttp/",
+            "primary": true,
+            "quote": "a select group of first-year undergraduates will learn more about Jane Street's innovative trading and technology models",
+            "accessed": "2026-10-13"
+          },
+          {
+            "title": "Programs data feed (FTTP, London session: availability_label field)",
+            "publisher": "Jane Street",
+            "url": "https://www.janestreet.com/jobs/programs-endpoint.json",
+            "primary": true,
+            "quote": "Please confirm you are available Sunday, March 21st - Thursday, March 25th, 2027.",
+            "accessed": "2026-10-13"
+          },
+          {
+            "title": "Programs data feed (FTTP, London session: formatted_deadline field)",
+            "publisher": "Jane Street",
+            "url": "https://www.janestreet.com/jobs/programs-endpoint.json",
+            "primary": true,
+            "quote": "Sunday, January 3rd, 2027 at 11:59pm GMT",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "expiresOn": "2027-01-03"
+      },
+      {
+        "id": "PB-QNT-E02",
+        "type": "experience",
+        "title": "IMC Prosperity (online trading challenge)",
+        "description": "IMC's team trading challenge for university students (up to 5 per team): algorithmic and manual trading rounds in Python on a simulated market. Prize eligibility includes EMEA residents. Prosperity 4 has finished and the site has not announced the next edition.",
+        "skills": [
+          "Python",
+          "Market Making",
+          "Order Book",
+          "Backtesting",
+          "Teamwork"
+        ],
+        "signals": [
+          "PB-QNT-S04",
+          "PB-QNT-S05"
+        ],
+        "effort": "2-4 weeks",
+        "minYear": 1,
+        "evidence": "Leaderboard rank / percentile and a repo of your algorithm.",
+        "url": "https://prosperity.imc.com/",
+        "verified": true,
+        "cost": "free",
+        "timing": "Next edition not announced on the site as of 2026-10-13 (Prosperity 4 finished).",
+        "sources": [
+          {
+            "title": "IMC Prosperity 4",
+            "publisher": "IMC Trading",
+            "url": "https://prosperity.imc.com/",
+            "primary": true,
+            "quote": "Prosperity 4 is IMC's online trading challenge designed for university students.",
+            "accessed": "2026-10-13"
+          },
+          {
+            "title": "IMC Prosperity 4",
+            "publisher": "IMC Trading",
+            "url": "https://prosperity.imc.com/",
+            "primary": true,
+            "quote": "Eligibility for prizes, and recognition is limited to participants resident in EMEA, North America, South America, India, Australia, or Hong Kong",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "reviewBy": "2026-12-31"
+      },
+      {
+        "id": "PB-QNT-E03",
+        "type": "experience",
+        "title": "Jane Street Quantitative Trader Internship (London)",
+        "description": "A June-September internship with mentors, classes and mock trading. Jane Street says there is no GPA or degree requirement and it hires students of all tenures. Applications are reviewed on a rolling basis.",
+        "skills": [
+          "Probability",
+          "Statistics",
+          "Python",
+          "Machine Learning"
+        ],
+        "signals": [
+          "PB-QNT-S01",
+          "PB-QNT-S06"
+        ],
+        "effort": "term",
+        "minYear": 1,
+        "evidence": "Internship; the main route to a return offer.",
+        "url": "https://www.janestreet.com/join-jane-street/position/8474407002/",
+        "verified": true,
+        "timing": "Rolling; no deadline (firm FAQ, accessed 2026-10-13).",
+        "sources": [
+          {
+            "title": "Interviewing",
+            "publisher": "Jane Street",
+            "url": "https://www.janestreet.com/join-jane-street/interviewing/",
+            "primary": true,
+            "quote": "We don't have a GPA or degree requirement, and we hire students of all tenures from many different universities and concentrations.",
+            "accessed": "2026-10-13"
+          },
+          {
+            "title": "Interviewing",
+            "publisher": "Jane Street",
+            "url": "https://www.janestreet.com/join-jane-street/interviewing/",
+            "primary": true,
+            "quote": "We don't typically have one; our applications are reviewed on a rolling basis.",
+            "accessed": "2026-10-13"
+          }
+        ]
+      },
+      {
+        "id": "PB-QNT-E04",
+        "type": "experience",
+        "title": "Optiver Quantitative Trading Internship (Amsterdam, 2027 start)",
+        "description": "A ten-week internship for penultimate-year STEM students graduating in 2028. If selected for the next round you take online assessments, and applicants confirm they can take the assessment within 7 days. Return offers can be for Amsterdam or London. It is Amsterdam-based, so check work eligibility.",
+        "skills": [
+          "Probability",
+          "Python",
+          "Market Making",
+          "Derivatives"
+        ],
+        "signals": [
+          "PB-QNT-S01",
+          "PB-QNT-S03",
+          "PB-QNT-S04"
+        ],
+        "effort": "term",
+        "minYear": 2,
+        "evidence": "Internship; return offer route.",
+        "url": "https://www.optiver.com/join-us/jobs/trading/amsterdam/quantitative-trading-internship-2027-start/",
+        "verified": true,
+        "sources": [
+          {
+            "title": "Quantitative Trading Internship (2027 Start), Amsterdam",
+            "publisher": "Optiver",
+            "url": "https://www.optiver.com/join-us/jobs/trading/amsterdam/quantitative-trading-internship-2027-start/",
+            "primary": true,
+            "quote": "Penultimate-year student in a STEM field, with the ability to work full-time upon graduation in 2028",
+            "accessed": "2026-10-13"
+          },
+          {
+            "title": "Quantitative Trading Internship (2027 Start), Amsterdam",
+            "publisher": "Optiver",
+            "url": "https://www.optiver.com/join-us/jobs/trading/amsterdam/quantitative-trading-internship-2027-start/",
+            "primary": true,
+            "quote": "you could receive an offer to join our firm full-time in Amsterdam or London after your studies.",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "reviewBy": "2026-12-31"
+      },
+      {
+        "id": "PB-QNT-E05",
+        "type": "experience",
+        "title": "University trading / quant / maths society",
+        "description": "Join a society that runs mock-trading, estimation or puzzle sessions and team competitions, and aim for a role running one. This is generic advice, not a named programme.",
+        "skills": [
+          "Mental Maths",
+          "Probability",
+          "Teamwork",
+          "Leadership"
+        ],
+        "signals": [
+          "PB-QNT-S04",
+          "PB-QNT-S06"
+        ],
+        "effort": "term",
+        "minYear": 1,
+        "evidence": "Society role + competition placings.",
+        "verified": null,
+        "howToFind": "Students' union society directory.",
+        "sources": [
+          {
+            "title": "Quantitative Trading Internship (2027 Start), Amsterdam",
+            "publisher": "Optiver",
+            "url": "https://www.optiver.com/join-us/jobs/trading/amsterdam/quantitative-trading-internship-2027-start/",
+            "primary": true,
+            "quote": "Interested in strategic games and/or competitive activities",
+            "accessed": "2026-10-13"
+          },
+          {
+            "title": "How to prepare for an interview at IMC (APAC campus recruiter interview)",
+            "publisher": "IMC Trading",
+            "url": "https://www.imc.com/ap/articles/how-to-prepare-for-an-interview-at-imc",
+            "primary": true,
+            "quote": "Candidates who stand out are not only passionate about the industry and the role, but also have keen interests outside of their work and studies.",
+            "accessed": "2026-10-13"
+          }
+        ]
+      }
+    ],
+    "yearGuidance": {
+      "year1": "Work through the Jane Street Probability & Markets guide and MIT 18.05. Apply to Jane Street FTTP London (first-year undergraduates, STEM focus) by 3 Jan 2027. Start one small Python backtest, and enter IMC Prosperity when the next edition opens.",
+      "year2_penultimate": "Apply for penultimate-year trading internships (e.g. the Optiver posting asks for penultimate-year STEM). Practise online assessments before applying, and bring one finished project (market-making sim or honest backtest).",
+      "final": "Apply to graduate trading and research roles. Jane Street reviews applications on a rolling basis and hires students of all tenures. Put competition results and projects ahead of finance jargon.",
+      "postgrad": "Master's/PhD students: Jane Street states no degree requirement. Research-leaning roles reward projects with rigorous evaluation (QNT-05).",
+      "note": "For 4-year courses, shift each line by one year."
+    },
+    "yearGuidanceDated": [
+      {
+        "year": "year1",
+        "text": "Jane Street FTTP London (21-25 March 2027) closes 3 Jan 2027, 23:59 GMT.",
+        "expiresOn": "2027-01-03",
+        "ref": "PB-QNT-E01"
+      }
+    ]
+  },
+  "consulting": {
+    "signals": [
+      {
+        "id": "PB-CON-S01",
+        "text": "Strong academics: BCG London asks for at least a 2:1 or equivalent (predicted, for interns), Prospects says a 2:1 is usually needed, and Bain London asks for strong academics.",
+        "ruleIds": [
+          "CON-01",
+          "FCQ-04"
+        ],
+        "grade": "A",
+        "sources": [
+          {
+            "title": "Associate Jobs: United Kingdom (early careers FAQ, internships, campus events)",
+            "publisher": "BCG",
+            "url": "https://careers.bcg.com/global/en/locations/united-kingdom/associate-jobs",
+            "primary": true,
+            "quote": "We look for candidates with a strong academic background (at least a 2:1 degree or equivalent)",
+            "accessed": "2026-10-13"
+          },
+          {
+            "title": "Job profile: Management consultant",
+            "publisher": "Prospects",
+            "url": "https://www.prospects.ac.uk/job-profiles/management-consultant",
+            "primary": true,
+            "quote": "You'll usually need a 2:1 degree or equivalent, particularly for graduate training schemes.",
+            "accessed": "2026-10-13"
+          },
+          {
+            "title": "Bain London University Hiring",
+            "publisher": "Bain & Company",
+            "url": "https://www.bain.com/careers/recruiting/london-recruiting/",
+            "primary": true,
+            "quote": "Successful candidates bring strong academics, analytical & numerical and communication skills.",
+            "accessed": "2026-10-13"
+          }
+        ]
+      },
+      {
+        "id": "PB-CON-S02",
+        "text": "Case interviews decide offers: structuring, numeracy, judgement and synthesis under discussion.",
+        "ruleIds": [
+          "CON-03"
+        ],
+        "grade": "A",
+        "sources": [
+          {
+            "title": "Associate Jobs: United Kingdom (early careers FAQ, internships, campus events)",
+            "publisher": "BCG",
+            "url": "https://careers.bcg.com/global/en/locations/united-kingdom/associate-jobs",
+            "primary": true,
+            "quote": "The interview stage includes case-based discussions with senior members of our London consulting team",
+            "accessed": "2026-10-13"
+          },
+          {
+            "title": "Bain London University Hiring",
+            "publisher": "Bain & Company",
+            "url": "https://www.bain.com/careers/recruiting/london-recruiting/",
+            "primary": true,
+            "quote": "Interviews during both rounds consist of case interviews, so please consider beginning to practice early",
+            "accessed": "2026-10-13"
+          },
+          {
+            "title": "Management & Strategy Consulting: Quick Guide to Recruitment 2024 (PDF)",
+            "publisher": "University of Cambridge Careers Service",
+            "url": "https://www.careers.cam.ac.uk/files/management_strategy_consulting_-_quick_guide_to_recruitment_2024.pdf",
+            "primary": false,
+            "quote": "You are usually assessed on 5 core elements of a case: structuring, numeracy, judgements and insights, creativity, synthesis and case leadership.",
+            "accessed": "2026-10-13"
+          }
+        ]
+      },
+      {
+        "id": "PB-CON-S03",
+        "text": "At BCG London and Bain London, an online numerical/logical assessment follows the application and comes before any interview.",
+        "ruleIds": [],
+        "grade": "A",
+        "sources": [
+          {
+            "title": "Associate Jobs: United Kingdom (early careers FAQ, internships, campus events)",
+            "publisher": "BCG",
+            "url": "https://careers.bcg.com/global/en/locations/united-kingdom/associate-jobs",
+            "primary": true,
+            "quote": "we'll invite you to complete a short numerical assessment, which forms part of your application.",
+            "accessed": "2026-10-13"
+          },
+          {
+            "title": "Bain London University Hiring",
+            "publisher": "Bain & Company",
+            "url": "https://www.bain.com/careers/recruiting/london-recruiting/",
+            "primary": true,
+            "quote": "The assessment evaluates skills that are core to success in the Associate Consultant role, including numerical aptitude, logical reasoning, and behavioural preferences.",
+            "accessed": "2026-10-13"
+          }
+        ]
+      },
+      {
+        "id": "PB-CON-S04",
+        "text": "Leadership, initiative and impact: what changed because of you, outside academics too.",
+        "ruleIds": [
+          "CON-02",
+          "CON-04",
+          "CON-05"
+        ],
+        "grade": "A",
+        "sources": [
+          {
+            "title": "Bain London University Hiring",
+            "publisher": "Bain & Company",
+            "url": "https://www.bain.com/careers/recruiting/london-recruiting/",
+            "primary": true,
+            "quote": "Plus, a record of initiative, leadership, and teamwork.",
+            "accessed": "2026-10-13"
+          },
+          {
+            "title": "Applying to McKinsey & Company: CVs, cover letters and interviews",
+            "publisher": "TARGETjobs",
+            "url": "https://targetjobs.co.uk/careers-advice/business-consulting-and-management/applying-mckinsey-company-cvs-cover-letters-and-interviews",
+            "primary": true,
+            "quote": "The firm is looking for evidence of impact, leadership, entrepreneurship, problem solving and an overall orientation towards achievement.",
+            "accessed": "2026-10-13"
+          },
+          {
+            "title": "Associate Jobs: United Kingdom (early careers FAQ, internships, campus events)",
+            "publisher": "BCG",
+            "url": "https://careers.bcg.com/global/en/locations/united-kingdom/associate-jobs",
+            "primary": true,
+            "quote": "evidence of excellence in areas outside of academics - whether that's through extracurricular activities, leadership roles, or other achievements.",
+            "accessed": "2026-10-13"
+          }
+        ]
+      },
+      {
+        "id": "PB-CON-S05",
+        "text": "Bain London takes any discipline and Prospects says consultancy is open to any degree (some firms prefer numerical ones), but you must show you are comfortable analysing quantitative and qualitative data.",
+        "ruleIds": [
+          "CON-08"
+        ],
+        "grade": "A",
+        "sources": [
+          {
+            "title": "Bain London University Hiring",
+            "publisher": "Bain & Company",
+            "url": "https://www.bain.com/careers/recruiting/london-recruiting/",
+            "primary": true,
+            "quote": "We welcome Bachelor's, Master's (non-MBA), and PhD students from any discipline or university.",
+            "accessed": "2026-10-13"
+          },
+          {
+            "title": "How hard is it to get into consulting? (Abigail Lewis, 21 Jun 2023)",
+            "publisher": "TARGETjobs",
+            "url": "https://targetjobs.co.uk/careers-advice/business-consulting-and-management/how-hard-is-it-to-get-into-consulting",
+            "primary": true,
+            "quote": "they will want to know that you are comfortable analysing quantitative and qualitative data.",
+            "accessed": "2026-10-13"
+          },
+          {
+            "title": "Job profile: Management consultant",
+            "publisher": "Prospects",
+            "url": "https://www.prospects.ac.uk/job-profiles/management-consultant",
+            "primary": true,
+            "quote": "Management consultancy is open to graduates from any degree discipline, but a numerical or analytical degree is preferred by some firms.",
+            "accessed": "2026-10-13"
+          }
+        ]
+      },
+      {
+        "id": "PB-CON-S06",
+        "text": "The penultimate-year internship is a direct route to graduate offers: BCG London evaluates interns for a full-time offer at the end, and Bain London runs an Associate Consultant Intern programme for penultimate-year students.",
+        "ruleIds": [],
+        "grade": "A",
+        "sources": [
+          {
+            "title": "Associate Jobs: United Kingdom (early careers FAQ, internships, campus events)",
+            "publisher": "BCG",
+            "url": "https://careers.bcg.com/global/en/locations/united-kingdom/associate-jobs",
+            "primary": true,
+            "quote": "you will be evaluated for an offer for a full-time graduate role at the end of the programme.",
+            "accessed": "2026-10-13"
+          },
+          {
+            "title": "Bain London University Hiring",
+            "publisher": "Bain & Company",
+            "url": "https://www.bain.com/careers/recruiting/london-recruiting/",
+            "primary": true,
+            "quote": "Bain London now offers the Associate Consultant Intern (ACI) programme for students in their penultimate year of study.",
+            "accessed": "2026-10-13"
+          }
+        ]
+      },
+      {
+        "id": "PB-CON-S07",
+        "text": "Commercial awareness and firm knowledge, built partly by attending firm events (Cambridge Careers notes that firms will likely keep a record of who attended).",
+        "ruleIds": [
+          "CON-12"
+        ],
+        "grade": "A",
+        "sources": [
+          {
+            "title": "12 skills that consulting recruiters want in graduates (Olivia Rowland, 21 May 2025)",
+            "publisher": "TARGETjobs",
+            "url": "https://targetjobs.co.uk/careers-advice/business-consulting-and-management/top-consulting-skills",
+            "primary": true,
+            "quote": "Commercial awareness is an understanding of how economic factors affect businesses and the sectors they work with.",
+            "accessed": "2026-10-13"
+          },
+          {
+            "title": "Management & Strategy Consulting: Quick Guide to Recruitment 2024 (PDF)",
+            "publisher": "University of Cambridge Careers Service",
+            "url": "https://www.careers.cam.ac.uk/files/management_strategy_consulting_-_quick_guide_to_recruitment_2024.pdf",
+            "primary": false,
+            "quote": "they will have a record you attended too and likely use this to contact you about future opportunities.",
+            "accessed": "2026-10-13"
+          },
+          {
+            "title": "Associate Jobs: United Kingdom (early careers FAQ, internships, campus events)",
+            "publisher": "BCG",
+            "url": "https://careers.bcg.com/global/en/locations/united-kingdom/associate-jobs",
+            "primary": true,
+            "quote": "BCG hosts a wide range of events in September and October, both virtual and in person, on campus and in our offices.",
+            "accessed": "2026-10-13"
+          }
+        ]
+      },
+      {
+        "id": "PB-CON-S08",
+        "text": "Society leadership and extracurricular projects are common evidence of these skills.",
+        "ruleIds": [
+          "CON-07",
+          "CON-02"
+        ],
+        "grade": "B",
+        "sources": [
+          {
+            "title": "How hard is it to get into consulting? (Abigail Lewis, 21 Jun 2023)",
+            "publisher": "TARGETjobs",
+            "url": "https://targetjobs.co.uk/careers-advice/business-consulting-and-management/how-hard-is-it-to-get-into-consulting",
+            "primary": true,
+            "quote": "The survey indicates that 27% of final-year students interested in consulting employers have held a leadership position in a student society",
+            "accessed": "2026-10-13"
+          },
+          {
+            "title": "Job profile: Management consultant",
+            "publisher": "Prospects",
+            "url": "https://www.prospects.ac.uk/job-profiles/management-consultant",
+            "primary": true,
+            "quote": "extra-curricular activities such as club membership, team sports or work for a student society or community project.",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "note": "The 27% figure is from a TARGETjobs survey article dated 21 Jun 2023, quoted verbatim. It describes applicants, not what firms require."
+      }
+    ],
+    "actions": [
+      {
+        "id": "PB-CON-P01",
+        "type": "project",
+        "title": "Pro-bono consulting project for a charity, social enterprise or society",
+        "description": "Scope one real problem with a client (e.g. falling volunteer sign-ups). Gather data (survey, interviews), structure the issue, recommend 2-3 actions, then follow up on what was adopted and what changed.",
+        "skills": [
+          "Problem Solving",
+          "Market Research",
+          "Stakeholder Management",
+          "PowerPoint",
+          "Excel",
+          "Communication"
+        ],
+        "signals": [
+          "PB-CON-S04",
+          "PB-CON-S05",
+          "PB-CON-S08"
+        ],
+        "effort": "term",
+        "minYear": 1,
+        "evidence": "Client deck + what the client adopted and any measured change (report it as it is, including no change); CV bullet in problem → analysis → recommendation → result form (CON-03).",
+        "verified": null,
+        "sources": [
+          {
+            "title": "180 Degrees Consulting home page",
+            "publisher": "180 Degrees Consulting",
+            "url": "https://www.180dc.org/",
+            "primary": true,
+            "quote": "Our university branches offer opportunities for students to work with non-profits and social enterprises, making a tangible impact in their communities.",
+            "accessed": "2026-10-13"
+          },
+          {
+            "title": "Applying to McKinsey & Company: CVs, cover letters and interviews",
+            "publisher": "TARGETjobs",
+            "url": "https://targetjobs.co.uk/careers-advice/business-consulting-and-management/applying-mckinsey-company-cvs-cover-letters-and-interviews",
+            "primary": true,
+            "quote": "McKinsey is interested in 'why your work mattered' and the changes you brought about.",
+            "accessed": "2026-10-13"
+          }
+        ]
+      },
+      {
+        "id": "PB-CON-P02",
+        "type": "project",
+        "title": "Case practice log",
+        "description": "Run 15-20 live cases with a partner, starting with Bain's free practice cases. After each one, log your structure, maths errors and synthesis. Track improvement on the five dimensions Cambridge lists.",
+        "skills": [
+          "Case Interviews",
+          "Problem Solving",
+          "Mental Maths",
+          "Communication"
+        ],
+        "signals": [
+          "PB-CON-S02"
+        ],
+        "effort": "2-4 weeks",
+        "minYear": 1,
+        "evidence": "Case log (interview readiness; not a CV line).",
+        "verified": null,
+        "sources": [
+          {
+            "title": "Case interview preparation",
+            "publisher": "Bain & Company",
+            "url": "https://www.bain.com/careers/hiring-process/case-interview/",
+            "primary": true,
+            "quote": "We're not looking for a single right answer; we're looking for how you think, structure problems, and build on ideas as the conversation evolves.",
+            "accessed": "2026-10-13"
+          },
+          {
+            "title": "Management & Strategy Consulting: Quick Guide to Recruitment 2024 (PDF)",
+            "publisher": "University of Cambridge Careers Service",
+            "url": "https://www.careers.cam.ac.uk/files/management_strategy_consulting_-_quick_guide_to_recruitment_2024.pdf",
+            "primary": false,
+            "quote": "You are usually assessed on 5 core elements of a case: structuring, numeracy, judgements and insights, creativity, synthesis and case leadership.",
+            "accessed": "2026-10-13"
+          }
+        ]
+      },
+      {
+        "id": "PB-CON-P03",
+        "type": "project",
+        "title": "Industry deep-dive with market sizing",
+        "description": "Write a 6-8 slide deck on one UK sector: a market-size estimate (top-down and bottom-up), key players, one trend and what it means for a client. Then present it to a society or a peer group.",
+        "skills": [
+          "Market Research",
+          "Commercial Awareness",
+          "PowerPoint",
+          "Excel",
+          "Communication"
+        ],
+        "signals": [
+          "PB-CON-S07",
+          "PB-CON-S05"
+        ],
+        "effort": "weekend",
+        "minYear": 1,
+        "evidence": "Slide deck; source for 'what's a challenge facing our clients' interview answers.",
+        "verified": null,
+        "sources": [
+          {
+            "title": "12 skills that consulting recruiters want in graduates (Olivia Rowland, 21 May 2025)",
+            "publisher": "TARGETjobs",
+            "url": "https://targetjobs.co.uk/careers-advice/business-consulting-and-management/top-consulting-skills",
+            "primary": true,
+            "quote": "Commercial awareness is an understanding of how economic factors affect businesses and the sectors they work with.",
+            "accessed": "2026-10-13"
+          },
+          {
+            "title": "Job profile: Management consultant",
+            "publisher": "Prospects",
+            "url": "https://www.prospects.ac.uk/job-profiles/management-consultant",
+            "primary": true,
+            "quote": "conduct research and data collection to understand the client's operations and to discover potential problems",
+            "accessed": "2026-10-13"
+          }
+        ]
+      },
+      {
+        "id": "PB-CON-P04",
+        "type": "project",
+        "title": "Lead a measurable improvement where you already are",
+        "description": "In a society, team or part-time job, take ownership of one metric (attendance, revenue, sign-ups). Diagnose it with data, run a fix, and report the before and after honestly, even if the metric did not move. Bain asks for a record of initiative, leadership and teamwork; TARGETjobs says McKinsey looks for evidence of impact.",
+        "skills": [
+          "Leadership",
+          "Problem Solving",
+          "Excel",
+          "Stakeholder Management"
+        ],
+        "signals": [
+          "PB-CON-S04",
+          "PB-CON-S08"
+        ],
+        "effort": "term",
+        "minYear": 1,
+        "evidence": "CV bullet with your real before/after numbers (e.g. 'Raised attendance from [x]% to [y]% by…'); a strong story for fit interviews.",
+        "verified": null,
+        "sources": [
+          {
+            "title": "Bain London University Hiring",
+            "publisher": "Bain & Company",
+            "url": "https://www.bain.com/careers/recruiting/london-recruiting/",
+            "primary": true,
+            "quote": "Plus, a record of initiative, leadership, and teamwork.",
+            "accessed": "2026-10-13"
+          },
+          {
+            "title": "Applying to McKinsey & Company: CVs, cover letters and interviews",
+            "publisher": "TARGETjobs",
+            "url": "https://targetjobs.co.uk/careers-advice/business-consulting-and-management/applying-mckinsey-company-cvs-cover-letters-and-interviews",
+            "primary": true,
+            "quote": "The firm is looking for evidence of impact, leadership, entrepreneurship, problem solving and an overall orientation towards achievement.",
+            "accessed": "2026-10-13"
+          }
+        ]
+      },
+      {
+        "id": "PB-CON-C01",
+        "type": "course",
+        "title": "Bain case interview preparation hub",
+        "description": "Free Bain-designed material: what a case interview is, practice cases (Coffee Shop Co., FashionCo.) and interview tips. High prep value; not a CV item.",
+        "skills": [
+          "Case Interviews",
+          "Problem Solving"
+        ],
+        "signals": [
+          "PB-CON-S02"
+        ],
+        "effort": "weekend",
+        "minYear": 1,
+        "evidence": "Interview readiness.",
+        "url": "https://www.bain.com/careers/hiring-process/case-interview/",
+        "verified": true,
+        "cost": "free",
+        "signalValue": "high for interview prep; none on CV",
+        "sources": [
+          {
+            "title": "Case interview preparation",
+            "publisher": "Bain & Company",
+            "url": "https://www.bain.com/careers/hiring-process/case-interview/",
+            "primary": true,
+            "quote": "This is your one-stop resource for case interview preparation.",
+            "accessed": "2026-10-13"
+          },
+          {
+            "title": "Case interview preparation",
+            "publisher": "Bain & Company",
+            "url": "https://www.bain.com/careers/hiring-process/case-interview/",
+            "primary": true,
+            "quote": "You'll find Bain-designed materials, sample cases, practical tips, and trusted external resources",
+            "accessed": "2026-10-13"
+          }
+        ]
+      },
+      {
+        "id": "PB-CON-C02",
+        "type": "course",
+        "title": "Bain digital assessment hub",
+        "description": "Bain's FAQ on its online assessments (Sova or Test Gorilla, about 30-40 minutes). Use it to prepare for the numerical/logical screen before you apply.",
+        "skills": [
+          "Mental Maths",
+          "Problem Solving"
+        ],
+        "signals": [
+          "PB-CON-S03"
+        ],
+        "effort": "weekend",
+        "minYear": 1,
+        "evidence": "Test readiness.",
+        "url": "https://www.bain.com/careers/hiring-process/digital-assessment/",
+        "verified": true,
+        "cost": "free",
+        "signalValue": "test prep only",
+        "sources": [
+          {
+            "title": "Digital assessment hub",
+            "publisher": "Bain & Company",
+            "url": "https://www.bain.com/careers/hiring-process/digital-assessment/",
+            "primary": true,
+            "quote": "you will receive an email after submitting the application detailing whether you are required to complete Sova or Test Gorilla.",
+            "accessed": "2026-10-13"
+          },
+          {
+            "title": "Digital assessment hub",
+            "publisher": "Bain & Company",
+            "url": "https://www.bain.com/careers/hiring-process/digital-assessment/",
+            "primary": true,
+            "quote": "The assessment takes approximately 30-40 minutes.",
+            "accessed": "2026-10-13"
+          }
+        ]
+      },
+      {
+        "id": "PB-CON-E01",
+        "type": "experience",
+        "title": "180 Degrees Consulting (university branch)",
+        "description": "A student consultancy for non-profits and social enterprises, with UK branches including UCL, LSE, Imperial and King's College London. Join as a consultant, then aim to become a project lead.",
+        "skills": [
+          "Problem Solving",
+          "Stakeholder Management",
+          "Market Research",
+          "Leadership",
+          "Teamwork"
+        ],
+        "signals": [
+          "PB-CON-S04",
+          "PB-CON-S08"
+        ],
+        "effort": "term",
+        "minYear": 1,
+        "evidence": "Client project with deliverable + outcome; later a project-lead title.",
+        "url": "https://www.180dc.org/find-a-branch",
+        "verified": true,
+        "howToFind": "180DC 'Find a branch' map; branch recruitment is run by each university branch.",
+        "sources": [
+          {
+            "title": "180 Degrees Consulting home page",
+            "publisher": "180 Degrees Consulting",
+            "url": "https://www.180dc.org/",
+            "primary": true,
+            "quote": "The world's largest university-based consultancy for non-profits and socially-conscious organisations",
+            "accessed": "2026-10-13"
+          },
+          {
+            "title": "Find a branch (UK branches listed incl. UCL, LSE, Imperial, King's College London)",
+            "publisher": "180 Degrees Consulting",
+            "url": "https://www.180dc.org/find-a-branch",
+            "primary": true,
+            "quote": "University College London",
+            "accessed": "2026-10-13"
+          }
+        ]
+      },
+      {
+        "id": "PB-CON-E02",
+        "type": "experience",
+        "title": "Forage: BCG Strategy Consulting job simulation",
+        "description": "A free, self-paced simulation (4-5 hours) of a client strategy problem, with BCG sample answers. BCG asks participants not to list it as work or internship experience.",
+        "skills": [
+          "Problem Solving",
+          "Market Research",
+          "Data Visualisation"
+        ],
+        "signals": [
+          "PB-CON-S02",
+          "PB-CON-S05"
+        ],
+        "effort": "weekend",
+        "minYear": 1,
+        "evidence": "Certificate; list under courses/extracurriculars only.",
+        "url": "https://www.theforage.com/simulations/bcg/strategy-consulting-jk76",
+        "verified": true,
+        "cost": "free",
+        "signalValue": "low; follow BCG's listing rule",
+        "sources": [
+          {
+            "title": "Strategy Consulting Job Simulation",
+            "publisher": "Forage / BCG",
+            "url": "https://www.theforage.com/simulations/bcg/strategy-consulting-jk76",
+            "primary": true,
+            "quote": "Complete work that simulates life on the job. 4-5 hours and self-paced.",
+            "accessed": "2026-10-13"
+          },
+          {
+            "title": "Strategy Consulting Job Simulation",
+            "publisher": "Forage / BCG",
+            "url": "https://www.theforage.com/simulations/bcg/strategy-consulting-jk76",
+            "primary": true,
+            "quote": "It is our policy that you do not list your completion of this program as work or internship experience on your CV",
+            "accessed": "2026-10-13"
+          }
+        ]
+      },
+      {
+        "id": "PB-CON-E03",
+        "type": "experience",
+        "title": "BCG London summer internship (penultimate year)",
+        "description": "An eight-week July-August internship, fully integrated into a case team. Interns are evaluated for a full-time offer at the end. Applications go through an online form and CV, then a numerical assessment, CV review and case interviews.",
+        "skills": [
+          "Case Interviews",
+          "Problem Solving",
+          "Communication"
+        ],
+        "signals": [
+          "PB-CON-S06",
+          "PB-CON-S03",
+          "PB-CON-S02"
+        ],
+        "effort": "term",
+        "minYear": 2,
+        "evidence": "Internship; the main route to a graduate offer.",
+        "url": "https://careers.bcg.com/global/en/locations/united-kingdom/associate-jobs",
+        "verified": true,
+        "timing": "Applications 1-24 January 2027 (BCG UK page, accessed 2026-10-13).",
+        "sources": [
+          {
+            "title": "Associate Jobs: United Kingdom (early careers FAQ, internships, campus events)",
+            "publisher": "BCG",
+            "url": "https://careers.bcg.com/global/en/locations/united-kingdom/associate-jobs",
+            "primary": true,
+            "quote": "BCG London offers a summer internship programme for penultimate year students.",
+            "accessed": "2026-10-13"
+          },
+          {
+            "title": "Associate Jobs: United Kingdom (early careers FAQ, internships, campus events)",
+            "publisher": "BCG",
+            "url": "https://careers.bcg.com/global/en/locations/united-kingdom/associate-jobs",
+            "primary": true,
+            "quote": "Applications will open on 1 January 2027 and close on 24 January 2027.",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "expiresOn": "2027-01-24"
+      },
+      {
+        "id": "PB-CON-E04",
+        "type": "experience",
+        "title": "Bain London Associate Consultant Intern (ACI)",
+        "description": "Bain London's internship for penultimate-year students. Interviews are case-based.",
+        "skills": [
+          "Case Interviews",
+          "Problem Solving"
+        ],
+        "signals": [
+          "PB-CON-S06",
+          "PB-CON-S02"
+        ],
+        "effort": "term",
+        "minYear": 2,
+        "evidence": "Internship; route to an Associate Consultant offer.",
+        "url": "https://www.bain.com/careers/recruiting/london-recruiting/",
+        "verified": true,
+        "timing": "Expected to open November 2026 (Bain London page, accessed 2026-10-13).",
+        "sources": [
+          {
+            "title": "Bain London University Hiring",
+            "publisher": "Bain & Company",
+            "url": "https://www.bain.com/careers/recruiting/london-recruiting/",
+            "primary": true,
+            "quote": "Bain London now offers the Associate Consultant Intern (ACI) programme for students in their penultimate year of study.",
+            "accessed": "2026-10-13"
+          },
+          {
+            "title": "Bain London University Hiring",
+            "publisher": "Bain & Company",
+            "url": "https://www.bain.com/careers/recruiting/london-recruiting/",
+            "primary": true,
+            "quote": "Applications for the 2027 ACI programme are expected to open in November 2026.",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "reviewBy": "2026-11-30"
+      },
+      {
+        "id": "PB-CON-E05",
+        "type": "experience",
+        "title": "University consulting society and case competitions",
+        "description": "Join a consulting society, practise cases in its groups, and enter case competitions as a team. Aim for a committee role. This is generic advice, not a named programme.",
+        "skills": [
+          "Case Interviews",
+          "Leadership",
+          "Teamwork",
+          "Communication"
+        ],
+        "signals": [
+          "PB-CON-S08",
+          "PB-CON-S02"
+        ],
+        "effort": "term",
+        "minYear": 1,
+        "evidence": "Committee title; competition placing with the deliverable described.",
+        "verified": null,
+        "howToFind": "Students' union society directory.",
+        "sources": [
+          {
+            "title": "How hard is it to get into consulting? (Abigail Lewis, 21 Jun 2023)",
+            "publisher": "TARGETjobs",
+            "url": "https://targetjobs.co.uk/careers-advice/business-consulting-and-management/how-hard-is-it-to-get-into-consulting",
+            "primary": true,
+            "quote": "consider getting actively involved in the running of a student society if you can.",
+            "accessed": "2026-10-13"
+          },
+          {
+            "title": "Job profile: Management consultant",
+            "publisher": "Prospects",
+            "url": "https://www.prospects.ac.uk/job-profiles/management-consultant",
+            "primary": true,
+            "quote": "extra-curricular activities such as club membership, team sports or work for a student society or community project.",
+            "accessed": "2026-10-13"
+          }
+        ]
+      }
+    ],
+    "yearGuidance": {
+      "year1": "Join 180DC or a consulting society, take on one leadership task with a measurable result, attend firm events (BCG London lists its events on its UK careers page), and start casual case practice with Bain's free cases.",
+      "year2_penultimate": "Apply for internships: Bain London ACI is expected to open Nov 2026; BCG London runs 1-24 Jan 2027. Prepare the numerical online test first, then do structured case practice (15-20 cases).",
+      "final": "Apply for Associate/Associate Consultant roles; check each firm's page from early autumn for its window. Lead the CV with quantified leadership and problem-solving.",
+      "postgrad": "Bain London accepts Master's (non-MBA) and PhD students from any discipline. BCG routes PhD and medical-degree holders to Senior Associate.",
+      "note": "For 4-year courses, shift each line by one year."
+    },
+    "yearGuidanceDated": [
+      {
+        "year": "final",
+        "text": "Bain London Associate Consultant applications close 15 Oct 2026, 23:59 BST (online assessment due by midday 20 Oct 2026, BST). Open to final-year students or those with under two years' industry experience since graduating.",
+        "expiresOn": "2026-10-15",
+        "ref": "https://www.bain.com/careers/recruiting/london-recruiting/"
+      },
+      {
+        "year": "final",
+        "text": "BCG London Associate applications are open 9 Sep-18 Oct 2026.",
+        "expiresOn": "2026-10-18",
+        "ref": "https://careers.bcg.com/global/en/locations/united-kingdom/associate-jobs"
+      },
+      {
+        "year": "year2_penultimate",
+        "text": "Bain London ACI 2027 applications are expected to open in November 2026 (no date given).",
+        "reviewBy": "2026-11-30",
+        "ref": "PB-CON-E04"
+      },
+      {
+        "year": "year2_penultimate",
+        "text": "BCG London summer internship applications open 1 Jan 2027 and close 24 Jan 2027.",
+        "expiresOn": "2027-01-24",
+        "ref": "PB-CON-E03"
+      }
+    ]
+  }
+}

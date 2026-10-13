@@ -1,0 +1,3261 @@
+{
+  "_meta": {
+    "title": "Role Playbooks: tech & product archetypes (draft)",
+    "compiled": "2026-10-13",
+    "accessed": "2026-10-13",
+    "gradeScale": {
+      "A": "employer's own guidance plus a top-tier UK careers source, or consistent across several",
+      "B": "two sources incl. a top-tier careers publisher/professional body, or employer content via a publisher",
+      "C": "single source: labelled convention",
+      "D": "synthesis, no direct source"
+    },
+    "rules": "Every quote is verbatim (<=25 words) and was string-matched against the page text fetched on the access date. Projects are synthesis (grade D) linked to cited signals. No timings unless from a 2026/27 cycle page.",
+    "enums": {
+      "type": [
+        "project",
+        "course",
+        "experience"
+      ],
+      "effort": [
+        "weekend",
+        "2-4 weeks",
+        "term"
+      ],
+      "minYear": [
+        "1st",
+        "2nd",
+        "penultimate",
+        "final",
+        "masters"
+      ]
+    }
+  },
+  "sources": [
+    {
+      "id": "R1",
+      "title": "Software engineer (job profile)",
+      "publisher": "Prospects (Jisc)",
+      "url": "https://www.prospects.ac.uk/job-profiles/software-engineer",
+      "kind": "careers-publisher",
+      "date": null,
+      "accessed": "2026-10-13",
+      "verified": true,
+      "check": "curl HTTP 200 + quote matched in page text"
+    },
+    {
+      "id": "R2",
+      "title": "Tips for a graduate technical CV: template and advice",
+      "publisher": "targetjobs",
+      "url": "https://targetjobs.co.uk/careers-advice/information-technology/tips-graduate-technical-cv-template-and-advice",
+      "kind": "careers-publisher",
+      "date": "26 Nov 2025",
+      "accessed": "2026-10-13",
+      "verified": true,
+      "check": "curl HTTP 200 + quote matched in page text"
+    },
+    {
+      "id": "R3",
+      "title": "Preparing for Mobile Interviews at Monzo",
+      "publisher": "Monzo (employer blog)",
+      "url": "https://monzo.com/blog/preparing-for-mobile-interviews-at-monzo",
+      "kind": "employer",
+      "date": "29 Jan 2025",
+      "accessed": "2026-10-13",
+      "verified": true,
+      "check": "curl HTTP 200 + quote matched in page text"
+    },
+    {
+      "id": "R4",
+      "title": "How to show your passion for technology in your IT graduate application (quotes IBM hiring team lead)",
+      "publisher": "targetjobs",
+      "url": "https://targetjobs.co.uk/careers-advice/information-technology/how-show-your-passion-technology-your-it-graduate-application",
+      "kind": "careers-publisher",
+      "date": null,
+      "accessed": "2026-10-13",
+      "verified": true,
+      "check": "curl HTTP 200 + quote matched in page text (old /career-sectors/... URL 301-redirects here; URL updated 2026-10-13)"
+    },
+    {
+      "id": "R5",
+      "title": "Extracurricular activities that will develop your IT skills",
+      "publisher": "targetjobs",
+      "url": "https://targetjobs.co.uk/careers-advice/information-technology/extracurricular-activities-will-develop-your-it-skills",
+      "kind": "careers-publisher",
+      "date": null,
+      "accessed": "2026-10-13",
+      "verified": true,
+      "check": "curl HTTP 200 + quote matched in page text"
+    },
+    {
+      "id": "R6",
+      "title": "What is a spring week, insight day or insight programme?",
+      "publisher": "targetjobs",
+      "url": "https://targetjobs.co.uk/careers-advice/internships/what-spring-week-insight-day-or-insight-programme",
+      "kind": "careers-publisher",
+      "date": null,
+      "accessed": "2026-10-13",
+      "verified": true,
+      "check": "curl HTTP 200 + quote matched in page text"
+    },
+    {
+      "id": "R7",
+      "title": "Data analyst (job profile)",
+      "publisher": "Prospects (Jisc)",
+      "url": "https://www.prospects.ac.uk/job-profiles/data-analyst",
+      "kind": "careers-publisher",
+      "date": null,
+      "accessed": "2026-10-13",
+      "verified": true,
+      "check": "curl HTTP 200 + quote matched in page text"
+    },
+    {
+      "id": "R8",
+      "title": "Data scientist (job profile)",
+      "publisher": "Prospects (Jisc)",
+      "url": "https://www.prospects.ac.uk/job-profiles/data-scientist",
+      "kind": "careers-publisher",
+      "date": null,
+      "accessed": "2026-10-13",
+      "verified": true,
+      "check": "curl HTTP 200 + quote matched in page text"
+    },
+    {
+      "id": "R9",
+      "title": "Types of job: Data Scientist",
+      "publisher": "Royal Statistical Society",
+      "url": "https://rss.org.uk/jobs-careers/career-development/types-of-job/data-scientist/",
+      "kind": "professional-body",
+      "date": "undated; content looks dated (Hadoop, C#)",
+      "accessed": "2026-10-13",
+      "verified": true,
+      "check": "curl HTTP 200 + quote matched in page text"
+    },
+    {
+      "id": "R10",
+      "title": "Product manager (job profile)",
+      "publisher": "Prospects (Jisc)",
+      "url": "https://www.prospects.ac.uk/job-profiles/product-manager",
+      "kind": "careers-publisher",
+      "date": null,
+      "accessed": "2026-10-13",
+      "verified": true,
+      "check": "curl HTTP 200 + quote matched in page text"
+    },
+    {
+      "id": "R11",
+      "title": "What it's really like working as a Graduate Product Manager at Capital One",
+      "publisher": "targetjobs (Capital One graduate profile)",
+      "url": "https://targetjobs.co.uk/organisations/capital-one/what-its-really-working-graduate-product-manager-capital-one",
+      "kind": "employer",
+      "date": null,
+      "accessed": "2026-10-13",
+      "verified": true,
+      "check": "curl HTTP 200 + quote matched in page text"
+    },
+    {
+      "id": "R12",
+      "title": "Writing a CV for graduate advertising, marketing and PR jobs",
+      "publisher": "targetjobs",
+      "url": "https://targetjobs.co.uk/careers-advice/marketing-advertising-and-pr/writing-cv-graduate-advertising-marketing-and-pr-jobs",
+      "kind": "careers-publisher",
+      "date": null,
+      "accessed": "2026-10-13",
+      "verified": true,
+      "check": "curl HTTP 200 + quote matched in page text"
+    },
+    {
+      "id": "R13",
+      "title": "Help to get your first job in marketing",
+      "publisher": "CIM Scotland (Chartered Institute of Marketing)",
+      "url": "https://regions.cim.co.uk/scotland/home/news/2023/help-to-get-your-first-job-in-marketing",
+      "kind": "professional-body",
+      "date": "2023",
+      "accessed": "2026-10-13",
+      "verified": true,
+      "check": "curl HTTP 200 + quote matched in page text"
+    },
+    {
+      "id": "R14",
+      "title": "Digital marketer (job profile)",
+      "publisher": "Prospects (Jisc)",
+      "url": "https://www.prospects.ac.uk/job-profiles/digital-marketer",
+      "kind": "careers-publisher",
+      "date": null,
+      "accessed": "2026-10-13",
+      "verified": true,
+      "check": "curl HTTP 200 + quote matched in page text"
+    },
+    {
+      "id": "R15",
+      "title": "Marketing executive (job profile)",
+      "publisher": "Prospects (Jisc)",
+      "url": "https://www.prospects.ac.uk/job-profiles/marketing-executive",
+      "kind": "careers-publisher",
+      "date": null,
+      "accessed": "2026-10-13",
+      "verified": true,
+      "check": "curl HTTP 200 + quote matched in page text"
+    },
+    {
+      "id": "R16",
+      "title": "How to get a job at L'Oréal (L'Oréal graduate; advertising feature)",
+      "publisher": "targetjobs / L'Oréal",
+      "url": "https://targetjobs.co.uk/careers-advice/marketing-advertising-and-pr/how-get-job-loreal",
+      "kind": "employer",
+      "date": null,
+      "accessed": "2026-10-13",
+      "verified": true,
+      "check": "curl HTTP 200 + quote matched in page text"
+    },
+    {
+      "id": "R17",
+      "title": "Digital marketing: graduate area of work",
+      "publisher": "targetjobs",
+      "url": "https://targetjobs.co.uk/careers-advice/marketing-advertising-and-pr/digital-marketing-graduate-area-work",
+      "kind": "careers-publisher",
+      "date": null,
+      "accessed": "2026-10-13",
+      "verified": true,
+      "check": "curl HTTP 200 + quote matched in page text"
+    },
+    {
+      "id": "R18",
+      "title": "Research scientist (physical sciences) (job profile)",
+      "publisher": "Prospects (Jisc)",
+      "url": "https://www.prospects.ac.uk/job-profiles/research-scientist-physical-sciences",
+      "kind": "careers-publisher",
+      "date": null,
+      "accessed": "2026-10-13",
+      "verified": true,
+      "check": "curl HTTP 200 + quote matched in page text"
+    },
+    {
+      "id": "R19",
+      "title": "Undergraduate Research Opportunities Programme (UROP)",
+      "publisher": "Imperial College London, Dept of Aeronautics",
+      "url": "https://www.imperial.ac.uk/aeronautics/study/ug/current-students/undergraduate-research-opportunities-programme-urop/",
+      "kind": "employer",
+      "date": null,
+      "accessed": "2026-10-13",
+      "verified": true,
+      "check": "curl HTTP 200 + quote matched in page text"
+    },
+    {
+      "id": "R20",
+      "title": "Undergraduate Research Bursaries 2027",
+      "publisher": "London Mathematical Society",
+      "url": "https://www.lms.ac.uk/grants/undergraduate-research-bursaries/applications",
+      "kind": "programme",
+      "date": null,
+      "accessed": "2026-10-13",
+      "verified": true,
+      "check": "curl HTTP 200 + quote matched in page text"
+    },
+    {
+      "id": "R21",
+      "title": "CVs and cover letters for PhDs and postdocs (CV book, PDF)",
+      "publisher": "University of Cambridge Careers Service",
+      "url": "https://www.careers.cam.ac.uk/files/phdpostdoccvbook.pdf",
+      "kind": "careers-publisher",
+      "date": null,
+      "accessed": "2026-10-13",
+      "verified": true,
+      "check": "curl HTTP 200 + PDF text extracted (pypdf) + quote matched"
+    },
+    {
+      "id": "R30",
+      "title": "CS50x: Introduction to Computer Science (OpenCourseWare)",
+      "publisher": "Harvard University",
+      "url": "https://cs50.harvard.edu/x/",
+      "kind": "provider",
+      "date": null,
+      "accessed": "2026-10-13",
+      "verified": true,
+      "check": "curl HTTP 200 + quote matched in page text"
+    },
+    {
+      "id": "R31",
+      "title": "The Missing Semester of Your CS Education",
+      "publisher": "MIT CSAIL",
+      "url": "https://missing.csail.mit.edu/",
+      "kind": "provider",
+      "date": null,
+      "accessed": "2026-10-13",
+      "verified": true,
+      "check": "curl HTTP 200 + quote matched in page text"
+    },
+    {
+      "id": "R32",
+      "title": "Full Stack Open",
+      "publisher": "University of Helsinki",
+      "url": "https://fullstackopen.com/en/",
+      "kind": "provider",
+      "date": null,
+      "accessed": "2026-10-13",
+      "verified": true,
+      "check": "curl HTTP 200 + quote matched in page text"
+    },
+    {
+      "id": "R33",
+      "title": "6.006 Introduction to Algorithms (Spring 2020)",
+      "publisher": "MIT OpenCourseWare",
+      "url": "https://ocw.mit.edu/courses/6-006-introduction-to-algorithms-spring-2020/",
+      "kind": "provider",
+      "date": null,
+      "accessed": "2026-10-13",
+      "verified": true,
+      "check": "curl HTTP 200 + quote matched in page text"
+    },
+    {
+      "id": "R34",
+      "title": "Kaggle Learn",
+      "publisher": "Kaggle",
+      "url": "https://www.kaggle.com/learn",
+      "kind": "provider",
+      "date": null,
+      "accessed": "2026-10-13",
+      "verified": true,
+      "check": "JS page: quote confirmed via firecrawl directQuote (re-verified 2026-10-13)"
+    },
+    {
+      "id": "R35",
+      "title": "SQLBolt",
+      "publisher": "SQLBolt",
+      "url": "https://sqlbolt.com/",
+      "kind": "provider",
+      "date": null,
+      "accessed": "2026-10-13",
+      "verified": true,
+      "check": "curl HTTP 200 + quote matched in page text"
+    },
+    {
+      "id": "R36",
+      "title": "An Introduction to Statistical Learning (ISLR / ISLP)",
+      "publisher": "James, Witten, Hastie, Tibshirani (statlearning.com)",
+      "url": "https://www.statlearning.com/",
+      "kind": "provider",
+      "date": null,
+      "accessed": "2026-10-13",
+      "verified": true,
+      "check": "curl HTTP 200 + quote matched; ISLP PDF download link resolved to a 20 MB PDF"
+    },
+    {
+      "id": "R37",
+      "title": "Practical Deep Learning for Coders",
+      "publisher": "fast.ai",
+      "url": "https://course.fast.ai/",
+      "kind": "provider",
+      "date": null,
+      "accessed": "2026-10-13",
+      "verified": true,
+      "check": "curl HTTP 200 + quote matched in page text"
+    },
+    {
+      "id": "R40",
+      "title": "Inbound Marketing Certification",
+      "publisher": "HubSpot Academy",
+      "url": "https://academy.hubspot.com/courses/inbound-marketing",
+      "kind": "provider",
+      "date": null,
+      "accessed": "2026-10-13",
+      "verified": true,
+      "check": "JS page: quote, '9 Lessons' and '4 hr 53 min' confirmed via in-browser innerText (re-verified 2026-10-13)"
+    },
+    {
+      "id": "R41",
+      "title": "Skillshop (home)",
+      "publisher": "Google",
+      "url": "https://skillshop.withgoogle.com/",
+      "kind": "provider",
+      "date": null,
+      "accessed": "2026-10-13",
+      "verified": true,
+      "check": "firecrawl scrape: page meta description; curl HTTP 200"
+    },
+    {
+      "id": "R42",
+      "title": "Google Analytics account training guide and support",
+      "publisher": "Google Analytics Help",
+      "url": "https://support.google.com/analytics/answer/11828307?hl=en",
+      "kind": "provider",
+      "date": null,
+      "accessed": "2026-10-13",
+      "verified": true,
+      "check": "curl HTTP 200 + quote matched in page text"
+    },
+    {
+      "id": "R43",
+      "title": "Free Google Ads training (Skillshop)",
+      "publisher": "Google",
+      "url": "https://skillshop.withgoogle.com/googleads/",
+      "kind": "provider",
+      "date": null,
+      "accessed": "2026-10-13",
+      "verified": true,
+      "check": "curl HTTP 200 + quote matched in page text"
+    },
+    {
+      "id": "R44",
+      "title": "Semrush Academy",
+      "publisher": "Semrush",
+      "url": "https://www.semrush.com/academy/",
+      "kind": "provider",
+      "date": null,
+      "accessed": "2026-10-13",
+      "verified": true,
+      "check": "curl HTTP 200 + quote matched in page text"
+    },
+    {
+      "id": "R45",
+      "title": "Software Carpentry lessons",
+      "publisher": "The Carpentries",
+      "url": "https://software-carpentry.org/lessons/",
+      "kind": "provider",
+      "date": null,
+      "accessed": "2026-10-13",
+      "verified": true,
+      "check": "curl HTTP 200 + quote matched in page text"
+    },
+    {
+      "id": "R46",
+      "title": "Version Control with Git (Software Carpentry lesson)",
+      "publisher": "The Carpentries",
+      "url": "https://swcarpentry.github.io/git-novice/",
+      "kind": "provider",
+      "date": null,
+      "accessed": "2026-10-13",
+      "verified": true,
+      "check": "curl HTTP 200 + quote matched in page text"
+    },
+    {
+      "id": "R47",
+      "title": "The Turing Way",
+      "publisher": "The Turing Way community (supported by The Alan Turing Institute)",
+      "url": "https://book.the-turing-way.org/",
+      "kind": "provider",
+      "date": null,
+      "accessed": "2026-10-13",
+      "verified": true,
+      "check": "curl HTTP 200 + quote matched in page text"
+    },
+    {
+      "id": "R48",
+      "title": "Learn LaTeX in 30 minutes",
+      "publisher": "Overleaf",
+      "url": "https://www.overleaf.com/learn/latex/Learn_LaTeX_in_30_minutes",
+      "kind": "provider",
+      "date": null,
+      "accessed": "2026-10-13",
+      "verified": true,
+      "check": "curl HTTP 200 + quote matched in page text"
+    },
+    {
+      "id": "R49",
+      "title": "18.06 Linear Algebra (Spring 2010)",
+      "publisher": "MIT OpenCourseWare",
+      "url": "https://ocw.mit.edu/courses/18-06-linear-algebra-spring-2010/",
+      "kind": "provider",
+      "date": null,
+      "accessed": "2026-10-13",
+      "verified": true,
+      "check": "curl HTTP 200 + quote matched in page text"
+    },
+    {
+      "id": "R50",
+      "title": "2027 Season events",
+      "publisher": "Major League Hacking (MLH)",
+      "url": "https://www.mlh.com/seasons/2027/events",
+      "kind": "programme",
+      "date": null,
+      "accessed": "2026-10-13",
+      "verified": true,
+      "check": "curl HTTP 200 + quote matched in page text"
+    },
+    {
+      "id": "R51",
+      "title": "Google Summer of Code (home)",
+      "publisher": "Google",
+      "url": "https://summerofcode.withgoogle.com/",
+      "kind": "programme",
+      "date": null,
+      "accessed": "2026-10-13",
+      "verified": true,
+      "check": "curl HTTP 200 + quote matched in page text"
+    },
+    {
+      "id": "R52",
+      "title": "Google Summer of Code rules",
+      "publisher": "Google",
+      "url": "https://summerofcode.withgoogle.com/rules",
+      "kind": "programme",
+      "date": null,
+      "accessed": "2026-10-13",
+      "verified": true,
+      "check": "JS page: quote confirmed via firecrawl directQuote (re-verified 2026-10-13)"
+    },
+    {
+      "id": "R53",
+      "title": "Outreachy",
+      "publisher": "Software Freedom Conservancy",
+      "url": "https://www.outreachy.org/",
+      "kind": "programme",
+      "date": null,
+      "accessed": "2026-10-13",
+      "verified": true,
+      "check": "curl HTTP 200 + quote matched in page text"
+    },
+    {
+      "id": "R54",
+      "title": "UKIEPC (UK & Ireland Programming Contest)",
+      "publisher": "UKIEPC",
+      "url": "https://ukiepc.info/",
+      "kind": "programme",
+      "date": null,
+      "accessed": "2026-10-13",
+      "verified": true,
+      "check": "curl HTTP 200 + quote matched in page text"
+    },
+    {
+      "id": "R55",
+      "title": "Kaggle Competitions",
+      "publisher": "Kaggle",
+      "url": "https://www.kaggle.com/competitions",
+      "kind": "programme",
+      "date": null,
+      "accessed": "2026-10-13",
+      "verified": true,
+      "check": "JS page: both quotes confirmed via in-browser innerText (re-verified 2026-10-13)"
+    },
+    {
+      "id": "R56",
+      "title": "Forage job simulations",
+      "publisher": "Forage",
+      "url": "https://www.theforage.com/",
+      "kind": "programme",
+      "date": null,
+      "accessed": "2026-10-13",
+      "verified": true,
+      "check": "curl HTTP 200 + quote matched in page text"
+    },
+    {
+      "id": "R57",
+      "title": "Insight programme opportunities (search)",
+      "publisher": "targetjobs",
+      "url": "https://targetjobs.co.uk/s/jobs/insight-programme",
+      "kind": "programme",
+      "date": null,
+      "accessed": "2026-10-13",
+      "verified": true,
+      "check": "curl HTTP 200 + quote matched in page text"
+    },
+    {
+      "id": "R58",
+      "title": "Enactus UK & Ireland",
+      "publisher": "Enactus UK & Ireland",
+      "url": "https://www.enactusuki.org/",
+      "kind": "programme",
+      "date": null,
+      "accessed": "2026-10-13",
+      "verified": true,
+      "check": "curl HTTP 200 + quote matched in page text (enactusuk.org redirects here; URL updated 2026-10-13)"
+    },
+    {
+      "id": "R59",
+      "title": "Google recruiters share the 3-part formula for stronger resumes",
+      "publisher": "CNBC (reporting Google recruiter guidance)",
+      "url": "https://www.cnbc.com/2018/08/16/google-recruiters-share-the-3-part-formula-for-stronger-resumes.html",
+      "kind": "employer",
+      "date": "16 Aug 2018",
+      "accessed": "2026-10-13",
+      "verified": true,
+      "check": "curl HTTP 200 + quote matched in page text (added by verifier 2026-10-13)"
+    }
+  ],
+  "software_eng": {
+    "signals": [
+      {
+        "id": "PB-SWE-S01",
+        "text": "Builds things outside the syllabus and can show them: personal projects with an up-to-date portfolio or GitHub link.",
+        "ruleIds": [
+          "SWE-03",
+          "SWE-07"
+        ],
+        "grade": "B",
+        "basis": "evidence (two careers publishers agree)",
+        "sources": [
+          {
+            "ref": "R1",
+            "quote": "You may already have some personal experience from working on your own projects, which could be of interest to potential employers.",
+            "accessed": "2026-10-13"
+          },
+          {
+            "ref": "R2",
+            "quote": "If you include a link to a portfolio, make sure it includes up-to-date examples of your work.",
+            "accessed": "2026-10-13"
+          }
+        ]
+      },
+      {
+        "id": "PB-SWE-S02",
+        "text": "Visible 'passion for technology': hackathons, tech events and self-started projects.",
+        "ruleIds": [
+          "SWE-12"
+        ],
+        "grade": "B",
+        "basis": "evidence (two careers publishers agree)",
+        "sources": [
+          {
+            "ref": "R2",
+            "quote": "Recruiters have told targetjobs that they really want to see practical examples of candidates’ skills and demonstrations of candidates’ ‘passion for technology’",
+            "accessed": "2026-10-13"
+          },
+          {
+            "ref": "R1",
+            "quote": "Software engineers are typically passionate about what they do and may already have a portfolio or some examples to show to potential employers",
+            "accessed": "2026-10-13"
+          }
+        ]
+      },
+      {
+        "id": "PB-SWE-S03",
+        "text": "Can talk in depth about their own projects: technology choices, trade-offs and what they would change.",
+        "ruleIds": [
+          "SWE-05",
+          "SWE-11"
+        ],
+        "grade": "A",
+        "basis": "evidence (employer + careers publisher)",
+        "sources": [
+          {
+            "ref": "R3",
+            "quote": "Be prepared to talk in depth about projects you’ve worked on recently. Your interviewer will want to hear about technology choices, trade-offs",
+            "accessed": "2026-10-13"
+          },
+          {
+            "ref": "R2",
+            "quote": "you need to be prepared to speak about anything on your CV at interview.",
+            "accessed": "2026-10-13"
+          }
+        ]
+      },
+      {
+        "id": "PB-SWE-S04",
+        "text": "Collaboration and communication count as much as technical skill.",
+        "ruleIds": [
+          "SWE-14"
+        ],
+        "grade": "A",
+        "basis": "evidence (employer + two careers publishers)",
+        "sources": [
+          {
+            "ref": "R3",
+            "quote": "the collaboration and project delivery skills we explore in this stage are just as important as technical excellence.",
+            "accessed": "2026-10-13"
+          },
+          {
+            "ref": "R2",
+            "quote": "employers view behavioural competencies and ‘soft’ skills with equal importance.",
+            "accessed": "2026-10-13"
+          },
+          {
+            "ref": "R1",
+            "quote": "the ability to communicate with clients, colleagues, and management to explain complex issues clearly and concisely",
+            "accessed": "2026-10-13"
+          }
+        ]
+      },
+      {
+        "id": "PB-SWE-S05",
+        "text": "Problem-solving ability is a core requirement; Monzo says it hires for problem-solving ability over experience.",
+        "ruleIds": [],
+        "grade": "A",
+        "basis": "evidence (employer + careers publisher)",
+        "sources": [
+          {
+            "ref": "R3",
+            "quote": "In general, we hire for problem-solving ability over experience.",
+            "accessed": "2026-10-13"
+          },
+          {
+            "ref": "R1",
+            "quote": "a logical, analytical and creative approach to problems and problem solving",
+            "accessed": "2026-10-13"
+          }
+        ]
+      },
+      {
+        "id": "PB-SWE-S06",
+        "text": "Skills are applied and self-driven, not just listed.",
+        "ruleIds": [
+          "SWE-11"
+        ],
+        "grade": "B",
+        "basis": "evidence (employer recruiter quoted by careers publisher + careers publisher)",
+        "sources": [
+          {
+            "ref": "R4",
+            "quote": "Don’t just say, “I know programming languages x, y and z” – that doesn’t show passion and doesn’t stand out.",
+            "accessed": "2026-10-13"
+          },
+          {
+            "ref": "R1",
+            "quote": "a motivated approach to your career and a willingness to further develop your skills and knowledge",
+            "accessed": "2026-10-13"
+          }
+        ]
+      },
+      {
+        "id": "PB-SWE-S07",
+        "text": "Relevant work experience (placements, insight programmes, internships) is viewed favourably and often feeds later hiring.",
+        "ruleIds": [],
+        "grade": "B",
+        "basis": "evidence (two careers publishers agree)",
+        "sources": [
+          {
+            "ref": "R1",
+            "quote": "Relevant work experience is a good way of demonstrating a genuine interest in computing and is regarded favourably by employers.",
+            "accessed": "2026-10-13"
+          },
+          {
+            "ref": "R6",
+            "quote": "Many employers run insight programmes, and especially spring weeks, with a view to hiring future interns and graduates.",
+            "accessed": "2026-10-13"
+          }
+        ]
+      }
+    ],
+    "actions": [
+      {
+        "id": "PB-SWE-P01",
+        "type": "project",
+        "title": "Build and ship a tool for a real group you belong to",
+        "description": "Find a manual process in a society, sports club or part-time job and replace it with a small web app that people actually use. Keep it running.",
+        "skills": [
+          "TypeScript",
+          "React",
+          "Node.js",
+          "PostgreSQL",
+          "REST API",
+          "Git"
+        ],
+        "signals": [
+          "PB-SWE-S01",
+          "PB-SWE-S02",
+          "PB-SWE-S04"
+        ],
+        "effort": "2-4 weeks",
+        "minYear": "1st",
+        "evidence": "Live link + public GitHub repo; README states the problem, stack, who uses it and one outcome (e.g. users, time saved), honestly measured.",
+        "sources": [
+          {
+            "ref": "R5",
+            "quote": "You could look at sports clubs, groups and societies you already belong to and see if they have any processes or databases you could improve",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "verified": true
+      },
+      {
+        "id": "PB-SWE-P02",
+        "type": "project",
+        "title": "Take a tutorial project and make it genuinely yours",
+        "description": "Extend a course or tutorial project with a feature the tutorial did not cover, then add automated tests and a CI pipeline.",
+        "skills": [
+          "Python",
+          "FastAPI",
+          "Unit Testing",
+          "CI/CD",
+          "Docker",
+          "Git"
+        ],
+        "signals": [
+          "PB-SWE-S01",
+          "PB-SWE-S06"
+        ],
+        "effort": "2-4 weeks",
+        "minYear": "1st",
+        "evidence": "Repo with passing CI; README section 'What I changed from the tutorial and why' (addresses SWE-17a: unextended tutorial clones).",
+        "sources": [
+          {
+            "ref": "R4",
+            "quote": "If you were self-taught, then yes! Or if you’ve used that skill to solve a problem, yes again!",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "verified": true
+      },
+      {
+        "id": "PB-SWE-P03",
+        "type": "project",
+        "title": "Write a design note for your best project",
+        "description": "One page covering the architecture, two alternatives you rejected and why, known limitations, and what you would do with more time. Rehearse explaining it in 3 minutes.",
+        "skills": [
+          "System Design",
+          "Communication"
+        ],
+        "signals": [
+          "PB-SWE-S03"
+        ],
+        "effort": "weekend",
+        "minYear": "1st",
+        "evidence": "DESIGN.md in the repo, linked from the README.",
+        "sources": [
+          {
+            "ref": "R3",
+            "quote": "you should expect to justify key decisions in your solution and describe what you’d have done differently with more time.",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "verified": true
+      },
+      {
+        "id": "PB-SWE-P04",
+        "type": "project",
+        "title": "Implement and benchmark core data structures and algorithms",
+        "description": "Implement several classic structures (e.g. hash map, heap, graph search), test them, and benchmark them against the standard library on growing inputs.",
+        "skills": [
+          "Algorithms",
+          "Python",
+          "C++",
+          "Unit Testing"
+        ],
+        "signals": [
+          "PB-SWE-S05",
+          "PB-SWE-S06"
+        ],
+        "effort": "2-4 weeks",
+        "minYear": "1st",
+        "evidence": "Repo with tests and a README results table and chart; short write-up of what surprised you.",
+        "sources": [
+          {
+            "ref": "R1",
+            "quote": "a logical, analytical and creative approach to problems and problem solving",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "verified": true
+      },
+      {
+        "id": "PB-SWE-P05",
+        "type": "project",
+        "title": "Team build with real code review",
+        "description": "Build something with 2-3 peers using issues, branches, pull requests and reviews, with a short planning cadence. Each person owns a clear part.",
+        "skills": [
+          "Git",
+          "Code Review",
+          "Agile",
+          "Teamwork"
+        ],
+        "signals": [
+          "PB-SWE-S04"
+        ],
+        "effort": "term",
+        "minYear": "1st",
+        "evidence": "Public repo showing PR history and reviews; README lists who built what (SWE-05: your own contribution).",
+        "sources": [
+          {
+            "ref": "R3",
+            "quote": "the collaboration and project delivery skills we explore in this stage are just as important as technical excellence.",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "verified": true
+      },
+      {
+        "id": "PB-SWE-C01",
+        "type": "course",
+        "title": "CS50x (Harvard OpenCourseWare)",
+        "url": "https://cs50.harvard.edu/x/",
+        "description": "Broad CS foundation (C, Python, SQL, web) ending in a final project. Signal value: the certificate on its own is low; the final project is what counts as evidence.",
+        "skills": [
+          "C",
+          "Python",
+          "SQL",
+          "Algorithms"
+        ],
+        "signals": [
+          "PB-SWE-S06"
+        ],
+        "effort": "term",
+        "minYear": "1st",
+        "hours": "not stated in hours; 'eleven weeks of material'",
+        "free": "free (OCW)",
+        "evidence": "Final project repo",
+        "sources": [
+          {
+            "ref": "R30",
+            "quote": "Even if you are not a student at Harvard, you are welcome to “take” this course for free via this OpenCourseWare",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "verified": true
+      },
+      {
+        "id": "PB-SWE-C02",
+        "type": "course",
+        "title": "The Missing Semester of Your CS Education (MIT)",
+        "url": "https://missing.csail.mit.edu/",
+        "description": "Shell, editors, Git and tooling. Signal value low, learning only: it shows up indirectly as cleaner repos and workflow.",
+        "skills": [
+          "Linux",
+          "Git"
+        ],
+        "signals": [
+          "PB-SWE-S06"
+        ],
+        "effort": "2-4 weeks",
+        "minYear": "1st",
+        "hours": "not stated",
+        "free": "open lecture notes, no sign-in or payment (observed)",
+        "evidence": "none directly",
+        "sources": [
+          {
+            "ref": "R31",
+            "quote": "there’s one critical subject that’s rarely covered, and is instead left to students to figure out",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "verified": true
+      },
+      {
+        "id": "PB-SWE-C03",
+        "type": "course",
+        "title": "Full Stack Open (University of Helsinki)",
+        "url": "https://fullstackopen.com/en/",
+        "description": "Modern JavaScript web development: React front ends with Node.js REST back ends, plus TypeScript and GraphQL parts. Signal value comes from the apps you build with it.",
+        "skills": [
+          "JavaScript",
+          "React",
+          "Node.js",
+          "REST API",
+          "TypeScript",
+          "GraphQL"
+        ],
+        "signals": [
+          "PB-SWE-S01"
+        ],
+        "effort": "term",
+        "minYear": "1st",
+        "hours": "not stated",
+        "free": "free; CC BY-NC-SA material",
+        "evidence": "Deployed exercise apps / a capstone repo",
+        "sources": [
+          {
+            "ref": "R32",
+            "quote": "The main focus is on building single page applications with ReactJS that use REST APIs built with Node.js.",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "verified": true
+      },
+      {
+        "id": "PB-SWE-C04",
+        "type": "course",
+        "title": "MIT 6.006 Introduction to Algorithms (OCW)",
+        "url": "https://ocw.mit.edu/courses/6-006-introduction-to-algorithms-spring-2020/",
+        "description": "University-level algorithms and data structures with problem sets. Learning value for technical interviews; signal value on a CV low.",
+        "skills": [
+          "Algorithms"
+        ],
+        "signals": [
+          "PB-SWE-S05"
+        ],
+        "effort": "term",
+        "minYear": "1st",
+        "hours": "not stated",
+        "free": "free (OCW)",
+        "evidence": "none directly; supports PB-SWE-P04",
+        "sources": [
+          {
+            "ref": "R33",
+            "quote": "Freely sharing knowledge with learners and educators around the world.",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "verified": true
+      },
+      {
+        "id": "PB-SWE-E01",
+        "type": "experience",
+        "title": "Hackathons (MLH season listings)",
+        "url": "https://www.mlh.com/seasons/2027/events",
+        "description": "Attend a hackathon, ship a demo with a team, then polish it afterwards so it can sit in your Projects section. Filter the MLH list by Europe/UK.",
+        "skills": [
+          "Hackathon",
+          "Teamwork"
+        ],
+        "signals": [
+          "PB-SWE-S02",
+          "PB-SWE-S04"
+        ],
+        "effort": "weekend",
+        "minYear": "1st",
+        "howToFind": "MLH 2027 season events page, region filter 'Europe/UK'; also your university's tech society.",
+        "evidence": "Devpost/GitHub link to what you built; your role stated",
+        "sources": [
+          {
+            "ref": "R50",
+            "quote": "Filter events This Month Next Month Diversity Focused Region North America Europe/UK Asia Pacific",
+            "accessed": "2026-10-13"
+          },
+          {
+            "ref": "R2",
+            "quote": "hackathons, events and personal projects can provide just that.",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "verified": true
+      },
+      {
+        "id": "PB-SWE-E02",
+        "type": "experience",
+        "title": "UKIEPC (ICPC subregional contest)",
+        "url": "https://ukiepc.info/",
+        "description": "Team programming contest hosted at UK and Ireland universities. Good for algorithmic problem solving and teamwork.",
+        "skills": [
+          "Competitive Programming",
+          "Algorithms"
+        ],
+        "signals": [
+          "PB-SWE-S05",
+          "PB-SWE-S02"
+        ],
+        "effort": "weekend",
+        "minYear": "1st",
+        "howToFind": "ukiepc.info and its Discord; ask your department or competitive-programming society whether it hosts a site.",
+        "evidence": "Team placing (rank) on the CV",
+        "sources": [
+          {
+            "ref": "R54",
+            "quote": "suitable for programmers at all skill levels, from beginner to expert, as the problem set always has both very easy and very difficult problems.",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "verified": true
+      },
+      {
+        "id": "PB-SWE-E03",
+        "type": "experience",
+        "title": "Google Summer of Code",
+        "url": "https://summerofcode.withgoogle.com/",
+        "description": "Mentored 12+ week open-source project. Start by contributing small fixes to a participating organisation before applying. No dates given here: check the site for the 2027 timeline.",
+        "skills": [
+          "Open Source",
+          "Google Summer of Code",
+          "Git"
+        ],
+        "signals": [
+          "PB-SWE-S01",
+          "PB-SWE-S04"
+        ],
+        "effort": "term",
+        "minYear": "1st",
+        "howToFind": "summerofcode.withgoogle.com; eligibility in the rules page (18+, student or open-source beginner, eligible to work where you live).",
+        "evidence": "Merged pull requests + final project report link",
+        "sources": [
+          {
+            "ref": "R51",
+            "quote": "GSoC Contributors work with an open source organization on a 12+ week programming project under the guidance of mentors.",
+            "accessed": "2026-10-13"
+          },
+          {
+            "ref": "R52",
+            "quote": "be a student or a beginner to open source software development.",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "verified": true
+      },
+      {
+        "id": "PB-SWE-E04",
+        "type": "experience",
+        "title": "Outreachy (paid remote open-source internship; eligibility restricted)",
+        "url": "https://www.outreachy.org/",
+        "description": "Remote open-source internships for people who face under-representation or discrimination in tech where they live. Check eligibility before investing time. No 2027 dates given here.",
+        "skills": [
+          "Open Source",
+          "Git"
+        ],
+        "signals": [
+          "PB-SWE-S01",
+          "PB-SWE-S07"
+        ],
+        "effort": "term",
+        "minYear": "1st",
+        "howToFind": "outreachy.org applicant guide; join the mailing list for round announcements.",
+        "evidence": "Merged contributions + internship on CV",
+        "sources": [
+          {
+            "ref": "R53",
+            "quote": "Outreachy provides internships to anyone from any background who faces underrepresentation, systemic bias, or discrimination in the technical industry where they are living.",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "verified": true
+      },
+      {
+        "id": "PB-SWE-E05",
+        "type": "experience",
+        "title": "Insight days / spring weeks at tech employers",
+        "url": "https://targetjobs.co.uk/s/jobs/insight-programme",
+        "description": "Short employer programmes, mostly in person, that can lead to fast-tracked internship routes.",
+        "skills": [
+          "Commercial Awareness"
+        ],
+        "signals": [
+          "PB-SWE-S07"
+        ],
+        "effort": "weekend",
+        "minYear": "1st",
+        "howToFind": "targetjobs insight-programme search; employer graduate sites. Many are aimed at first years (or second years on four-year courses).",
+        "evidence": "Programme listed under Experience with one takeaway",
+        "sources": [
+          {
+            "ref": "R6",
+            "quote": "so many spring weeks and insight programmes are offered to first years (or second years on four-year courses)",
+            "accessed": "2026-10-13"
+          },
+          {
+            "ref": "R57",
+            "quote": "Insight programme opportunities",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "verified": true
+      },
+      {
+        "id": "PB-SWE-E06",
+        "type": "experience",
+        "title": "Forage virtual job simulation",
+        "url": "https://www.theforage.com/",
+        "description": "Free, self-paced employer-designed task sets. Convention: no source here shows recruiters weight these; use them to explore roles, not as a CV centrepiece.",
+        "skills": [],
+        "signals": [
+          "PB-SWE-S07"
+        ],
+        "effort": "weekend",
+        "minYear": "1st",
+        "howToFind": "theforage.com, search for your target function; skip if no relevant simulation exists.",
+        "evidence": "Completion certificate (low signal)",
+        "sources": [
+          {
+            "ref": "R56",
+            "quote": "Explore careers and prepare for the job with hundreds of free job simulations designed by the world's top employers.",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "verified": true
+      }
+    ],
+    "yearGuidance": {
+      "1st": "Ship 1-2 small projects with a README and GitHub link, go to a hackathon, apply to insight/spring programmes (many are aimed at first years).",
+      "2nd": "On four-year courses this is the main insight-programme year; otherwise treat as penultimate.",
+      "penultimate": "Apply for summer internships/placements; have 2-4 projects with stack and outcome, and a design note you can talk through.",
+      "final": "Graduate applications; lead with internship or strongest project, add final-year project, keep GitHub current.",
+      "masters": "Same as final year; make the dissertation/project a headline item with results."
+    },
+    "yearGuidanceBasis": "Synthesis (grade D), aligned with cv-rules-tech-product.md section 7; first-year insight targeting cites R6."
+  },
+  "data_analytics": {
+    "signals": [
+      {
+        "id": "PB-DAT-S01",
+        "text": "Core tools are visible: SQL, plus Python or R where the role calls for it (expected for data science), and a visualisation tool such as Power BI or Tableau for analyst roles.",
+        "ruleIds": [
+          "DAT-02",
+          "DAT-08"
+        ],
+        "grade": "B",
+        "basis": "evidence (careers publisher + professional body; RSS page looks dated)",
+        "sources": [
+          {
+            "ref": "R7",
+            "quote": "programming or query skills in SQL and, for some roles, Python or R",
+            "accessed": "2026-10-13"
+          },
+          {
+            "ref": "R7",
+            "quote": "data visualisation skills using tools such as Power BI or Tableau",
+            "accessed": "2026-10-13"
+          },
+          {
+            "ref": "R9",
+            "quote": "Employers are looking for specialised knowledge and an in-depth understanding of programming languages used in big data such as Java, C# and Python",
+            "accessed": "2026-10-13"
+          }
+        ]
+      },
+      {
+        "id": "PB-DAT-S02",
+        "text": "A small portfolio on open data that shows the whole loop: question, cleaning, method, result.",
+        "ruleIds": [
+          "DAT-03",
+          "DAT-06"
+        ],
+        "grade": "B",
+        "basis": "evidence (two careers publishers)",
+        "sources": [
+          {
+            "ref": "R7",
+            "quote": "build a small portfolio using open datasets. Show how you defined a question, cleaned the data, chose an analytical method and communicated the result.",
+            "accessed": "2026-10-13"
+          },
+          {
+            "ref": "R2",
+            "quote": "a link to an online portfolio, such as your own website or a GitHub profile",
+            "accessed": "2026-10-13"
+          }
+        ]
+      },
+      {
+        "id": "PB-DAT-S03",
+        "text": "Explains findings clearly to non-specialist audiences.",
+        "ruleIds": [
+          "DAT-05"
+        ],
+        "grade": "B",
+        "basis": "evidence (two careers publishers)",
+        "sources": [
+          {
+            "ref": "R7",
+            "quote": "communication and data storytelling skills to explain findings to different audiences",
+            "accessed": "2026-10-13"
+          },
+          {
+            "ref": "R5",
+            "quote": "practise explaining technical things to people with little or no technical knowledge",
+            "accessed": "2026-10-13"
+          }
+        ]
+      },
+      {
+        "id": "PB-DAT-S04",
+        "text": "Quantitative grounding: numerate degree or demonstrable statistics.",
+        "ruleIds": [
+          "DAT-01",
+          "DAT-09"
+        ],
+        "grade": "B",
+        "basis": "evidence (professional body + careers publisher)",
+        "sources": [
+          {
+            "ref": "R9",
+            "quote": "Data scientists typically have a background in mathematics, statistics or other numerate subjects such as computer science or engineering",
+            "accessed": "2026-10-13"
+          },
+          {
+            "ref": "R7",
+            "quote": "analytical and numerical ability to interpret large datasets and test conclusions",
+            "accessed": "2026-10-13"
+          }
+        ]
+      },
+      {
+        "id": "PB-DAT-S05",
+        "text": "Data and tech competitions (e.g. Kaggle) are a recommended way to gain experience, visibility and skills.",
+        "ruleIds": [
+          "DAT-07"
+        ],
+        "grade": "B",
+        "basis": "evidence (two careers publishers)",
+        "sources": [
+          {
+            "ref": "R8",
+            "quote": "Online data science competitions (e.g. Kaggle, Topcoder) can help you gain visibility and experience.",
+            "accessed": "2026-10-13"
+          },
+          {
+            "ref": "R5",
+            "quote": "tech-related competitions that give university students the chance to do just that, as well as developing other technical and soft skills such as teamwork",
+            "accessed": "2026-10-13"
+          }
+        ]
+      },
+      {
+        "id": "PB-DAT-S06",
+        "text": "Real-organisation data work, including volunteering for a charity, community group or society, is a recommended way to build experience.",
+        "ruleIds": [
+          "DAT-05"
+        ],
+        "grade": "B",
+        "basis": "evidence (two careers publishers)",
+        "sources": [
+          {
+            "ref": "R7",
+            "quote": "You could also volunteer for a charity or community group that needs help organising, analysing or presenting data.",
+            "accessed": "2026-10-13"
+          },
+          {
+            "ref": "R5",
+            "quote": "see if they have any processes or databases you could improve",
+            "accessed": "2026-10-13"
+          }
+        ]
+      }
+    ],
+    "actions": [
+      {
+        "id": "PB-DAT-P01",
+        "type": "project",
+        "title": "Question-led analysis of a public UK dataset",
+        "description": "Pick one concrete question, use a public open dataset, document cleaning decisions, choose a method, and end with a recommendation and its limitations.",
+        "skills": [
+          "SQL",
+          "Python",
+          "Pandas",
+          "Data Visualisation",
+          "Jupyter"
+        ],
+        "signals": [
+          "PB-DAT-S01",
+          "PB-DAT-S02",
+          "PB-DAT-S03"
+        ],
+        "effort": "2-4 weeks",
+        "minYear": "1st",
+        "evidence": "GitHub repo + README in four parts (question, cleaning, method, result) with one key chart; states dataset source and size (DAT-03).",
+        "sources": [
+          {
+            "ref": "R7",
+            "quote": "Show how you defined a question, cleaned the data, chose an analytical method and communicated the result.",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "verified": true
+      },
+      {
+        "id": "PB-DAT-P02",
+        "type": "project",
+        "title": "Dashboard for a society or charity",
+        "description": "Turn a society's or charity's spreadsheets (members, events, donations) into a dashboard they can use for a real decision.",
+        "skills": [
+          "Excel",
+          "Power BI",
+          "Tableau",
+          "Data Visualisation"
+        ],
+        "signals": [
+          "PB-DAT-S03",
+          "PB-DAT-S06"
+        ],
+        "effort": "2-4 weeks",
+        "minYear": "1st",
+        "evidence": "Published dashboard link or screenshots + one paragraph on what it was used for, if anything (DAT-05 'so what'); do not claim an impact you did not observe.",
+        "sources": [
+          {
+            "ref": "R7",
+            "quote": "You could also volunteer for a charity or community group that needs help organising, analysing or presenting data.",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "verified": true
+      },
+      {
+        "id": "PB-DAT-P03",
+        "type": "project",
+        "title": "Kaggle 'Getting Started' competition with an honest baseline",
+        "description": "Enter a Getting Started competition, report a simple baseline first, then your improved model and what drove the gain. Use it to learn; do not make Titanic-type data your headline project (DAT-11c).",
+        "skills": [
+          "Python",
+          "Scikit-learn",
+          "Feature Engineering",
+          "Cross-validation",
+          "Kaggle"
+        ],
+        "signals": [
+          "PB-DAT-S05",
+          "PB-DAT-S04"
+        ],
+        "effort": "weekend",
+        "minYear": "1st",
+        "evidence": "Public notebook with baseline vs final metric and leaderboard position.",
+        "sources": [
+          {
+            "ref": "R55",
+            "quote": "Competitions with approachable ML fundamentals.",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "verified": true
+      },
+      {
+        "id": "PB-DAT-P04",
+        "type": "project",
+        "title": "Hypothesis-test or regression write-up",
+        "description": "Answer a question with a stated hypothesis, an appropriate test or regression, assumptions checked, and an effect size in plain English.",
+        "skills": [
+          "Statistics",
+          "Hypothesis Testing",
+          "Regression",
+          "R"
+        ],
+        "signals": [
+          "PB-DAT-S04",
+          "PB-DAT-S03"
+        ],
+        "effort": "2-4 weeks",
+        "minYear": "2nd",
+        "evidence": "2-page PDF report + code repo.",
+        "sources": [
+          {
+            "ref": "R7",
+            "quote": "analytical and numerical ability to interpret large datasets and test conclusions",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "verified": true
+      },
+      {
+        "id": "PB-DAT-P05",
+        "type": "project",
+        "title": "SQL question bank on a real schema",
+        "description": "Load a public dataset into PostgreSQL, write a set of business questions and answer each with a query (joins, aggregates, window functions).",
+        "skills": [
+          "SQL",
+          "PostgreSQL"
+        ],
+        "signals": [
+          "PB-DAT-S01"
+        ],
+        "effort": "weekend",
+        "minYear": "1st",
+        "evidence": "Repo with schema, queries and a results table per question.",
+        "sources": [
+          {
+            "ref": "R7",
+            "quote": "programming or query skills in SQL and, for some roles, Python or R",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "verified": true
+      },
+      {
+        "id": "PB-DAT-C01",
+        "type": "course",
+        "title": "Kaggle Learn",
+        "url": "https://www.kaggle.com/learn",
+        "description": "Short hands-on micro-courses (Python, pandas, SQL, ML basics) with certificates. Learning value high; certificate signal value low on its own.",
+        "skills": [
+          "Python",
+          "Pandas",
+          "SQL",
+          "Machine Learning"
+        ],
+        "signals": [
+          "PB-DAT-S01"
+        ],
+        "effort": "weekend",
+        "minYear": "1st",
+        "hours": "'a few hours' per course (provider)",
+        "free": "no cost; certificates available",
+        "evidence": "Certificates; better: a project using the skill",
+        "sources": [
+          {
+            "ref": "R34",
+            "quote": "The courses are provided at no cost to you, and you can now earn certificates.",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "verified": true
+      },
+      {
+        "id": "PB-DAT-C02",
+        "type": "course",
+        "title": "SQLBolt",
+        "url": "https://sqlbolt.com/",
+        "description": "Interactive in-browser SQL lessons from SELECT to joins and aggregates. Learning only.",
+        "skills": [
+          "SQL"
+        ],
+        "signals": [
+          "PB-DAT-S01"
+        ],
+        "effort": "weekend",
+        "minYear": "1st",
+        "hours": "not stated",
+        "free": "open, no sign-in (observed)",
+        "evidence": "none directly; supports PB-DAT-P05",
+        "sources": [
+          {
+            "ref": "R35",
+            "quote": "a series of interactive lessons and exercises designed to help you quickly learn SQL right in your browser.",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "verified": true
+      },
+      {
+        "id": "PB-DAT-C03",
+        "type": "course",
+        "title": "An Introduction to Statistical Learning (free book + labs, R or Python)",
+        "url": "https://www.statlearning.com/",
+        "description": "Standard statistical-learning text with chapter labs. Learning value high for DS roles; cite projects, not the book.",
+        "skills": [
+          "Statistics",
+          "Regression",
+          "Machine Learning",
+          "Python",
+          "R"
+        ],
+        "signals": [
+          "PB-DAT-S04"
+        ],
+        "effort": "term",
+        "minYear": "2nd",
+        "hours": "not stated",
+        "free": "free PDF download (verified: ISLP link served a PDF)",
+        "evidence": "Lab notebooks in a repo",
+        "sources": [
+          {
+            "ref": "R36",
+            "quote": "An Introduction to Statistical Learning provides a broad and less technical treatment of key topics in statistical learning.",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "verified": true
+      },
+      {
+        "id": "PB-DAT-C04",
+        "type": "course",
+        "title": "Practical Deep Learning for Coders (fast.ai)",
+        "url": "https://course.fast.ai/",
+        "description": "Applied deep learning for people who can already code. For ML-leaning roles only.",
+        "skills": [
+          "Deep Learning",
+          "PyTorch",
+          "Machine Learning"
+        ],
+        "signals": [
+          "PB-DAT-S01"
+        ],
+        "effort": "2-4 weeks",
+        "minYear": "2nd",
+        "hours": "9 lessons of about 90 minutes each (provider)",
+        "free": "free",
+        "evidence": "A deployed model demo",
+        "sources": [
+          {
+            "ref": "R37",
+            "quote": "A free course designed for people with some coding experience",
+            "accessed": "2026-10-13"
+          },
+          {
+            "ref": "R37",
+            "quote": "There are 9 lessons, and each lesson is around 90 minutes long.",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "verified": true
+      },
+      {
+        "id": "PB-DAT-E01",
+        "type": "experience",
+        "title": "Kaggle competitions",
+        "url": "https://www.kaggle.com/competitions",
+        "description": "Start with Getting Started or Playground competitions; report rank as a percentile once you place meaningfully (DAT-07).",
+        "skills": [
+          "Kaggle",
+          "Machine Learning"
+        ],
+        "signals": [
+          "PB-DAT-S05"
+        ],
+        "effort": "2-4 weeks",
+        "minYear": "1st",
+        "howToFind": "kaggle.com/competitions; filter Getting Started / Playground.",
+        "evidence": "Profile link + rank",
+        "sources": [
+          {
+            "ref": "R55",
+            "quote": "The world's most important AI problems, open to anyone.",
+            "accessed": "2026-10-13"
+          },
+          {
+            "ref": "R8",
+            "quote": "Online data science competitions (e.g. Kaggle, Topcoder) can help you gain visibility and experience.",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "verified": true
+      },
+      {
+        "id": "PB-DAT-E02",
+        "type": "experience",
+        "title": "Data volunteering for a charity or community group",
+        "description": "Offer to organise, analyse or present a charity's data; agree one deliverable and a deadline.",
+        "skills": [
+          "Excel",
+          "Data Visualisation",
+          "Communication"
+        ],
+        "signals": [
+          "PB-DAT-S06",
+          "PB-DAT-S03"
+        ],
+        "effort": "term",
+        "minYear": "1st",
+        "howToFind": "Your university volunteering centre or students' union; approach local charities directly.",
+        "evidence": "Experience entry with the deliverable and who used it",
+        "sources": [
+          {
+            "ref": "R7",
+            "quote": "You could also volunteer for a charity or community group that needs help organising, analysing or presenting data.",
+            "accessed": "2026-10-13"
+          },
+          {
+            "ref": "R5",
+            "quote": "If your university has a volunteering centre, they may be aware of initiatives you could investigate.",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "verified": true
+      },
+      {
+        "id": "PB-DAT-E03",
+        "type": "experience",
+        "title": "Hackathons / datathons (MLH listings)",
+        "url": "https://www.mlh.com/seasons/2027/events",
+        "description": "Team events; pick ones with a data or AI track and finish with a working demo.",
+        "skills": [
+          "Hackathon",
+          "Datathon",
+          "Teamwork"
+        ],
+        "signals": [
+          "PB-DAT-S03"
+        ],
+        "effort": "weekend",
+        "minYear": "1st",
+        "howToFind": "MLH 2027 season list, region 'Europe/UK'; university data-science society.",
+        "evidence": "Demo link + your role",
+        "sources": [
+          {
+            "ref": "R50",
+            "quote": "Filter events This Month Next Month Diversity Focused Region North America Europe/UK Asia Pacific",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "verified": true
+      },
+      {
+        "id": "PB-DAT-E04",
+        "type": "experience",
+        "title": "Insight days / spring weeks (data and tech employers)",
+        "url": "https://targetjobs.co.uk/s/jobs/insight-programme",
+        "description": "Short employer programmes; useful for first years to get an early foot in the door.",
+        "skills": [
+          "Commercial Awareness"
+        ],
+        "signals": [],
+        "effort": "weekend",
+        "minYear": "1st",
+        "howToFind": "targetjobs insight-programme search; employer graduate sites.",
+        "evidence": "Experience entry",
+        "sources": [
+          {
+            "ref": "R6",
+            "quote": "so many spring weeks and insight programmes are offered to first years (or second years on four-year courses)",
+            "accessed": "2026-10-13"
+          },
+          {
+            "ref": "R57",
+            "quote": "Insight programme opportunities",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "verified": true
+      },
+      {
+        "id": "PB-DAT-E05",
+        "type": "experience",
+        "title": "Forage virtual job simulation",
+        "url": "https://www.theforage.com/",
+        "description": "Free self-paced employer tasks. Convention: low CV signal; use to test interest in analytics work.",
+        "skills": [],
+        "signals": [],
+        "effort": "weekend",
+        "minYear": "1st",
+        "howToFind": "theforage.com, search 'data'; skip if nothing relevant.",
+        "evidence": "Certificate (low signal)",
+        "sources": [
+          {
+            "ref": "R56",
+            "quote": "Explore careers and prepare for the job with hundreds of free job simulations designed by the world's top employers.",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "verified": true
+      }
+    ],
+    "yearGuidance": {
+      "1st": "Learn SQL + Python basics, publish one question-led analysis, try a Kaggle Getting Started competition, apply to insight programmes.",
+      "2nd": "On four-year courses: insight year plus a statistics write-up; otherwise treat as penultimate.",
+      "penultimate": "Apply for analytics internships/placements; 2-3 portfolio projects with dataset, method, metric and a 'so what'.",
+      "final": "Graduate applications; foreground any internship and the dissertation if it is quantitative.",
+      "masters": "Lead with the MSc project (data, method, result); show statistics explicitly for DS roles."
+    },
+    "yearGuidanceBasis": "Synthesis (grade D), aligned with cv-rules-tech-product.md sections 3 and 7."
+  },
+  "product": {
+    "caveat": {
+      "text": "Entry-level PM hiring is rare; graduate PM schemes exist but many people enter via adjacent roles.",
+      "sources": [
+        {
+          "ref": "R10",
+          "quote": "It's extremely unusual for an employer to recruit a product manager without at least two years of relevant experience.",
+          "accessed": "2026-10-13"
+        },
+        {
+          "ref": "R10",
+          "quote": "look for work in areas which have a lot of overlap with product management, such as programming, sales and account management, marketing",
+          "accessed": "2026-10-13"
+        }
+      ]
+    },
+    "signals": [
+      {
+        "id": "PB-PRD-S01",
+        "text": "Communicates clearly and aligns stakeholders around a plan.",
+        "ruleIds": [
+          "PRD-05"
+        ],
+        "grade": "B",
+        "basis": "evidence (employer content hosted by a careers publisher + careers publisher)",
+        "sources": [
+          {
+            "ref": "R11",
+            "quote": "Communication skills, which are crucial and enable us to articulate our vision and strategies to other stakeholders",
+            "accessed": "2026-10-13"
+          },
+          {
+            "ref": "R10",
+            "quote": "a very strong and clear communicator, comfortable working with a variety of stakeholders",
+            "accessed": "2026-10-13"
+          }
+        ]
+      },
+      {
+        "id": "PB-PRD-S02",
+        "text": "Backs decisions with data and market research.",
+        "ruleIds": [
+          "PRD-03",
+          "PRD-07"
+        ],
+        "grade": "B",
+        "basis": "evidence (employer content hosted by a careers publisher + careers publisher)",
+        "sources": [
+          {
+            "ref": "R11",
+            "quote": "Analytical skills, because they help us interpret data effectively, make better informed decisions and refine strategies where needed",
+            "accessed": "2026-10-13"
+          },
+          {
+            "ref": "R10",
+            "quote": "able to support your decisions with market research and thorough data analysis",
+            "accessed": "2026-10-13"
+          }
+        ]
+      },
+      {
+        "id": "PB-PRD-S03",
+        "text": "Understands users and their needs, and links them to business goals.",
+        "ruleIds": [
+          "PRD-02",
+          "PRD-04"
+        ],
+        "grade": "B",
+        "basis": "evidence (employer content hosted by a careers publisher + careers publisher)",
+        "sources": [
+          {
+            "ref": "R11",
+            "quote": "My job entails recognising what a customer needs and the business objectives that a product or feature will fulfil.",
+            "accessed": "2026-10-13"
+          },
+          {
+            "ref": "R10",
+            "quote": "very knowledgeable about your product's users and industry",
+            "accessed": "2026-10-13"
+          }
+        ]
+      },
+      {
+        "id": "PB-PRD-S04",
+        "text": "Works well across functions (engineering, design, business).",
+        "ruleIds": [
+          "PRD-05"
+        ],
+        "grade": "B",
+        "basis": "evidence (employer content hosted by a careers publisher + careers publisher)",
+        "sources": [
+          {
+            "ref": "R11",
+            "quote": "Teamwork, as we often work with people with different skillsets and perspectives",
+            "accessed": "2026-10-13"
+          },
+          {
+            "ref": "R10",
+            "quote": "a good collaborator, leader, and diplomat, as you'll be working in-depth with different business functions",
+            "accessed": "2026-10-13"
+          }
+        ]
+      },
+      {
+        "id": "PB-PRD-S05",
+        "text": "Has taken positions of responsibility and led projects (society, competitions, charity, small business).",
+        "ruleIds": [
+          "PRD-08"
+        ],
+        "grade": "B",
+        "basis": "evidence (employer content hosted by a careers publisher + careers publisher)",
+        "sources": [
+          {
+            "ref": "R10",
+            "quote": "You could lead a university society, take part in business competitions and challenges, become a trustee for a charity",
+            "accessed": "2026-10-13"
+          },
+          {
+            "ref": "R11",
+            "quote": "Focus on building strong foundations such as teamwork, analytical thinking, communication, problem solving, adaptability and leadership skills.",
+            "accessed": "2026-10-13"
+          }
+        ]
+      },
+      {
+        "id": "PB-PRD-S06",
+        "text": "A technical background can help for some PM roles but is not required for all.",
+        "ruleIds": [
+          "PRD-06"
+        ],
+        "grade": "B",
+        "basis": "evidence (one employer + careers publisher)",
+        "sources": [
+          {
+            "ref": "R11",
+            "quote": "a tech background is not necessary for success – neither are you disadvantaged if you don’t have one.",
+            "accessed": "2026-10-13"
+          },
+          {
+            "ref": "R10",
+            "quote": "For some roles, a technical or engineering background may be helpful.",
+            "accessed": "2026-10-13"
+          }
+        ]
+      }
+    ],
+    "actions": [
+      {
+        "id": "PB-PRD-P01",
+        "type": "project",
+        "title": "Discovery sprint on a real problem",
+        "description": "Interview a handful of target users about one problem, synthesise patterns, and write a one-page problem statement with the evidence behind it.",
+        "skills": [
+          "User Research",
+          "Market Research",
+          "Communication"
+        ],
+        "signals": [
+          "PB-PRD-S03",
+          "PB-PRD-S01"
+        ],
+        "effort": "weekend",
+        "minYear": "1st",
+        "evidence": "Write-up: interview guide, anonymised insights, problem statement, how many people you spoke to (PRD-04).",
+        "sources": [
+          {
+            "ref": "R10",
+            "quote": "very knowledgeable about your product's users and industry",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "verified": true
+      },
+      {
+        "id": "PB-PRD-P02",
+        "type": "project",
+        "title": "Ship an MVP and measure one metric",
+        "description": "Build the smallest version that tests your discovery insight (no-code is fine), define one success metric up front, and review it after a few weeks.",
+        "skills": [
+          "MVP",
+          "KPIs",
+          "Product Analytics",
+          "Figma"
+        ],
+        "signals": [
+          "PB-PRD-S02",
+          "PB-PRD-S03"
+        ],
+        "effort": "term",
+        "minYear": "1st",
+        "evidence": "Live link + post-launch review: metric, result, what you'd change (PRD-02 arc).",
+        "sources": [
+          {
+            "ref": "R10",
+            "quote": "starting a business, even on a very small scale, will show employers that you're responsible, hardworking, and knowledgeable about commerce.",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "verified": true
+      },
+      {
+        "id": "PB-PRD-P03",
+        "type": "project",
+        "title": "Product teardown and improvement proposal",
+        "description": "Pick an app you use, map its core flow, compare two competitors, and propose a prioritised set of changes with the metric each should move.",
+        "skills": [
+          "Product Management",
+          "Prioritisation",
+          "Market Research",
+          "Figma"
+        ],
+        "signals": [
+          "PB-PRD-S02",
+          "PB-PRD-S01"
+        ],
+        "effort": "weekend",
+        "minYear": "1st",
+        "evidence": "Published write-up or PDF with wireframes and a prioritised list.",
+        "sources": [
+          {
+            "ref": "R10",
+            "quote": "able to analyse complex data and look for trends in the market and users' opinions and behaviour",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "verified": true
+      },
+      {
+        "id": "PB-PRD-P04",
+        "type": "project",
+        "title": "Run a cross-functional mini-team for a society product",
+        "description": "Coordinate builders and designers to deliver something a society needs, with a simple roadmap, regular check-ins and a retrospective.",
+        "skills": [
+          "Agile",
+          "Jira",
+          "Stakeholder Management",
+          "Leadership",
+          "Teamwork"
+        ],
+        "signals": [
+          "PB-PRD-S04",
+          "PB-PRD-S05"
+        ],
+        "effort": "term",
+        "minYear": "2nd",
+        "evidence": "Roadmap, retro notes, adoption numbers if you have them; CV bullet stating your role without title inflation (PRD-09a).",
+        "sources": [
+          {
+            "ref": "R10",
+            "quote": "ask to lead on important projects during an internship, part-time job, or voluntary position",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "verified": true
+      },
+      {
+        "id": "PB-PRD-P05",
+        "type": "project",
+        "title": "Funnel analysis with recommendations",
+        "description": "Using your MVP's data or a public dataset, build a simple funnel, find the biggest drop-off and propose a test.",
+        "skills": [
+          "SQL",
+          "Funnel Analysis",
+          "Metrics",
+          "Data Visualisation"
+        ],
+        "signals": [
+          "PB-PRD-S02"
+        ],
+        "effort": "2-4 weeks",
+        "minYear": "1st",
+        "evidence": "Short report with funnel chart and a proposed experiment.",
+        "sources": [
+          {
+            "ref": "R11",
+            "quote": "Analytical skills, because they help us interpret data effectively, make better informed decisions and refine strategies where needed",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "verified": true
+      },
+      {
+        "id": "PB-PRD-C01",
+        "type": "course",
+        "title": "SQLBolt",
+        "url": "https://sqlbolt.com/",
+        "description": "Interactive SQL basics so you can pull your own product data. Learning only.",
+        "skills": [
+          "SQL"
+        ],
+        "signals": [
+          "PB-PRD-S02",
+          "PB-PRD-S06"
+        ],
+        "effort": "weekend",
+        "minYear": "1st",
+        "hours": "not stated",
+        "free": "open, no sign-in (observed)",
+        "evidence": "Supports PB-PRD-P05",
+        "sources": [
+          {
+            "ref": "R35",
+            "quote": "a series of interactive lessons and exercises designed to help you quickly learn SQL right in your browser.",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "verified": true
+      },
+      {
+        "id": "PB-PRD-C02",
+        "type": "course",
+        "title": "Kaggle Learn (Python / SQL / data visualisation micro-courses)",
+        "url": "https://www.kaggle.com/learn",
+        "description": "Short hands-on data courses. Signal value low; useful for analytical credibility.",
+        "skills": [
+          "SQL",
+          "Python",
+          "Data Visualisation"
+        ],
+        "signals": [
+          "PB-PRD-S02"
+        ],
+        "effort": "weekend",
+        "minYear": "1st",
+        "hours": "'a few hours' per course (provider)",
+        "free": "no cost; certificates available",
+        "evidence": "Certificates (low signal)",
+        "sources": [
+          {
+            "ref": "R34",
+            "quote": "The courses are provided at no cost to you, and you can now earn certificates.",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "verified": true
+      },
+      {
+        "id": "PB-PRD-C03",
+        "type": "course",
+        "title": "CS50x (optional technical literacy)",
+        "url": "https://cs50.harvard.edu/x/",
+        "description": "For non-CS students who want to talk credibly with engineers. Optional: a Capital One graduate PM writes that a tech background is not necessary for success there.",
+        "skills": [
+          "Python",
+          "SQL"
+        ],
+        "signals": [
+          "PB-PRD-S06"
+        ],
+        "effort": "term",
+        "minYear": "1st",
+        "hours": "'eleven weeks of material'",
+        "free": "free (OCW)",
+        "evidence": "Final project",
+        "sources": [
+          {
+            "ref": "R30",
+            "quote": "Even if you are not a student at Harvard, you are welcome to “take” this course for free via this OpenCourseWare",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "verified": true
+      },
+      {
+        "id": "PB-PRD-E01",
+        "type": "experience",
+        "title": "Lead a university society or a society project",
+        "description": "Take a committee role and own one measurable initiative end to end.",
+        "skills": [
+          "Leadership",
+          "Stakeholder Management"
+        ],
+        "signals": [
+          "PB-PRD-S05",
+          "PB-PRD-S01"
+        ],
+        "effort": "term",
+        "minYear": "1st",
+        "howToFind": "Students' union society elections; volunteer for a project lead role mid-year.",
+        "evidence": "Experience entry with an outcome",
+        "sources": [
+          {
+            "ref": "R10",
+            "quote": "You could lead a university society, take part in business competitions and challenges, become a trustee for a charity",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "verified": true
+      },
+      {
+        "id": "PB-PRD-E02",
+        "type": "experience",
+        "title": "Enactus (student social-enterprise projects)",
+        "url": "https://www.enactusuki.org/",
+        "description": "University students run student-led social enterprises: a source of user, product and leadership evidence.",
+        "skills": [
+          "Leadership",
+          "Teamwork",
+          "Market Research"
+        ],
+        "signals": [
+          "PB-PRD-S05",
+          "PB-PRD-S03"
+        ],
+        "effort": "term",
+        "minYear": "1st",
+        "howToFind": "Check whether your university has an Enactus society; enactusuki.org.",
+        "evidence": "Project role + outcome",
+        "sources": [
+          {
+            "ref": "R58",
+            "quote": "By linking academic learning with student-led social enterprises, we give university students the platform to manage teams, launch ventures, and tackle local issues.",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "verified": true
+      },
+      {
+        "id": "PB-PRD-E03",
+        "type": "experience",
+        "title": "Hackathon as product lead (MLH listings)",
+        "url": "https://www.mlh.com/seasons/2027/events",
+        "description": "Own the problem framing, scope and demo story for a hackathon team; write up the decisions afterwards.",
+        "skills": [
+          "Hackathon",
+          "Prioritisation",
+          "Teamwork"
+        ],
+        "signals": [
+          "PB-PRD-S04",
+          "PB-PRD-S01"
+        ],
+        "effort": "weekend",
+        "minYear": "1st",
+        "howToFind": "MLH 2027 season list, region 'Europe/UK'.",
+        "evidence": "Demo link + your role",
+        "sources": [
+          {
+            "ref": "R50",
+            "quote": "Filter events This Month Next Month Diversity Focused Region North America Europe/UK Asia Pacific",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "verified": true
+      },
+      {
+        "id": "PB-PRD-E04",
+        "type": "experience",
+        "title": "Internships in adjacent functions",
+        "description": "Business analysis, marketing, project management or engineering internships are realistic stepping stones into PM.",
+        "skills": [
+          "Stakeholder Management",
+          "Communication"
+        ],
+        "signals": [
+          "PB-PRD-S04"
+        ],
+        "effort": "term",
+        "minYear": "penultimate",
+        "howToFind": "Search internships in the adjacent function on university job boards and targetjobs.",
+        "evidence": "Experience entry framed around users, data and delivery",
+        "sources": [
+          {
+            "ref": "R10",
+            "quote": "look for work in areas which have a lot of overlap with product management, such as programming, sales and account management, marketing",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "verified": true
+      },
+      {
+        "id": "PB-PRD-E05",
+        "type": "experience",
+        "title": "Insight days / spring weeks",
+        "url": "https://targetjobs.co.uk/s/jobs/insight-programme",
+        "description": "Early exposure to firms with graduate PM or rotational schemes.",
+        "skills": [
+          "Commercial Awareness"
+        ],
+        "signals": [],
+        "effort": "weekend",
+        "minYear": "1st",
+        "howToFind": "targetjobs insight-programme search; employer graduate sites.",
+        "evidence": "Experience entry",
+        "sources": [
+          {
+            "ref": "R6",
+            "quote": "so many spring weeks and insight programmes are offered to first years (or second years on four-year courses)",
+            "accessed": "2026-10-13"
+          },
+          {
+            "ref": "R57",
+            "quote": "Insight programme opportunities",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "verified": true
+      }
+    ],
+    "yearGuidance": {
+      "1st": "Take a society role, run a discovery sprint, apply to insight programmes.",
+      "2nd": "On four-year courses: ship an MVP and lead a society project; otherwise treat as penultimate.",
+      "penultimate": "Apply to graduate-PM-feeding internships and to adjacent-function internships; have one shipped product with a metric.",
+      "final": "Apply to graduate PM schemes and adjacent roles in parallel (see caveat).",
+      "masters": "Same as final; frame any prior work around users, data and delivery."
+    },
+    "yearGuidanceBasis": "Synthesis (grade D); the dual-track advice follows the Prospects caveat (R10)."
+  },
+  "marketing_growth": {
+    "signals": [
+      {
+        "id": "PB-MKT-S01",
+        "text": "Practical marketing experience matters more than academics.",
+        "ruleIds": [
+          "MKT-01"
+        ],
+        "grade": "B",
+        "basis": "evidence (careers publisher + professional body)",
+        "sources": [
+          {
+            "ref": "R12",
+            "quote": "The marketing and media sectors both tend to prioritise experience over academia when it comes to hiring.",
+            "accessed": "2026-10-13"
+          },
+          {
+            "ref": "R13",
+            "quote": "Having real-world experience will help your CV to stand out.",
+            "accessed": "2026-10-13"
+          }
+        ]
+      },
+      {
+        "id": "PB-MKT-S02",
+        "text": "Self-made experience counts: a blog, a social account, charity volunteering, a strong online profile.",
+        "ruleIds": [
+          "MKT-05"
+        ],
+        "grade": "B",
+        "basis": "evidence (professional body + careers publisher)",
+        "sources": [
+          {
+            "ref": "R13",
+            "quote": "This could include starting your own blog or social account for an interest, or volunteering part-time for a local charity to showcase your skills.",
+            "accessed": "2026-10-13"
+          },
+          {
+            "ref": "R14",
+            "quote": "a strong personal online profile, such as a blog, website or connections and interactions on various social media platforms",
+            "accessed": "2026-10-13"
+          }
+        ]
+      },
+      {
+        "id": "PB-MKT-S03",
+        "text": "Shows measurable results, not just activities.",
+        "ruleIds": [
+          "MKT-03"
+        ],
+        "grade": "B",
+        "basis": "evidence (careers publisher + Google recruiter guidance reported by CNBC)",
+        "sources": [
+          {
+            "ref": "R12",
+            "quote": "Here the recruiter has a piece to read that immediately explains a measurable achievement.",
+            "accessed": "2026-10-13"
+          },
+          {
+            "ref": "R59",
+            "quote": "Accomplished X, as measured by Y, by doing Z.",
+            "accessed": "2026-10-13"
+          }
+        ]
+      },
+      {
+        "id": "PB-MKT-S04",
+        "text": "Analytical and numerate, especially in reading campaign results.",
+        "ruleIds": [
+          "MKT-10"
+        ],
+        "grade": "B",
+        "basis": "evidence (two careers publishers + employer voice hosted by a careers publisher)",
+        "sources": [
+          {
+            "ref": "R17",
+            "quote": "Numeracy is important especially in analysing the results of a digital marketing campaign.",
+            "accessed": "2026-10-13"
+          },
+          {
+            "ref": "R15",
+            "quote": "analytical and strategic thinking",
+            "accessed": "2026-10-13"
+          },
+          {
+            "ref": "R16",
+            "quote": "That understanding comes from measurable data, so you have to be analytical.",
+            "accessed": "2026-10-13"
+          }
+        ]
+      },
+      {
+        "id": "PB-MKT-S05",
+        "text": "Flawless written communication.",
+        "ruleIds": [
+          "MKT-07"
+        ],
+        "grade": "B",
+        "basis": "evidence (two careers publishers)",
+        "sources": [
+          {
+            "ref": "R12",
+            "quote": "your spelling, grammar and punctuation needs to be up to scratch.",
+            "accessed": "2026-10-13"
+          },
+          {
+            "ref": "R14",
+            "quote": "excellent written communication skills",
+            "accessed": "2026-10-13"
+          }
+        ]
+      },
+      {
+        "id": "PB-MKT-S06",
+        "text": "Active, up-to-date and clean online presence.",
+        "ruleIds": [
+          "MKT-04",
+          "MKT-11"
+        ],
+        "grade": "B",
+        "basis": "evidence (careers publisher + professional body)",
+        "sources": [
+          {
+            "ref": "R12",
+            "quote": "as long as you use them regularly and they’re up to date.",
+            "accessed": "2026-10-13"
+          },
+          {
+            "ref": "R13",
+            "quote": "make sure your social media accounts are clean!",
+            "accessed": "2026-10-13"
+          }
+        ]
+      },
+      {
+        "id": "PB-MKT-S07",
+        "text": "Genuine, researched interest in the employer and sector.",
+        "ruleIds": [],
+        "grade": "B",
+        "basis": "evidence (employer voice hosted by targetjobs + Prospects + targetjobs)",
+        "sources": [
+          {
+            "ref": "R16",
+            "quote": "we’re not looking for marketing experts but people who are genuinely interested in working here.",
+            "accessed": "2026-10-13"
+          },
+          {
+            "ref": "R14",
+            "quote": "research the companies thoroughly and take care with your application",
+            "accessed": "2026-10-13"
+          },
+          {
+            "ref": "R17",
+            "quote": "One of the main pre-requisites for the job is enthusiasm",
+            "accessed": "2026-10-13"
+          }
+        ]
+      }
+    ],
+    "actions": [
+      {
+        "id": "PB-MKT-P01",
+        "type": "project",
+        "title": "Run a society's channel or event campaign for a term",
+        "description": "Own one channel or campaign, set a baseline and a goal, post on a schedule, and report results with a timeframe.",
+        "skills": [
+          "Social Media",
+          "Content Marketing",
+          "Canva",
+          "Marketing Analytics"
+        ],
+        "signals": [
+          "PB-MKT-S01",
+          "PB-MKT-S03"
+        ],
+        "effort": "term",
+        "minYear": "1st",
+        "evidence": "One-page case study: goal, baseline, actions, result with timeframe (avoids MKT-12b).",
+        "sources": [
+          {
+            "ref": "R17",
+            "quote": "graduates who can demonstrate relevant work experience, such as working to promote a university event via the internet",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "verified": true
+      },
+      {
+        "id": "PB-MKT-P02",
+        "type": "project",
+        "title": "Start a niche blog, newsletter or social account",
+        "description": "Pick a topic you can sustain, publish on a fixed cadence for a term, and track what grows engagement.",
+        "skills": [
+          "Content Marketing",
+          "SEO",
+          "Email Marketing"
+        ],
+        "signals": [
+          "PB-MKT-S02",
+          "PB-MKT-S06"
+        ],
+        "effort": "term",
+        "minYear": "1st",
+        "evidence": "Live link on the CV + a short growth log.",
+        "sources": [
+          {
+            "ref": "R12",
+            "quote": "Even if you keep a blog, put that on your CV as it shows your extracurricular passion.",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "verified": true
+      },
+      {
+        "id": "PB-MKT-P03",
+        "type": "project",
+        "title": "Analyse the Google Analytics demo account",
+        "description": "Use Google's demo account to find one acquisition or conversion problem and propose fixes.",
+        "skills": [
+          "Google Analytics",
+          "Funnel Analysis",
+          "Marketing Analytics",
+          "PowerPoint"
+        ],
+        "signals": [
+          "PB-MKT-S04",
+          "PB-MKT-S03"
+        ],
+        "effort": "weekend",
+        "minYear": "1st",
+        "evidence": "5-slide PDF: finding, evidence chart, recommendation, how you'd measure it.",
+        "sources": [
+          {
+            "ref": "R42",
+            "quote": "The Analytics demo account is a fully functional Analytics account that any Google user can access.",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "verified": true
+      },
+      {
+        "id": "PB-MKT-P04",
+        "type": "project",
+        "title": "Volunteer marketing for a local charity",
+        "description": "Deliver one concrete asset or campaign (posters, press release, social plan) for a charity, and record what happened.",
+        "skills": [
+          "Content Marketing",
+          "Public Relations",
+          "Canva"
+        ],
+        "signals": [
+          "PB-MKT-S01",
+          "PB-MKT-S02"
+        ],
+        "effort": "2-4 weeks",
+        "minYear": "1st",
+        "evidence": "Published outputs + case study.",
+        "sources": [
+          {
+            "ref": "R13",
+            "quote": "whether that’s designing posters for an event, writing press releases, or something completely different.",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "verified": true
+      },
+      {
+        "id": "PB-MKT-P05",
+        "type": "project",
+        "title": "Brand teardown and campaign proposal for a target employer",
+        "description": "Research a brand beyond its careers site: audience, positioning, channels, competitors. Propose one campaign with KPIs.",
+        "skills": [
+          "Market Research",
+          "Brand Strategy",
+          "Communication"
+        ],
+        "signals": [
+          "PB-MKT-S07",
+          "PB-MKT-S04"
+        ],
+        "effort": "weekend",
+        "minYear": "1st",
+        "evidence": "Short deck or article; good material for interviews.",
+        "sources": [
+          {
+            "ref": "R16",
+            "quote": "Do your research beyond the careers website.",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "verified": true
+      },
+      {
+        "id": "PB-MKT-C01",
+        "type": "course",
+        "title": "HubSpot Academy: Inbound Marketing Certification",
+        "url": "https://academy.hubspot.com/courses/inbound-marketing",
+        "description": "Inbound methodology, customer segmentation, content for the buyer's journey, marketing attribution and experimentation, automation. Bonus signal for marketing CVs (MKT-06).",
+        "skills": [
+          "Content Marketing",
+          "A/B Testing",
+          "Marketing Analytics"
+        ],
+        "signals": [],
+        "effort": "weekend",
+        "minYear": "1st",
+        "hours": "4 hr 53 min, 9 lessons (provider)",
+        "free": "free certification course",
+        "evidence": "Certificate",
+        "sources": [
+          {
+            "ref": "R40",
+            "quote": "FREE Certification Course",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "verified": true
+      },
+      {
+        "id": "PB-MKT-C02",
+        "type": "course",
+        "title": "Google Analytics Academy on Skillshop",
+        "url": "https://support.google.com/analytics/answer/11828307?hl=en",
+        "description": "Google's free GA courses. Pair with PB-MKT-P03. Make sure anything you list is current GA4, not the retired Universal Analytics (MKT-06).",
+        "skills": [
+          "Google Analytics",
+          "Marketing Analytics"
+        ],
+        "signals": [
+          "PB-MKT-S04"
+        ],
+        "effort": "weekend",
+        "minYear": "1st",
+        "hours": "not stated",
+        "free": "free",
+        "evidence": "Skillshop certificate",
+        "sources": [
+          {
+            "ref": "R42",
+            "quote": "Analytics Academy on Skillshop offers free, online courses about Google Analytics and other Google Ads tools.",
+            "accessed": "2026-10-13"
+          },
+          {
+            "ref": "R41",
+            "quote": "Access free online training to develop skills for Google workplace tools. Learn at your own pace and get Google product certified along the way.",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "verified": true
+      },
+      {
+        "id": "PB-MKT-C03",
+        "type": "course",
+        "title": "Google Ads training on Skillshop",
+        "url": "https://skillshop.withgoogle.com/googleads/",
+        "description": "Free Google Ads e-learning with certification. Most relevant to growth/performance roles.",
+        "skills": [
+          "SEM",
+          "CTR",
+          "CPA",
+          "ROAS"
+        ],
+        "signals": [
+          "PB-MKT-S04"
+        ],
+        "effort": "weekend",
+        "minYear": "1st",
+        "hours": "not stated",
+        "free": "free",
+        "evidence": "Certificate",
+        "sources": [
+          {
+            "ref": "R43",
+            "quote": "Free Google Ads training for every kind of advertiser",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "verified": true
+      },
+      {
+        "id": "PB-MKT-C04",
+        "type": "course",
+        "title": "Semrush Academy",
+        "url": "https://www.semrush.com/academy/",
+        "description": "Free SEO and content courses. Learning value; signal value modest.",
+        "skills": [
+          "SEO",
+          "Content Marketing",
+          "Semrush"
+        ],
+        "signals": [],
+        "effort": "weekend",
+        "minYear": "1st",
+        "hours": "not stated",
+        "free": "free (provider)",
+        "evidence": "Certificate",
+        "sources": [
+          {
+            "ref": "R44",
+            "quote": "Learn Marketing for Free with Online Courses from Semrush Academy",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "verified": true
+      },
+      {
+        "id": "PB-MKT-E01",
+        "type": "experience",
+        "title": "Society marketing or comms role",
+        "description": "Run promotion for a society or university event; the most accessible first marketing experience.",
+        "skills": [
+          "Social Media",
+          "Content Marketing"
+        ],
+        "signals": [
+          "PB-MKT-S01",
+          "PB-MKT-S03"
+        ],
+        "effort": "term",
+        "minYear": "1st",
+        "howToFind": "Students' union society committees; volunteer for an event's promotion.",
+        "evidence": "Experience entry with results",
+        "sources": [
+          {
+            "ref": "R17",
+            "quote": "graduates who can demonstrate relevant work experience, such as working to promote a university event via the internet",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "verified": true
+      },
+      {
+        "id": "PB-MKT-E02",
+        "type": "experience",
+        "title": "Charity marketing volunteering",
+        "description": "Part-time marketing help for a local charity.",
+        "skills": [
+          "Content Marketing",
+          "Public Relations"
+        ],
+        "signals": [
+          "PB-MKT-S02",
+          "PB-MKT-S01"
+        ],
+        "effort": "term",
+        "minYear": "1st",
+        "howToFind": "University volunteering centre; approach local charities.",
+        "evidence": "Experience entry + published outputs",
+        "sources": [
+          {
+            "ref": "R13",
+            "quote": "volunteering part-time for a local charity to showcase your skills.",
+            "accessed": "2026-10-13"
+          },
+          {
+            "ref": "R17",
+            "quote": "Work experience could also be gained in the PR or marketing department of a voluntary organisation.",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "verified": true
+      },
+      {
+        "id": "PB-MKT-E03",
+        "type": "experience",
+        "title": "Enactus (marketing role in a student social enterprise)",
+        "url": "https://www.enactusuki.org/",
+        "description": "Take the marketing lead on an Enactus project.",
+        "skills": [
+          "Marketing Analytics",
+          "Teamwork"
+        ],
+        "signals": [
+          "PB-MKT-S01"
+        ],
+        "effort": "term",
+        "minYear": "1st",
+        "howToFind": "Your university's Enactus society; enactusuki.org.",
+        "evidence": "Project role + outcome",
+        "sources": [
+          {
+            "ref": "R58",
+            "quote": "By linking academic learning with student-led social enterprises, we give university students the platform to manage teams, launch ventures, and tackle local issues.",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "verified": true
+      },
+      {
+        "id": "PB-MKT-E04",
+        "type": "experience",
+        "title": "Insight days / spring weeks",
+        "url": "https://targetjobs.co.uk/s/jobs/insight-programme",
+        "description": "Early exposure to marketing graduate schemes.",
+        "skills": [
+          "Commercial Awareness"
+        ],
+        "signals": [
+          "PB-MKT-S07"
+        ],
+        "effort": "weekend",
+        "minYear": "1st",
+        "howToFind": "targetjobs insight-programme search; employer graduate sites.",
+        "evidence": "Experience entry",
+        "sources": [
+          {
+            "ref": "R6",
+            "quote": "so many spring weeks and insight programmes are offered to first years (or second years on four-year courses)",
+            "accessed": "2026-10-13"
+          },
+          {
+            "ref": "R57",
+            "quote": "Insight programme opportunities",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "verified": true
+      },
+      {
+        "id": "PB-MKT-E05",
+        "type": "experience",
+        "title": "Forage virtual job simulation",
+        "url": "https://www.theforage.com/",
+        "description": "Free, self-paced employer tasks. Convention: low CV signal; good for testing interest.",
+        "skills": [],
+        "signals": [
+          "PB-MKT-S07"
+        ],
+        "effort": "weekend",
+        "minYear": "1st",
+        "howToFind": "theforage.com, search 'marketing'.",
+        "evidence": "Certificate (low signal)",
+        "sources": [
+          {
+            "ref": "R56",
+            "quote": "Explore careers and prepare for the job with hundreds of free job simulations designed by the world's top employers.",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "verified": true
+      }
+    ],
+    "yearGuidance": {
+      "1st": "Get a society comms role or start your own channel; take one free certification; apply to insight programmes.",
+      "2nd": "On four-year courses: build a results-based case study; otherwise treat as penultimate.",
+      "penultimate": "Apply for marketing internships; lead with experience and 2 case studies with measurable results.",
+      "final": "Graduate schemes; experience-first CV (MKT-01), zero typos (MKT-07), current links.",
+      "masters": "Same as final; turn the dissertation into a consumer-insight story if relevant."
+    },
+    "yearGuidanceBasis": "Synthesis (grade D), aligned with cv-rules-tech-product.md section 5."
+  },
+  "research": {
+    "signals": [
+      {
+        "id": "PB-RES-S01",
+        "text": "Has hands-on research experience before applying (summer placements, work in a university research group).",
+        "ruleIds": [
+          "RES-03"
+        ],
+        "grade": "B",
+        "basis": "evidence (careers publisher + funder)",
+        "sources": [
+          {
+            "ref": "R18",
+            "quote": "Some scientific organisations offer research-based summer placements for undergraduate students and you may also be able to get work experience in a university research department.",
+            "accessed": "2026-10-13"
+          },
+          {
+            "ref": "R20",
+            "quote": "The purpose of the awards is to give experience of research to undergraduates with research potential",
+            "accessed": "2026-10-13"
+          }
+        ]
+      },
+      {
+        "id": "PB-RES-S02",
+        "text": "Strong academic record (often a 2:1 or First trajectory).",
+        "ruleIds": [
+          "RES-02"
+        ],
+        "grade": "B",
+        "basis": "evidence (careers publisher + funder); physical sciences/maths context",
+        "sources": [
+          {
+            "ref": "R18",
+            "quote": "you'll need a good honours degree, usually a 2:1 or above in a related science subject.",
+            "accessed": "2026-10-13"
+          },
+          {
+            "ref": "R20",
+            "quote": "Students will normally be expected to be on track for a first class degree in order to be considered.",
+            "accessed": "2026-10-13"
+          }
+        ]
+      },
+      {
+        "id": "PB-RES-S03",
+        "text": "Approaches academics proactively about projects.",
+        "ruleIds": [
+          "RES-03"
+        ],
+        "grade": "B",
+        "basis": "evidence (careers publisher + university scheme)",
+        "sources": [
+          {
+            "ref": "R18",
+            "quote": "You can also get in touch with potential academic supervisors to ask for work shadowing opportunities.",
+            "accessed": "2026-10-13"
+          },
+          {
+            "ref": "R19",
+            "quote": "approach individual members of staff whose research they are interested in to discuss any possible ideas or opportunities.",
+            "accessed": "2026-10-13"
+          }
+        ]
+      },
+      {
+        "id": "PB-RES-S04",
+        "text": "Can communicate research in writing and presentations.",
+        "ruleIds": [
+          "RES-04",
+          "RES-07"
+        ],
+        "grade": "B",
+        "basis": "evidence (careers publisher + careers service, PhD-focused)",
+        "sources": [
+          {
+            "ref": "R18",
+            "quote": "communication and presentation skills, for writing reports and papers for publication and to present your research at conferences",
+            "accessed": "2026-10-13"
+          },
+          {
+            "ref": "R21",
+            "quote": "Conferences you have attended, and those at which you were an invited speaker",
+            "accessed": "2026-10-13"
+          }
+        ]
+      },
+      {
+        "id": "PB-RES-S05",
+        "text": "Technical research skills, including research tools and programming.",
+        "ruleIds": [
+          "RES-06"
+        ],
+        "grade": "B",
+        "basis": "evidence (careers service, PhD-focused + careers publisher)",
+        "sources": [
+          {
+            "ref": "R21",
+            "quote": "Technical skills, including research tools and programming languages",
+            "accessed": "2026-10-13"
+          },
+          {
+            "ref": "R18",
+            "quote": "technical and scientific skills",
+            "accessed": "2026-10-13"
+          }
+        ]
+      }
+    ],
+    "actions": [
+      {
+        "id": "PB-RES-P01",
+        "type": "project",
+        "title": "Focused literature review",
+        "description": "Pick a narrow question in a field you'd like to research, read and summarise the key papers, and end with an open question you could test.",
+        "skills": [
+          "Literature Review",
+          "Academic Writing",
+          "LaTeX"
+        ],
+        "signals": [
+          "PB-RES-S04",
+          "PB-RES-S03"
+        ],
+        "effort": "2-4 weeks",
+        "minYear": "1st",
+        "evidence": "3-5 page PDF to send with an email to a potential supervisor.",
+        "sources": [
+          {
+            "ref": "R18",
+            "quote": "You can also get in touch with potential academic supervisors to ask for work shadowing opportunities.",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "verified": true
+      },
+      {
+        "id": "PB-RES-P02",
+        "type": "project",
+        "title": "Reproduce a published result",
+        "description": "Choose a paper with public data or code, reproduce one figure or table, and document what matched and what didn't.",
+        "skills": [
+          "Python",
+          "R",
+          "Statistics",
+          "Git"
+        ],
+        "signals": [
+          "PB-RES-S05",
+          "PB-RES-S01"
+        ],
+        "effort": "term",
+        "minYear": "2nd",
+        "evidence": "Repo + short report; cite the paper correctly (RES-04).",
+        "sources": [
+          {
+            "ref": "R21",
+            "quote": "Technical skills, including research tools and programming languages",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "verified": true
+      },
+      {
+        "id": "PB-RES-P03",
+        "type": "project",
+        "title": "Research poster from coursework or a project",
+        "description": "Turn a strong piece of project work into a poster and present it at a departmental or society event.",
+        "skills": [
+          "Poster Presentation",
+          "Communication"
+        ],
+        "signals": [
+          "PB-RES-S04"
+        ],
+        "effort": "2-4 weeks",
+        "minYear": "penultimate",
+        "evidence": "Poster PDF + listing under Presentations (RES-07).",
+        "sources": [
+          {
+            "ref": "R18",
+            "quote": "communication and presentation skills, for writing reports and papers for publication and to present your research at conferences",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "verified": true
+      },
+      {
+        "id": "PB-RES-P04",
+        "type": "project",
+        "title": "Small original study",
+        "description": "Design a small study or experiment with a clear hypothesis, collect data (follow your department's ethics process where needed), analyse and write up.",
+        "skills": [
+          "Experimental Design",
+          "Hypothesis Testing",
+          "R"
+        ],
+        "signals": [
+          "PB-RES-S01",
+          "PB-RES-S05"
+        ],
+        "effort": "term",
+        "minYear": "2nd",
+        "evidence": "Write-up in paper format; never list it as 'published' unless it is (RES-04).",
+        "sources": [
+          {
+            "ref": "R18",
+            "quote": "research and analytical skills and a logical approach to problem solving",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "verified": true
+      },
+      {
+        "id": "PB-RES-P05",
+        "type": "project",
+        "title": "Make one analysis fully reproducible",
+        "description": "Put a coursework analysis under version control with an environment file, a README and a one-command run.",
+        "skills": [
+          "Git",
+          "Python",
+          "Linux"
+        ],
+        "signals": [
+          "PB-RES-S05"
+        ],
+        "effort": "weekend",
+        "minYear": "1st",
+        "evidence": "Public repo that runs from a clean checkout.",
+        "sources": [
+          {
+            "ref": "R47",
+            "quote": "Welcome to The Turing Way handbook to reproducible, ethical and collaborative data science.",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "verified": true
+      },
+      {
+        "id": "PB-RES-C01",
+        "type": "course",
+        "title": "Software Carpentry lessons (Unix shell, Git, Python or R)",
+        "url": "https://software-carpentry.org/lessons/",
+        "description": "Core research-computing skills. Learning value high; no CV signal by itself.",
+        "skills": [
+          "Linux",
+          "Git",
+          "Python",
+          "R"
+        ],
+        "signals": [
+          "PB-RES-S05"
+        ],
+        "effort": "2-4 weeks",
+        "minYear": "1st",
+        "hours": "not stated",
+        "free": "open lessons, CC-BY 4.0",
+        "evidence": "Supports PB-RES-P05",
+        "sources": [
+          {
+            "ref": "R45",
+            "quote": "Instructors teach our three core topics: the Unix shell, version control with Git, and a programming language (Python or R).",
+            "accessed": "2026-10-13"
+          },
+          {
+            "ref": "R46",
+            "quote": "Materials licensed under CC-BY 4.0 by the authors",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "verified": true
+      },
+      {
+        "id": "PB-RES-C02",
+        "type": "course",
+        "title": "The Turing Way (reproducible, ethical, collaborative research handbook)",
+        "url": "https://book.the-turing-way.org/",
+        "description": "Guide to reproducible research practice. Learning only.",
+        "skills": [
+          "Git"
+        ],
+        "signals": [
+          "PB-RES-S05"
+        ],
+        "effort": "weekend",
+        "minYear": "1st",
+        "hours": "not stated",
+        "free": "free, CC-BY",
+        "evidence": "none directly",
+        "sources": [
+          {
+            "ref": "R47",
+            "quote": "Everything here is available for free under a CC-BY licence.",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "verified": true
+      },
+      {
+        "id": "PB-RES-C03",
+        "type": "course",
+        "title": "Learn LaTeX in 30 minutes (Overleaf)",
+        "url": "https://www.overleaf.com/learn/latex/Learn_LaTeX_in_30_minutes",
+        "description": "Intro to LaTeX for reports, posters and papers. Learning only.",
+        "skills": [
+          "LaTeX"
+        ],
+        "signals": [
+          "PB-RES-S04"
+        ],
+        "effort": "weekend",
+        "minYear": "1st",
+        "hours": "about 30 minutes (title)",
+        "free": "free tutorial",
+        "evidence": "Your write-ups typeset in LaTeX",
+        "sources": [
+          {
+            "ref": "R48",
+            "quote": "This introductory tutorial does not assume any prior experience of",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "verified": true
+      },
+      {
+        "id": "PB-RES-C04",
+        "type": "course",
+        "title": "An Introduction to Statistical Learning (free book + labs)",
+        "url": "https://www.statlearning.com/",
+        "description": "Statistical-learning methods with R or Python labs; useful for quantitative research.",
+        "skills": [
+          "Statistics",
+          "Regression",
+          "Machine Learning"
+        ],
+        "signals": [
+          "PB-RES-S05"
+        ],
+        "effort": "term",
+        "minYear": "2nd",
+        "hours": "not stated",
+        "free": "free PDF download (verified)",
+        "evidence": "Lab notebooks",
+        "sources": [
+          {
+            "ref": "R36",
+            "quote": "An Introduction to Statistical Learning provides a broad and less technical treatment of key topics in statistical learning.",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "verified": true
+      },
+      {
+        "id": "PB-RES-C05",
+        "type": "course",
+        "title": "MIT 18.06 Linear Algebra (OCW)",
+        "url": "https://ocw.mit.edu/courses/18-06-linear-algebra-spring-2010/",
+        "description": "Foundational maths for quantitative and ML research. Learning only.",
+        "skills": [
+          "Linear Algebra"
+        ],
+        "signals": [
+          "PB-RES-S05"
+        ],
+        "effort": "term",
+        "minYear": "1st",
+        "hours": "not stated",
+        "free": "free (OCW)",
+        "evidence": "none directly",
+        "sources": [
+          {
+            "ref": "R49",
+            "quote": "Freely sharing knowledge with learners and educators around the world.",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "verified": true
+      },
+      {
+        "id": "PB-RES-E01",
+        "type": "experience",
+        "title": "Summer research project with a member of staff (UROP-style)",
+        "description": "Email academics whose work interests you with a short note and your literature review; ask about summer projects and departmental funding. Imperial's UROP is one example of a structured scheme; check what your own university runs.",
+        "skills": [
+          "Research Assistant"
+        ],
+        "signals": [
+          "PB-RES-S01",
+          "PB-RES-S03"
+        ],
+        "effort": "term",
+        "minYear": "1st",
+        "howToFind": "Staff research pages in your department; your department's undergraduate research/funding page.",
+        "evidence": "Research Experience entry: project, supervisor, methods, your contribution, output (RES-03)",
+        "sources": [
+          {
+            "ref": "R19",
+            "quote": "UROP is a research opportunities programme available to continuing students to participate in real research and appreciate the environment.",
+            "accessed": "2026-10-13"
+          },
+          {
+            "ref": "R18",
+            "quote": "research-based summer placements for undergraduate students",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "verified": true
+      },
+      {
+        "id": "PB-RES-E02",
+        "type": "experience",
+        "title": "LMS Undergraduate Research Bursary (maths/statistics only)",
+        "url": "https://www.lms.ac.uk/grants/undergraduate-research-bursaries/applications",
+        "description": "Funded 6-8 week (full-time) summer maths research project. The supervisor applies on your behalf; 2027 round deadline 1 February 2027 (from the 2027 page).",
+        "skills": [
+          "Research Assistant",
+          "Probability",
+          "Linear Algebra"
+        ],
+        "signals": [
+          "PB-RES-S01",
+          "PB-RES-S02"
+        ],
+        "effort": "term",
+        "minYear": "penultimate",
+        "howToFind": "Ask a maths/stats academic at your UK university to apply with you; read the 2027 conditions on the LMS page.",
+        "evidence": "Award + project on CV (RES-08)",
+        "sources": [
+          {
+            "ref": "R20",
+            "quote": "students must have completed (the equivalent of) at least two full academic years of an undergraduate degree in mathematics/statistics",
+            "accessed": "2026-10-13"
+          },
+          {
+            "ref": "R20",
+            "quote": "Application deadline: 1 February 2027",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "verified": true,
+        "expiresOn": "2027-02-01"
+      },
+      {
+        "id": "PB-RES-E03",
+        "type": "experience",
+        "title": "Industry placement year or vacation work in a research setting",
+        "description": "A placement year or vacation role in an R&D team builds the lab and technical experience research employers look for.",
+        "skills": [
+          "Research Assistant",
+          "Lab Techniques"
+        ],
+        "signals": [
+          "PB-RES-S01",
+          "PB-RES-S05"
+        ],
+        "effort": "term",
+        "minYear": "2nd",
+        "howToFind": "Your department's placement office; R&D employers' placement schemes.",
+        "evidence": "Experience entry with methods and outputs",
+        "sources": [
+          {
+            "ref": "R18",
+            "quote": "This experience can be achieved through a placement year in industry during your degree or vacation work.",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "verified": true
+      },
+      {
+        "id": "PB-RES-E04",
+        "type": "experience",
+        "title": "Outreachy (research tracks exist; eligibility restricted)",
+        "url": "https://www.outreachy.org/",
+        "description": "Paid remote open-source internships; some projects are research. Check eligibility first. No 2027 dates given here.",
+        "skills": [
+          "Open Source"
+        ],
+        "signals": [
+          "PB-RES-S05"
+        ],
+        "effort": "term",
+        "minYear": "1st",
+        "howToFind": "outreachy.org applicant guide.",
+        "evidence": "Internship on CV",
+        "sources": [
+          {
+            "ref": "R53",
+            "quote": "Outreachy internship projects may include programming, research, user experience, documentation, graphical design, data science, marketing",
+            "accessed": "2026-10-13"
+          }
+        ],
+        "verified": true
+      }
+    ],
+    "yearGuidance": {
+      "1st": "Protect your grades; make one analysis reproducible; write a short literature review; start conversations with academics.",
+      "2nd": "Seek a summer research project (UROP-style) or vacation work; reproduce a published result.",
+      "penultimate": "Apply for funded summer research (e.g. LMS bursary for maths/stats); present a poster if possible.",
+      "final": "Make the dissertation your headline research experience; line up academic referees.",
+      "masters": "Research project + any posters/preprints, cited honestly (RES-04); apply for PhD or research roles."
+    },
+    "yearGuidanceBasis": "Synthesis (grade D), aligned with cv-rules-tech-product.md section 6; LMS eligibility from R20."
+  }
+}

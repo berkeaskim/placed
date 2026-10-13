@@ -15,7 +15,8 @@ Hackathon theme: *"How can we make students' lives easier?"*
 - shows live internships from public ATS APIs, ranked by a rule-based fit score,
 - explains *why you fit / what's missing / how to close the gap* per job,
 - tailors the CV to a job **without fabricating anything**, and shows exactly what it tailored for and why,
-- tracks applications with light gamification.
+- tracks applications with light gamification,
+- **Target Role mode (§15):** pick a role you want → see what the market asks for, your readiness, and cited actions (projects, free courses, experiences) to close the gap — without ever adding unconfirmed claims to the CV.
 
 **Success = a 3-minute demo that flows end-to-end on real data** (§12), plus a credible technical story: evidence-based CV rules, deterministic anti-fabrication, cost-aware AI architecture.
 
@@ -85,6 +86,7 @@ User tables: a user sees only their own rows. `companies` and `jobs`: public rea
 | `applications` | id, user_id, job_id, status (`saved`/`applied`/`interview`/`offer`/`rejected`), tailored_json, tailored_cv_path, verify_report jsonb, updated_at |
 | `xp_events` | id, user_id, type, xp, job_id null, created_at |
 | `badges` | user_id, badge_key, earned_at |
+| `playbook_progress` | user_id, action_id, status (`planned`/`done`), evidence_note, evidence_url, updated_at (PK user_id+action_id) — §15 |
 
 **Archetypes (fixed, 8):** `software_eng`, `data_analytics`, `quant_trading`, `consulting`, `product`, `finance_banking`, `marketing_growth`, `research`. Signal tables: extraction §2.2.
 
@@ -429,7 +431,7 @@ generateStructured<T>({ tier: "fast" | "smart", system, parts: (Text | Pdf)[], s
 
 ## 13. Build order (Tue → Fri)
 
-**Cut order if time runs short:** badge animations → kanban drag-drop (keep the dropdown) → quiz depth.
+**Cut order if time runs short:** badge animations → kanban drag-drop (keep the dropdown) → Target Role signal cards (keep readiness + actions) → quiz depth.
 **Never cut:** CV Score with citations, tailoring transparency, `verifyTailoring`.
 
 | Day | Work |
@@ -446,3 +448,108 @@ generateStructured<T>({ tier: "fast" | "smart", system, parts: (Text | Pdf)[], s
 - **Unverified research claims** (flagged in the research docs) must not be shown as facts until checked: PwC's 2:1 removal date, the "216 UCAS points" figure, the LSE test-domain page, and the snippet-only Bright Network, Lever and iCIMS pages.
 - **Seed list issues:** the KKR slug is unconfirmed, and EU-host and case-sensitivity issues remain.
 - **Exact submission time on Friday** is unknown; compress the Friday block once it is known.
+
+## 15. Target Role mode and Role Playbooks (added 2026-10-13, board decision)
+
+> **Source:** board meeting 2026-10-13 (`memory/board-meetings/decisions.md`). Founder proposal: "I want this role — how do I make my CV stronger for it?" Research: `docs/research/role-playbooks-tech-product.{md,json}` and `docs/research/role-playbooks-finance-consulting.{md,json}`. Both files passed an independent adversarial verification on 2026-10-13; each one ends with a verification log.
+
+### 15.1 Intent
+
+The rest of the app runs **CV → roles**. Target Role mode runs the other way: **role → gap → action**. The student picks one of the 8 archetypes and sees:
+
+1. **What the market asks for:** the skills that come up most across live, open jobs of that archetype, with real counts.
+2. **Readiness:** their coverage of that skill set as a percentage.
+3. **What employers look for:** cited employer signals, each with an evidence grade and verbatim quotes.
+4. **Two action boxes:**
+   - **"You have it — make it visible":** skills the CV already backs up but doesn't show in the skills list or bullets.
+   - **"Not yet — how to get it":** projects, free courses and experiences from the Role Playbook. Each is filtered by year of study and expiry, and each says which employer signal it builds.
+5. **One line of year guidance** for the student's year.
+
+**No LLM is involved.** Every number and every recommendation comes from code plus verified data, so the feature works the same in fixture and live mode and costs nothing per view.
+
+### 15.2 Principles (extend §1)
+
+- **Never fabricate, here too.** Recommending an action never changes the CV. A skill or experience becomes usable for tailoring only when the student marks the action **done**. They must give a short evidence note (optionally with a link). This is stored in `confirmed_facts` (`source = 'user-stated'`), which `verifyTailoring` already accepts as part of its corpus.
+- **Evidence-honest.** Every signal shows its grade (A–D) and its sources with verbatim quotes. Single-source signals are labelled "convention". Projects are our own suggestions (grade D) and say so.
+- **No stale advice.** Actions with `expiresOn < today` (London date) are hidden. Actions past `reviewBy` show a "Dates may have changed — check the official page" chip. Dated year-guidance lines follow the same rule.
+- **Honest samples.** Market demand counts only live, open jobs. With fewer than 5 such jobs, the panel says "Small sample — N live roles" and shows no percentages.
+
+### 15.3 Data
+
+- **`lib/playbooks/data.json`** is generated by `scripts/build-playbooks.ts` from the two research JSONs and never edited by hand. The build normalises the two research schemas:
+  - `minYear`: `1`→`1st`, `2`→`2nd`; strings pass through.
+  - Year-guidance keys map to `Year` keys.
+  - Sources are inlined from the tech file's `sources` table.
+- **The build fails if any of these hold:**
+  - an action with a `url` is not `verified: true`;
+  - any source lacks a `quote` or `accessed`;
+  - a skill is not a `SKILLS` canonical;
+  - a signal reference dangles;
+  - an id is duplicated;
+  - an archetype is missing.
+- **Zod schema in `lib/playbooks/schema.ts`:**
+  - `Signal { id, text, grade, basis?, ruleIds[], sources[] }`
+  - `Action { id, type: project|course|experience, title, description, skills[], signals[], effort: weekend|2-4 weeks|term, minYear: Year, evidence, url?, howToFind?, expiresOn?, reviewBy?, sources[] }`
+  - `Playbook { signals[], actions[], yearGuidance: Partial<Record<Year,string>>, yearGuidanceDated[] }`
+- **New table `playbook_progress`:** `user_id`, `action_id`, `status` (`planned`/`done`), `evidence_note`, `evidence_url`, `updated_at`. The primary key is (user_id, action_id), with RLS on.
+
+### 15.4 Logic (`lib/target/`, pure, unit-tested)
+
+- **`marketDemand(jobs, archetype, today)`**
+  - Takes jobs with `archetype = X`, `is_live`, and a deadline that is not past.
+  - For each canonical skill in `requirements`, counts the jobs that mention it, plus how many of those list it as `must`.
+  - Returns at most 12 skills sorted by count: `{ skill, jobs, share, mustShare }`, plus `n`.
+  - `section` is `must` if `mustShare ≥ 0.5`, otherwise `nice`.
+- **`readiness(demand, cvSource)`**
+  - Calls `computeCoverage(demand.items, cvSource)` (§5.1); no new scoring maths.
+  - Display uses the same rule as `coverageLabel`: never 100% while a gap exists.
+  - Label: "Readiness vs N live {role} internships". It is never presented as a probability of getting hired.
+- **`pickActions(playbook, gaps, year, today, progress)`**
+  - **Filter:** keeps actions with `minYear ≤ year` that are not expired and not done.
+  - **Order:** first by the number of gap skills covered, then effort (weekend < 2-4 weeks < term), then type (project > experience > course).
+  - **Limits:** at most 2 actions per gap skill and at most 6 in total.
+  - **Fallback:** if no gap skill maps to any action, it returns the top 3 signal-linked actions for the year, labelled "Strengthen your profile".
+- **`visibleHints(coverage)`:** for each item with status `supportedByResume`, a template hint: "Your CV mentions {skill} but not in your skills list or bullets — add a bullet about what you did with it." No generated text.
+
+### 15.5 Gamification (extends §10)
+
+| Event | XP |
+|---|---|
+| Playbook action marked done (with an evidence note) | 40 (max 3 per day) |
+
+There is also a new badge, 🧭 **Gap Closer**: the first playbook action marked done. Planning an action gives no XP, so the system rewards doing, not clicking.
+
+### 15.6 Screen
+
+**`/profile/target`** is a tab on the profile page: "Your roles" | "Target role".
+
+- **Header:** role picker (reuses `target_archetype`; changing it also rescores the CV for that sector, like §19's sector switch).
+- **Left column:**
+  - readiness ring (Fredoka number)
+  - a CV Score mini-card for that sector, linking to the full panel
+  - year guidance
+- **Right column:**
+  - market demand bars (skill, "in 14 of 18 roles", must-have tag)
+  - the two action boxes
+  - "What employers look for": signal cards with grade badge and source chips that show the quote on hover or tap
+- **Action card contents:**
+  - type icon, title, effort, min year, "Builds: {signal}"
+  - an official link (opens a new tab)
+  - **[Plan it]** and **[I've done this]**
+  - "I've done this" opens a one-line evidence note field (required) and an optional link field.
+
+### 15.7 Demo addition (§12)
+
+After step 2, Ayşe switches to the **Target role** tab and picks Consulting:
+
+- **Readiness:** "Readiness 42% vs 18 live consulting roles".
+- **"You have it":** Excel.
+- **"Not yet":** a pro-bono consulting project and a case-competition experience, each with a cited signal.
+- **Marking one done:** she adds an evidence note → +40 XP and the Gap Closer badge. The fact is now available to tailoring.
+
+### 15.8 Out of scope
+
+- Free-text target roles.
+- LLM-personalised plans.
+- Reminders.
+- Auto-refreshing the playbook (it is re-verified manually; `reviewBy` dates flag what needs it).
