@@ -1,0 +1,93 @@
+# validated 2026-10-13T15:41:27.157Z
+# Source: career-ops portals.yml via docs/research/career-ops-extraction.md §7
+- { slug: monzo, name: Monzo, ats: greenhouse, enabled: true }
+- { slug: wise, name: Wise, ats: greenhouse, enabled: true } # ?
+- { slug: gocardless, name: GoCardless, ats: greenhouse, enabled: true } # ?
+- { slug: tide, name: Tide, ats: greenhouse, enabled: true } # ?
+- { slug: cleo, name: Cleo, ats: greenhouse, enabled: true } # ?
+- { slug: form3, name: Form3, ats: greenhouse, enabled: true } # ?
+- { slug: wayve, name: Wayve, ats: ashby, enabled: true } # ? London autonomy; actually on Ashby, not Greenhouse
+- { slug: isomorphiclabs, name: Isomorphic Labs, ats: greenhouse, enabled: true }
+- { slug: stabilityai, name: Stability AI, ats: greenhouse, enabled: true } # ?
+- { slug: polyai, name: PolyAI, ats: greenhouse, enabled: true }
+- { slug: anthropic, name: Anthropic, ats: greenhouse, enabled: true }
+- { slug: payhawkio, name: Payhawk, ats: greenhouse, enabled: true } # ? slug is not payhawk
+- { slug: sumup, name: SumUp, ats: greenhouse, enabled: true } # ?
+- { slug: intercom, name: Intercom, ats: greenhouse, enabled: true } # ?
+- { slug: parloa, name: Parloa, ats: greenhouse, enabled: true } # ?
+- { slug: stripe, name: Stripe, ats: greenhouse, enabled: true } # ?
+- { slug: databricks, name: Databricks, ats: greenhouse, enabled: true } # ?
+- { slug: datadog, name: Datadog, ats: greenhouse, enabled: true } # ?
+- { slug: figma, name: Figma, ats: greenhouse, enabled: true }
+- { slug: mercury, name: Mercury, ats: greenhouse, enabled: true } # ?
+- { slug: brex, name: Brex, ats: greenhouse, enabled: true } # ?
+- { slug: vercel, name: Vercel, ats: greenhouse, enabled: true } # ?
+- { slug: airbnb, name: Airbnb, ats: greenhouse, enabled: true } # ?
+- { slug: capco, name: Capco, ats: greenhouse, enabled: true }
+- { slug: point72, name: Point72, ats: greenhouse, enabled: true }
+- { slug: drweng, name: DRW, ats: greenhouse, enabled: true }
+- { slug: financialtechnologypartners, name: Financial Technology Partners, ats: greenhouse, enabled: true }
+- { slug: novafounders, name: Nova Founders Capital, ats: greenhouse, enabled: true } # ?
+- { slug: mangroup, name: Man Group, ats: greenhouse, enabled: true }
+- { slug: mavensecuritiesholdingltd, name: Maven Securities, ats: greenhouse, enabled: true }
+- { slug: gsacapital, name: GSA Capital, ats: greenhouse, enabled: true } # embed for=
+- { slug: jumptrading, name: Jump Trading, ats: greenhouse, enabled: true } # embed
+- { slug: towerresearchcapital, name: Tower Research Capital, ats: greenhouse, enabled: true } # embed
+- { slug: mwinternshipprogram, name: Marshall Wace, ats: greenhouse, enabled: true } # dedicated intern board
+- { slug: rothesaygraduates, name: Rothesay, ats: greenhouse, enabled: true } # dedicated grad board
+- { slug: virtu, name: Virtu Financial, ats: greenhouse, enabled: true }
+- { slug: schonfeld, name: Schonfeld, ats: greenhouse, enabled: true }
+- { slug: capstoneinvestmentadvisors, name: Capstone Investment Advisors, ats: greenhouse, enabled: true }
+- { slug: xantium, name: Xantium, ats: greenhouse, enabled: true }
+- { slug: dvtrading, name: DV Trading, ats: greenhouse, enabled: true }
+- { slug: quadraturecapital, name: Quadrature Capital, ats: greenhouse, enabled: true }
+- { slug: grahamcapitalmanagement, name: Graham Capital Management, ats: greenhouse, enabled: true }
+- { slug: aquaticcapitalmanagement, name: Aquatic Capital Management, ats: greenhouse, enabled: true }
+- { slug: ctccampusboard, name: Chicago Trading Company, ats: greenhouse, enabled: true } # dedicated campus board
+- { slug: flowtraders, name: Flow Traders, ats: greenhouse, enabled: true }
+- { slug: imc, name: IMC Trading, ats: greenhouse, enabled: true }
+- { slug: isam, name: iSAM, ats: greenhouse, enabled: true }
+- { slug: riverlane, name: Riverlane, ats: greenhouse, enabled: true }
+- { slug: scaleai, name: Scale AI, ats: greenhouse, enabled: true }
+- { slug: andurilindustries, name: Anduril, ats: greenhouse, enabled: true }
+- { slug: verkada, name: Verkada, ats: greenhouse, enabled: true }
+- { slug: celonis, name: Celonis, ats: greenhouse, enabled: true }
+- { slug: atoms, name: Atoms, ats: greenhouse, enabled: true }
+- { slug: isidor, name: Isidor, ats: greenhouse, enabled: true }
+- { slug: pm, name: KKR, ats: greenhouse, enabled: false } # EMPTY board (0 postings); slug unconfirmed or board unused
+- { slug: feverup, name: Fever, ats: greenhouse, enabled: true }
+- { slug: deliveroo, name: Deliveroo, ats: ashby, enabled: true } # ?
+- { slug: lendable, name: Lendable, ats: ashby, enabled: true }
+- { slug: marshmallow, name: Marshmallow, ats: ashby, enabled: true } # ?
+- { slug: multiverse, name: Multiverse, ats: ashby, enabled: true } # ?
+- { slug: synthesia, name: Synthesia, ats: ashby, enabled: true } # ?
+- { slug: faculty, name: Faculty, ats: ashby, enabled: true } # ?
+- { slug: quantexa, name: Quantexa, ats: ashby, enabled: true } # ?
+- { slug: tractable, name: Tractable, ats: ashby, enabled: true } # ?
+- { slug: improbable, name: Improbable, ats: ashby, enabled: true } # ?
+- { slug: elevenlabs, name: ElevenLabs, ats: ashby, enabled: true } # ?
+- { slug: poolside, name: Poolside, ats: ashby, enabled: true } # ?
+- { slug: cohere, name: Cohere, ats: ashby, enabled: true }
+- { slug: pleo, name: Pleo, ats: ashby, enabled: true } # ?
+- { slug: miro, name: Miro, ats: ashby, enabled: true } # ?
+- { slug: snowflake, name: Snowflake, ats: ashby, enabled: true }
+- { slug: notion, name: Notion, ats: ashby, enabled: true }
+- { slug: ramp, name: Ramp, ats: ashby, enabled: true }
+- { slug: plaid, name: Plaid, ats: ashby, enabled: true }
+- { slug: attio, name: Attio, ats: ashby, enabled: true }
+- { slug: linear, name: Linear, ats: ashby, enabled: true } # ?
+- { slug: oaknorth, name: OakNorth, ats: ashby, enabled: true } # ?
+- { slug: trainline, name: Trainline, ats: ashby, enabled: true } # ?
+- { slug: thought-machine, name: Thought Machine, ats: ashby, enabled: true } # ?
+- { slug: zilch, name: Zilch, ats: ashby, enabled: true } # ?
+- { slug: incident, name: "incident.io", ats: ashby, enabled: true }
+- { slug: blocktech, name: BlockTech, ats: ashby, enabled: true }
+- { slug: Talos-Trading, name: Talos, ats: ashby, enabled: true } # case-sensitive slug
+- { slug: lottie, name: Lottie, ats: ashby, enabled: true }
+- { slug: uipath, name: UiPath, ats: ashby, enabled: true } # ?
+- { slug: palantir, name: Palantir, ats: lever, enabled: true }
+- { slug: spotify, name: Spotify, ats: lever, enabled: true }
+- { slug: zopa, name: Zopa, ats: lever, enabled: true }
+- { slug: harrisonst, name: Harrison Street, ats: lever, enabled: true }
+- { slug: sophos, name: Sophos, ats: lever, enabled: true }
+- { slug: cirrus, name: Cirrus Logic, ats: lever, apiHost: api.eu.lever.co, enabled: true } # EU host
