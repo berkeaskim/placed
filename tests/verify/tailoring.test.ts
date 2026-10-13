@@ -300,3 +300,153 @@ describe("revertBlocked", () => {
     expect(out.reverted[0].bulletId).toBe("x0-b1");
   });
 });
+
+// ---------- Fix round 1 (adversarial review) ----------
+
+const blocksWith = (r: ReturnType<typeof verifyTailoring>, type: Issue["type"]) => r.verdict === "block" && has(r.issues, type, "block");
+
+describe("fix 1: word and multiplier metrics", () => {
+  it.each([
+    [4, "Tripled sign-ups through an email campaign"],
+    [4, "Doubled sign-ups through an email campaign"],
+    [4, "Halved churn through an email campaign"],
+    [4, "Increased sign-ups 3-fold through an email campaign"],
+    [0, "Helped organise a dozen society events"],
+    [0, "Helped organise dozens of society events"],
+    [6, "Mentored hundreds of first-year students in Python"],
+    [6, "Mentored scores of first-year students in Python"],
+    [4, "Increased sign-ups by a quarter through an email campaign"],
+    [4, "Increased sign-ups by twenty-five percent through an email campaign"],
+    [6, "Mentored thirty first-year students in Python"],
+  ])("blocks bullet %i → %s", (i, text) => {
+    expect(blocksWith(fx((t) => setBullet(t, i as number, text as string)), "inventedMetrics")).toBe(true);
+  });
+  it("word ↔ digit equivalence passes", () => {
+    expect(fx((t) => setBullet(t, 6, "Mentored twelve first-year students in Python")).verdict).toBe("pass");
+    expect(fx((t) => setBullet(t, 0, "Helped organise three society events")).verdict).toBe("pass");
+  });
+  it("a confirmed multiplier passes", () => {
+    const r = fx((t) => setBullet(t, 4, "Doubled sign-ups through an email campaign"), { confirmedFacts: ["Sign-ups doubled after the email campaign"] });
+    expect(has(r.issues, "inventedMetrics")).toBe(false);
+  });
+  it("'half' ≡ 50% and 'a dozen' ≡ 12 when the source says so", () => {
+    const cv: ParsedCV = { ...source, experience: [{ ...source.experience[0], bullets: [
+      { id: "x0-b0", text: "Cut queue times by 50% at society events" }, { id: "x0-b1", text: "Ran 12 workshops for members" }] }] };
+    const t = toTailored(cv);
+    t.experience[0].bullets[0] = { id: "x0-b0", text: "Cut queue times by half at society events", sourceRefs: ["x0-b0"] };
+    t.experience[0].bullets[1] = { id: "x0-b1", text: "Ran a dozen workshops for members", sourceRefs: ["x0-b1"] };
+    const r = verifyTailoring({ ...base(t), source: cv, sourceText: "" });
+    expect(has(r.issues, "inventedMetrics")).toBe(false);
+  });
+});
+
+describe("fix 2: employers in any case or position", () => {
+  it.each([
+    "Used Python (pandas) to clean survey data for deloitte",
+    "Used Python (pandas) to clean survey data for goldman sachs",
+    "Used Python (pandas) to clean survey data for JP Morgan",
+  ])("blocks %s", (text) => {
+    expect(blocksWith(fx((t) => setBullet(t, 1, text)), "unsupportedFacts")).toBe(true);
+  });
+  it.each(["former google intern", "Ex-Deloitte student", "Deloitte intern with a passion for data", "Zorblax analyst and student"])("blocks summary %s", (s) => {
+    expect(blocksWith(fx((t) => { t.summary = s; }), "unsupportedFacts")).toBe(true);
+  });
+  it("interests go through the same checks", () => {
+    expect(blocksWith(fx((t) => { t.interests = "Shadowed traders at citadel"; }), "unsupportedFacts")).toBe(true);
+  });
+  it("revertBlocked strips 'Ex-Deloitte' from the summary and re-verify doesn't block", () => {
+    const t = toTailored(src2); t.summary = "Ex-Deloitte student";
+    const input = { source: src2, sourceText: src2Text, confirmedFacts: [], tailored: t, jdKeywords: [], coverageBefore: 0.4, coverageAfter: 0.6 };
+    const out = revertBlocked(t, src2, verifyTailoring(input).issues);
+    expect(out.tailored.summary).toBeNull();
+    expect(verifyTailoring({ ...input, tailored: out.tailored }).verdict).not.toBe("block");
+  });
+  it("ordinary sentence-initial words don't block", () => {
+    const r = fx((t) => { t.summary = "Motivated computer science student. Interested in data."; });
+    expect(has(r.issues, "unsupportedFacts")).toBe(false);
+  });
+  it("seed companies are all in the known-employers list", async () => {
+    const { readFileSync } = await import("node:fs");
+    const { KNOWN_EMPLOYERS } = await import("@/lib/verify/tailoring");
+    const names = [...readFileSync("seed/companies.yml", "utf8").matchAll(/name: ("[^"]+"|[^,}]+)/g)].map((m) => m[1].replace(/"/g, "").trim());
+    const known = new Set(KNOWN_EMPLOYERS.map((k) => k.name.toLowerCase()));
+    expect(names.filter((n) => !known.has(n.toLowerCase()))).toEqual([]);
+  });
+});
+
+describe("fix 3: tailoring never creates entries", () => {
+  it("blocks an entry id that isn't in the source, even with real org/title, and revert removes it", () => {
+    const t = toTailored(src2);
+    t.experience.push({ ...t.experience[0], id: "x9", bullets: [] });
+    const input = { source: src2, sourceText: src2Text, confirmedFacts: [], tailored: t, jdKeywords: [], coverageBefore: 0.4, coverageAfter: 0.6 };
+    const r = verifyTailoring(input);
+    expect(blocksWith(r, "unsupportedFacts")).toBe(true);
+    const out = revertBlocked(t, src2, r.issues);
+    expect(out.tailored.experience.map((e) => e.id)).toEqual(["x1"]);
+    expect(verifyTailoring({ ...input, tailored: out.tailored }).verdict).not.toBe("block");
+  });
+});
+
+describe("fix 4: non-verb ownership escalation", () => {
+  it.each([
+    [1, "Took ownership of cleaning survey data in Python (pandas)"],
+    [1, "Responsible for survey data cleaning end to end using Python (pandas)"],
+    [5, "Sole organiser of a charity bake sale, raising £500"],
+    [5, "Raised £500 as event lead for a charity bake sale"],
+    [5, "Single-handedly raised £500 for a charity bake sale"],
+  ])("blocks bullet %i → %s", (i, text) => {
+    expect(blocksWith(fx((t) => setBullet(t, i as number, text as string)), "authorshipEscalation")).toBe(true);
+  });
+  it("blocks 'as sole developer' on a project", () => {
+    const r = fx((t) => { t.projects[0].bullets[0] = { ...t.projects[0].bullets[0], text: "Wrote a budgeting app in React as sole developer", changeType: "rephrased" }; });
+    expect(blocksWith(r, "authorshipEscalation")).toBe(true);
+  });
+});
+
+describe("fix 5: summary numbers are scoped", () => {
+  it("blocks a summary number borrowed from an unrelated bullet", () => {
+    expect(blocksWith(fx((t) => { t.summary = "Computer science student who mentored 500 students"; }), "inventedMetrics")).toBe(true);
+  });
+  it("allows a summary number that co-occurs with its context", () => {
+    expect(has(fx((t) => { t.summary = "Student who mentored 12 first-year students"; }).issues, "inventedMetrics")).toBe(false);
+  });
+});
+
+describe("fix 6: years are not counts", () => {
+  it("blocks a number that only appears in date fields", () => {
+    expect(blocksWith(fx((t) => setBullet(t, 6, "Mentored 2026 first-year students in Python")), "inventedMetrics")).toBe(true);
+  });
+});
+
+describe("fix 7: no false blocks", () => {
+  it("'CS' for Computer Science", () => {
+    expect(has(fx((t) => { t.summary = "CS student at UCL"; }).issues, "unsupportedFacts")).toBe(false);
+  });
+  it.each(["Raised 500 GBP for a charity bake sale", "Raised 500 pounds for a charity bake sale"])("currency spelling: %s", (text) => {
+    expect(fx((t) => setBullet(t, 5, text)).verdict).not.toBe("block");
+  });
+  it("'Sep 2023' ↔ 'September 2023'", () => {
+    expect(fx((t) => { t.experience[0] = { ...t.experience[0], dates: "September 2023 – June 2024" }; }).verdict).toBe("pass");
+  });
+  it("'Survey Monkey' ↔ 'SurveyMonkey'", () => {
+    const facts = { confirmedFacts: ["Ran the society survey on SurveyMonkey"] };
+    expect(has(fx((t) => setBullet(t, 1, "Used Python (pandas) to clean Survey Monkey data"), facts).issues, "unsupportedFacts")).toBe(false);
+    const facts2 = { confirmedFacts: ["Ran the society survey on Survey Monkey"] };
+    expect(has(fx((t) => setBullet(t, 1, "Used Python (pandas) to clean SurveyMonkey data"), facts2).issues, "unsupportedFacts")).toBe(false);
+  });
+});
+
+describe("fix 8: warn-level drift", () => {
+  it.each([
+    [5, "Raised $500 for a charity bake sale"],
+    [6, "Mentored over 12 first-year students in Python"],
+    [6, "Mentored 12+ first-year students in Python"],
+    [6, "Mentored more than 12 first-year students in Python"],
+    [4, "Award-winning email campaign increased sign-ups by 20%"],
+    [5, "Raised £500 for a charity bake sale, winning first place"],
+  ])("warns on bullet %i → %s", (i, text) => {
+    const r = fx((t) => setBullet(t, i as number, text as string));
+    expect(r.verdict).toBe("warn");
+    expect(has(r.issues, "perBulletDrift", "warn")).toBe(true);
+  });
+});

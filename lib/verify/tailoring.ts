@@ -8,10 +8,15 @@
  * Fact corpus (C7): CONTENT ONLY — raw CV text, bullet/detail texts, org/title/dates/location, degree/grade/
  * institution, skills, summary, interests — plus confirmedFacts. Never ids, archetypes, sectionOrder, yearGuess
  * or any serialised JSON. Employer/title/tool presence is whole-token matching.
+ *
+ * Known limit (by design): a tool written in lower case that is outside the skills vocabulary
+ * (lib/skills/vocab.ts) and is not a known employer is indistinguishable from an ordinary English word, so it
+ * cannot be detected here ("used airtable" passes). Capitalised or acronym tools are caught by the proper-noun
+ * rule; vocab tools by skillInjection/siblingContamination. Grow the vocab to close the gap.
  */
 import type { ParsedCV, TailoredCV, TailoredEntry, TailoredBullet, TailorChangeType, CvEntry } from "@/lib/types";
 import { extractSkills } from "@/lib/skills/extract";
-import { EMAIL_RE, PHONE_RE } from "@/lib/text/regex";
+import { EMAIL_RE, PHONE_RE, escapeRegex } from "@/lib/text/regex";
 import { clicheDensity } from "@/lib/cv/cliches";
 import { runExtraChecks, extractMetrics, authorshipLevel, type SourceRole, type TailoredRole, type Issue as ExtraIssue } from "./checks-extra";
 
@@ -38,6 +43,17 @@ const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 /** Whole-token phrase match on normalised text ("lead" does not match "leadership"). */
 const hasToken = (hayNorm: string, needle: string) => { const n = norm(needle); return n !== "" && ` ${hayNorm} `.includes(` ${n} `); };
 
+const MONTHS: [RegExp, string][] = ["january", "february", "march", "april", "june", "july", "august", "september", "october", "november", "december"]
+  .map((m) => [new RegExp(`\\b${m}\\b`, "g"), m.slice(0, 3)]);
+/** Dates compare with month names shortened: "September 2023" ≡ "Sep 2023" ≡ "Sept 2023". */
+const normDate = (s: string) => MONTHS.reduce((t, [re, short]) => t.replace(re, short), norm(s)).replace(/\bsept\b/g, "sep");
+
+/** "500 GBP", "500 pounds" → "£500" (same for $/€), applied to both sides before comparing metrics. */
+const normCurrency = (t: string) => t
+  .replace(/(\d[\d,.]*(?:\s?(?:k|m|bn)\b)?)\s*(?:GBP|pounds?(?:\s+sterling)?|sterling)\b/gi, "£$1")
+  .replace(/(\d[\d,.]*(?:\s?(?:k|m|bn)\b)?)\s*(?:USD|US\s?dollars?|dollars?)\b/gi, "$$$1")
+  .replace(/(\d[\d,.]*(?:\s?(?:k|m|bn)\b)?)\s*(?:EUR|euros?)\b/gi, "€$1");
+
 const NUM = /\d+(?:[.,]\d+)*(?:\s?(?:%|k\b|m\b|bn\b|x\b))?/gi;
 const MULT: Record<string, number> = { k: 1e3, m: 1e6, bn: 1e9 };
 /** Numeric values a token stands for: "1,200" → 1200; "2k" → 2 and 2000. */
@@ -59,6 +75,70 @@ function numberSet(text: string): Set<string> {
   for (const m of extractMetrics(clean)) for (const v of m.value.replace(/%$/, "").split("-")) out.add(v);
   return out;
 }
+const isYearLike = (v: string) => /^\d{4}$/.test(v) && +v >= 1950 && +v <= 2049;
+
+// ---------- word / multiplier / vague metrics (fix 1) ----------
+
+const ONES: Record<string, number> = { two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9 };
+const TEENS: Record<string, number> = { ten: 10, eleven: 11, twelve: 12, thirteen: 13, fourteen: 14, fifteen: 15, sixteen: 16, seventeen: 17, eighteen: 18, nineteen: 19 };
+const TENS: Record<string, number> = { twenty: 20, thirty: 30, forty: 40, fifty: 50, sixty: 60, seventy: 70, eighty: 80, ninety: 90 };
+const SMALL: Record<string, number> = { a: 1, one: 1, ...ONES, ...TEENS, ...TENS };
+const alt = (o: Record<string, number>) => Object.keys(o).join("|");
+/** Lower bound a vague quantity implies; the source must show a number at least this big (or the same word). */
+const VAGUE_MIN: Record<string, number> = { dozens: 24, scores: 40, hundreds: 200, thousands: 2000, millions: 2_000_000 };
+const MULT_VERB: Record<string, number> = { doubl: 2, tripl: 3, quadrupl: 4, halv: 0.5 };
+
+type WordMetric = { raw: string; key: string };
+/** Keys: `n:<value>` (a number; fractions as their percent), `x:<factor>` (multiplier), `v:<word>` (vague quantity). */
+export function wordMetrics(text: string): WordMetric[] {
+  const out: WordMetric[] = [];
+  const taken: [number, number][] = [];
+  const scan = (re: RegExp, key: (m: RegExpMatchArray) => string | null) => {
+    for (const m of text.matchAll(new RegExp(re.source, "gi"))) {
+      const s = m.index!, e = s + m[0].length;
+      if (taken.some(([a, b]) => s < b && e > a)) continue;
+      const k = key(m);
+      if (k === null) continue;
+      taken.push([s, e]);
+      out.push({ raw: m[0].trim(), key: k });
+    }
+  };
+  const n = (w: string | undefined) => (w ? SMALL[w.toLowerCase()] ?? parseFloat(w) : 1);
+  scan(/\b(dozens|scores|hundreds|thousands|millions)\s+of\b/, (m) => `v:${m[1].toLowerCase()}`);
+  scan(new RegExp(`\\b(?:(a|one|${alt(ONES)})\\s+)?dozen\\b`), (m) => `n:${12 * n(m[1])}`);
+  scan(/\b(a|one|two|three)[- ](quarters?|thirds?)\b/, (m) => `n:${Math.round((100 * n(m[1])) / (/quarter/i.test(m[2]) ? 4 : 3))}`);
+  scan(/\b(?:by|in)\s+half\b|\bhalf\s+(?:of|the)\b/, () => "n:50");
+  scan(/\b(doubl|tripl|quadrupl|halv)(?:e|ed|es|ing)\b/, (m) => `x:${MULT_VERB[m[1].toLowerCase()]}`);
+  scan(new RegExp(`\\b(\\d+(?:\\.\\d+)?|${alt(ONES)}|ten)[- ]?fold\\b`), (m) => `x:${n(m[1])}`);
+  scan(new RegExp(`\\b(${alt(TENS)})(?:[- ](${alt(ONES)}))?(?:\\s+(hundred|thousand))?\\b`),
+    (m) => `n:${(TENS[m[1].toLowerCase()] + (m[2] ? ONES[m[2].toLowerCase()] : 0)) * (m[3] ? (/hundred/i.test(m[3]) ? 100 : 1000) : 1)}`);
+  scan(new RegExp(`\\b(a|one|${alt(ONES)}|${alt(TEENS)})\\s+(hundred|thousand)\\b`), (m) => `n:${n(m[1]) * (/hundred/i.test(m[2]) ? 100 : 1000)}`);
+  scan(new RegExp(`\\b(${alt(ONES)}|${alt(TEENS)})\\b`), (m) => `n:${n(m[1])}`);
+  return out;
+}
+
+/** Everything a source text can back: digit values, digit multipliers ("3x", "3-fold", "+100%"), and its own word metrics. */
+function supportKeys(text: string): Set<string> {
+  const keys = new Set<string>();
+  const clean = stripContacts(text);
+  for (const v of numberSet(clean)) keys.add(`n:${v}`);
+  for (const m of clean.matchAll(/(\d+(?:\.\d+)?)\s?(?:[x×](?![a-z0-9])|-?fold\b)/gi)) keys.add(`x:${parseFloat(m[1])}`);
+  for (const m of clean.matchAll(/(\d+)\s?%/g)) { const p = +m[1]; if (p % 100 === 0 && p > 0) keys.add(`x:${p / 100 + 1}`); }
+  for (const w of wordMetrics(clean)) keys.add(w.key);
+  return keys;
+}
+function keySupported(key: string, keys: Set<string>): boolean {
+  if (keys.has(key)) return true;
+  if (key.startsWith("v:")) {
+    const min = VAGUE_MIN[key.slice(2)];
+    return [...keys].some((k) => k.startsWith("n:") && +k.slice(2) >= min);
+  }
+  return false;
+}
+/** Numeric values named by an issue claim, digits or words ("thirty" → 30). */
+const claimValues = (claim: string) => [...numValues(claim), ...wordMetrics(claim).filter((w) => w.key.startsWith("n:")).map((w) => w.key.slice(2))];
+
+// ---------- stems ----------
 
 const STOP = new Set(("a an the and or but of to in on at by for from with into over under via per as is are was were be been this that these those it its " +
   "their them they our who which what while when where than then so such also very more most less each every all both other across within during after " +
@@ -83,6 +163,33 @@ export function buildFactCorpus(cv: ParsedCV, sourceText: string, confirmedFacts
   for (const g of cv.skills) parts.push(g.group, ...g.items);
   parts.push(...confirmedFacts);
   return parts.filter((p): p is string => !!p && p.trim() !== "").join("\n");
+}
+
+/**
+ * Numbers a metric may use (fix 6): everything in the structured, non-date content and confirmed facts, plus
+ * raw-text numbers that are neither a date-field value nor year-shaped. "Mentored 2026 students" can't borrow
+ * a graduation year.
+ */
+function metricCorpus(cv: ParsedCV, sourceText: string, confirmedFacts: string[]): Set<string> {
+  const structured: (string | null)[] = [cv.summary, cv.interests, ...confirmedFacts];
+  const dates: string[] = [];
+  for (const e of cv.education) { structured.push(e.institution, e.degree, e.grade, ...e.details.map((d) => d.text)); dates.push(e.dates); }
+  for (const e of sections<ParsedCV, CvEntry>(cv)) { structured.push(e.org, e.title, e.location, ...e.bullets.map((b) => b.text)); dates.push(e.dates); }
+  for (const g of cv.skills) structured.push(...g.items);
+  const out = numberSet(structured.filter(Boolean).join("\n"));
+  const dateVals = numberSet(dates.join("\n"));
+  for (const v of numberSet(sourceText)) if (!dateVals.has(v) && !isYearLike(v)) out.add(v);
+  return out;
+}
+
+/** Content units a summary/interests number can be scoped to (fix 5). */
+function sourceUnits(cv: ParsedCV): string[] {
+  const u: string[] = [];
+  for (const e of sections<ParsedCV, CvEntry>(cv)) { u.push(`${e.title} ${e.org}`); u.push(...e.bullets.map((b) => b.text)); }
+  for (const e of cv.education) { u.push(`${e.institution} ${e.degree} ${e.grade ?? ""}`); u.push(...e.details.map((d) => d.text)); }
+  if (cv.summary) u.push(cv.summary);
+  if (cv.interests) u.push(cv.interests);
+  return u;
 }
 
 /** JD keywords that name a credential, tool or qualification (not a soft word like "stakeholder"). */
@@ -113,7 +220,7 @@ export function toTailored(cv: ParsedCV): TailoredCV {
   };
 }
 
-// ---------- verifyTailoring ----------
+// ---------- lexicons ----------
 
 const FORBIDDEN: [string, RegExp][] = [
   ["proven track record", /\bproven track record\b/i], ["world-class", /\bworld[- ]class\b/i], ["rockstar", /\brock ?stars?\b/i],
@@ -126,17 +233,102 @@ const WARN_PHRASES: [string, RegExp][] = [
   ["detail-oriented", /\bdetail[- ]oriented\b/i], ["team player", /\bteam[- ]player\b/i], ["hard-working", /\bhard[- ]?working\b/i],
   ["self-starter", /\bself[- ]starter\b/i], ["go-getter", /\bgo[- ]getter\b/i],
 ];
+/** Non-verb ownership claims (fix 4): blocked when the cited source doesn't already make them. */
+const OWNERSHIP: [string, RegExp][] = [
+  ["took ownership", /\b(?:took|taking|take)\s+(?:full\s+|complete\s+)?ownership\b|\bownership\s+of\b/i],
+  ["responsible for", /\b(?:solely\s+|fully\s+|directly\s+)?responsible\s+for\b/i],
+  ["end to end", /\bend[- ]to[- ]end\b/i],
+  ["sole", /\bsole(?:ly)?\b/i],
+  ["single-handedly", /\bsingle[- ]?handed(?:ly)?\b/i],
+  ["lead role", /\b(?:as|the)\s+(?:[a-z]+\s+){0,2}lead\b(?!\s+(?:to|on|in)\b)|\blead\s+(?:developer|engineer|organi[sz]er|analyst|author|designer|researcher|consultant)\b/i],
+  ["in charge of", /\bin\s+charge\s+of\b/i],
+  ["independently", /\bindependently\b|\bon\s+my\s+own\b/i],
+  ["head of", /\bhead\s+of\b/i],
+];
+/** New achievement claims (fix 8, warn). */
+const ACHIEVEMENT = /\baward[- ]winning\b|\bawards?\b|\bawarded\b|\bprizes?\b|\b(?:first|1st|second|2nd|third|3rd)\s+place\b|\bwinners?\b|\bwon\b|\bwinning\b|\bfinalists?\b|\bchampion(?:s|ship)?\b|\branked\b|\btop\s+\d+%?/gi;
+const INFLATE = /\b(?:over|more\s+than|upwards\s+of|at\s+least|in\s+excess\s+of)\s+[£$€]?(\d[\d,]*)|[£$€]?(\d[\d,]*)\s?\+/gi;
+
 /** Capitalised words that are never a tool/employer claim on their own. */
-const PROPER_ALLOW = new Set(("i kpi kpis roi uk us usa eu b2b b2c q1 q2 q3 q4 cv " +
+const PROPER_ALLOW = new Set(("i kpi kpis roi uk us usa eu b2b b2c q1 q2 q3 q4 cv gbp usd eur " +
   "january february march april may june july august september october november december jan feb mar apr jun jul aug sep sept oct nov dec " +
   "monday tuesday wednesday thursday friday saturday sunday").split(" "));
+/**
+ * Common English words that may start a sentence without naming anything (fix 2). Compact by design: verb- and
+ * adjective-shaped words are handled by WORDISH below, and known employers are matched case-insensitively anyway.
+ */
+const COMMON = new Set((
+  "a an the this that these those my our his her their its it i we he she they you one two some any each every all both many most several few " +
+  "and or but so yet nor for to of in on at by with from into onto about as after before during while since until over under through between among " +
+  "also then still just only even not no yes very well now here there when where why how what which who whose whom if though although because " +
+  "ex former current currently previously recently later early first second third final penultimate last next new prior " +
+  "student students undergraduate undergrad graduate postgraduate aspiring ambitious motivated keen eager curious hardworking diligent enthusiastic " +
+  "interested experienced skilled strong proven confident reliable proactive creative analytical numerate driven committed dedicated organised organized " +
+  "passionate year years team teams data software business finance economics mathematics maths math computer science engineering physics chemistry biology " +
+  "history law medicine management marketing research project projects society club university college school course module degree " +
+  "intern internship placement volunteer member president treasurer secretary officer captain tutor mentor analyst developer engineer assistant " +
+  "ambassador representative coordinator lead head founder co cofounder award awards hobbies interests include includes including outside away " +
+  "reading writing running football chess music piano guitar travel travelling traveling cooking photography swimming cycling hiking tennis rugby " +
+  "cricket basketball debating gaming languages fluent native conversational working worked work skills skill experience tools technical languages " +
+  "web mobile app apps backend frontend full stack cloud machine learning ai quantitative qualitative financial commercial technical"
+).split(" "));
+/** Morphology that marks an ordinary verb/adjective/noun rather than a name ("Cleaned", "Analytical", "Leadership"). */
+const WORDISH = /(?:ed|ing|ise|ize|ises|izes|ly|ive|ful|ous|able|ible|ment|ments|ness|tion|tions|sion|ity|ship|ist|ists|ism|ics|ical|al|ent|ents|ant|ants|ary|ory|ic|er|ers|or|ors|ian|ians|ate|ates|ance|ence|ology|age)$/;
+
 /** Inflected ladder forms checked anywhere in a bullet (bare forms like "lead"/"head"/"design" are too often nouns). */
 const IRREGULAR = new Set(["built", "led", "ran", "wrote", "drove", "oversaw", "founded", "owned"]);
 const DRIFT_K = 3;
 /** A source with no ladder verb at all is treated as direct work (matches checks-extra UNLADDERED_SOURCE_LEVEL). */
 const UNLADDERED = 2;
 
-type Unit = { text: string; cited: string; bulletId?: string; entryId?: string };
+export type KnownEmployer = { name: string; aliases?: string[]; caseSensitive?: boolean };
+const E = (name: string, aliases: string[] = [], caseSensitive = false): KnownEmployer => ({ name, aliases, caseSensitive });
+/**
+ * Known organisations (fix 2), matched in any case unless `caseSensitive` (names that are also English words).
+ * Big banks, Big 4, MBB, big tech, top trading firms, plus every company in seed/companies.yml (a test enforces it).
+ */
+export const KNOWN_EMPLOYERS: KnownEmployer[] = [
+  // banks
+  E("Goldman Sachs", ["Goldman"]), E("JPMorgan", ["JP Morgan", "J.P. Morgan", "J P Morgan", "JPMorgan Chase", "JPMC"]), E("Morgan Stanley"),
+  E("Barclays"), E("HSBC"), E("Citi", [], true), E("Citigroup"), E("Deutsche Bank"), E("UBS"), E("BNP Paribas"), E("Bank of America", ["BofA"]),
+  E("Lloyds Banking Group", ["Lloyds"]), E("NatWest"), E("Santander"), E("Nomura"), E("Credit Suisse"), E("Lazard"), E("Rothschild"), E("Evercore"),
+  E("Jefferies"), E("RBC"), E("Macquarie"), E("Societe Generale", ["SocGen"]), E("Standard Chartered"), E("Wells Fargo"), E("Mizuho"),
+  E("Bank of England"),
+  // Big 4 and consulting
+  E("Deloitte"), E("PwC", ["PricewaterhouseCoopers"]), E("EY", ["Ernst & Young", "Ernst and Young"], true), E("KPMG"),
+  E("McKinsey", ["McKinsey & Company"]), E("BCG", ["Boston Consulting Group"]), E("Bain", ["Bain & Company"], true), E("Accenture"),
+  E("Oliver Wyman"), E("Kearney"), E("Roland Berger"), E("Capgemini"),
+  // big tech
+  E("Google", ["Alphabet", "DeepMind", "Google DeepMind"]), E("Meta", ["Facebook"], true), E("Amazon", [], true), E("Apple", [], true),
+  E("Netflix"), E("Microsoft"), E("Nvidia"), E("Tesla"), E("Uber"), E("OpenAI"), E("IBM"), E("Revolut"), E("Bloomberg"),
+  // trading / funds
+  E("Jane Street"), E("Citadel"), E("Citadel Securities"), E("Two Sigma"), E("Optiver"), E("Hudson River Trading", ["HRT"]), E("Susquehanna", ["SIG"]),
+  E("Millennium"), E("Squarepoint"), E("Qube"), E("XTX Markets", ["XTX"]), E("Bridgewater"), E("Vanguard"), E("Fidelity"),
+  // seed/companies.yml
+  E("incident.io"), E("AIG"), E("Airbnb"), E("Anduril"), E("Anthropic"), E("Aquatic Capital Management"), E("Atoms", [], true), E("Attio"),
+  E("BlackRock"), E("Blackstone"), E("BlockTech"), E("Brex"), E("Capco"), E("Capital Group", [], true), E("Capstone Investment Advisors"),
+  E("Celonis"), E("Chicago Trading Company"), E("Cirrus Logic"), E("Cleo", [], true), E("Cohere", [], true), E("Cushman & Wakefield"), E("DRW"),
+  E("DV Trading"), E("Databricks"), E("Datadog"), E("Deliveroo"), E("ElevenLabs"), E("Equinor"), E("FTI Consulting"), E("Faculty", [], true),
+  E("Fever", [], true), E("Figma"), E("Financial Conduct Authority", ["FCA"]), E("Financial Technology Partners"), E("Flow Traders"), E("Form3"),
+  E("Freshfields"), E("GSA Capital"), E("GSK"), E("GoCardless"), E("Graham Capital Management"), E("Guggenheim Securities", ["Guggenheim"]),
+  E("Harrison Street", [], true), E("Houlihan Lokey"), E("Howden"), E("IMC Trading", ["IMC"]), E("Improbable", [], true), E("Intercom", [], true),
+  E("Isidor"), E("Isomorphic Labs"), E("JLL"), E("Jump Trading"), E("KKR"), E("LSEG", ["London Stock Exchange Group"]), E("Lendable"),
+  E("Linear", [], true), E("Lottie", [], true), E("MUFG"), E("Man Group"), E("Marshall Wace"), E("Marshmallow", [], true), E("Maven Securities"),
+  E("Mercury", [], true), E("Miro"), E("Monzo"), E("Multiverse", [], true), E("Notion", [], true), E("Nova Founders Capital"), E("OakNorth"),
+  E("PGIM"), E("PJT Partners"), E("Palantir"), E("Parloa"), E("Payhawk"), E("Plaid", [], true), E("Pleo"), E("Point72"), E("PolyAI"),
+  E("Poolside", [], true), E("Quadrature Capital", ["Quadrature"]), E("Quantexa"), E("Ramp", [], true), E("Riverlane"), E("Rothesay"),
+  E("Scale AI"), E("Schonfeld"), E("Shell", [], true), E("Snowflake", [], true), E("Sophos"), E("Spotify"), E("Stability AI"), E("Stripe", [], true),
+  E("SumUp"), E("Synthesia"), E("TD Securities"), E("Talos", [], true), E("Thought Machine"), E("Tide", [], true), E("Tower Research Capital", ["Tower Research"]),
+  E("Tractable", [], true), E("Trainline"), E("UNIQLO"), E("UiPath"), E("Vercel"), E("Verkada"), E("Viridien"), E("Virtu Financial", ["Virtu"]),
+  E("Wayve"), E("Wellington Management"), E("Wise", [], true), E("Xantium"), E("Zilch", [], true), E("Zopa"), E("iSAM"), E("Econic Partners"),
+  E("Lloyds"),
+];
+const EMPLOYER_RES = KNOWN_EMPLOYERS.map((k) => ({
+  k,
+  res: [k.name, ...(k.aliases ?? [])].map((n) => new RegExp(`(?<![A-Za-z0-9])${escapeRegex(n).replace(/\\?\s+/g, "\\s+")}(?![A-Za-z0-9])`, k.caseSensitive ? "g" : "gi")),
+}));
+
+type Unit = { text: string; cited: string; bulletId?: string; entryId?: string; scoped?: boolean };
 
 function parseDates(d: string): { start?: string; end?: string } {
   const parts = d.split(/\s*(?:–|—|-|\bto\b)\s*/i).filter(Boolean);
@@ -164,14 +356,49 @@ function partOfSkill(text: string, index: number, len: number): boolean {
   return before.some((s) => !after.has(s));
 }
 
+/** Initialisms of capitalised multi-word phrases in the CV ("Computer Science" → "cs"). */
+function initialisms(corpus: string): Set<string> {
+  const out = new Set<string>();
+  for (const m of corpus.matchAll(/\b[A-Z][A-Za-z]*(?:\s+(?:of|and|&|the|for|in)?\s*[A-Z][A-Za-z]*)+/g)) {
+    const words = m[0].split(/\s+/).filter((w) => /^[A-Z]/.test(w));
+    for (let a = 0; a < words.length; a++) for (let b = a + 2; b <= words.length; b++) out.add(words.slice(a, b).map((w) => w[0]).join("").toLowerCase());
+  }
+  return out;
+}
+/** Corpus tokens plus 2- and 3-token concatenations, so "Survey Monkey" ≡ "SurveyMonkey". */
+function compactTokens(cNorm: string): Set<string> {
+  const t = cNorm.split(" ");
+  const out = new Set(t);
+  for (let i = 0; i < t.length; i++) { if (t[i + 1]) out.add(t[i] + t[i + 1]); if (t[i + 2]) out.add(t[i] + t[i + 1] + t[i + 2]); }
+  return out;
+}
+
+/** Sentence containing position `idx`. */
+function sentenceAt(text: string, idx: number): string {
+  const start = Math.max(text.lastIndexOf(".", idx - 1), text.lastIndexOf(";", idx - 1), text.lastIndexOf("\n", idx - 1)) + 1;
+  const ends = [".", ";", "\n"].map((c) => text.indexOf(c, idx)).filter((x) => x >= 0);
+  return text.slice(start, ends.length ? Math.min(...ends) : text.length);
+}
+
+// ---------- verifyTailoring ----------
+
 export function verifyTailoring(i: VerifyInput): VerifyReport {
   const issues: Issue[] = [];
   const corpus = buildFactCorpus(i.source, i.sourceText, i.confirmedFacts);
   const cNorm = norm(corpus);
-  const corpusNums = numberSet(corpus);
+  const cCompact = compactTokens(cNorm);
+  const inits = initialisms(corpus);
+  const corpusNums = metricCorpus(i.source, i.sourceText, i.confirmedFacts);
   const srcSkills = new Set(extractSkills(corpus));
   const jdStems = new Set(i.jdKeywords.flatMap((k) => [...contentStems(k)]));
   const hardJd = i.jdKeywords.filter((k) => isHardTerm(k) && extractSkills(k).length === 0 && !hasToken(cNorm, k));
+  const srcUnits = sourceUnits(i.source).map((t) => ({ t, stems: contentStems(t) }));
+  const factsText = i.confirmedFacts.join("\n");
+  /** Source text a summary/interests sentence may draw numbers from: units sharing ≥1 content word, plus confirmed facts. */
+  const scopeFor = (sentence: string) => {
+    const s = contentStems(sentence);
+    return [...srcUnits.filter((u) => [...u.stems].some((x) => s.has(x))).map((u) => u.t), factsText].join("\n");
+  };
 
   // source bullet lookup: id → text and id → owning entry id
   const srcText = new Map<string, string>();
@@ -180,36 +407,48 @@ export function verifyTailoring(i: VerifyInput): VerifyReport {
   for (const e of i.source.education) for (const d of e.details) { srcText.set(d.id, d.text); srcOwner.set(d.id, e.id); }
   const srcEntries = new Map(sections<ParsedCV, CvEntry>(i.source).map((e) => [e.id, e]));
 
-  // ---- #2 unsupportedFacts: entry headers are immutable; unknown entries must be whole-token in the corpus ----
+  // ---- #2 unsupportedFacts: entry headers are immutable; tailoring never creates entries (fix 3) ----
   const tEntries = sections<TailoredCV, TailoredEntry>(i.tailored);
   for (const e of tEntries) {
     const se = srcEntries.get(e.id);
+    if (!se) {
+      issues.push({ type: "unsupportedFacts", severity: "block", entryId: e.id, claim: [e.title, e.org].filter(Boolean).join(" at "),
+        reason: "This role isn't in your original CV — tailoring never adds roles" });
+      continue;
+    }
     for (const field of ["org", "title", "dates", "location"] as const) {
       const v = e[field];
       if (!v) continue;
-      const ok = se ? norm(se[field]) === norm(v) || (field === "location" && hasToken(cNorm, v))
-        : field === "dates" ? (v.match(NUM) ?? []).every((n) => numValues(n).some((x) => corpusNums.has(x))) : hasToken(cNorm, v);
+      const ok = field === "dates" ? normDate(se.dates) === normDate(v) : norm(se[field]) === norm(v) || (field === "location" && hasToken(cNorm, v));
       if (!ok) issues.push({ type: "unsupportedFacts", severity: "block", entryId: e.id, claim: v,
-        reason: se ? `Your CV says "${se[field]}" here — tailoring can't change your ${field === "org" ? "employer" : field}` : `"${v}" does not appear in your original CV` });
+        reason: `Your CV says "${se[field]}" here — tailoring can't change your ${field === "org" ? "employer" : field}` });
     }
   }
   const srcEdu = new Map(i.source.education.map((e) => [e.id, e]));
   for (const e of i.tailored.education) {
     const se = srcEdu.get(e.id);
+    if (!se) {
+      issues.push({ type: "unsupportedFacts", severity: "block", entryId: e.id, claim: [e.degree, e.institution].filter(Boolean).join(", "),
+        reason: "This qualification isn't in your original CV" });
+      continue;
+    }
     for (const field of ["institution", "degree", "dates", "grade"] as const) {
       const v = e[field];
       if (!v) continue;
-      const ok = se ? norm(se[field] ?? "") === norm(v) : hasToken(cNorm, v);
+      const ok = field === "dates" ? normDate(se.dates) === normDate(v) : norm(se[field] ?? "") === norm(v);
       if (!ok) issues.push({ type: "unsupportedFacts", severity: "block", entryId: e.id, claim: v,
-        reason: se ? `Your CV says "${se[field] ?? ""}" — education details can't change` : `"${v}" does not appear in your original CV` });
+        reason: `Your CV says "${se[field] ?? ""}" — education details can't change` });
     }
   }
 
   // ---- build text units ----
   const units: Unit[] = [];
-  if (i.tailored.summary) units.push({ text: i.tailored.summary, cited: corpus, entryId: "summary" });
-  if (i.tailored.interests) units.push({ text: i.tailored.interests, cited: corpus, entryId: "interests" });
-  for (const e of i.tailored.education) for (const d of e.details) units.push({ text: d.text, cited: srcText.get(d.id) ?? corpus, bulletId: d.id, entryId: e.id });
+  if (i.tailored.summary) units.push({ text: i.tailored.summary, cited: corpus, entryId: "summary", scoped: true });
+  if (i.tailored.interests) units.push({ text: i.tailored.interests, cited: corpus, entryId: "interests", scoped: true });
+  for (const e of i.tailored.education) for (const d of e.details) {
+    const s = srcText.get(d.id);
+    units.push({ text: d.text, cited: s ?? corpus, bulletId: d.id, entryId: e.id, scoped: s === undefined });
+  }
 
   const tailoredRoles: TailoredRole[] = [];
   for (const e of tEntries) {
@@ -217,7 +456,7 @@ export function verifyTailoring(i: VerifyInput): VerifyReport {
     tailoredRoles.push(role);
     for (const b of e.bullets) {
       const changeType = inferChange(b, srcText);
-      role.bullets.push({ id: b.id, text: b.text, sourceRefs: b.sourceRefs, changeType, dropReason: b.dropReason });
+      role.bullets.push({ id: b.id, text: normCurrency(b.text), sourceRefs: b.sourceRefs, changeType, dropReason: b.dropReason });
       if (changeType === "dropped") continue;
       // ---- #5 orphanBullets ----
       const refs = b.sourceRefs ?? [];
@@ -237,19 +476,40 @@ export function verifyTailoring(i: VerifyInput): VerifyReport {
     }
   }
 
-  // ---- per-unit checks: #1 numbers, #4 skills, JD terms, #2 proper nouns, #7 phrases, #3 mid-sentence authorship ----
+  // ---- per-unit checks ----
   const where = (u: Unit) => ({ bulletId: u.bulletId, entryId: u.entryId });
-  const invented = new Map<string, Set<string>>(); // unit key → invented values
-  const injectedByUnit = new Map<string, Set<string>>();
   const key = (u: { bulletId?: string; entryId?: string }) => u.bulletId ?? `@${u.entryId}`;
+  const invented = new Map<string, Set<string>>(); // unit key → invented values (digit or word)
+  const addInvented = (k: string, vals: string[]) => vals.forEach((v) => (invented.get(k) ?? invented.set(k, new Set()).get(k)!).add(v));
+  const injectedByUnit = new Map<string, Set<string>>();
+  const ownershipFlagged = new Set<string>();
   for (const u of units) {
     const k = key(u);
-    // #1 inventedMetrics (global): every number must exist in source ∪ confirmed facts
-    for (const raw of u.text.match(NUM) ?? []) {
-      const vals = numValues(raw);
-      if (vals.some((v) => corpusNums.has(v))) continue;
-      vals.forEach((v) => (invented.get(k) ?? invented.set(k, new Set()).get(k)!).add(v));
-      issues.push({ type: "inventedMetrics", severity: "block", ...where(u), claim: raw.trim(), reason: "This number isn't in your CV — confirm it or we'll leave it out" });
+    const text = normCurrency(u.text);
+    // #1 inventedMetrics (global): every digit number must exist in source ∪ confirmed facts (dates excluded, fix 6)
+    for (const m of text.matchAll(NUM)) {
+      const vals = numValues(m[0]);
+      if (!vals.some((v) => corpusNums.has(v))) {
+        addInvented(k, vals);
+        issues.push({ type: "inventedMetrics", severity: "block", ...where(u), claim: m[0].trim(), reason: "This number isn't in your CV — confirm it or we'll leave it out" });
+      } else if (u.scoped) {
+        // #1b for summary/interests (fix 5): the number must co-occur with shared context in some source line
+        const scope = numberSet(scopeFor(sentenceAt(text, m.index!)));
+        if (!vals.some((v) => scope.has(v))) {
+          addInvented(k, vals);
+          issues.push({ type: "inventedMetrics", severity: "block", ...where(u), claim: m[0].trim(), check: "scopedSummary",
+            reason: `"${m[0].trim()}" comes from a different claim in your CV — numbers can't move between claims` });
+        }
+      }
+    }
+    // #1 word / multiplier / vague metrics (fix 1): must be backed by the cited source text (or confirmed facts)
+    const citedKeys = u.scoped ? null : supportKeys(`${normCurrency(u.cited)}\n${factsText}`);
+    for (const w of wordMetrics(text)) {
+      const keys = citedKeys ?? supportKeys(scopeFor(sentenceAt(text, text.indexOf(w.raw))));
+      if (keySupported(w.key, keys)) continue;
+      if (w.key.startsWith("n:")) addInvented(k, [w.key.slice(2)]);
+      issues.push({ type: "inventedMetrics", severity: "block", ...where(u), claim: w.raw, check: "wordMetrics",
+        reason: `"${w.raw}" isn't what your original says — confirm the figure or keep the original wording` });
     }
     // #4 skillInjection: canonical skills absent from source ∪ confirmed facts (the JD never counts)
     const inj = new Set<string>();
@@ -266,20 +526,51 @@ export function verifyTailoring(i: VerifyInput): VerifyReport {
       issues.push({ type: "skillInjection", severity: "block", ...where(u), claim: kw, reason: `"${kw}" comes from the job description, not your CV — it stays a gap` });
     }
     injectedByUnit.set(k, inj);
-    // #2 proper nouns / acronyms (employers, tools) not whole-token in the corpus
+    // #2 known employers, any case (fix 2)
+    const employerSpans: [number, number][] = [];
+    for (const { k: emp, res } of EMPLOYER_RES) {
+      if (extractSkills(emp.name).length) continue; // skillInjection owns tools that are also companies
+      for (const re of res) for (const m of u.text.matchAll(re)) {
+        const known = [emp.name, ...(emp.aliases ?? [])].some((n) => hasToken(cNorm, n) || cCompact.has(norm(n).replace(/ /g, "")));
+        employerSpans.push([m.index!, m.index! + m[0].length]);
+        if (known || issues.some((x) => key(x) === k && x.claim.toLowerCase() === m[0].toLowerCase())) continue;
+        issues.push({ type: "unsupportedFacts", severity: "block", ...where(u), claim: m[0], check: "knownEmployer",
+          reason: `"${m[0]}" isn't in your original CV — we never add employers` });
+      }
+    }
+    // #2 proper nouns / acronyms (employers, tools) not whole-token in the corpus. Hyphens split tokens ("Ex-Deloitte").
     const flagged = new Set<string>();
-    for (const m of u.text.matchAll(/[A-Za-z][A-Za-z0-9+#&-]*/g)) {
-      const tok = m[0].replace(/-+$/, "");
+    const toks = [...u.text.matchAll(/[A-Za-z][A-Za-z0-9+#&']*/g)].map((m) => ({ tok: m[0].replace(/'s$|'$/, ""), index: m.index!, len: m[0].length }));
+    const isCap = (t: string) => /^[A-Z]/.test(t);
+    for (let n = 0; n < toks.length; n++) {
+      const { tok, index, len } = toks[n];
       const lower = tok.toLowerCase();
       if (tok.length < 2 || PROPER_ALLOW.has(lower) || flagged.has(lower)) continue;
-      const allCaps = /^[A-Z0-9&+#-]+$/.test(tok) && /[A-Z].*[A-Z]|[A-Z]\d/.test(tok);
-      const before = u.text.slice(0, m.index).trimEnd();
-      const sentenceStart = before === "" || /[.!?:;•▪|–—]$/.test(before) || /\s-$/.test(` ${before}`);
-      if (!(allCaps || (/^[A-Z]/.test(tok) && !sentenceStart))) continue;
-      if (hasToken(cNorm, tok) || jdHits.some((kw) => hasToken(norm(kw), tok)) || [...inj].some((s) => hasToken(norm(s), tok))) continue;
-      if (partOfSkill(u.text, m.index!, m[0].length)) continue;
+      if (employerSpans.some(([a, b]) => index < b && index + len > a)) continue;
+      const allCaps = /^[A-Z0-9&+#]+$/.test(tok) && /[A-Z].*[A-Z]|[A-Z]\d/.test(tok);
+      const before = u.text.slice(0, index).trimEnd();
+      const sentenceStart = before === "" || /[.!?:;•▪|–—(]$/.test(before) || /\s-$/.test(` ${before}`);
+      const candidate = allCaps || (isCap(tok) && !sentenceStart)
+        || (isCap(tok) && sentenceStart && !COMMON.has(lower) && !WORDISH.test(lower) && authorshipLevel(lower) === null && !IRREGULAR.has(lower));
+      if (!candidate) continue;
+      if (hasToken(cNorm, tok) || cCompact.has(lower) || (allCaps && inits.has(lower))) continue;
+      // capitalised run ("Survey Monkey") compared with spaces removed
+      let a = n, b = n;
+      while (a > 0 && isCap(toks[a - 1].tok) && /^\s+$/.test(u.text.slice(toks[a - 1].index + toks[a - 1].len, toks[a].index))) a--;
+      while (b < toks.length - 1 && isCap(toks[b + 1].tok) && /^\s+$/.test(u.text.slice(toks[b].index + toks[b].len, toks[b + 1].index))) b++;
+      if (b > a && cCompact.has(toks.slice(a, b + 1).map((t) => t.tok.toLowerCase()).join(""))) continue;
+      if (jdHits.some((kw) => hasToken(norm(kw), tok)) || [...inj].some((s) => hasToken(norm(s), tok))) continue;
+      if (partOfSkill(u.text, index, len)) continue;
       flagged.add(lower);
       issues.push({ type: "unsupportedFacts", severity: "block", ...where(u), claim: tok, reason: `"${tok}" isn't in your original CV — we don't add employers, tools or credentials` });
+    }
+    // #3 non-verb ownership escalation (fix 4)
+    for (const [label, re] of OWNERSHIP) {
+      if (!re.test(u.text) || re.test(u.cited)) continue;
+      ownershipFlagged.add(k);
+      issues.push({ type: "authorshipEscalation", severity: "block", ...where(u), claim: u.text.match(re)![0], check: "ownershipPhrase",
+        reason: `"${label}" claims more ownership than your original says` });
+      break;
     }
     // #7 forbiddenPhrases: block if new, warn if the source already said it (reverting couldn't remove it)
     for (const [label, re] of FORBIDDEN) {
@@ -291,13 +582,33 @@ export function verifyTailoring(i: VerifyInput): VerifyReport {
     for (const [label, re] of WARN_PHRASES) {
       if (re.test(u.text)) issues.push({ type: "forbiddenPhrases", severity: "warn", ...where(u), claim: label, reason: "Generic phrase — show it instead of saying it" });
     }
+    // fix 8 (warn): currency swap, inflation qualifiers, new achievement claims
+    const citedC = normCurrency(u.cited);
+    for (const m of text.matchAll(/([£$€])\s?(\d[\d,.]*)/g)) {
+      const amt = m[2].replace(/,/g, "");
+      const others = [...citedC.matchAll(/([£$€])\s?(\d[\d,.]*)/g)].filter((c) => c[2].replace(/,/g, "") === amt);
+      if (others.length && !others.some((c) => c[1] === m[1])) issues.push({ type: "perBulletDrift", severity: "warn", ...where(u), claim: m[0], check: "currencySwap",
+        reason: `Your CV says ${others[0][0]} — the currency changed` });
+    }
+    for (const m of u.text.matchAll(INFLATE)) {
+      const amt = (m[1] ?? m[2]).replace(/,/g, "");
+      if (!numberSet(u.cited).has(String(parseFloat(amt)))) continue;
+      const already = [...u.cited.matchAll(INFLATE)].some((c) => (c[1] ?? c[2]).replace(/,/g, "") === amt);
+      if (!already) issues.push({ type: "perBulletDrift", severity: "warn", ...where(u), claim: m[0].trim(), check: "inflationQualifier",
+        reason: `Your CV says ${amt}, not "${m[0].trim()}" — keep the exact figure` });
+    }
+    for (const m of u.text.matchAll(ACHIEVEMENT)) {
+      if (new RegExp(`\\b${escapeRegex(m[0])}\\b`, "i").test(u.cited)) continue;
+      issues.push({ type: "perBulletDrift", severity: "warn", ...where(u), claim: m[0], check: "newAchievement",
+        reason: `"${m[0]}" is a new achievement claim — only keep it if it's true and on your CV` });
+    }
   }
 
   // ---- skills list: every item must be a source skill or whole-token in the corpus ----
   const skillClaims = new Set<string>();
   for (const g of i.tailored.skills) for (const item of g.items) {
     const sk = extractSkills(item);
-    const missing = sk.length ? sk.filter((s) => !srcSkills.has(s)) : hasToken(cNorm, item) ? [] : [item];
+    const missing = sk.length ? sk.filter((s) => !srcSkills.has(s)) : hasToken(cNorm, item) || cCompact.has(norm(item).replace(/ /g, "")) ? [] : [item];
     for (const s of missing) {
       if (skillClaims.has(s)) continue;
       skillClaims.add(s);
@@ -306,16 +617,18 @@ export function verifyTailoring(i: VerifyInput): VerifyReport {
   }
 
   // ---- extra checks (checks-extra): sibling swaps, qualifier drops, ladder escalation, scoped metrics, structure, temporal ----
-  const sourceRoles: SourceRole[] = sections<ParsedCV, CvEntry>(i.source).map((e) => ({ id: e.id, org: e.org, title: e.title, dates: parseDates(e.dates), bullets: e.bullets }));
+  const sourceRoles: SourceRole[] = sections<ParsedCV, CvEntry>(i.source).map((e) => ({
+    id: e.id, org: e.org, title: e.title, dates: parseDates(e.dates), bullets: e.bullets.map((b) => ({ id: b.id, text: normCurrency(b.text) })),
+  }));
   const orphaned = new Set(issues.filter((x) => x.type === "orphanBullets").map((x) => x.bulletId));
-  const extra = runExtraChecks({ sourceRoles, tailoredRoles, confirmedFacts: i.confirmedFacts })
+  const extra = runExtraChecks({ sourceRoles, tailoredRoles: tailoredRoles.filter((r) => srcEntries.has(r.id)), confirmedFacts: i.confirmedFacts.map(normCurrency) })
     .filter((x) => !x.bulletId || !orphaned.has(x.bulletId)) // orphanBullets owns uncited bullets
     .map(mapExtra)
     .filter((x) => {
       if (!x.bulletId) return true;
-      // scoped metric already reported as a globally invented number → don't double-report
+      // scoped metric already reported as an invented number (digit or word) → don't double-report
       if (x.check === "scopedMetrics") {
-        const vals = numValues(x.claim);
+        const vals = claimValues(x.claim);
         const inv = invented.get(x.bulletId);
         return !(vals.length && inv && vals.every((v) => inv.has(v)));
       }
@@ -332,7 +645,7 @@ export function verifyTailoring(i: VerifyInput): VerifyReport {
   // ---- #3 authorshipEscalation, anywhere in the bullet (checks-extra covers the lead verb) ----
   const escalated = new Set(extra.filter((x) => x.type === "authorshipEscalation").map((x) => x.bulletId));
   for (const u of units) {
-    if (!u.bulletId || escalated.has(u.bulletId) || u.entryId === undefined || !srcEntries.has(u.entryId)) continue;
+    if (!u.bulletId || escalated.has(u.bulletId) || ownershipFlagged.has(key(u)) || u.entryId === undefined || !srcEntries.has(u.entryId)) continue;
     const citedWords = new Set(u.cited.toLowerCase().match(/[a-z]+(?:-[a-z]+)?/g) ?? []);
     const srcLevels = [...citedWords].map((w) => authorshipLevel(w)).filter((l): l is number => l !== null);
     const srcMax = srcLevels.length ? Math.max(...srcLevels) : UNLADDERED;
@@ -400,8 +713,7 @@ export function revertBlocked(tailored: TailoredCV, source: ParsedCV, issues: Is
 
   const fixEntries = (es: TailoredEntry[]): TailoredEntry[] => es.flatMap((e) => {
     const se = srcEntries.get(e.id);
-    if (!se) { // a whole entry that isn't in the CV
-      if (!badHeads.has(e.id) && !e.bullets.some((b) => badBullets.has(b.id))) return [e];
+    if (!se) { // tailoring never creates entries: drop it
       e.bullets.forEach((b) => reverted.push({ bulletId: b.id, reason: reasonFor((x) => x.entryId === e.id, "This entry isn't in your CV") }));
       return [];
     }
