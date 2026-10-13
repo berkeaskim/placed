@@ -536,3 +536,39 @@ describe("fix round 5 ruling e: skills implied by a CV tool are not injected", (
     expect(runCv(same, "summary", "Built dashboards for Economics Society events").verdict).toBe("block");
   });
 });
+
+// ---------- Task 22c ----------
+
+describe("task 22c ruling 1: 'with <tool>' after a role/season/hiring word, or before a possessive, month, season, place or programme", () => {
+  const phrases = (x: string) => [
+    `Economics student at UCL; summer analyst with ${x}`, `Summer Analyst with ${x}; Economics student at UCL`,
+    `Economics student at UCL; graduate analyst with ${x}`, `Economics student at UCL; insight analyst with ${x}`,
+    `Economics student at UCL; work experience with ${x}`, `Economics student at UCL who worked with ${x} over summer 2025`,
+    `Economics student at UCL who worked with ${x} during summer 2025`, `Economics student at UCL who worked with ${x}, Jun–Aug 2025`,
+    `Economics student at UCL who worked with ${x} (Jun–Aug 2025)`, `Economics student at UCL who worked with ${x} in London`,
+    `Economics student at UCL who worked with ${x}'s equities team`, `Economics student at UCL who worked with ${x} as part of its graduate programme`,
+    `Economics student at UCL who secured a summer role with ${x}`, `Economics student at UCL who began a role with ${x}`,
+    `Economics student at UCL who was offered a position with ${x}`, `Economics student at UCL; spring week with ${x}`,
+    `Economics student at UCL; insight week with ${x}`, `Economics student at UCL who spent a summer with ${x}`,
+  ];
+  it.each(["Bloomberg", "Snowflake", "Tableau"].flatMap((x) => phrases(x)))("skills-only tool: '%s' blocks", (text) => {
+    expect(runCv(r4ToolCv, "summary", text).verdict).toBe("block");
+  });
+  it.each([
+    "Economics student at UCL who worked with Bloomberg’s equities team",
+    "Economics student at UCL who worked with Bloomberg on its graduate scheme",
+    "Economics student at UCL who worked with Bloomberg, summer 2025",
+  ])("skills-only tool: '%s' blocks", (text) => { expect(runCv(r4ToolCv, "summary", text).verdict).toBe("block"); });
+});
+
+describe("task 22c ruling 2: capitalised multi-word sector titles are not names", () => {
+  const TITLES = ["Investment Banking Analyst", "Private Equity Analyst", "Asset Management Analyst", "Credit Risk Analyst", "Corporate Finance Analyst",
+    "Wealth Management Associate", "Sustainability Analyst", "Regulatory Analyst", "Payments Analyst", "Risk Analyst", "Economic Policy Analyst"];
+  const forms = (t: string) => [`${t} applicant; Economics student at UCL`, `Aspiring ${t}; Economics student at UCL`,
+    `Economics student at UCL and Aspiring ${t}`, `Economics student at UCL and Future ${t}`];
+  it.each(TITLES.flatMap((t) => forms(t)))("'%s' passes", (text) => { passes(same, "summary", text); });
+  it.each([
+    "Prudential Analyst; Economics student at UCL", "Admiral Associate; Economics student at UCL", "Harrowgate Analyst; Economics student at UCL",
+    "Aspiring Prudential Analyst; Economics student at UCL", "Prudential Investment Banking Analyst; Economics student at UCL",
+  ])("'%s' blocks", (text) => { expect(runCv(same, "summary", text).verdict).toBe("block"); });
+});

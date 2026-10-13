@@ -464,7 +464,18 @@ const WORK_WORD = /^(?:work|works|worked|working|interns?|interned|interning|int
  * before "with" is an employment word, or the tool is followed by "as <role>", a year, "since" or "in <year>".
  */
 const WITH_WORD = /^(?:interns?|interned|interning|internships?|placements?|apprentices?|apprenticeships?|apprenticed|trainees?|traineeships?|employed|employees?|jobs?|contracts?|contractors?|consultants?)$/i;
-const WITH_ROLE_AFTER = new RegExp(`^\\s*,?\\s*(?:as\\s+(?:an?\\s+|the\\s+)?(?:[A-Za-z]+\\s+){0,2}(?:${"interns?|internships?|placements?|trainees?|analysts?|associates?|graduates?|apprentices?|employees?|consultants?|contractors?|staff"})\\b|\\(?(?:19|20)\\d{2}\\b|since\\b|in\\s+(?:19|20)\\d{2}\\b)`, "i");
+/** Task 22c (ruling 1): month tokens and ranges after a tool ("with X, Jun–Aug 2025"); "May" only before a year or dash. */
+const WITH_MONTH = "(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|june?|july?|aug(?:ust)?|sept?(?:ember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\\b|may\\s*(?=[–—-]|(?:19|20)\\d{2})";
+const WITH_SEASON = "(?:summer|spring|autumn|winter|vacation)\\b";
+const WITH_ROLE_AFTER = new RegExp(`^\\s*,?\\s*(?:as\\s+(?:an?\\s+|the\\s+)?(?:[A-Za-z]+\\s+){0,2}(?:${"interns?|internships?|placements?|trainees?|analysts?|associates?|graduates?|apprentices?|employees?|consultants?|contractors?|staff"})\\b|\\(?(?:19|20)\\d{2}\\b|since\\b|in\\s+(?:19|20)\\d{2}\\b|` +
+  // task 22c (ruling 1): month(s), "(season" / ", season", over/during a season, a closed-set place, "as part of", "on its/their … programme"
+  `\\(?(?:${WITH_MONTH})|[,(]\\s*${WITH_SEASON}|(?:over|during)\\s+(?:the\\s+|a\\s+)?${WITH_SEASON}|in\\s+(?:the\\s+)?(?:London|UK|Manchester|Edinburgh|Europe|EMEA)\\b|` +
+  `as\\s+part\\s+of\\b|on\\s+(?:its|their)\\s+(?:[A-Za-z-]+\\s+){0,3}(?:programmes?|programs?|schemes?)\\b)` +
+  // possessive ("with X's equities team"), unless it names the tool's own data ("with X's data feeds")
+  `|^['’]s\\b(?!\\s+(?:data|prices|feeds|terminals?|API)\\b(?!\\s+(?:team|desk|division|group|unit|office)\\b))`, "i");
+/** Task 22c (ruling 1): "<role-ish noun> with <tool>" is a claim when a season/programme/hiring word sits within 3 tokens before the noun. */
+const WITH_ROLE_NOUN = /^(?:analysts?|associates?|roles?|positions?|experience|weeks?|placements?|internships?|summers?)$/i;
+const WITH_ROLE_CUE = /^(?:summer|spring|autumn|winter|vacation|graduate|insight|work|secured|began|started|landed|offered|accepted|joined|completed|spent)$/i;
 /** "<prep> <tool> <noun>": the tool modifies a thing, never an employer ("with Bloomberg data", "with Tableau and Excel"). */
 const TOOL_NOUN_AFTER = /^\s+(?:data|prices|skills|experience|dashboards|tables|feeds|models|queries|and|or)\b/i;
 /** Fix round 5 (ruling b): capitalised role titles that make a capitalised run before them a name ("Prudential Analyst"). */
@@ -479,6 +490,12 @@ const SECTOR_NOUNS = new Set(("consulting banking investment operations pricing 
   "equity credit legal sales trading markets quant compliance accounting actuarial valuation portfolio wealth asset corporate advisory").split(" "));
 /** Fix round 5 (ruling b): the same run followed by a capitalised role title ("Prudential Analyst", "Admiral Associate, 2025"). */
 const CAP_ROLE_RUN = new RegExp(`(?:^|[.!?:;•▪|–—(\\n])\\s*(?:-\\s+)?([A-Z][A-Za-z0-9&.]*(?:\\s+(?:(?:and|&)\\s+)?[A-Z][A-Za-z0-9&.]*){0,2})(?=\\s+${CAP_ROLE_TITLE}\\b)`, "g");
+/** Task 22c (ruling 2): capitalised sector phrases that may precede a capitalised role title ("Investment Banking Analyst"). */
+const SECTOR_PHRASES = new Set(("investment banking|private equity|asset management|wealth management|corporate finance|credit risk|equity research|" +
+  "sales and trading|global markets|sustainability|esg|regulatory|compliance|payments|mortgage|rates|climate|logistics|cyber|performance|" +
+  "behavioural|statistical|economic policy|public policy|supply chain|actuarial").split("|"));
+/** A capitalised run (words joined by spaces, "and" or "&") directly before a capitalised role title. */
+const SECTOR_TITLE_RUN = new RegExp(`((?:[A-Za-z][A-Za-z&]*\\s+)+)(?=${CAP_ROLE_TITLE}\\b)`, "g");
 /** Ordinary words a role run may contain ("Summer intern", "Graduate scheme", "Economics graduate", "Charity volunteer"). */
 const ROLE_ORDINARY = new Set(("summer spring autumn winter vacation insight work graduate graduates events event charity intern internship placement " +
   "scheme trainee programme program analyst associate apprentice apprenticeship alumnus alumna " +
@@ -486,6 +503,39 @@ const ROLE_ORDINARY = new Set(("summer spring autumn winter vacation insight wor
 /** Fix round 2: role titles that are ordinary words mid-sentence ("aspiring Economist", "become an Analyst"). */
 const ROLE_TITLES = new Set(("economist economists analyst analysts associate associates researcher researchers officer officers assistant assistants " +
   "consultant consultants intern interns trainee trainees apprentice apprentices").split(" "));
+/** Task 22c (ruling 2): a single word a sector title may contain ("Future", "Investment", "Research"); never a brand-like COMMON word. */
+const sectorWord = (lower: string) => SECTOR_NOUNS.has(lower) || ROLE_ORDINARY.has(lower) || DOMAIN_HEADS.has(lower) || ADJECTIVES.has(lower) ||
+  (COMMON.has(lower) && !COMMON_BRANDS.has(lower));
+/**
+ * Task 22c (ruling 2): spans of the longest suffix of each capitalised run before a role title that is made only of sector phrases
+ * and ordinary words, written capitalised ("UCL and Future Investment Banking Analyst" → "Future Investment Banking"). Unknown
+ * names in front of it ("Prudential Investment Banking Analyst") stay outside the span and are judged as before.
+ */
+function sectorTitleSpans(text: string): [number, number][] {
+  const out: [number, number][] = [];
+  for (const m of text.matchAll(SECTOR_TITLE_RUN)) {
+    const words = [...m[1].matchAll(/[A-Za-z][A-Za-z&]*/g)].map((w) => ({ w: w[0], at: m.index! + w.index! }));
+    const memo = new Map<number, boolean>();
+    const ok = (i: number): boolean => {
+      if (i === words.length) return true;
+      if (memo.has(i)) return memo.get(i)!;
+      memo.set(i, false);
+      const r = seg(i);
+      memo.set(i, r);
+      return r;
+    };
+    const seg = (i: number): boolean => {
+      if (!/^[A-Z]/.test(words[i].w) && !/^(?:and|&)$/.test(words[i].w)) return false;
+      for (let l = Math.min(3, words.length - i); l >= 1; l--) {
+        if (SECTOR_PHRASES.has(words.slice(i, i + l).map((x) => x.w.toLowerCase()).join(" ")) && ok(i + l)) return true;
+      }
+      return /^[A-Z]/.test(words[i].w) && sectorWord(words[i].w.toLowerCase()) && ok(i + 1);
+    };
+    const start = words.findIndex((_, i) => /^[A-Z]/.test(words[i].w) && ok(i));
+    if (start >= 0) out.push([words[start].at, m.index! + m[1].length]);
+  }
+  return out;
+}
 /** Fix round 2 (ruling 2): contexts where an employer name claims an affiliation, not tool use ("former X intern", "at X", "X-sponsored"). */
 function employerClaim(text: string, start: number, end: number, cvTool: boolean): boolean {
   const before = text.slice(0, start), after = text.slice(end);
@@ -497,6 +547,10 @@ function employerClaim(text: string, start: number, end: number, cvTool: boolean
     if (TOOL_NOUN_AFTER.test(after)) return false;
     const prev = before.match(/([A-Za-z]+)\s+with\s+$/i)?.[1] ?? "";
     if (WITH_WORD.test(prev) || WITH_ROLE_AFTER.test(after)) return true;
+    if (WITH_ROLE_NOUN.test(prev)) {
+      const lead = before.replace(/[A-Za-z]+\s+with\s+$/i, "").match(/[A-Za-z]+/g) ?? [];
+      if (lead.slice(-3).some((w) => WITH_ROLE_CUE.test(w))) return true;
+    }
   }
   // fix round 3 (ruling B): "for/with <tool>" and "<tool> analyst" are tool use when the CV lists the tool
   if (/\bfor\s+$/i.test(before) && !cvTool) return true;
@@ -867,10 +921,13 @@ export function verifyTailoring(i: VerifyInput): VerifyReport {
     // fix round 2 (ruling 1b): spans of sentence-opening capitalised runs followed by a role noun ("Mercer placement", "Linklaters trainee")
     const roleRuns = [...pText.matchAll(ROLE_RUN), ...pText.matchAll(CAP_ROLE_RUN)]
       .map((m) => { const s0 = m.index! + m[0].length - m[1].length; return [s0, s0 + m[1].length] as const; });
+    const sectorSpans = sectorTitleSpans(pText);
     for (let n = 0; n < toks.length; n++) {
       const { tok, index, len } = toks[n];
       const lower = tok.toLowerCase();
       if (tok.length < 2 || PROPER_ALLOW.has(lower) || flagged.has(lower)) continue;
+      // task 22c (ruling 2): ordinary sector words of a capitalised title ("Aspiring Credit Risk Analyst")
+      if (sectorSpans.some(([a0, b0]) => index >= a0 && index < b0)) continue;
       if (employerSpans.some(([a, b]) => index < b && index + len > a)) continue;
       const allCaps = /^[A-Z0-9&+#]+$/.test(tok) && /[A-Z].*[A-Z]|[A-Z]\d/.test(tok);
       const before = pText.slice(0, index).trimEnd();
