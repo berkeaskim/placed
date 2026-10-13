@@ -7,6 +7,11 @@ export type StructuredRequest<T> = { tier: "fast" | "smart"; system: string; par
 
 export class AiError extends Error {}
 
+/** User-readable messages shared by every adapter. */
+export const AI_REFUSAL = "The AI declined to process this request.";
+export const AI_BAD_FORMAT = "The AI returned an answer we couldn't read. Please try again.";
+export const AI_UNAVAILABLE = "The AI service is unavailable right now. Please try again shortly.";
+
 /** The only entry point business functions use to reach an LLM. Vendor SDKs load lazily, server-side. */
 export async function generateStructured<T>(req: StructuredRequest<T>): Promise<T> {
   const provider = aiProvider();

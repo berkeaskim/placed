@@ -18,6 +18,13 @@ export type TaggedJob = {
   status: "ok" | "failed";
 };
 
+/** YYYY-MM-DD that is a real calendar date (2026-02-31 is rejected via a Date round-trip), else null. */
+export function normalizeDeadline(d: string | null | undefined): string | null {
+  if (!d || !/^\d{4}-\d{2}-\d{2}$/.test(d)) return null;
+  const t = new Date(`${d}T00:00:00Z`);
+  return !Number.isNaN(t.getTime()) && t.toISOString().slice(0, 10) === d ? d : null;
+}
+
 function fromOutput(o: TagJobOutputT): TaggedJob {
   return {
     archetype: o.archetype,
@@ -26,7 +33,7 @@ function fromOutput(o: TagJobOutputT): TaggedJob {
     sponsorsVisa: o.sponsors_visa,
     employmentType: o.employment_type,
     firstYearFriendly: o.first_year_friendly,
-    deadline: o.deadline && /^\d{4}-\d{2}-\d{2}$/.test(o.deadline) ? o.deadline : null,
+    deadline: normalizeDeadline(o.deadline),
     summary: o.summary,
     requirements: o.requirements.map((r) => ({
       text: r.text,
@@ -52,7 +59,7 @@ export async function tagJob(input: { title: string; textLines: string[] }): Pro
           await generateStructured({
             tier: "fast",
             system: SYSTEM_TAG_JOB,
-            parts: [{ type: "text", text: `Title: ${input.title}\n${wrapJob(input.textLines.join("\n"))}` }],
+            parts: [{ type: "text", text: wrapJob(input.textLines.join("\n"), input.title) }],
             schema: TagJobOutput,
             maxTokens: 4000,
           }),
