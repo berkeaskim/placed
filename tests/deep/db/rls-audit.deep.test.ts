@@ -32,11 +32,12 @@ function parsePolicyStmt(stmt: string): Policy | null {
 }
 
 function parsePolicies(): Policy[] {
-  const out: Policy[] = [];
+  // Statements are replayed in file order, so the idempotent `drop policy if exists X; create policy X` idiom works.
+  const events: { pos: number; drop?: string; create?: Policy }[] = [];
   // direct statements
   for (const m of sql.matchAll(/^\s*(create policy[\s\S]*?);/gim)) {
     const p = parsePolicyStmt(m[1]);
-    if (p) out.push(p);
+    if (p) events.push({ pos: m.index!, create: p });
   }
   // DO-block loops: foreach t in array array['a','b'] loop execute format('create policy ... %I ...', t); end loop;
   for (const m of sql.matchAll(/foreach (\w+) in array array\[([^\]]*)\] loop([\s\S]*?)end loop;/gi)) {
@@ -45,13 +46,18 @@ function parsePolicies(): Policy[] {
       const tmpl = f[1].replace(/''/g, "'");
       for (const t of tables) {
         const p = parsePolicyStmt(tmpl.replace(/%I/g, t));
-        if (p) out.push(p);
+        if (p) events.push({ pos: m.index!, create: p });
       }
     }
   }
-  // later migrations drop some of them
-  const dropped = new Set([...sql.matchAll(/drop policy (?:if exists )?"([^"]+)" on public\.(\w+)/gi)].map((m) => `${m[2]}.${m[1]}`));
-  return out.filter((p) => !dropped.has(`${p.table}.${p.name}`));
+  // later statements drop some of them
+  for (const m of sql.matchAll(/drop policy (?:if exists )?"([^"]+)" on public\.(\w+)/gi)) events.push({ pos: m.index!, drop: `${m[2]}.${m[1]}` });
+  const live = new Map<string, Policy>();
+  for (const e of events.sort((a, b) => a.pos - b.pos)) {
+    if (e.drop) live.delete(e.drop);
+    else if (e.create) live.set(`${e.create.table}.${e.create.name}`, e.create);
+  }
+  return [...live.values()];
 }
 
 function parseFunctions(): Fn[] {
@@ -170,7 +176,7 @@ describe("privileges and functions", () => {
   });
 });
 
-describe("security findings (expected to fail until fixed)", () => {
+describe("security findings", () => {
   // Fixed in 0003_gamify_server_only.sql.
   it("xp/level/streak columns are not client-writable", () => {
     const n = norm(sql);
@@ -188,18 +194,44 @@ describe("security findings (expected to fail until fixed)", () => {
   it("increment_xp (client-callable, unbounded delta) no longer exists", () => {
     expect(functions.find((x) => x.name === "public.increment_xp")).toBeUndefined();
   });
-  // BUG (security, low): cv_scores insert only checks user_id, not that cv_id belongs to the caller, so a user can
-  // attach rows to another user's CV id (FK passes). Same pattern for matches/applications → jobs is fine (public).
-  it.fails("cv_scores insert/update verifies the referenced CV belongs to the caller", () => {
-    const p = policies.find((x) => x.table === "cv_scores" && x.op === "insert")!;
-    expect(p.check).toMatch(/exists\s*\(\s*select[\s\S]*public\.cvs/);
+  // Fixed in 0008_rls_tightening.sql: cv_scores insert/update also require the referenced CV to be the caller's.
+  it("cv_scores insert/update verifies the referenced CV belongs to the caller", () => {
+    for (const op of ["insert", "update"]) {
+      const ps = policies.filter((x) => x.table === "cv_scores" && x.op === op);
+      expect(ps.length, op).toBe(1);
+      expect(ps[0].check, op).toMatch(/exists\s*\(\s*select[\s\S]*public\.cvs[\s\S]*user_id = auth\.uid\(\)/);
+    }
   });
   // BUG (security, latent IDOR): cvs.storage_path and applications.tailored_cv_path are client-updatable via
   // own_update. Any future server code that signs/downloads these paths with the service-role client would serve
   // another user's file. Paths should be immutable to clients (column REVOKE) or always re-derived from user_id.
-  it.fails("storage path columns are not client-updatable", () => {
+  // Fixed in 0008_rls_tightening.sql: table-level UPDATE revoked, column UPDATE re-granted without the path columns,
+  // and INSERT policies pin paths under the caller's own prefix.
+  it("cv_feedback insert verifies the referenced CV (if any) belongs to the caller", () => {
+    const ps = policies.filter((x) => x.table === "cv_feedback" && x.op === "insert");
+    expect(ps.length).toBe(1);
+    expect(ps[0].check).toMatch(/cv_id is null or exists\s*\(\s*select[\s\S]*public\.cvs[\s\S]*user_id = auth\.uid\(\)/);
+  });
+  it("storage path columns are not client-updatable", () => {
     const n = norm(sql);
     expect(/revoke update[^;]*storage_path[^;]*on (table )?public\.cvs/.test(n)).toBe(true);
     expect(/revoke update[^;]*tailored_cv_path[^;]*on (table )?public\.applications/.test(n)).toBe(true);
+    const cols = (t: string) => {
+      expect(n).toMatch(new RegExp(`revoke update on public\\.${t} from anon, authenticated`));
+      const g = new RegExp(`grant update \\(([^)]*)\\) on public\\.${t} to authenticated`).exec(n);
+      expect(g, t).not.toBeNull();
+      return g![1].split(",").map((c) => c.trim());
+    };
+    const cvCols = cols("cvs");
+    expect(cvCols).not.toContain("storage_path");
+    expect(cvCols).toContain("is_active"); // activate_cv() is SECURITY INVOKER
+    const appCols = cols("applications");
+    expect(appCols).not.toContain("tailored_cv_path");
+    expect(appCols).toContain("status");
+    for (const t of ["cvs", "applications"]) {
+      const ins = policies.filter((p) => p.table === t && p.op === "insert");
+      expect(ins.length, t).toBe(1);
+      expect(ins[0].check, t).toMatch(/like \(auth\.uid\(\)::text \|\| '\/%'\)/);
+    }
   });
 });

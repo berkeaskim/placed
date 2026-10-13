@@ -57,7 +57,7 @@ export async function uploadCv(formData: FormData): Promise<UploadCvResult> {
   const up = await admin.storage.from("cvs").upload(path, bytes, { contentType: "application/pdf" });
   if (up.error) return { error: "Upload failed — try again." };
 
-  // Insert inactive, then swap atomically (activate_cv, 0007): a failure or a concurrent upload never leaves
+  // Insert inactive, then swap atomically (activate_cv, 0009): a failure or a concurrent upload never leaves
   // the user without exactly one active CV.
   const { data: cvRow, error } = await supabase.from("cvs").insert({
     user_id: user.id, storage_path: path, file_size: file.size, page_count: pdf.pageCount,

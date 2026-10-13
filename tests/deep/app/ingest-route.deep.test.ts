@@ -171,7 +171,8 @@ describe("/api/ingest cron (cursor) mode", () => {
   });
   // BUG: a negative stored cursor (corrupt row / manual edit) is not normalised: (-1 % n) === -1 → list[-1] is
   // undefined → the catch block itself throws on `c.slug` → unhandled 500 and cron makes no progress.
-  it.fails("a negative stored cursor is normalised instead of crashing", async () => {
+  // Fixed: the stored cursor is normalised with ((c % n) + n) % n.
+  it("a negative stored cursor is normalised instead of crashing", async () => {
     s.cursor = -1;
     const r = await GET(req("", OK()));
     expect(r.status).toBe(200);

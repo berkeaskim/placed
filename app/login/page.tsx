@@ -22,7 +22,10 @@ export default function LoginPage() {
     <main className="flex min-h-dvh items-center justify-center px-6">
       <Card className="card-quest w-full max-w-sm">
         <CardHeader>
-          <CardTitle className="text-2xl font-extrabold">Welcome to Placed</CardTitle>
+          {/* The only <h1> on the page; Tailwind preflight resets h1 size/weight so CardTitle's styles still apply. */}
+          <CardTitle className="text-2xl font-extrabold">
+            <h1>Welcome to Placed</h1>
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           {sent ? (
@@ -42,7 +45,7 @@ export default function LoginPage() {
               }
               className="space-y-3"
             >
-              <Input name="email" type="email" placeholder="you@ucl.ac.uk" required className="h-12 text-base" />
+              <Input aria-label="Email address" name="email" type="email" autoComplete="email" placeholder="you@ucl.ac.uk" required className="h-12 text-base" />
               <button type="submit" className="btn-quest h-12 w-full disabled:opacity-50" disabled={pending}>
                 Email me a magic link
               </button>

@@ -21,9 +21,15 @@ const norm = (s: string) => s.toLowerCase().replace(/\s+/g, " ").trim();
  * and the line it came from is not also scanned skill-by-skill (that would demand both).
  */
 export function jdRequirementSkills(textLines: string[], tagged: Requirement[]): JdSkill[] {
-  const map = new Map<string, "must" | "nice">();
-  const add = (skill: string, section: "must" | "nice") => {
-    if (map.get(skill) !== "must") map.set(skill, section);
+  // keyed case/whitespace-insensitively; the first spelling seen is kept, and "must" always wins over "nice"
+  const map = new Map<string, { skill: string; section: "must" | "nice" }>();
+  const add = (raw: string, section: "must" | "nice") => {
+    const skill = raw.replace(/\s+/g, " ").trim();
+    if (!skill) return;
+    const key = skill.toLowerCase();
+    const prev = map.get(key);
+    if (!prev) map.set(key, { skill, section });
+    else if (section === "must") prev.section = "must";
   };
   const groups = new Map<string, JdSkill>();
   for (const r of tagged) {
@@ -40,8 +46,8 @@ export function jdRequirementSkills(textLines: string[], tagged: Requirement[]):
     if (groupTexts.some((g) => t.includes(g) || (t.length >= 12 && g.includes(t)))) continue;
     for (const s of extractSkills(l.text)) add(s, l.section);
   }
-  for (const r of tagged) if (r.skill && !(r.anyOf && r.anyOf.length > 1)) add(canonicalize(r.skill) ?? r.skill, r.section);
-  const single = [...map.entries()].map(([skill, section]) => ({ skill, section }));
+  for (const r of tagged) if (r.skill && !(r.anyOf && r.anyOf.length > 1)) add(canonicalize(r.skill.trim()) ?? r.skill, r.section);
+  const single = [...map.values()].map(({ skill, section }) => ({ skill, section }));
   return [...single, ...groups.values()];
 }
 
