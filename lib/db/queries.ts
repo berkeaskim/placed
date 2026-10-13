@@ -47,7 +47,8 @@ function toJob(r: JobDbRow): JobListItem {
 /** Live jobs that have not closed. `today` is the London day; a job closing today is still returned. */
 export async function getLiveJobs(supabase: SupabaseClient, today: string): Promise<JobListItem[]> {
   const { data, error } = await supabase.from("jobs").select(JOB_COLUMNS).eq("is_live", true)
-    .or(`deadline.is.null,deadline.gte.${today}`).limit(500);
+    .or(`deadline.is.null,deadline.gte.${today}`)
+    .order("posted_at", { ascending: false, nullsFirst: false }).order("id").limit(500);
   if (error) throw error;
   return ((data ?? []) as unknown as JobDbRow[]).map(toJob);
 }
