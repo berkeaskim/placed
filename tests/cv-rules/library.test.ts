@@ -7,8 +7,6 @@ import { ARCHETYPES } from "@/lib/types";
 const EXPECTED_PER_PREFIX: Record<string, number> = {
   G: 37, GEN: 12, FCQ: 12, FIN: 14, QNT: 12, CON: 13, SWE: 17, DAT: 12, PRD: 9, MKT: 12, RES: 11,
 };
-/** Prefixes not yet transcribed — their count assertions are todo until their chunk lands. */
-const PENDING = new Set<string>(["SWE", "DAT", "PRD", "MKT", "RES"]);
 
 const prefixOf = (id: string) => id.split("-")[0];
 
@@ -16,11 +14,11 @@ describe("CV rule library", () => {
   it("has the transcribed research rules with unique ids", () => {
     expect(new Set(RULES.map((r) => r.id)).size).toBe(RULES.length);
   });
-  (PENDING.size === 0 ? it : it.todo)("has exactly the 161 rules from the research docs", () => {
+  it("has exactly the 161 rules from the research docs", () => {
     expect(RULES.length).toBe(161);
   });
   for (const [prefix, n] of Object.entries(EXPECTED_PER_PREFIX)) {
-    (PENDING.has(prefix) ? it.todo : it)(`has ${n} ${prefix} rules`, () => {
+    it(`has ${n} ${prefix} rules`, () => {
       expect(RULES.filter((r) => prefixOf(r.id) === prefix).length).toBe(n);
     });
   }
