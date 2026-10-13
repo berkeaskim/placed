@@ -38,6 +38,16 @@ describe("heuristicParseCv", () => {
   });
 });
 
+describe("heuristicParseCv on a blank CV", () => {
+  it("returns no archetypes when nothing scored", () => {
+    expect(heuristicParseCv("").archetypes).toEqual([]);
+    expect(heuristicParseCv("   \n  ").archetypes).toEqual([]);
+  });
+  it("only keeps archetypes with a positive score", () => {
+    expect(heuristicParseCv(text).archetypes.every((a) => a.score > 0)).toBe(true);
+  });
+});
+
 describe("isImageOnly", () => {
   it("flags pages with almost no text", () => {
     expect(isImageOnly(["", "  "])).toBe(true);

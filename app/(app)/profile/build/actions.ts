@@ -22,6 +22,7 @@ export async function uploadCv(formData: FormData): Promise<UploadCvResult> {
   if (file.size > MAX_BYTES) return { error: "That file is over 5 MB — export a smaller PDF." };
 
   const bytes = new Uint8Array(await file.arrayBuffer());
+  if (new TextDecoder().decode(bytes.subarray(0, 5)) !== "%PDF-") return { error: "That doesn't look like a PDF. Export your CV as PDF and try again." };
   let pdf;
   // pdf.js may detach the buffer it is given, so hand it a copy.
   try { pdf = await extractPdf(bytes.slice()); } catch { return { error: "We couldn't open this PDF. Try exporting it again, or take the quiz instead." }; }
@@ -37,21 +38,35 @@ export async function uploadCv(formData: FormData): Promise<UploadCvResult> {
   const up = await admin.storage.from("cvs").upload(path, bytes, { contentType: "application/pdf" });
   if (up.error) return { error: "Upload failed — try again." };
 
-  await supabase.from("cvs").update({ is_active: false }).eq("user_id", user.id);
+  // Insert the new active row first, then deactivate the others: a failure never leaves the user without an active CV.
   const { data: cvRow, error } = await supabase.from("cvs").insert({
     user_id: user.id, storage_path: path, file_size: file.size, page_count: pdf.pageCount,
     raw_text: pdf.text, page_texts: pdf.pageTexts, parsed_json: parsed, is_active: true,
   }).select("id").single();
-  if (error || !cvRow) return { error: "Couldn't save your CV — try again." };
+  if (error || !cvRow) {
+    await admin.storage.from("cvs").remove([path]);
+    return { error: "Couldn't save your CV — try again." };
+  }
+  const cvId = cvRow.id as string;
+  const deact = await supabase.from("cvs").update({ is_active: false }).eq("user_id", user.id).neq("id", cvId);
+  if (deact.error) {
+    // Roll back so exactly one CV stays active (the previous one).
+    await supabase.from("cvs").delete().eq("id", cvId);
+    await admin.storage.from("cvs").remove([path]);
+    return { error: "Couldn't save your CV — try again." };
+  }
 
   const skills = [...new Set([...parsed.skills.flatMap((g) => g.items.map((i) => canonicalize(i) ?? i)), ...extractSkills(pdf.text)])];
+  const scored = parsed.archetypes.filter((a) => a.score > 0);
   const { data: prof } = await supabase.from("profiles").select("year, target_archetype").eq("user_id", user.id).single();
+  // An unreadable (image-only) or empty parse must not wipe archetypes/skills from e.g. the quiz.
+  const hasSignal = !imageOnly && (skills.length > 0 || scored.length > 0);
   await supabase.from("profiles").update({
-    archetypes: parsed.archetypes, skills,
-    target_archetype: prof?.target_archetype ?? parsed.archetypes[0]?.key ?? null,
+    ...(hasSignal ? { archetypes: scored, skills } : {}),
+    target_archetype: prof?.target_archetype ?? (hasSignal ? scored[0]?.key : null) ?? null,
     year: prof?.year ?? parsed.yearGuess ?? null,
   }).eq("user_id", user.id);
 
-  const award = await awardXP(supabase, user.id, { type: "cv_uploaded", profileComplete: true });
-  return { ok: true as const, award, imageOnly, cvId: cvRow.id as string };
+  const award = await awardXP(supabase, user.id, { type: "cv_uploaded", profileComplete: !imageOnly });
+  return { ok: true as const, award, imageOnly, cvId };
 }

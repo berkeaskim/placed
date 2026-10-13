@@ -26,6 +26,7 @@ export function UploadCard() {
       setError(null);
       setUnreadable(false);
       const r = await uploadCv(fd);
+      if (inputRef.current) inputRef.current.value = ""; // allow re-picking the same file
       if ("error" in r) { setError(r.error); return; }
       celebrate(r.award);
       if (r.imageOnly) { setUnreadable(true); return; }

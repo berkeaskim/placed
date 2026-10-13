@@ -141,6 +141,6 @@ export function heuristicParseCv(text: string): ParsedCV {
     interests: sections.interests?.join(" ") ?? null,
     sectionOrder: order.filter((s) => s !== "summary"),
     yearGuess: null,
-    archetypes: archetypeScores(text).slice(0, 3),
+    archetypes: archetypeScores(text).filter((a) => a.score > 0).slice(0, 3),
   };
 }
