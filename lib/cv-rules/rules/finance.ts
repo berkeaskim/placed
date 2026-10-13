@@ -20,7 +20,7 @@ const CON: Archetype[] = ["consulting"];
 export const FINANCE_RULES: CvRule[] = [
   // ---------- §1 Cross-sector overrides (FCQ) ----------
   {
-    id: "FCQ-01", sectors: FCQ, dimension: "clarity", check: "code", checker: "page_count", params: { maxPages: 1 }, severity: "critical", evidence: "A",
+    id: "FCQ-01", sectors: FCQ, dimension: "clarity", check: "code", checker: "page_count", params: { maxPages: 1 }, severity: "critical", evidence: "A", sectorAdjust: { quant_trading: { severity: "major" } },
     statement: "Keep it to exactly one page for finance, consulting and quant applications — two pages are only for PhDs or experienced hires.",
     llmGuidance: "Critical for finance and consulting, major for quant. Never stepped down by year of study.",
     citations: [F_S1, F_S2, F_S3, F_S10, F_S11],
@@ -36,7 +36,7 @@ export const FINANCE_RULES: CvRule[] = [
     citations: [F_S1, F_S2, F_S3, F_S8],
   },
   {
-    id: "FCQ-04", sectors: FCQ, dimension: "uk", check: "code", checker: "uk_grades", severity: "critical", evidence: "A",
+    id: "FCQ-04", sectors: FCQ, dimension: "uk", check: "code", checker: "uk_grades", severity: "critical", evidence: "A", sectorAdjust: { quant_trading: { severity: "major" } },
     statement: "State your grades explicitly: degree classification or current average (e.g. \"Year 1 average: 72% (First)\"), class rank if you know it, and strong module marks. If you don't have marks yet, give a prediction marked with an asterisk.",
     llmGuidance: "Critical for front-office finance and MBB consulting; major for quant and Big 4.",
     citations: [F_S1, F_S2, F_S23, F_S24],
@@ -161,13 +161,13 @@ export const FINANCE_RULES: CvRule[] = [
     citations: [F_S8, F_S36],
   },
   {
-    id: "FIN-12", sectors: FIN, dimension: "relevance", check: "llm", severity: "critical", evidence: "A",
+    id: "FIN-12", sectors: FIN, dimension: "relevance", check: "llm", severity: "major", evidence: "A",
     statement: "Avoid red flags: the wrong firm's name, a division interest your CV doesn't back up, unexplained gaps, bullets over two lines, or school-level detail on a penultimate-year CV.",
-    llmGuidance: "Wrong firm name in the profile/objective versus the target employer = critical. Others are minor: division mismatch, unexplained gaps, bullets longer than 2 lines, GCSE/high-school detail on a penultimate CV unless notable.",
+    llmGuidance: "Composite red-flag check. Doc severity: wrong firm name in the profile/objective versus the target employer = critical; division mismatch, unexplained gaps, bullets longer than 2 lines, GCSE/high-school detail on a penultimate CV = minor. Base severity is major because the critical sub-items are covered by their own rules.",
     citations: [F_S36, F_S2],
   },
   {
-    id: "FIN-13", sectors: FIN, dimension: "relevance", check: "llm", severity: "major", evidence: "C",
+    id: "FIN-13", sectors: FIN, dimension: "relevance", check: "llm", severity: "major", evidence: "B",
     statement: "For asset management, show investment thinking — a stock pitch with a thesis and outcome, an investment club, or a portfolio with a disciplined process — not just \"interest in markets\".",
     llmGuidance: "Asset-management roles only (otherwise na). Does the CV show investment reasoning (thesis, process, outcome) rather than a stated interest? pass = concrete reasoning; partial = activity without reasoning; fail = interest only.",
     citations: [F_S37],
@@ -269,7 +269,7 @@ export const FINANCE_RULES: CvRule[] = [
     citations: [F_S22, F_S23, F_S24, F_S25],
   },
   {
-    id: "CON-03", sectors: CON, dimension: "impact", check: "llm", severity: "major", evidence: "B",
+    id: "CON-03", sectors: CON, dimension: "impact", check: "llm", severity: "major", evidence: "A",
     statement: "Show structured problem-solving: bullets that go problem → analysis → recommendation → result (e.g. \"Diagnosed an 18% drop-off by segmenting 2k survey responses; recommendation adopted, +12% retention\").",
     llmGuidance: "Classify each bullet for a problem-solving arc (0–3 elements: problem, analysis, recommendation/result) and look for analytic verbs (analysed, diagnosed, modelled, prioritised, recommended). pass = at least one full arc; partial = partial arcs; fail = none.",
     citations: [F_S21, F_S24, F_S2],
@@ -282,7 +282,7 @@ export const FINANCE_RULES: CvRule[] = [
     citations: [F_S22, F_S2, F_S23],
   },
   {
-    id: "CON-05", sectors: CON, dimension: "impact", check: "llm", severity: "major", evidence: "B",
+    id: "CON-05", sectors: CON, dimension: "impact", check: "llm", severity: "major", evidence: "A",
     statement: "Show entrepreneurial drive: something you started (a society, venture, project or fundraiser), or a time you went beyond the brief.",
     llmGuidance: "Look for founded, launched, initiated, built, pitched, raised £ and judge whether it shows initiative beyond the brief. pass = clear example with an outcome; partial = initiative without outcome; fail = none.",
     citations: [F_S21, F_S22, F_S23],
@@ -331,9 +331,9 @@ export const FINANCE_RULES: CvRule[] = [
     citations: [F_S27, F_S2],
   },
   {
-    id: "CON-13", sectors: CON, dimension: "clarity", check: "llm", severity: "critical", evidence: "A",
+    id: "CON-13", sectors: CON, dimension: "clarity", check: "llm", severity: "major", evidence: "A",
     statement: "Avoid consulting red flags: a generic or AI-sounding profile, \"we\"-only bullets, responsibilities with no results, typos, two pages, references to the wrong firm, or long paragraphs.",
-    llmGuidance: "Composite of FCQ-05, FCQ-12, CON-02 and CON-04. Typos, a two-page CV or a wrong-firm reference = critical; the others = major.",
+    llmGuidance: "Composite of FCQ-05, FCQ-12, CON-02 and CON-04. Doc severity: typos, a two-page CV or a wrong-firm reference = critical (covered by FCQ-05 and FCQ-01); the others = major. Base severity is major.",
     citations: [F_S1, F_S2, F_S25, F_S8],
   },
 ];

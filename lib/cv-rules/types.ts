@@ -26,5 +26,7 @@ export type CvRule = {
   evidence: Evidence;
   citations: Citation[];
   yearAdjust?: Partial<Record<Year, { severity?: Severity; threshold?: number; skip?: boolean }>>;
+  /** Per-sector severity override for rules shared across sectors (e.g. FCQ rules milder for quant). */
+  sectorAdjust?: Partial<Record<Archetype, { severity?: Severity }>>;
   llmGuidance?: string;
 };

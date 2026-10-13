@@ -36,7 +36,7 @@ export const THE_ISE_2024: Citation = { title: "Less than half of UK's big gradu
 export const COLE_2007: Citation = { title: "Recruiters' perceptions and use of applicant résumé information: Screening the recent graduate", publisher: "Applied Psychology (Cole, Rubin, Feild & Giles)", year: "2007", url: "https://doi.org/10.1111/j.1464-0597.2007.00288.x" };
 export const ISE_AI_2026: Citation = { title: "Students use AI to compete yet oppose AI assessment", publisher: "Institute of Student Employers", year: "2026", url: "https://ise.org.uk/knowledge/insights/569/students_use_ai_to_compete_yet_oppose_ai_assessment" };
 export const PUBLICTECH_CIVIL_SERVICE_AI: Citation = { title: "What new civil service guidance on AI for job applicants tells us about shifts in recruitment", publisher: "PublicTechnology", year: "2025", url: "https://www.publictechnology.net/2025/10/31/education-and-skills/what-new-civil-service-guidance-on-ai-for-job-applicants-tells-us-about-shifts-in-recruitment/" };
-export const GRADCRACKER_EXPERIAN: Citation = { title: "CV application (Experian employer advice) (unverified)", publisher: "Gradcracker", year: "current", url: "https://www.gradcracker.com/hub/872/experian/additional-content/1782/cv-application" };
+export const GRADCRACKER_EXPERIAN: Citation = { title: "CV application (Experian employer advice)", publisher: "Gradcracker", year: "current", url: "https://www.gradcracker.com/hub/872/experian/additional-content/1782/cv-application" };
 export const GEMM_2019: Citation = { title: "The GEMM Study: A Cross-National Harmonized Field Experiment on Labour Market Discrimination: Technical Report", publisher: "SSRN (Lancee et al.)", year: "2019", url: "https://papers.ssrn.com/abstract=3398191" };
 
 // ---------- docs/research/cv-rules-tech-product.md §9 ----------
@@ -49,14 +49,14 @@ export const T_S3: Citation = { title: "Tips for a graduate technical CV: templa
 export const T_S4: Citation = { title: "8 things Amazon recruiters say top job candidates do", publisher: "About Amazon", year: "c. 2023–24", url: "https://aboutamazon.com/news/workplace/successful-amazon-job-candidates" };
 export const T_S5: Citation = { title: "Technical CV example", publisher: "Prospects", year: "2025", url: "https://www.prospects.ac.uk/careers-advice/cvs-and-cover-letters/example-cvs/technical-cv-example" };
 export const T_S6: Citation = { title: "Cracking the Coding Interview (résumé chapter; talk slides)", publisher: "Gayle Laakmann McDowell", year: "2015", url: "https://www.slideshare.net/slideshow/cracking-the-coding-interview-master-slide-deck/30274970" };
-export const T_S7_CAREER: Citation = { title: "CV and cover letters (unverified)", publisher: "Gradcracker Career Centre", year: "current", url: "https://www.gradcracker.com/career-centre/career-coach/2/cv-and-cover-letters" };
+export const T_S7_CAREER: Citation = { title: "CV and cover letters", publisher: "Gradcracker Career Centre", year: "current", url: "https://www.gradcracker.com/career-centre/career-coach/2/cv-and-cover-letters" };
 export const T_S7_EXPERIAN: Citation = GRADCRACKER_EXPERIAN;
 export const T_S8_TECH: Citation = { title: "Top 5 tips for writing a great CV for technology applications (unverified)", publisher: "Bright Network", year: "current", url: "https://brightnetwork.co.uk/career-path-guides/technology-it-software-development/top-5-tips-writing-great-cv-technology-applications" };
 export const T_S8_INTERN: Citation = BRIGHT_INTERNSHIP_CV;
 export const T_S11: Citation = { title: "Writing a CV for graduate advertising, marketing and PR jobs", publisher: "TARGETjobs", year: "2025", url: "https://targetjobs.co.uk/careers-advice/marketing-advertising-and-pr/writing-cv-graduate-advertising-marketing-and-pr-jobs" };
 export const T_S12: Citation = { title: "Help to get your first job in marketing", publisher: "Chartered Institute of Marketing (CIM Scotland)", year: "2023", url: "https://regions.cim.co.uk/scotland/home/news/2023/help-to-get-your-first-job-in-marketing" };
 export const T_S14: Citation = NOTTINGHAM_ATS;
-export const T_S15: Citation = { title: "CV booklet (skill bars and graphics guidance) (unverified)", publisher: "University of Strathclyde Careers", year: "2020", url: "https://careers.strath.ac.uk/Portals/63/Documents/CV%20booklet%202020_a_web.pdf" };
+export const T_S15: Citation = { title: "CV booklet (skill bars and graphics guidance)", publisher: "University of Strathclyde Careers", year: "2020", url: "https://careers.strath.ac.uk/Portals/63/Documents/CV%20booklet%202020_a_web.pdf" };
 export const T_S16: Citation = { title: "Preparing for mobile interviews at Monzo", publisher: "Monzo", year: "current", url: "https://monzo.com/blog/preparing-for-mobile-interviews-at-monzo" };
 export const T_S17: Citation = { title: "2025 Developer Survey: Technology", publisher: "Stack Overflow", year: "2025", url: "https://survey.stackoverflow.co/2025/technology" };
 export const T_S18: Citation = { title: "Octoverse: A new developer joins GitHub every second as AI leads TypeScript to #1", publisher: "GitHub Blog", year: "2025", url: "https://github.blog/news-insights/octoverse/octoverse-a-new-developer-joins-github-every-second-as-ai-leads-typescript-to-1/" };
@@ -94,8 +94,8 @@ export const F_S16: Citation = { title: "How to prepare for an interview at IMC"
 export const F_S17: Citation = { title: "Quantitative Trading Internship (2027 Start), Amsterdam", publisher: "Optiver", year: "2026", url: "https://www.optiver.com/join-us/jobs/trading/amsterdam/quantitative-trading-internship-2027-start/" };
 export const F_S19: Citation = { title: "Our Campus Quantitative Research Interview Process", publisher: "Citadel Securities", year: "2024", url: "https://www.citadelsecurities.com/careers/career-perspectives/our-quantitative-research-interview-process/" };
 export const F_S20: Citation = { title: "Quantitative Trading Intern Summer 2027 (New York)", publisher: "Flow Traders", year: "2026", url: "https://www.flowtraders.com/careers/job-description/8047166" };
-/** [S21] McKinsey students pages: text came from search-indexed excerpts (doc caveat 1: treat as unverified). */
-export const F_S21: Citation = { title: "Students: what we look for (unverified)", publisher: "McKinsey & Company", year: "live 2026", url: "https://www.mckinsey.com/careers/students" };
+/** [S21] McKinsey students pages (doc grade B: text from search-indexed excerpts). */
+export const F_S21: Citation = { title: "Students: what we look for", publisher: "McKinsey & Company", year: "live 2026", url: "https://www.mckinsey.com/careers/students" };
 export const F_S21B: Citation = { title: "Interviewing at McKinsey", publisher: "McKinsey & Company", year: "live 2026", url: "https://www.mckinsey.com/careers/interviewing" };
 export const F_S22: Citation = { title: "Applying to McKinsey & Company: CVs, cover letters and interviews", publisher: "TARGETjobs", year: "2025", url: "https://targetjobs.co.uk/careers-advice/business-consulting-and-management/applying-mckinsey-company-cvs-cover-letters-and-interviews" };
 export const F_S23: Citation = { title: "London recruiting: Associate Consultant / university hiring", publisher: "Bain & Company", year: "live 2026", url: "https://www.bain.com/careers/recruiting/london-recruiting/" };
@@ -110,5 +110,5 @@ export const F_S31: Citation = { title: "Early Careers Application", publisher: 
 export const F_S32: Citation = { title: "Early careers recruitment in 2025: integrity, inclusion, entry standards", publisher: "Prospects Luminate / Institute of Student Employers", year: "2025", url: "https://luminate.prospects.ac.uk/early-careers-recruitment-in-2025-integrity-inclusion-entry-standards" };
 export const F_S35: Citation = { title: "EMEA Early Insight FAQ (legacy)", publisher: "Morgan Stanley", year: "2016", url: "https://www.morganstanley.com/people-opportunities/emea-early-insight-faq" };
 export const F_S36: Citation = { title: "The perfect graduate CV for investment banking", publisher: "eFinancialCareers", year: "2015", url: "https://www.efinancialcareers.com/news/graduate-guide/the-perfect-graduate-cv-for-investment-banking" };
-/** [S37] Doc: "search-indexed only, unverified". */
-export const F_S37: Citation = { title: "BlackRock EMEA early careers (unverified)", publisher: "BlackRock", year: "live 2026", url: "https://careers.blackrock.com/early-careers/emea/" };
+/** [S37] Doc grade C: search-indexed excerpt only. */
+export const F_S37: Citation = { title: "BlackRock EMEA early careers", publisher: "BlackRock", year: "live 2026", url: "https://careers.blackrock.com/early-careers/emea/" };

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { RULES, rulesFor, DIMENSION_WEIGHTS, MYTHS } from "@/lib/cv-rules";
+import { RULES, RULES_BY_ID, rulesFor, DIMENSION_WEIGHTS, MYTHS } from "@/lib/cv-rules";
 import { CHECKER_IDS } from "@/lib/cv-rules/types";
 import { ARCHETYPES } from "@/lib/types";
 
@@ -42,6 +42,13 @@ describe("CV rule library", () => {
   });
   it("sector weights sum to 100", () => {
     for (const a of ARCHETYPES) expect(Object.values(DIMENSION_WEIGHTS[a]).reduce((x, y) => x + y, 0), a).toBe(100);
+  });
+  it("sectorAdjust only uses valid archetype keys", () => {
+    for (const r of RULES) for (const k of Object.keys(r.sectorAdjust ?? {})) expect(ARCHETYPES, r.id).toContain(k);
+  });
+  it("FCQ length and grade rules are major (not critical) for quant", () => {
+    expect(RULES_BY_ID.get("FCQ-01")?.sectorAdjust?.quant_trading?.severity).toBe("major");
+    expect(RULES_BY_ID.get("FCQ-04")?.sectorAdjust?.quant_trading?.severity).toBe("major");
   });
   it("keeps the 11 debunked myths", () => {
     expect(MYTHS).toHaveLength(11);

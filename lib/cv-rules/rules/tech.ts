@@ -8,7 +8,7 @@ import {
 /**
  * Tech / data / product / marketing / research rules — docs/research/cv-rules-tech-product.md (§2–§7).
  * Grades are the doc's own A–D; where a doc gives two ("B/C/D", "C/D"), the first is used.
- * Rules citing snippet-only Bright Network [S8] or Strathclyde [S15] pages are downgraded one grade.
+ * Rules citing snippet-only Bright Network [S8] pages are downgraded one grade.
  * Year adjustments come from the §7 table.
  */
 const SWE: Archetype[] = ["software_eng"];
@@ -69,7 +69,7 @@ export const TECH_RULES: CvRule[] = [
     citations: [T_S1, T_S2],
   },
   {
-    id: "SWE-09", sectors: SWE, dimension: "relevance", check: "code", checker: "skill_rating_glyphs", severity: "major", evidence: "B",
+    id: "SWE-09", sectors: SWE, dimension: "relevance", check: "code", checker: "skill_rating_glyphs", severity: "major", evidence: "A",
     statement: "Group skills by category (Languages / Frameworks & Libraries / Tools & Platforms / Databases / Cloud). Text labels like \"Proficient\" or \"Familiar\" are fine; bars, stars, percentages or \"8/10\" are not.",
     llmGuidance: "Bars/stars/ratings = major; ungrouped skills = minor.",
     citations: [T_S2, T_S5, T_S3, T_S15],
@@ -115,7 +115,7 @@ export const TECH_RULES: CvRule[] = [
     citations: [T_S6],
   },
   {
-    id: "SWE-17", sectors: SWE, dimension: "clarity", check: "llm", severity: "minor", evidence: "C",
+    id: "SWE-17", sectors: SWE, dimension: "clarity", check: "llm", severity: "minor", evidence: "B",
     statement: "Avoid red flags: tutorial clones (\"Netflix clone\") presented as original, unevidenced languages, dead GitHub links, \"Proficient in HTML\" as your headline skill, a university email only, \"references available on request\", or a colourful graphic-heavy template.",
     llmGuidance: "Check (a) tutorial clones with no extension, (b) languages with no evidence, (c) dead/private GitHub links, (d) HTML as the headline skill for a SWE role, (e) a .ac.uk email as the only email (minor), (f) 'references available on request', (g) more than 2 colours or graphic-heavy design. Severity ranges minor–major by item.",
     citations: [T_S2, T_S3, T_S15],

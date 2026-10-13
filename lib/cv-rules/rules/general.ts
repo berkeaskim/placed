@@ -236,7 +236,7 @@ export const GENERAL_RULES: CvRule[] = [
 
   // ---------- I. Integrity and authenticity ----------
   {
-    id: "G-36", sectors: "all", dimension: "impact", check: "llm", severity: "major", evidence: "C",
+    id: "G-36", sectors: "all", dimension: "impact", check: "llm", severity: "major", evidence: "B",
     statement: "Keep everything truthful and specific to you: no invented metrics and no generic AI boilerplate. AI can polish wording, but not make things up.",
     llmGuidance: "Score genericness, not provenance — never claim to 'detect AI'. Flag interchangeable boilerplate phrasing, internal inconsistencies (implausibly overlapping dates) and metrics with no plausible basis, and ask the user to confirm figures. Suggestions must use placeholders like '[X%]' that the user fills in; never invent numbers.",
     citations: [ISE_AI_2026, PUBLICTECH_CIVIL_SERVICE_AI, GRADCRACKER_EXPERIAN],
@@ -258,7 +258,7 @@ export const GENERAL_RULES: CvRule[] = [
     citations: [T_S3, T_S5],
   },
   {
-    id: "GEN-02", sectors: "all", dimension: "ats", check: "llm", severity: "major", evidence: "C",
+    id: "GEN-02", sectors: "all", dimension: "ats", check: "llm", severity: "major", evidence: "B",
     statement: "Use a single-column, text-based layout with standard headings (Education, Experience, Projects, Skills). Avoid tables, text boxes, skill bars and contact details in headers or footers.",
     llmGuidance: "Check the extracted text looks complete (no missing blocks that suggest images or text boxes), reads in a single column, and uses standard headings. pass = clean; partial = one issue; fail = multi-column/table layout or core content missing from the text.",
     citations: [T_S14, T_S15],
@@ -294,13 +294,13 @@ export const GENERAL_RULES: CvRule[] = [
     citations: [T_S3],
   },
   {
-    id: "GEN-08", sectors: "all", dimension: "clarity", check: "code", checker: "summary_length", severity: "minor", evidence: "D",
+    id: "GEN-08", sectors: "all", dimension: "clarity", check: "code", checker: "summary_length", severity: "minor", evidence: "C",
     statement: "Objectives and generic summaries add little. If you include a profile, keep it to 2–3 lines and make it specific to the role.",
     llmGuidance: "Also flag buzzword density in the profile ('passionate', 'hard-working', 'team player', 'synergy') and check it is role-specific.",
     citations: [T_S6, T_S7_CAREER, T_S7_EXPERIAN],
   },
   {
-    id: "GEN-09", sectors: "all", dimension: "impact", check: "llm", severity: "minor", evidence: "C",
+    id: "GEN-09", sectors: "all", dimension: "impact", check: "llm", severity: "minor", evidence: "B",
     statement: "AI-written boilerplate reads as inauthentic. Use AI to help with structure, not to write your content.",
     llmGuidance: "Score genericness and flag high-frequency LLM clichés ('leveraged', 'spearheaded' with vague objects, 'in today's fast-paced…'). pass = specific personal content; partial = some clichés; fail = reads as generic boilerplate (can be major when pervasive).",
     citations: [T_S7_EXPERIAN],
