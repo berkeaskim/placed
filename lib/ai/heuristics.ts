@@ -1,4 +1,5 @@
-import { ARCHETYPES, type Archetype, type ArchetypeScore, type Requirement, type Year } from "@/lib/types";
+import { ARCHETYPES, type Archetype, type ArchetypeScore, type CvEntry, type ParsedCV, type Requirement, type Year } from "@/lib/types";
+import { EMAIL_RE, PHONE_RE } from "@/lib/text/regex";
 import { tagSections } from "@/lib/text/jd";
 import { detectEmploymentType, detectSponsorship } from "@/lib/ingest/filter";
 import { extractSkills } from "@/lib/skills/extract";
@@ -80,5 +81,66 @@ export function heuristicTagJob(input: { title: string; textLines: string[] }): 
     summary: firstProse.slice(0, 200),
     requirements,
     status: "ok",
+  };
+}
+
+const SECTION_RE: [string, RegExp][] = [
+  ["education", /^(education|academic background)$/i],
+  ["experience", /^(experience|work experience|professional experience|employment)$/i],
+  ["projects", /^(projects|personal projects|technical projects)$/i],
+  ["leadership", /^(leadership|activities|extracurricular( activities)?|positions of responsibility|leadership (&|and) activities)$/i],
+  ["skills", /^(skills|technical skills|skills (&|and) interests)$/i],
+  ["interests", /^(interests|hobbies|interests (&|and) hobbies)$/i],
+  ["summary", /^(profile|summary|personal statement|about me)$/i],
+];
+const BULLET = /^\s*([•▪◦·*\-–]|\d+\.)\s+/;
+
+export function heuristicParseCv(text: string): ParsedCV {
+  const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  const email = text.match(EMAIL_RE)?.[0] ?? null;
+  const phone = text.match(PHONE_RE)?.[0]?.trim() ?? null;
+  const links = [...text.matchAll(/\b((?:https?:\/\/)?(?:www\.)?(?:github\.com|gitlab\.com|linkedin\.com\/in)\/[\w-]+)/gi)].map((m) => m[1]);
+  const sections: Record<string, string[]> = {};
+  const order: string[] = [];
+  let current = "header";
+  for (const line of lines) {
+    const hit = SECTION_RE.find(([, re]) => re.test(line.replace(/[:\s]+$/, "")));
+    if (hit) { current = hit[0]; if (!order.includes(current)) order.push(current); sections[current] = []; continue; }
+    (sections[current] ??= []).push(line);
+  }
+  const toEntries = (ls: string[] = []): CvEntry[] => {
+    const out: CvEntry[] = [];
+    for (const l of ls) {
+      if (BULLET.test(l)) {
+        if (!out.length) out.push({ id: "", org: "", title: "", dates: "", location: "", bullets: [] });
+        out[out.length - 1].bullets.push({ id: "", text: l.replace(BULLET, "") });
+      } else {
+        const [head, ...rest] = l.split(/\s+[—–-]\s+|,\s+(?=\d{4})/);
+        const dates = l.match(/(\d{4}\s*[–-]\s*(\d{4}|present))/i)?.[1] ?? "";
+        out.push({ id: "", org: head ?? l, title: rest.join(", ").replace(dates, "").replace(/,\s*$/, "").trim(), dates, location: "", bullets: [] });
+      }
+    }
+    return out;
+  };
+  const edu = (sections.education ?? []);
+  const skillItems = (sections.skills ?? []).join(", ").split(/[,;|]/).map((s) => s.replace(/^.*?:\s*/, "").trim()).filter(Boolean);
+  return {
+    name: lines[0] ?? "",
+    email, phone, location: /\blondon\b/i.test(lines.slice(0, 3).join(" ")) ? "London" : null, links,
+    summary: sections.summary?.join(" ") ?? null,
+    education: edu.length ? [{
+      id: "", institution: edu[0].split(/\s+[—–-]\s+/)[0], degree: edu[0].split(/\s+[—–-]\s+/)[1] ?? "",
+      dates: edu[0].match(/\d{4}\s*[–-]\s*\d{4}/)?.[0] ?? "",
+      grade: edu.find((l) => /(2:1|2:2|first|predicted|\d{2}%|a\*|aaa)/i.test(l)) ?? null,
+      details: edu.slice(1).map((t) => ({ id: "", text: t.replace(BULLET, "") })),
+    }] : [],
+    experience: toEntries(sections.experience),
+    projects: toEntries(sections.projects),
+    leadership: toEntries(sections.leadership),
+    skills: skillItems.length ? [{ group: "Skills", items: skillItems }] : [],
+    interests: sections.interests?.join(" ") ?? null,
+    sectionOrder: order.filter((s) => s !== "summary"),
+    yearGuess: null,
+    archetypes: archetypeScores(text).slice(0, 3),
   };
 }

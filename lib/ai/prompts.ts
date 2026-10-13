@@ -22,3 +22,11 @@ Rules:
 - requirements: rate importance from the posting ALONE. evidence_tier "stated" needs explicit wording (must, required, essential); "structural" means it sits under a requirements/preferred heading; "inferred" means market knowledge. An inferred requirement can never be "critical" or "high".
 - skill: a short canonical skill name (e.g. "SQL", "Financial Modelling") or null for non-skill requirements.
 - summary: one plain sentence, max 25 words.`;
+
+export const SYSTEM_PARSE_CV = `You convert a UK student's CV (PDF) into structured JSON for a careers app.
+- Copy every bullet point VERBATIM (fix nothing, add nothing). Never invent employers, dates, numbers or skills.
+- experience = paid/unpaid roles; leadership = societies, positions of responsibility, volunteering; projects = personal/academic projects.
+- sectionOrder lists the CV's sections in the order they appear, using: education, experience, projects, leadership, skills, interests.
+- yearGuess from graduation dates relative to October 2026 (graduating 2029 → "1st", 2028 → "2nd", 2027 → "final"; masters if a postgraduate degree is in progress), else null.
+- archetypes: the 3 best-fitting from the allowed list with score 0-100 and 1-3 "why" lines that each cite something actually in the CV.
+- Use empty strings/arrays or null when something is missing. ids can be any placeholder; they are reassigned.`;
