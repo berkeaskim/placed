@@ -193,3 +193,19 @@ describe("never render while block (Review Focus 3)", () => {
     expect(JSON.stringify(rendered)).not.toMatch(/Tableau/);
   });
 });
+
+describe("fix round 1: fallback is surfaced, never silent", () => {
+  it("usedFallback/fallbackReason come through from the tailor and are stripped from the stored CV", async () => {
+    const t = vi.fn(async () => ({ ...toTailored(cv), usedFallback: true, fallbackReason: "AI unavailable" }));
+    const out = await runTailoring({ cv, rawText, job, confirmedFacts: [], tailor: t as never });
+    expect(out.usedFallback).toBe(true);
+    expect(out.fallbackReason).toBe("AI unavailable");
+    expect(out.tailored).not.toHaveProperty("usedFallback");
+    expect(out.tailored).not.toHaveProperty("fallbackReason");
+  });
+  it("a model answer reports usedFallback false", async () => {
+    const out = await runTailoring({ cv, rawText, job, confirmedFacts: [], tailor: (async () => toTailored(cv)) as never });
+    expect(out.usedFallback).toBe(false);
+    expect(out.fallbackReason).toBeUndefined();
+  });
+});

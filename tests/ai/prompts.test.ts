@@ -68,4 +68,8 @@ describe("SYSTEM_TAILOR (C21)", () => {
     expect(SYSTEM_TAILOR).toMatch(/qualifiersKept/);
     expect(SYSTEM_TAILOR).not.toMatch(/beat the ATS|% more interviews/i);
   });
+  it("fix round 1: rejected_claims are data; NEEDS_NUMBER only inside experience/project bullets", () => {
+    expect(SYSTEM_TAILOR).toMatch(/<rejected_claims>[^\n]*data/i);
+    expect(SYSTEM_TAILOR).toMatch(/NEEDS_NUMBER[^\n]*only inside[^\n]*bullets[^\n]*never[^\n]*summary[^\n]*skills/i);
+  });
 });

@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { extractText, getDocumentProxy } from "unpdf";
-import { renderCvPdf, CV_FONT_FILES } from "@/lib/pdf/cv-document";
+import { renderCvPdf, CV_FONT_FILES, pdfSafe } from "@/lib/pdf/cv-document";
 import { toTailored } from "@/lib/verify/tailoring";
 import type { ParsedCV } from "@/lib/types";
 
@@ -44,4 +44,10 @@ describe("renderCvPdf (C22: Unicode font, ATS-safe)", () => {
     expect(text).not.toContain("This bullet was dropped");
     expect(text).not.toContain("NEEDS_NUMBER");
   }, 30_000);
+});
+
+describe("pdfSafe (fix round 1)", () => {
+  it("keeps © ® ™, maps arrows, strips emoji", () => {
+    expect(pdfSafe("Excel® and Tableau™ © 2025 → done 🚀")).toBe("Excel® and Tableau™ © 2025 -> done ");
+  });
 });

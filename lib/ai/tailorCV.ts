@@ -13,7 +13,13 @@ import { heuristicTailor } from "./heuristics";
  */
 export type TailorInput = { cv: ParsedCV; job: JobListItem; allowed: string[]; supported: string[]; feedback: string[] | null };
 
+/** Honoured by Gemini only; the Anthropic adapter drops it (current Claude models reject temperature). */
 const TEMPERATURE = 0.2;
+
+/** tailorCV's answer, plus whether it came from the reorder-only heuristic instead of the model (and why). */
+export type TailorCvResult = TailoredCV & { usedFallback?: boolean; fallbackReason?: string };
+export const FALLBACK_NO_FIXTURE = "No AI answer is recorded for this role, so we only reordered your bullets.";
+export const FALLBACK_AI_ERROR = "The AI was unavailable, so we only reordered your bullets.";
 const escapeData = (s: string) => s.replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
 /** CV content the model sees: named content fields only (never parsed_json, whose `safety` holds injected text), no contact details. */
@@ -81,10 +87,12 @@ export function normalizeTailored(raw: TailoredCvFixtureT, cv: ParsedCV): Tailor
   };
 }
 
-export async function tailorCV(i: TailorInput): Promise<TailoredCV> {
-  const fallback = () => heuristicTailor({ cv: i.cv, allowed: i.allowed, supported: i.supported });
+export async function tailorCV(i: TailorInput): Promise<TailorCvResult> {
+  const heuristic = (reason: string): TailorCvResult =>
+    ({ ...heuristicTailor({ cv: i.cv, allowed: i.allowed, supported: i.supported }), usedFallback: true, fallbackReason: reason });
+  const fallback = () => heuristic(FALLBACK_NO_FIXTURE);
   try {
-    return await runAi({
+    return await runAi<TailorCvResult, TailoredCvFixtureT>({
       fn: "tailorCV",
       fixtureKey: i.job.extId,
       schema: TailoredCvFixture,
@@ -100,7 +108,10 @@ export async function tailorCV(i: TailorInput): Promise<TailoredCV> {
     });
   } catch (e) {
     // The model being unavailable never blocks tailoring: the heuristic only reorders, so it can't fabricate.
-    if (e instanceof AiError) return fallback();
+    if (e instanceof AiError) {
+      console.error("tailorCV: AI call failed, using the reorder-only heuristic", { code: e.name, message: e.message, cause: e.cause instanceof Error ? e.cause.message : undefined });
+      return heuristic(FALLBACK_AI_ERROR);
+    }
     throw e;
   }
 }

@@ -92,3 +92,31 @@ describe("buildTailorPrompt (C21: untrusted inputs)", () => {
     expect(p).toMatch(/STYLE ANCHORS/);
   });
 });
+
+describe("fix round 1: live AiError falls back loudly", () => {
+  it("logs the error and flags usedFallback with a reason", async () => {
+    const { vi } = await import("vitest");
+    vi.resetModules();
+    vi.doMock("@/lib/env", async (orig) => ({ ...(await orig<typeof import("@/lib/env")>()), aiMode: () => "live" }));
+    const provider = await import("@/lib/ai/provider");
+    vi.doMock("@/lib/ai/provider", () => ({
+      ...provider,
+      generateStructured: async () => { throw new provider.AiError(provider.AI_UNAVAILABLE); },
+      runAi: async (o: { live: () => Promise<unknown> }) => o.live(),
+    }));
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const mod = await import("@/lib/ai/tailorCV");
+    const t = await mod.tailorCV({ cv, job, allowed: ["Excel"], supported: [], feedback: null });
+    expect(t.usedFallback).toBe(true);
+    expect(t.fallbackReason).toMatch(/unavailable/i);
+    expect(spy).toHaveBeenCalled();
+    expect(String(spy.mock.calls[0].join(" "))).toMatch(/tailorCV/);
+    spy.mockRestore();
+    vi.doUnmock("@/lib/env"); vi.doUnmock("@/lib/ai/provider"); vi.resetModules();
+  });
+  it("fixture mode with no recorded answer flags the heuristic too", async () => {
+    process.env.AI_MODE = "fixture";
+    const t = await tailorCV({ cv, job: { ...job, extId: "__none__" } as JobListItem, allowed: ["Excel"], supported: [], feedback: null });
+    expect(t.usedFallback).toBe(true);
+  });
+});

@@ -24,12 +24,12 @@ function registerFonts() {
 }
 
 /**
- * Noto Sans has no arrows or emoji; a missing glyph would print as a blank box. Arrows become ASCII, pictographs go.
+ * Noto Sans has no arrows or emoji; a missing glyph would print as a blank box. Arrows become ASCII, pictographs go (except © ® ™).
  */
 export function pdfSafe(text: string): string {
   return text
     .replace(/[→⇒➔➜➝➞⟶]/g, "->").replace(/[←⇐⟵]/g, "<-").replace(/[↔⇔]/g, "<->")
-    .replace(/[\p{Extended_Pictographic}\u{FE0F}\u{200D}]/gu, "")
+    .replace(/(?![©®™])[\p{Extended_Pictographic}\u{FE0F}\u{200D}]/gu, "") // © ® ™ are in Noto Sans and stay
     .replace(/[ \t]{2,}/g, " ");
 }
 const t = (x: string | null | undefined) => pdfSafe(x ?? "");

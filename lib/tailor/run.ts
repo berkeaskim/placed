@@ -19,7 +19,8 @@ import type { TailorInput } from "@/lib/ai/tailorCV";
 
 export { NEEDS_NUMBER };
 
-export type TailorFn = (i: TailorInput) => Promise<TailoredCV>;
+/** The tailor may say its answer came from the reorder-only heuristic (TailorCvResult); fakes may omit it. */
+export type TailorFn = (i: TailorInput) => Promise<TailoredCV & { usedFallback?: boolean; fallbackReason?: string }>;
 export type Counts = { matched: number; total: number };
 export type BeforeAfter<T> = { before: T; after: T };
 
@@ -67,6 +68,9 @@ export type TailorOutcome = {
   attempts: 1 | 2;
   /** Even the revert still blocked, so the original CV stands unchanged. */
   fellBackToOriginal: boolean;
+  /** The model wasn't used (unavailable, or no recorded fixture): only reordering/surfacing happened. 23b must say so. */
+  usedFallback: boolean;
+  fallbackReason?: string;
 };
 
 export type GateInput = { cv: ParsedCV; rawText: string; job: JobListItem; confirmedFacts: string[] };
@@ -138,6 +142,8 @@ function buckets(i: GateInput, ctx: Ctx): { allowed: string[]; supported: string
   const statusOf = (skill: string, section: "must" | "nice") => computeCoverage([{ skill, section }], src).items[0].status;
   const confirmed = new Set(extractSkills(i.confirmedFacts.join("\n")).map(lc));
   const allowed: string[] = [], supported: string[] = [];
+  // A skill named in the student's own confirmed facts is allowed even if the CV text lacks it: it is the student's
+  // statement (confirmed_facts), never the JD's. The gate accepts the same facts.
   for (const item of ctx.before.items) {
     for (const s of item.anyOf?.length ? item.anyOf : [item.skill]) {
       const st = statusOf(s, item.section);
@@ -269,13 +275,21 @@ export async function runTailoring(i: GateInput & { tailor: TailorFn }): Promise
   const invented = new Set<string>();
   const note = (r: VerifyReport) => r.issues.filter((x) => x.type === "inventedMetrics" && x.severity === "block").forEach((x) => invented.add(x.claim));
 
-  let tailored = await i.tailor({ cv: i.cv, job: i.job, allowed, supported, feedback: null });
+  let usedFallback = false;
+  let fallbackReason: string | undefined;
+  /** Strips the tailor's fallback flags so they never reach the stored/rendered CV. */
+  const call = async (feedback: string[] | null): Promise<TailoredCV> => {
+    const { usedFallback: fb, fallbackReason: why, ...t } = await i.tailor({ cv: i.cv, job: i.job, allowed, supported, feedback });
+    if (fb) { usedFallback = true; fallbackReason = why ?? fallbackReason; }
+    return t;
+  };
+  let tailored = await call(null);
   let { report } = gate(i, ctx, tailored);
   note(report);
   let attempts: 1 | 2 = 1;
   if (report.verdict === "block") {
     attempts = 2;
-    tailored = await i.tailor({ cv: i.cv, job: i.job, allowed, supported, feedback: feedbackFrom(report.issues) });
+    tailored = await call(feedbackFrom(report.issues));
     ({ report } = gate(i, ctx, tailored));
     note(report);
   }
@@ -313,7 +327,7 @@ export async function runTailoring(i: GateInput & { tailor: TailorFn }): Promise
     mustHaves: { before: ctx.before.must, after: after.must }, niceToHaves: { before: ctx.before.nice, after: after.nice },
     tailoredFor, changes: buildChanges(i, ctx, tailored), reverted,
     unconfirmedNumbers: [...invented], needsNumber: needsNumberOf(i.cv, tailored),
-    attempts, fellBackToOriginal,
+    attempts, fellBackToOriginal, usedFallback, ...(fallbackReason ? { fallbackReason } : {}),
   };
 }
 
