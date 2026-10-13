@@ -52,3 +52,7 @@ export const JudgeOutput = z.object({
   spelling_errors: z.array(z.string()),
 });
 export type JudgeOutputT = z.infer<typeof JudgeOutput>;
+
+/** quizToArchetypes raw output. Only `why` lines and `skills` are used: the ranking stays deterministic (Task 19). */
+export const QuizOutput = z.object({ archetypes: z.array(ArchetypeScoreOut), skills: z.array(z.string()) });
+export type QuizOutputT = z.infer<typeof QuizOutput>;

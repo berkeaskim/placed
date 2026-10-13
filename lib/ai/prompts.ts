@@ -49,3 +49,8 @@ For EACH rule id given, answer its yes/no question and return exactly one verdic
 - fix: for fail or partial only (else null). One concrete suggestion that only rephrases or reorganises what is ALREADY in the CV. Never suggest adding experience, skills or results the student doesn't have. If a fix needs a number the CV lacks, write "[add your real number]" instead of inventing one.
 - A CV line that itself contains a placeholder such as "[add your real number]", "NEEDS_NUMBER", "X%" or "[number]" is not a real result: judge it as fail.
 - spelling_errors: misspelled words that appear in <cv_text>. British and American spellings are both correct. Ignore names, placeholders and technical terms.`;
+
+export const SYSTEM_QUIZ = `A UK student with no CV answered a 6-question interests quiz for a careers app.
+You are given their answers and a pre-computed ranking of up to 3 career archetypes.
+Return the same archetypes in the same order with the same scores. For each, write 2 short, warm "why" lines (UK English, under 15 words each, no emoji) that refer to the student's actual answers.
+Also return 5 beginner-friendly skills worth learning for the top archetype (plain names such as "Excel" or "SQL").`;
