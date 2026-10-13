@@ -82,6 +82,27 @@ describe("extractSkills", () => {
     const skills = extractSkills("Using PostgreSQL and postgresql databases");
     expect(skills).toEqual(["PostgreSQL"]);
   });
+  it("does not match false positives from case-insensitive probe", () => {
+    const text = "imo it was a swift move in Moscow; I spent a spark of time on prototyping and newsletters, a PCR test, welcome to the team";
+    const skills = extractSkills(text);
+    expect(skills).toEqual([]);
+  });
+  it("matches Swift when capitalized", () => {
+    const skills = extractSkills("Built an iOS app in Swift");
+    expect(skills).toContain("Swift");
+  });
+  it("matches Spark when capitalized", () => {
+    const skills = extractSkills("Used Apache Spark for data processing");
+    expect(skills).toContain("Spark");
+  });
+  it("matches MoSCoW prioritization method", () => {
+    const skills = extractSkills("Prioritised with MoSCoW method");
+    expect(skills).toContain("Prioritisation");
+  });
+  it("extracts realistic tech stack", () => {
+    const skills = extractSkills("Built a Python and SQL dashboard in Tableau; used Excel and PowerPoint for a DCF valuation; deployed a React app with Docker on AWS; ran A/B testing");
+    expect(skills).toEqual(["Python", "SQL", "Tableau", "Excel", "PowerPoint", "DCF", "Valuation", "React", "Docker", "AWS", "A/B Testing"]);
+  });
 });
 
 describe("SKILLS vocabulary", () => {
