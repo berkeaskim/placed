@@ -132,9 +132,9 @@ describe("deadline semantics — London day, inclusive", () => {
     }
   });
 
-  // BUG: lib/scoring/dates.ts:13-19 — daysUntil returns NaN for malformed strings, and none of the
+  // FIXED (was BUG): lib/scoring/dates.ts:13-19 — daysUntil returns NaN for malformed strings, and none of the
   // `d < 0 / d === 0 / d === 1` branches catch NaN, so the card shows "NaN days left".
-  it.fails("never renders 'NaN' for malformed deadline strings", () => {
+  it("never renders 'NaN' for malformed deadline strings", () => {
     for (const bad of ["garbage", "13/10/2026", "2026-13-45", "TBC"]) {
       expect(deadlineLabel(bad, "2026-10-13")).not.toContain("NaN");
     }
@@ -142,7 +142,7 @@ describe("deadline semantics — London day, inclusive", () => {
 
   // BUG: lib/scoring/dates.ts:10 vs :14 — isOpen checks `=== null` but deadlineLabel checks falsiness,
   // so "" is labelled "Rolling deadline" yet isOpen("") === false (job hidden from the feed).
-  it.fails("empty-string deadline is treated consistently by isOpen and deadlineLabel", () => {
+  it("empty-string deadline is treated consistently by isOpen and deadlineLabel", () => {
     expect(deadlineLabel("", "2026-10-13")).toBe("Rolling deadline");
     expect(isOpen("", "2026-10-13")).toBe(true);
   });

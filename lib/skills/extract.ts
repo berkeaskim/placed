@@ -58,15 +58,17 @@ const PATTERNS: { canonical: string; re: RegExp; term: string }[] = [...ALIAS.en
   .sort((a, b) => b[0].length - a[0].length)
   .map(([term, canonical]) => ({ term, canonical, re: termRegex(term) }));
 
+const IMPLIED_PARENTS = new Set(["JavaScript", "React"]);
+
 export function extractSkills(text: string): string[] {
-  const found: { canonical: string; index: number }[] = [];
+  const found: { canonical: string; index: number; end: number }[] = [];
 
   // First, try case-sensitive patterns
   for (const p of CASE_SENSITIVE_PATTERNS) {
     p.re.lastIndex = 0;
     let m: RegExpExecArray | null;
     while ((m = p.re.exec(text)) !== null) {
-      found.push({ canonical: p.canonical, index: m.index });
+      found.push({ canonical: p.canonical, index: m.index, end: m.index + m[0].length });
     }
   }
 
@@ -77,7 +79,7 @@ export function extractSkills(text: string): string[] {
       const regex = new RegExp(SINGLE_LETTER_CONTEXT.source, "g");
       let m: RegExpExecArray | null;
       while ((m = regex.exec(text)) !== null) {
-        found.push({ canonical: p.canonical, index: m.index });
+        found.push({ canonical: p.canonical, index: m.index, end: m.index + m[0].length });
       }
       continue;
     }
@@ -86,17 +88,23 @@ export function extractSkills(text: string): string[] {
       const regex = /(?<![A-Za-z])Go(?![A-Za-z])(?=\s*[,/)]|\s+and\s)/g;
       let m: RegExpExecArray | null;
       while ((m = regex.exec(text)) !== null) {
-        found.push({ canonical: p.canonical, index: m.index });
+        found.push({ canonical: p.canonical, index: m.index, end: m.index + m[0].length });
       }
       continue;
     }
     p.re.lastIndex = 0;
     let m: RegExpExecArray | null;
     while ((m = p.re.exec(text)) !== null) {
-      found.push({ canonical: p.canonical, index: m.index });
+      found.push({ canonical: p.canonical, index: m.index, end: m.index + m[0].length });
     }
   }
 
+  // A term inside a longer matched term is not a separate skill ("search engine optimisation" is SEO, not also
+  // "Optimisation"), except parents the longer skill genuinely implies (Node.js → JavaScript, React Native → React).
+  const nested = (f: (typeof found)[number]) =>
+    !IMPLIED_PARENTS.has(f.canonical) &&
+    found.some((g) => g !== f && g.canonical !== f.canonical && g.index <= f.index && g.end >= f.end && g.end - g.index > f.end - f.index);
+  const kept = found.filter((f) => !nested(f));
   const seen = new Set<string>();
-  return found.sort((a, b) => a.index - b.index).filter((f) => !seen.has(f.canonical) && seen.add(f.canonical)).map((f) => f.canonical);
+  return kept.sort((a, b) => a.index - b.index).filter((f) => !seen.has(f.canonical) && seen.add(f.canonical)).map((f) => f.canonical);
 }

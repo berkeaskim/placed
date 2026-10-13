@@ -56,21 +56,22 @@ export async function uploadCv(formData: FormData): Promise<UploadCvResult> {
   const up = await admin.storage.from("cvs").upload(path, bytes, { contentType: "application/pdf" });
   if (up.error) return { error: "Upload failed — try again." };
 
-  // Insert the new active row first, then deactivate the others: a failure never leaves the user without an active CV.
+  // Insert inactive, then swap atomically (activate_cv, 0007): a failure or a concurrent upload never leaves
+  // the user without exactly one active CV.
   const { data: cvRow, error } = await supabase.from("cvs").insert({
     user_id: user.id, storage_path: path, file_size: file.size, page_count: pdf.pageCount,
     raw_text: cleanText, page_texts: cleanPages,
     // Never pass parsed_json wholesale into an LLM prompt: safety.issues contains the injected text.
-    parsed_json: { ...parsed, safety }, is_active: true,
+    parsed_json: { ...parsed, safety }, is_active: false,
   }).select("id").single();
   if (error || !cvRow) {
     await admin.storage.from("cvs").remove([path]);
     return { error: "Couldn't save your CV — try again." };
   }
   const cvId = cvRow.id as string;
-  const deact = await supabase.from("cvs").update({ is_active: false }).eq("user_id", user.id).neq("id", cvId);
-  if (deact.error) {
-    // Roll back so exactly one CV stays active (the previous one).
+  const swap = await supabase.rpc("activate_cv", { p_cv: cvId });
+  if (swap.error) {
+    // Roll back; the previous CV is still the active one.
     await supabase.from("cvs").delete().eq("id", cvId);
     await admin.storage.from("cvs").remove([path]);
     return { error: "Couldn't save your CV — try again." };
@@ -78,15 +79,24 @@ export async function uploadCv(formData: FormData): Promise<UploadCvResult> {
 
   const skills = [...new Set([...parsed.skills.flatMap((g) => g.items.map((i) => canonicalize(i) ?? i)), ...extractSkills(cleanText)])];
   const scored = parsed.archetypes.filter((a) => a.score > 0);
-  const { data: prof } = await supabase.from("profiles").select("year, target_archetype").eq("user_id", user.id).single();
+  const { data: prof, error: profErr } = await supabase.from("profiles").select("year, target_archetype").eq("user_id", user.id).single();
   // An unreadable (image-only) or empty parse must not wipe archetypes/skills from e.g. the quiz.
   const hasSignal = !imageOnly && (skills.length > 0 || scored.length > 0);
-  await supabase.from("profiles").update({
-    ...(hasSignal ? { archetypes: scored, skills } : {}),
-    target_archetype: prof?.target_archetype ?? (hasSignal ? scored[0]?.key : null) ?? null,
-    year: prof?.year ?? parsed.yearGuess ?? null,
-  }).eq("user_id", user.id);
+  // If the profile read failed we can't tell what the user already chose: skip rather than overwrite year/target.
+  if (!profErr) {
+    await supabase.from("profiles").update({
+      ...(hasSignal ? { archetypes: scored, skills } : {}),
+      target_archetype: prof?.target_archetype ?? (hasSignal ? scored[0]?.key : null) ?? null,
+      year: prof?.year ?? parsed.yearGuess ?? null,
+    }).eq("user_id", user.id);
+  }
 
-  const award = await awardXP(supabase, user.id, { type: "cv_uploaded", profileComplete: !imageOnly });
+  // The CV is saved at this point: an XP hiccup must not turn it into a failed upload.
+  let award: AwardResult | null = null;
+  try {
+    award = await awardXP(supabase, user.id, { type: "cv_uploaded", profileComplete: !imageOnly });
+  } catch (e) {
+    console.error("awardXP failed after CV upload", e);
+  }
   return { ok: true as const, award, imageOnly, cvId, safetyWarning: flagged ? SAFETY_WARNING_COPY : null };
 }

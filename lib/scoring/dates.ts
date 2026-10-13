@@ -6,12 +6,19 @@ export function daysUntil(date: string, today: string): number {
   return Math.round((Date.parse(`${date}T00:00:00Z`) - Date.parse(`${today}T00:00:00Z`)) / 86_400_000);
 }
 
+/** A real YYYY-MM-DD calendar date. Anything else ("", "TBC", 2026-13-45) is treated as no deadline. */
+export function isValidDate(d: string | null | undefined): d is string {
+  if (!d || !/^\d{4}-\d{2}-\d{2}$/.test(d)) return false;
+  const t = new Date(`${d}T00:00:00Z`);
+  return !Number.isNaN(t.getTime()) && t.toISOString().slice(0, 10) === d;
+}
+
 export function isOpen(deadline: string | null, today: string): boolean {
-  return deadline === null || daysUntil(deadline, today) >= 0;
+  return !isValidDate(deadline) || daysUntil(deadline, today) >= 0;
 }
 
 export function deadlineLabel(deadline: string | null, today: string): string {
-  if (!deadline) return "Rolling deadline";
+  if (!isValidDate(deadline)) return "Rolling deadline";
   const d = daysUntil(deadline, today);
   if (d < 0) return "Closed";
   if (d === 0) return "Closes today";
@@ -24,6 +31,6 @@ export function deadlineLabel(deadline: string | null, today: string): string {
  * (~90% of Greenhouse/Lever/Ashby postings) and must not be presented as a rolling deadline.
  */
 export function closingLabel(job: { deadline: string | null; rolling?: boolean }, today: string): string {
-  if (job.deadline) return deadlineLabel(job.deadline, today);
+  if (isValidDate(job.deadline)) return deadlineLabel(job.deadline, today);
   return job.rolling ? "Rolling: apply early" : "No closing date published";
 }
