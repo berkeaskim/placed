@@ -1,4 +1,7 @@
-/** Debunked or overstated CV myths — docs/research/cv-rules-general.md §3 (M1–M11). */
+/**
+ * Debunked or overstated CV myths — docs/research/cv-rules-general.md §3 (M1–M11), plus M12–M13 from the
+ * 2026-10-13 amendments (market-2026 report 03 §3 N3 and report 02 §3).
+ */
 export const MYTHS: { id: string; myth: string; verdict: string; sources: string }[] = [
   {
     id: "M1",
@@ -77,5 +80,21 @@ export const MYTHS: { id: string; myth: string; verdict: string; sources: string
     verdict:
       "Unverified marketing figures. Quantifying is widely recommended, but these specific numbers come from CV-builder blogs with no published method. Don't use them in product copy.",
     sources: "n/a (identified to avoid)",
+  },
+  {
+    id: "M12",
+    myth: "Aim for a 75–80% keyword match score.",
+    verdict:
+      "No evidence base. No ATS vendor publishes a match-percentage threshold; vendors use per-job bands or grades (Strong/Good/Partial/Limited, A–D). The 75–80% figure comes from Jobscan's own product blog, and Jobscan itself warns that going above 75% may require overstuffing.",
+    sources:
+      "Jobscan, \"What Jobscan match rate should I aim for?\" (commercial), https://www.jobscan.co/blog/what-jobscan-match-rate-should-i-aim-for/; ATS vendor documentation reviewed in market-2026 report 03 (F17)",
+  },
+  {
+    id: "M13",
+    myth: "Recruiters spend 6 seconds on a CV.",
+    verdict:
+      "Weak commercial figure (Ladders, unpublished method). Better estimates put the first screen at about 30 seconds (median 31 s across ~2,200 judgements), with attention on titles, organisations, dates and education. Longer dwell time didn't predict a higher rating.",
+    sources:
+      "interviewing.io (2024), https://interviewing.io/blog/are-recruiters-better-than-a-coin-flip-at-judging-resumes; Osanami Törngren et al., Frontiers in Sociology (2024), https://www.frontiersin.org/journals/sociology/articles/10.3389/fsoc.2024.1222850/full; Ladders eye-tracking report (2012), https://www.bu.edu/com/files/2018/10/TheLadders-EyeTracking-StudyC2.pdf",
   },
 ];
