@@ -108,3 +108,20 @@ export interface ParsedCV {
   yearGuess: Year | null;
   archetypes: ArchetypeScore[];
 }
+
+// ---------- Tailored CV (Task 22/23) ----------
+
+/** How a tailored bullet relates to its cited source bullets (mirrors lib/verify/checks-extra ChangeType). */
+export type TailorChangeType = "kept" | "reordered" | "rephrased" | "merged" | "dropped";
+
+/**
+ * A bullet in the tailored CV. `sourceRefs` cite source bullet ids (ParsedCV bullet/detail ids).
+ * `changeType` is optional: verifyTailoring infers it when absent. A `dropped` bullet is never rendered.
+ */
+export type TailoredBullet = { id: string; text: string; sourceRefs: string[]; changeType?: TailorChangeType; dropReason?: string; qualifiersKept?: string[] };
+export type TailoredEntry = { id: string; org: string; title: string; dates: string; location: string; bullets: TailoredBullet[] };
+export type TailorChange = { bulletId: string; before: string; after: string; reason: string; jdRequirement: string | null; keywordsAdded: string[] };
+export type TailoredCV = {
+  summary: string | null; education: ParsedCV["education"]; experience: TailoredEntry[]; projects: TailoredEntry[]; leadership: TailoredEntry[];
+  skills: { group: string; items: string[] }[]; interests: string | null; changes: TailorChange[];
+};
