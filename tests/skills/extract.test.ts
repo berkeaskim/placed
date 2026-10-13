@@ -37,6 +37,17 @@ describe("extractSkills", () => {
     const skills = extractSkills(text);
     expect(skills).toEqual([]);
   });
+  it("keeps lower-case aliases of case-sensitive entries insensitive", () => {
+    expect(extractSkills("Used PySpark at scale")).toContain("Spark");
+    expect(extractSkills("Used pyspark at scale")).toContain("Spark");
+  });
+  it("matches acronym aliases only in upper case", () => {
+    expect(extractSkills("IMO silver medal")).toContain("UKMT");
+    expect(extractSkills("BMO round 2")).toContain("UKMT");
+    expect(extractSkills("EGMO team")).toContain("UKMT");
+    expect(extractSkills("Ran PCR assays")).toContain("Lab Techniques");
+    expect(extractSkills("in my imo opinion, the pcr was")).toEqual([]);
+  });
   it("does not match generic prose containing framework-like words", () => {
     const text = "The nature of the role: express interest, spring term, rest of team. Science fair… macro team on rates and credit; the fund signal later published a paper";
     const skills = extractSkills(text);
@@ -85,7 +96,7 @@ describe("extractSkills", () => {
   it("does not match false positives from case-insensitive probe", () => {
     const text = "imo it was a swift move in Moscow; I spent a spark of time on prototyping and newsletters, a PCR test, welcome to the team";
     const skills = extractSkills(text);
-    expect(skills).toEqual([]);
+    expect(skills).toEqual(["Lab Techniques"]); // "a PCR test" legitimately yields Lab Techniques now
   });
   it("matches Swift when capitalized", () => {
     const skills = extractSkills("Built an iOS app in Swift");

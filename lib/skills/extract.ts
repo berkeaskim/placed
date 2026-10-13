@@ -32,14 +32,12 @@ for (const s of SKILLS) {
     }
     ALIAS.set(lower, s.canonical);
 
-    if (s.caseSensitive) {
-      // Mark the lowercase form as case-sensitive to exclude from case-insensitive patterns
+    const exact = (s.caseSensitive && /[A-Z]/.test(a)) || (s.caseSensitiveAliases?.includes(a) ?? false);
+    if (exact) {
+      // Exact-case alias: excluded from the case-insensitive pass, matched only as written
       CASE_SENSITIVE_KEYS.add(lower);
-      // Only add case-sensitive pattern for aliases with meaningful capitalization (not pure lowercase)
-      if (a !== lower) {
-        const regex = new RegExp(`(?<![A-Za-z0-9])${escapeRegex(a)}(?![A-Za-z0-9+#])`, "g");
-        CASE_SENSITIVE_PATTERNS.push({ term: a, canonical: s.canonical, re: regex });
-      }
+      const regex = new RegExp(`(?<![A-Za-z0-9])${escapeRegex(a)}(?![A-Za-z0-9+#])`, "g");
+      CASE_SENSITIVE_PATTERNS.push({ term: a, canonical: s.canonical, re: regex });
     }
   }
 }

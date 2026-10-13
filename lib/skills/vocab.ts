@@ -1,6 +1,8 @@
 import type { Archetype } from "@/lib/types";
 
-export type SkillEntry = { canonical: string; aliases: string[]; archetypes: Archetype[]; caseSensitive?: boolean };
+export type SkillEntry = { canonical: string; aliases: string[]; archetypes: Archetype[]; caseSensitive?: boolean; caseSensitiveAliases?: string[] };
+// caseSensitive: canonical, and any alias containing an uppercase letter, match only exactly as written.
+// Lower-case aliases of such entries stay case-insensitive. caseSensitiveAliases: extra exact-case aliases for other entries.
 
 const SE: Archetype = "software_eng", DA: Archetype = "data_analytics", QT: Archetype = "quant_trading",
   CO: Archetype = "consulting", PR: Archetype = "product", FB: Archetype = "finance_banking",
@@ -141,7 +143,7 @@ export const SKILLS: SkillEntry[] = [
   { canonical: "Backtesting", aliases: ["back-test"], archetypes: [QT] },
   { canonical: "Sharpe Ratio", aliases: [], archetypes: [QT] },
   { canonical: "PnL", aliases: ["p&l"], archetypes: [QT] },
-  { canonical: "UKMT", aliases: ["bmo", "imo", "egmo"], archetypes: [QT], caseSensitive: true },
+  { canonical: "UKMT", aliases: ["BMO", "IMO", "EGMO"], archetypes: [QT], caseSensitive: true },
   { canonical: "Putnam", aliases: [], archetypes: [QT] },
   { canonical: "Olympiad", aliases: [], archetypes: [QT] },
   { canonical: "Chess", aliases: [], archetypes: [QT] },
@@ -231,7 +233,7 @@ export const SKILLS: SkillEntry[] = [
   { canonical: "Experimental Design", aliases: ["data collection"], archetypes: [RS] },
   { canonical: "LaTeX", aliases: ["overleaf"], archetypes: [RS, QT] },
   { canonical: "HPC", aliases: ["slurm"], archetypes: [SE, RS] },
-  { canonical: "Lab Techniques", aliases: ["microscopy", "wet lab", "cell culture"], archetypes: [RS] },
+  { canonical: "Lab Techniques", aliases: ["microscopy", "wet lab", "cell culture", "PCR"], archetypes: [RS], caseSensitiveAliases: ["PCR"] },
   { canonical: "Peer Review", aliases: [], archetypes: [RS] },
   { canonical: "Academic Writing", aliases: ["scientific writing"], archetypes: [RS] },
   { canonical: "NeurIPS", aliases: [], archetypes: [RS] },
