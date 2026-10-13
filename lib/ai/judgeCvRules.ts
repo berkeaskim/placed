@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
 import path from "node:path";
 import type { CvRule } from "@/lib/cv-rules/types";
@@ -10,8 +11,11 @@ import { generateStructured, runAi } from "./provider";
 import { SYSTEM_JUDGE } from "./prompts";
 import { JudgeOutput, type JudgeOutputT } from "./schemas";
 
-/** Bump whenever SYSTEM_JUDGE, buildJudgePrompt or mapVerdicts change meaning: it is part of the cache key (06 R2). */
-export const PROMPT_VERSION = "judge-2026-10-13.1";
+/**
+ * Part of the cache key (06 R2). Bump the manual part whenever buildJudgePrompt or mapVerdicts change
+ * meaning; the SYSTEM_JUDGE hash suffix invalidates the cache automatically on any prompt edit.
+ */
+export const PROMPT_VERSION = `judge-2026-10-13.2-${createHash("sha256").update(SYSTEM_JUDGE).digest("hex").slice(0, 8)}`;
 const FN = "judgeCvRules";
 
 export type JudgeInput = {
@@ -23,7 +27,8 @@ export type JudgeInput = {
   /** Fixture mode only: an EXACT fixture under fixtures/ai/judgeCvRules/<key>.json (no default fallback). */
   fixtureKey?: string;
 };
-export type JudgeResult = { results: ScoredRuleResult[]; spellingErrors: string[] | null; modelId: string };
+/** `cacheable: false` when no verdicts were obtained (fixture mode without an exact fixture): never cache those. */
+export type JudgeResult = { results: ScoredRuleResult[]; spellingErrors: string[] | null; modelId: string; cacheable: boolean };
 
 const escapeData = (s: string) => s.replace(/</g, "&lt;").replace(/>/g, "&gt;");
 const unescapeData = (s: string) => s.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
@@ -57,8 +62,10 @@ function mapStatus(s: string, rule: CvRule): "pass" | "fail" | "partial" | "not_
 /**
  * Model output → one result per llm rule, in rule order.
  * - status: pass | fail | not_applicable; partial only with allowPartial; anything else → not_applicable.
- * - A1 (06 R1): a non-null evidence_line must be an exact substring of the redacted text after
- *   whitespace normalisation, else the verdict becomes could_not_assess (dropped from the denominator).
+ * - A1 (06 R1): evidence_line must be an exact substring of the redacted text after whitespace
+ *   normalisation, else the verdict becomes could_not_assess (dropped from the denominator).
+ *   pass and partial REQUIRE a quote (a pass claims presence, and anything present can be quoted);
+ *   only fail may have a null evidence_line ("absent from the CV"), counted by countUnevidencedFails.
  * - A passing line that contains a placeholder number scores as fail.
  */
 export function mapVerdicts(raw: JudgeOutputT, rules: CvRule[], redactedText: string): ScoredRuleResult[] {
@@ -76,6 +83,9 @@ export function mapVerdicts(raw: JudgeOutputT, rules: CvRule[], redactedText: st
 
       const quoted = v.evidence_line == null ? "" : norm(unescapeData(v.evidence_line).replace(/^["“'‘]+|["”'’]+$/g, ""));
       const evidenceLine = quoted || null;
+      if (!evidenceLine && status !== "fail") {
+        return { ruleId: rule.id, status: "could_not_assess", evidenceLine: null, fix: null, detail: `${status} verdict without an evidence line` };
+      }
       if (evidenceLine && !hay.includes(evidenceLine)) {
         return { ruleId: rule.id, status: "could_not_assess", evidenceLine: null, fix: null, detail: `quoted line not found in CV: ${evidenceLine.slice(0, 200)}` };
       }
@@ -84,6 +94,11 @@ export function mapVerdicts(raw: JudgeOutputT, rules: CvRule[], redactedText: st
       }
       return { ruleId: rule.id, status, evidenceLine, fix: status === "pass" ? null : v.fix?.trim() || null };
     });
+}
+
+/** LLM fails with no quoted line (allowed for "absent" verdicts); tracked for the Task 25 reliability run. */
+export function countUnevidencedFails(llmResults: ScoredRuleResult[]): number {
+  return llmResults.filter((r) => r.status === "fail" && r.evidenceLine == null).length;
 }
 
 /** Keep only misspellings that actually occur in the text and are not UK/US variants (06 R12). */
@@ -114,8 +129,9 @@ export async function judgeCvRules(i: JudgeInput): Promise<JudgeResult> {
     results: llmRules.map((r) => ({ ruleId: r.id, status: "not_applicable", evidenceLine: null, fix: null })),
     spellingErrors: null,
     modelId,
+    cacheable: false,
   });
-  if (llmRules.length === 0) return { ...none(), spellingErrors: null };
+  if (llmRules.length === 0) return { ...none(), cacheable: true };
   if (aiMode() === "fixture" && !hasExactFixture(i.fixtureKey)) return none();
 
   const raw = await runAi<JudgeOutputT | null, JudgeOutputT>({
@@ -134,5 +150,5 @@ export async function judgeCvRules(i: JudgeInput): Promise<JudgeResult> {
     fallback: () => null,
   });
   if (!raw) return none();
-  return { results: mapVerdicts(raw, llmRules, i.redactedText), spellingErrors: cleanSpelling(raw.spelling_errors, i.redactedText), modelId };
+  return { results: mapVerdicts(raw, llmRules, i.redactedText), spellingErrors: cleanSpelling(raw.spelling_errors, i.redactedText), modelId, cacheable: true };
 }

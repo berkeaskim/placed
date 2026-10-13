@@ -1,4 +1,5 @@
 "use server";
+import { after } from "next/server";
 import { requireUser } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { extractPdf, isImageOnly } from "@/lib/cv/pdf-text";
@@ -94,14 +95,22 @@ export async function uploadCv(formData: FormData): Promise<UploadCvResult> {
     }).eq("user_id", user.id);
   }
 
-  // CV Score for the target sector. Never fails the upload: the profile page retries (Task 19).
-  // No XP for the score itself (amendment item 5).
+  // CV Score for the target sector, after the response is sent (one smart-tier call, ~116 rules): the
+  // upload returns immediately and never fails because of scoring; the profile page retries a missing
+  // score (Task 19). No XP for the score itself (amendment item 5).
   if ((ARCHETYPES as readonly string[]).includes(target ?? "")) {
+    const y: Year = (YEARS as readonly string[]).includes(year ?? "") ? (year as Year) : "2nd";
     try {
-      const y: Year = (YEARS as readonly string[]).includes(year ?? "") ? (year as Year) : "2nd";
-      await scoreCv(supabase, { userId: user.id, cvId, sector: target as Archetype, year: y });
+      after(async () => {
+        try {
+          await scoreCv(supabase, { userId: user.id, cvId, sector: target as Archetype, year: y });
+        } catch (e) {
+          console.error("scoreCv failed after CV upload; retried on the profile page", e);
+        }
+      });
     } catch (e) {
-      console.error("scoreCv failed after CV upload; retried on the profile page", e);
+      // after() throws outside a request scope (e.g. direct calls in tests): scoring is skipped, never the upload.
+      console.error("couldn't schedule scoreCv after CV upload; retried on the profile page", e);
     }
   }
 

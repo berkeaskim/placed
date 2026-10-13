@@ -4,7 +4,7 @@ import type { Archetype, ParsedCV, Year } from "@/lib/types";
 import type { SafetyReport } from "@/lib/cv/safety";
 import { isImageOnly } from "@/lib/cv/image-only";
 import { rulesFor } from "@/lib/cv-rules";
-import { judgeCvRules, PROMPT_VERSION } from "@/lib/ai/judgeCvRules";
+import { countUnevidencedFails, judgeCvRules, PROMPT_VERSION } from "@/lib/ai/judgeCvRules";
 import { currentModelId } from "@/lib/ai/models";
 import { EMAIL_RE, PHONE_RE } from "@/lib/text/regex";
 import { runCodeChecks } from "./checkers";
@@ -13,12 +13,16 @@ import { prepareJudgeInput } from "./pii";
 import { RULES_VERSION, textHash } from "./cache";
 import type { ScoredRuleResult } from "./context";
 
-type StoredRuleResults = { code: ScoredRuleResult[]; llm: ScoredRuleResult[]; spellingErrors: string[] | null; couldNotAssess?: number };
+type StoredRuleResults = {
+  code: ScoredRuleResult[]; llm: ScoredRuleResult[]; spellingErrors: string[] | null;
+  couldNotAssess?: number;
+  /** LLM fails without a quoted line (allowed only for "absent" verdicts): Task 25 reliability signal. */
+  unevidencedFails?: number;
+};
 type CvRow = { raw_text: string; page_texts: string[] | null; page_count: number; file_size: number; parsed_json: ParsedCV & { safety?: SafetyReport } };
 
-/** True when the error is "column does not exist" (migration 0007 not run yet). */
-const missingColumn = (e: { message?: string; code?: string } | null) =>
-  !!e && (e.code === "42703" || e.code === "PGRST204" || /column/i.test(e.message ?? ""));
+/** True when the error is "column does not exist" (migration 0007 not run yet): Postgres 42703 or PostgREST PGRST204. */
+const missingColumn = (e: { code?: string } | null) => !!e && (e.code === "42703" || e.code === "PGRST204");
 
 /**
  * Score one CV for one sector and upsert cv_scores (one row per cv × sector).
@@ -57,9 +61,9 @@ export async function scoreCv(supabase: SupabaseClient, i: { userId: string; cvI
     .maybeSingle<{ rule_results: StoredRuleResults }>();
   if (cacheErr && !missingColumn(cacheErr)) console.error("cv_scores cache lookup failed", cacheErr);
 
-  let llm: { results: ScoredRuleResult[]; spellingErrors: string[] | null };
+  let llm: { results: ScoredRuleResult[]; spellingErrors: string[] | null; cacheable: boolean };
   if (cached?.rule_results && Array.isArray(cached.rule_results.llm)) {
-    llm = { results: cached.rule_results.llm, spellingErrors: cached.rule_results.spellingErrors ?? null };
+    llm = { results: cached.rule_results.llm, spellingErrors: cached.rule_results.spellingErrors ?? null, cacheable: true };
   } else {
     const j = await judgeCvRules({
       redactedText: judgeInput.redactedText,
@@ -68,7 +72,7 @@ export async function scoreCv(supabase: SupabaseClient, i: { userId: string; cvI
       // Exact fixtures only (fixture mode): keyed by content + sector, never by identity.
       fixtureKey: `${hash.slice(0, 16)}-${i.sector}`,
     });
-    llm = { results: j.results, spellingErrors: j.spellingErrors };
+    llm = { results: j.results, spellingErrors: j.spellingErrors, cacheable: j.cacheable };
   }
 
   const code = runCodeChecks(rules, {
@@ -86,12 +90,18 @@ export async function scoreCv(supabase: SupabaseClient, i: { userId: string; cvI
     },
   });
 
-  const ruleResults: StoredRuleResults = { code, llm: llm.results, spellingErrors: llm.spellingErrors, couldNotAssess: score.couldNotAssess };
+  const ruleResults: StoredRuleResults = {
+    code, llm: llm.results, spellingErrors: llm.spellingErrors,
+    couldNotAssess: score.couldNotAssess, unevidencedFails: countUnevidencedFails(llm.results),
+  };
   const row = {
     cv_id: i.cvId, user_id: i.userId, sector: i.sector, total: score.total, dimensions: score.dimensions,
     caps_applied: score.capsApplied, rule_results: ruleResults, fixes: score.fixes,
   };
-  const cacheCols = { text_hash: hash, model_id: modelId, prompt_version: PROMPT_VERSION, rules_version: RULES_VERSION };
+  // No verdicts obtained (fixture mode without an exact fixture): store the hash but no key parts, so it never serves as a cache hit.
+  const cacheCols = llm.cacheable
+    ? { text_hash: hash, model_id: modelId, prompt_version: PROMPT_VERSION, rules_version: RULES_VERSION }
+    : { text_hash: hash, model_id: null, prompt_version: null, rules_version: null };
   let up = await supabase.from("cv_scores").upsert({ ...row, ...cacheCols }, { onConflict: "cv_id,sector" });
   if (up.error && missingColumn(up.error)) {
     console.warn("cv_scores cache columns missing: run supabase/migrations/0007_cv_score_cache.sql");

@@ -74,17 +74,18 @@ describe("scoreCv", () => {
     else process.env.AI_MODE = saved;
   });
 
-  it("fixture mode: scores from code rules, persists cache columns, passes safety into checks", async () => {
+  it("fixture mode: scores from code rules, passes safety into checks, never stores a cache key for all-not_applicable verdicts", async () => {
     const { client, upserts } = fakeSupabase({ cvs: [cvRow], cv_scores: [] });
     const score = await scoreCv(client, { userId: "u1", cvId: "cv1", sector: "consulting", year: "2nd" });
     expect(score.total).toBeGreaterThan(0);
     expect(judgeCvRules).toHaveBeenCalledTimes(1);
     expect(upserts).toHaveLength(1);
     const row = upserts[0].row;
-    expect(row).toMatchObject({ cv_id: "cv1", user_id: "u1", sector: "consulting", model_id: "fixture", prompt_version: PROMPT_VERSION, rules_version: RULES_VERSION });
+    expect(row).toMatchObject({ cv_id: "cv1", user_id: "u1", sector: "consulting", model_id: null, prompt_version: null, rules_version: null });
     expect(row.text_hash).toMatch(/^[0-9a-f]{64}$/);
     expect(upserts[0].opts).toMatchObject({ onConflict: "cv_id,sector" });
-    const rr = row.rule_results as { code: { ruleId: string; status: string }[]; llm: { status: string }[] };
+    const rr = row.rule_results as { code: { ruleId: string; status: string }[]; llm: { status: string }[]; unevidencedFails: number };
+    expect(rr.unevidencedFails).toBe(0);
     expect(rr.code.find((x) => x.ruleId === "ATS-INJ-01")?.status).toBe("fail");
     expect(rr.llm.every((x) => x.status === "not_applicable")).toBe(true);
   });
@@ -94,7 +95,8 @@ describe("scoreCv", () => {
     await scoreCv(first.client, { userId: "u1", cvId: "cv1", sector: "consulting", year: "2nd" });
     const prev = first.upserts[0].row;
     const cachedLlm = [{ ruleId: "CON-01", status: "pass", evidenceLine: null, fix: null }];
-    const cachedRow = { ...prev, cv_id: "cv-old", rule_results: { ...(prev.rule_results as object), llm: cachedLlm, spellingErrors: [] } };
+    const key = { model_id: "fixture", prompt_version: PROMPT_VERSION, rules_version: RULES_VERSION };
+    const cachedRow = { ...prev, ...key, cv_id: "cv-old", rule_results: { ...(prev.rule_results as object), llm: cachedLlm, spellingErrors: [] } };
     vi.mocked(judgeCvRules).mockClear();
     const second = fakeSupabase({ cvs: [cvRow], cv_scores: [cachedRow] });
     await scoreCv(second.client, { userId: "u1", cvId: "cv1", sector: "consulting", year: "2nd" });
@@ -102,10 +104,19 @@ describe("scoreCv", () => {
     expect((second.upserts[0].row.rule_results as { llm: unknown }).llm).toEqual(cachedLlm);
   });
 
+  it("a non-cacheable (fixture, no verdicts) row is never reused", async () => {
+    const first = fakeSupabase({ cvs: [cvRow], cv_scores: [] });
+    await scoreCv(first.client, { userId: "u1", cvId: "cv1", sector: "consulting", year: "2nd" });
+    vi.mocked(judgeCvRules).mockClear();
+    const second = fakeSupabase({ cvs: [cvRow], cv_scores: [first.upserts[0].row] });
+    await scoreCv(second.client, { userId: "u1", cvId: "cv1", sector: "consulting", year: "2nd" });
+    expect(judgeCvRules).toHaveBeenCalledTimes(1);
+  });
+
   it("re-judges when the stored prompt_version differs", async () => {
     const first = fakeSupabase({ cvs: [cvRow], cv_scores: [] });
     await scoreCv(first.client, { userId: "u1", cvId: "cv1", sector: "consulting", year: "2nd" });
-    const stale = { ...first.upserts[0].row, prompt_version: "old" };
+    const stale = { ...first.upserts[0].row, model_id: "fixture", prompt_version: "old", rules_version: RULES_VERSION };
     vi.mocked(judgeCvRules).mockClear();
     const second = fakeSupabase({ cvs: [cvRow], cv_scores: [stale] });
     await scoreCv(second.client, { userId: "u1", cvId: "cv1", sector: "consulting", year: "2nd" });
