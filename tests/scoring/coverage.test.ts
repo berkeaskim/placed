@@ -67,3 +67,25 @@ describe("coverageLabel rounding", () => {
     expect(coverageLabel(r)).toContain("(99%)");
   });
 });
+
+import { coverageFor, cvSkillSource } from "@/lib/scoring/coverage";
+import type { JobForScoring } from "@/lib/types";
+
+describe("coverageFor", () => {
+  const job = {
+    textLines: ["## Requirements", "- SQL and Python"],
+    requirements: [],
+  } as unknown as JobForScoring;
+  const parsedCv = { skills: [{ group: "Tech", items: ["SQL"] }], experience: [], projects: [] };
+  it("uses the CV when present", () => {
+    const c = coverageFor(job, parsedCv, ["Python"]);
+    expect(c).toEqual(computeCoverage(jdRequirementSkills(job.textLines, job.requirements), cvSkillSource(parsedCv)));
+    expect(c.items.find((i) => i.skill === "SQL")?.status).toBe("existing");
+    expect(c.items.find((i) => i.skill === "Python")?.status).toBe("gap");
+  });
+  it("falls back to the profile skills when there is no CV", () => {
+    const c = coverageFor(job, null, ["Python"]);
+    expect(c.items.find((i) => i.skill === "Python")?.status).toBe("existing");
+    expect(c.items.find((i) => i.skill === "SQL")?.status).toBe("gap");
+  });
+});

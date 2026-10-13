@@ -93,6 +93,13 @@ export function computeCoverage(reqs: JdSkill[], cv: CvSkillSource): CoverageRes
   return { readable: true, weighted: num / den, must: count("must"), nice: count("nice"), items };
 }
 
+import type { JobForScoring } from "@/lib/types";
+
+/** Coverage of one job against the student's CV (or, with no CV, their profile skills). Shared by feed, job detail, apply and tracker. */
+export function coverageFor(job: JobForScoring, cv: SkillSourceCv | null, studentSkills: string[]): CoverageResult {
+  return computeCoverage(jdRequirementSkills(job.textLines, job.requirements), cv ? cvSkillSource(cv) : profileSkillSource(studentSkills));
+}
+
 export function coverageLabel(r: CoverageResult): string {
   if (!r.readable || r.weighted === null) return "Couldn't read the requirements";
   let pct = Math.round(r.weighted * 100);
