@@ -46,12 +46,49 @@ export function canonicalize(name: string): string | null {
   return ALIAS.get(name.trim().toLowerCase()) ?? null;
 }
 
-// Boundaries that work for C++, C#, Node.js: not preceded/followed by a letter/digit
+// Boundaries that work for C++, C#, Node.js: not preceded/followed by a letter/digit.
+// "++" terms may carry a standard-version suffix (C++17, C++11/14).
 function termRegex(term: string): RegExp {
-  return new RegExp(`(?<![A-Za-z0-9])${escapeRegex(term)}(?![A-Za-z0-9+#])`, "gi");
+  const right = term.endsWith("++") ? "(?![A-Za-z+#])" : "(?![A-Za-z0-9+#])";
+  return new RegExp(`(?<![A-Za-z0-9])${escapeRegex(term)}${right}`, "gi");
 }
 
-const SINGLE_LETTER_CONTEXT = /\b(in|with|using|and|,)\s+R(?![A-Za-z0-9&])|\bR(?![A-Za-z0-9&])\s+(and|,|programming|studio|language)\b|\bR(?![A-Za-z0-9&])\s*\/|\/\s*R(?![A-Za-z0-9&])\b|\bR(?![A-Za-z0-9&])\)/;
+// R: after in/with/using/and/","/":", or before ","/and/programming/studio/language, or in "/" or "(R)". Not R&D, R-squared.
+const R_ = "R(?![A-Za-z0-9&\\-])";
+const SINGLE_LETTER_CONTEXT = new RegExp(
+  `(?:\\b(?:in|with|using|and)|[,:])\\s+${R_}|\\b${R_}\\s*,|\\b${R_}\\s+(?:and|programming|studio|language)\\b|\\b${R_}\\s*\\/|\\/\\s*${R_}\\b|\\b${R_}\\)`,
+);
+
+// Ambiguous language names ("C", "Go") count only in a list next to an unambiguous language ("C and C++",
+// "Go, Rust", "Rust (Go)"), possibly chained through other ambiguous ones ("C, Go, Python").
+const LANGS = ["Python", "JavaScript", "TypeScript", "Java", "C++", "C#", "Rust", "Kotlin", "Swift", "Scala", "Haskell",
+  "OCaml", "SQL", "MATLAB", "Julia", "VBA", "Golang", "Ruby", "PHP", "Perl", "Fortran", "Assembly", "Bash", "Lua", "Dart"];
+const LANG_ALT = LANGS.map(escapeRegex).join("|");
+const AMBIG: Record<string, RegExp> = {
+  C: /(?<![A-Za-z0-9.'&+#\-])C(?![A-Za-z0-9+#&'\-]|\.[A-Za-z0-9])/g,
+  Go: /(?<![A-Za-z0-9.'&+#\-])Go(?![A-Za-z0-9+#&'\-]|\.[A-Za-z0-9])/g,
+};
+const VER = String.raw`(?:\d{1,2}(?:\/\d{1,2})*)?`; // C++17, C++11/14, Python3
+const SEP = String.raw`\s*(?:,|\/|&|\(|\)|\band\b|\bor\b)\s*`;
+const NEXT_LANG = new RegExp(`^${SEP}(?:(?<lang>(?<![A-Za-z0-9])(?:${LANG_ALT})${VER}(?![A-Za-z0-9+#]))|(?<amb>(?:C|Go|R)(?![A-Za-z0-9+#&'\\-])))`, "i");
+const PREV_LANG = new RegExp(`(?:(?<lang>(?<![A-Za-z0-9])(?:${LANG_ALT})${VER})|(?<amb>(?<![A-Za-z0-9.'&+#\\-])(?:C|Go|R)))${SEP}$`, "i");
+
+function inLanguageList(text: string, index: number, end: number): boolean {
+  for (const dir of [1, -1] as const) {
+    let i = index, e = end;
+    for (let hop = 0; hop < 4; hop++) {
+      const m = dir === 1 ? NEXT_LANG.exec(text.slice(e, e + 40)) : PREV_LANG.exec(text.slice(Math.max(0, i - 40), i));
+      if (!m) break;
+      if (m.groups?.lang) return true;
+      // Ambiguous neighbour keeps the chain going only if written exactly ("go" / "c" do not)
+      const amb = m.groups!.amb;
+      if (amb !== "C" && amb !== "Go" && amb !== "R") break;
+      if (dir === 1) { const s = e + m[0].length - amb.length; i = s; e = s + amb.length; }
+      else { const s = Math.max(0, i - 40) + m.index; i = s; e = s + amb.length; }
+    }
+  }
+  return false;
+}
 
 const PATTERNS: { canonical: string; re: RegExp; term: string }[] = [...ALIAS.entries()]
   .filter(([term]) => !CASE_SENSITIVE_KEYS.has(term) && (term.length > 1 || term === "r"))
@@ -84,11 +121,11 @@ export function extractSkills(text: string): string[] {
       continue;
     }
     if (p.term === "go") {
-      // "Go" only when capitalised and adjacent to other languages
-      const regex = /(?<![A-Za-z])Go(?![A-Za-z])(?=\s*[,/)]|\s+and\s)/g;
+      // "Go" only when capitalised and in a list with another language
+      const regex = new RegExp(AMBIG.Go.source, "g");
       let m: RegExpExecArray | null;
       while ((m = regex.exec(text)) !== null) {
-        found.push({ canonical: p.canonical, index: m.index, end: m.index + m[0].length });
+        if (inLanguageList(text, m.index, m.index + 2)) found.push({ canonical: p.canonical, index: m.index, end: m.index + 2 });
       }
       continue;
     }
@@ -97,6 +134,13 @@ export function extractSkills(text: string): string[] {
     while ((m = p.re.exec(text)) !== null) {
       found.push({ canonical: p.canonical, index: m.index, end: m.index + m[0].length });
     }
+  }
+
+  // "C" (single letter, excluded from PATTERNS): only in a language list
+  const cRe = new RegExp(AMBIG.C.source, "g");
+  let cm: RegExpExecArray | null;
+  while ((cm = cRe.exec(text)) !== null) {
+    if (inLanguageList(text, cm.index, cm.index + 1)) found.push({ canonical: "C", index: cm.index, end: cm.index + 1 });
   }
 
   // A term inside a longer matched term is not a separate skill ("search engine optimisation" is SEO, not also

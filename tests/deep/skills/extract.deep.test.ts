@@ -32,7 +32,8 @@ describe("vocabulary round-trip", () => {
   it("canonicalize returns null for empty / whitespace / unknown", () => {
     expect(canonicalize("")).toBeNull();
     expect(canonicalize("   ")).toBeNull();
-    expect(canonicalize("node js")).toBeNull();
+    expect(canonicalize("not a skill")).toBeNull();
+    expect(canonicalize("node js")).toBe("Node.js");
   });
   it("case-insensitive entries match in UPPER, lower and Title case", () => {
     const misses: string[] = [];
@@ -95,36 +96,46 @@ describe("skills inside other words (false-positive guards)", () => {
     for (const t of ["Go, Rust", "Go and Python", "Go/Rust", "Rust (Go)", "golang"]) expect(extractSkills(t)).toContain("Go");
   });
 
-  // BUG: lib/skills/extract.ts:54 SINGLE_LETTER_CONTEXT — "R" at the start of a list ("R, Python") or after a colon
-  // ("Languages: R") is missed, because the "R followed by ," branch requires whitespace before the comma and
-  // ":" is not an accepted left context. Typical CV/JD skills lines lose R entirely.
-  it.fails("R at the start of a comma list or after a colon is extracted", () => {
+  // Fixed: SINGLE_LETTER_CONTEXT accepts ":" on the left and "R," with no space.
+  it("R at the start of a comma list or after a colon is extracted", () => {
     expect(extractSkills("Skills: R, Python, SQL")).toContain("R");
     expect(extractSkills("Languages: R")).toContain("R");
   });
-  // GAP: lib/skills/extract.ts:57 — single-letter terms other than "r" are filtered out of PATTERNS, so the
-  // "C" vocabulary entry is unreachable from text: "Proficient in C and C++" yields only C++.
-  it.fails("C language is extractable in an unambiguous language list", () => {
+  // Fixed: "C" extracted only when list-adjacent to an unambiguous language (inLanguageList).
+  it("C language is extractable in an unambiguous language list", () => {
     expect(extractSkills("Proficient in C and C++")).toEqual(["C", "C++"]);
     expect(extractSkills("Languages: C, Python")).toContain("C");
   });
-  // BUG (low): "Go" heuristic fires on any capitalised "Go," — e.g. sentence-initial prose.
-  it.fails("sentence-initial 'Go,' in prose is not the Go language", () => {
+  // Fixed: "Go" now needs a language neighbour too, not just a trailing ",".
+  it("sentence-initial 'Go,' in prose is not the Go language", () => {
     expect(extractSkills("Let's Go, team! Go and see the office.")).not.toContain("Go");
   });
-  // BUG: lib/skills/extract.ts:23,39,51 — the right boundary (?![A-Za-z0-9+#]) rejects a digit after "C++", so the
-  // very common quant/SWE spelling "C++11/14/17" or "C++20" yields nothing.
-  it.fails("C++ with a standard version suffix (C++17, C++11/14) is extracted", () => {
+  // Fixed: "++" terms allow a trailing digit (version suffix).
+  it("C++ with a standard version suffix (C++17, C++11/14) is extracted", () => {
     expect(extractSkills("Modern C++17 required")).toContain("C++");
     expect(extractSkills("C++11/14 experience")).toContain("C++");
   });
-  // GAP: "node js" (space) — explicitly listed variant, not in vocab; only the bare "js" alias fires.
-  it.fails("'node js' with a space maps to Node.js", () => {
+  // Fixed: "node js" alias.
+  it("'node js' with a space maps to Node.js", () => {
     expect(extractSkills("Backend in node js")).toContain("Node.js");
   });
-  // GAP (low): hyphenated "machine-learning" is not matched (the alias set only has the spaced form).
-  it.fails("hyphenated 'machine-learning' maps to Machine Learning", () => {
+  // Fixed: "machine-learning" alias.
+  it("hyphenated 'machine-learning' maps to Machine Learning", () => {
     expect(extractSkills("built machine-learning models")).toContain("Machine Learning");
+  });
+  it.each([
+    ["Grade C", "C"], ["Plan C, Go team", "C"], ["Plan C, Go team", "Go"], ["vitamin C and zinc", "C"], ["Section C (see below)", "C"],
+    ["Objective-C and Swift", "C"], ["C. Smith, Python dev", "C"], ["Python, c and go", "C"], ["Python, c and go", "Go"],
+    ["Grade: C, B and A", "C"], ["Go and see the office", "Go"], ["Answer: R-squared", "R"], ["Note: R&D, Python", "R"],
+    ["C++ only", "C"], ["C# and Java", "C"],
+  ])("ambiguous-language guard: %s does not yield %s", (text, skill) => {
+    expect(extractSkills(text)).not.toContain(skill);
+  });
+  it("ambiguous languages chain through each other in a list", () => {
+    expect(extractSkills("C, Go, Python")).toEqual(["C", "Go", "Python"]);
+    expect(extractSkills("C/C++ and Python.")).toEqual(["C", "C++", "Python"]);
+    expect(extractSkills("C++20 and C")).toEqual(["C++", "C"]);
+    expect(extractSkills("C and C++17")).toEqual(["C", "C++"]);
   });
 });
 
