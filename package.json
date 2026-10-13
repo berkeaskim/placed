@@ -14,7 +14,8 @@
     "snapshot": "tsx --env-file=.env.local scripts/snapshot.ts",
     "seed": "tsx --env-file=.env.local scripts/seed.ts",
     "validate-slugs": "tsx scripts/validate-slugs.ts",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "build-playbooks": "tsx scripts/build-playbooks.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.133.0",

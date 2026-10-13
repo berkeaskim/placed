@@ -472,7 +472,10 @@ The rest of the app runs **CV → roles**. Target Role mode runs the other way: 
 - **Never fabricate, here too.** Recommending an action never changes the CV. A skill or experience becomes usable for tailoring only when the student marks the action **done**. They must give a short evidence note (optionally with a link). This is stored in `confirmed_facts` (`source = 'user-stated'`), which `verifyTailoring` already accepts as part of its corpus.
 - **Evidence-honest.** Every signal shows its grade (A–D) and its sources with verbatim quotes. Single-source signals are labelled "convention". Projects are our own suggestions (grade D) and say so.
 - **No stale advice.** Actions with `expiresOn < today` (London date) are hidden. Actions past `reviewBy` show a "Dates may have changed — check the official page" chip. Dated year-guidance lines follow the same rule.
-- **Honest samples.** Market demand counts only live, open jobs. With fewer than 5 such jobs, the panel says "Small sample — N live roles" and shows no percentages.
+- **Honest samples.** Market demand counts only live, open jobs, with skills taken from `jdRequirementSkills` (the same source the feed uses).
+  - With fewer than 5 such jobs, the panel says "Small sample — N live roles" and shows no percentages; with 0 jobs it says "No live {role} roles right now".
+  - Copy: "Only N live {role} roles on the job boards we scan right now." We state what we scan and make no claim about why.
+  - Snapshot on 2026-10-13: consulting had 4 jobs and product had 2, so both show the small-sample state. Playbook actions and guidance still show.
 
 ### 15.3 Data
 
@@ -509,6 +512,7 @@ The rest of the app runs **CV → roles**. Target Role mode runs the other way: 
   - **Order:** first by the number of gap skills covered, then effort (weekend < 2-4 weeks < term), then type (project > experience > course).
   - **Limits:** at most 2 actions per gap skill and at most 6 in total.
   - **Fallback:** if no gap skill maps to any action, it returns the top 3 signal-linked actions for the year, labelled "Strengthen your profile".
+  - **Top-up:** if 1–2 actions match, `topUp` adds signal-linked actions up to 3, shown as "Also worth doing". Many market skills (e.g. C++ in data roles) have no playbook action, and the screen should never look empty.
 - **`visibleHints(coverage)`:** for each item with status `supportedByResume`, a template hint: "Your CV mentions {skill} but not in your skills list or bullets — add a bullet about what you did with it." No generated text.
 
 ### 15.5 Gamification (extends §10)
@@ -540,12 +544,13 @@ There is also a new badge, 🧭 **Gap Closer**: the first playbook action marked
 
 ### 15.7 Demo addition (§12)
 
-After step 2, Ayşe switches to the **Target role** tab and picks Consulting:
+After step 2, Ayşe switches to the **Target role** tab and picks **Data & Analytics**, which has the most data (39 live roles in the 2026-10-13 snapshot):
 
-- **Readiness:** "Readiness 42% vs 18 live consulting roles".
-- **"You have it":** Excel.
-- **"Not yet":** a pro-bono consulting project and a case-competition experience, each with a cited signal.
+- **Readiness:** for example, "Readiness vs 39 live Data & Analytics internships". The number is whatever the live data gives; never script a number.
+- **"You have it":** SQL and Statistics. They appear only in her modules, so she gets the "make it visible" hint.
+- **"Not yet":** cited actions for her gaps.
 - **Marking one done:** she adds an evidence note → +40 XP and the Gap Closer badge. The fact is now available to tailoring.
+- **Optional:** switch to Consulting to show the honest small-sample state, while the BCG and Bain dates still show.
 
 ### 15.8 Out of scope
 
