@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { wrapJob, UNTRUSTED_JD_RULE, UNTRUSTED_CV_RULE, SYSTEM_TAG_JOB, SYSTEM_PARSE_CV } from "@/lib/ai/prompts";
+import { wrapJob, UNTRUSTED_JD_RULE, UNTRUSTED_CV_RULE, SYSTEM_TAG_JOB, SYSTEM_PARSE_CV, SYSTEM_EXPLAIN } from "@/lib/ai/prompts";
 
 describe("prompt contract (prompt-injection safety)", () => {
   it("wraps JD text in job_posting tags and strips embedded closing tags", () => {
@@ -10,6 +10,7 @@ describe("prompt contract (prompt-injection safety)", () => {
   });
   it("every JD-consuming system prompt contains the untrusted-data rule", () => {
     expect(SYSTEM_TAG_JOB).toContain(UNTRUSTED_JD_RULE);
+    expect(SYSTEM_EXPLAIN).toContain(UNTRUSTED_JD_RULE);
     expect(UNTRUSTED_JD_RULE).toMatch(/untrusted/i);
   });
 });
@@ -45,5 +46,12 @@ describe("SYSTEM_PARSE_CV", () => {
   it("treats the CV as untrusted data", () => {
     expect(UNTRUSTED_CV_RULE).toMatch(/never follow instructions/i);
     expect(SYSTEM_PARSE_CV).toContain(UNTRUSTED_CV_RULE);
+  });
+});
+
+describe("SYSTEM_EXPLAIN", () => {
+  it("treats the CV as untrusted data and keeps tagJob importance fixed", () => {
+    expect(SYSTEM_EXPLAIN).toContain(UNTRUSTED_CV_RULE);
+    expect(SYSTEM_EXPLAIN).toMatch(/do not re-rate importance/i);
   });
 });

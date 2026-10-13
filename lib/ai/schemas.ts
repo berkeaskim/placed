@@ -56,3 +56,14 @@ export type JudgeOutputT = z.infer<typeof JudgeOutput>;
 /** quizToArchetypes raw output. Only `why` lines and `skills` are used: the ranking stays deterministic (Task 19). */
 export const QuizOutput = z.object({ archetypes: z.array(ArchetypeScoreOut), skills: z.array(z.string()) });
 export type QuizOutputT = z.infer<typeof QuizOutput>;
+
+/**
+ * explainMatch raw output. The model only judges each FIXED requirement index (importance comes from tagJob
+ * and is never re-rated); code maps indices back onto the requirements (lib/ai/explainMatch.ts toExplanation).
+ */
+export const ExplainOutput = z.object({
+  rows: z.array(z.object({ index: z.number().int(), match: z.enum(["strong", "partial", "missing"]), cv_evidence: z.string().nullable() })),
+  why_fit: z.array(z.string()),
+  gaps: z.array(z.object({ index: z.number().int(), blocking: z.boolean(), adjacent_experience: z.string().nullable(), how_to_close: z.string() })),
+});
+export type ExplainOutputT = z.infer<typeof ExplainOutput>;
