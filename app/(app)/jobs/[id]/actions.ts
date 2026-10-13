@@ -1,9 +1,8 @@
 "use server";
 import { requireUser } from "@/lib/supabase/server";
+import { loadJobFit } from "@/lib/db/fit";
 import { getActiveCv, getJob, getProfile, toStudent } from "@/lib/db/queries";
 import { coverageFor } from "@/lib/scoring/coverage";
-import { scoreFit } from "@/lib/scoring/fit";
-import { todayLondon } from "@/lib/scoring/dates";
 import { explainCacheKey, explainMatchWithSource, readCachedExplanation, shouldCacheExplanation, toCacheRecord } from "@/lib/ai/explainMatch";
 import { aiMode } from "@/lib/env";
 import { awardXP } from "@/lib/gamify/award";
@@ -62,11 +61,11 @@ export async function getExplanation(jobId: string): Promise<ExplanationResult> 
 export async function markApplied(jobId: string): Promise<ApplyResult> {
   if (!isUuid(jobId)) return { ok: false, award: null, error: APPLY_FAILED };
   const { supabase, user } = await requireUser();
-  const [job, profile, cv, existing] = await Promise.all([
-    getJob(supabase, jobId), getProfile(supabase, user.id), getActiveCv(supabase, user.id),
+  const [loaded, existing] = await Promise.all([
+    loadJobFit(supabase, user.id, jobId),
     supabase.from("applications").select("status").eq("user_id", user.id).eq("job_id", jobId).maybeSingle(),
   ]);
-  if (!job) return { ok: false, award: null, error: "This role is no longer available." };
+  if (!loaded) return { ok: false, award: null, error: "This role is no longer available." };
 
   const status = existing.data?.status as string | undefined;
   // never move a later stage (interview / offer / rejected) back to "applied"
@@ -81,8 +80,7 @@ export async function markApplied(jobId: string): Promise<ApplyResult> {
     }
   }
 
-  const student = toStudent(profile);
-  const fit = scoreFit(student, job, coverageFor(job, cv?.parsed ?? null, student.skills), todayLondon());
+  const { job, fit } = loaded;
   try {
     // `applied` is awarded once per job (unique index), so a second "Yes" earns nothing.
     const award = await awardXP(supabase, user.id, { type: "applied", fitLabel: fit.label, jobTitle: job.title, deadline: job.deadline }, jobId);
