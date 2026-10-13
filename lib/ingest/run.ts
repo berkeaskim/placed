@@ -3,6 +3,7 @@ import type { CompanySeed } from "./providers";
 import { htmlToLines } from "@/lib/text/jd";
 import { passesTitleFilter, detectCohortClash, passesLocationFilter } from "./filter";
 import { normalizeUrl, jobFingerprint, contentHash } from "./fingerprint";
+import { heuristicTagJob } from "@/lib/ai/heuristics";
 import type { TaggedJob } from "@/lib/ai/tagJob";
 
 export type CompanyRow = { id: number; slug: string; name: string; ats: "greenhouse" | "lever" | "ashby"; api_host: string | null; enabled: boolean };
@@ -12,7 +13,7 @@ export type JobRow = {
   deadline: string | null; posted_at: string | null; archetype: string; field_tags: string[];
   year_eligibility: string[]; sponsors_visa: string; employment_type: string; first_year_friendly: boolean; cohort_clash: boolean;
   requirements: Requirement[]; skills: string[]; summary: string; raw_html: string; text_lines: string[];
-  fingerprint: string; content_hash: string; tag_status: "ok" | "failed"; is_live: boolean; last_seen: string;
+  fingerprint: string; content_hash: string; tag_status: "ok" | "failed" | "pending"; is_live: boolean; last_seen: string;
 };
 
 export interface IngestStore {
@@ -27,7 +28,11 @@ export type IngestDeps = {
   tagJob: (i: { title: string; textLines: string[] }) => Promise<TaggedJob>;
   store: IngestStore;
   now?: () => Date;
+  /** Max tagJob calls per company per run; further jobs are stored heuristically as tag_status "pending". */
+  maxTags?: number;
 };
+
+export const MAX_TAGS_PER_COMPANY = 25;
 
 export async function ingestCompany(c: CompanyRow, deps: IngestDeps) {
   const now = (deps.now ?? (() => new Date()))().toISOString();
@@ -36,7 +41,8 @@ export async function ingestCompany(c: CompanyRow, deps: IngestDeps) {
   const keptIds: string[] = [];
   const unchanged: string[] = [];
   const rows: JobRow[] = [];
-  let tagged = 0, failed = 0;
+  let tagged = 0, failed = 0, pending = 0;
+  const maxTags = deps.maxTags ?? MAX_TAGS_PER_COMPANY;
 
   for (const j of raw) {
     if (!passesTitleFilter(j.title)) continue;
@@ -47,10 +53,22 @@ export async function ingestCompany(c: CompanyRow, deps: IngestDeps) {
     keptIds.push(j.extId);
     const hash = contentHash(j.title + "\n" + text);
     const prev = existing.get(j.extId);
-    if (prev && prev.content_hash === hash && prev.tag_status === "ok") { unchanged.push(j.extId); continue; }
-    const t = await deps.tagJob({ title: j.title, textLines: lines });
-    tagged++;
-    if (t.status === "failed") failed++;
+    if (prev && prev.content_hash === hash && prev.tag_status === "ok") {
+      unchanged.push(j.extId); // only "ok" is skipped; "failed" and "pending" are retried
+      continue;
+    }
+    let t: TaggedJob;
+    let status: JobRow["tag_status"];
+    if (tagged >= maxTags) {
+      t = heuristicTagJob({ title: j.title, textLines: lines });
+      status = "pending";
+      pending++;
+    } else {
+      t = await deps.tagJob({ title: j.title, textLines: lines });
+      status = t.status;
+      tagged++;
+      if (t.status === "failed") failed++;
+    }
     rows.push({
       company_id: c.id, ext_id: j.extId, title: j.title, url: normalizeUrl(j.url), location: j.location, remote: j.remote,
       deadline: t.deadline, posted_at: j.postedAt, archetype: t.archetype, field_tags: t.fieldTags,
@@ -58,11 +76,11 @@ export async function ingestCompany(c: CompanyRow, deps: IngestDeps) {
       first_year_friendly: t.firstYearFriendly, cohort_clash: cohortClash, requirements: t.requirements,
       skills: [...new Set(t.requirements.map((r) => r.skill).filter((s): s is string => Boolean(s)))],
       summary: t.summary, raw_html: j.html, text_lines: lines, fingerprint: jobFingerprint(c.slug, j.title, j.location),
-      content_hash: hash, tag_status: t.status, is_live: true, last_seen: now,
+      content_hash: hash, tag_status: status, is_live: true, last_seen: now,
     });
   }
   if (rows.length) await deps.store.upsert(rows);
   if (unchanged.length) await deps.store.touch(c.id, unchanged);
   const dead = await deps.store.markDead(c.id, keptIds);
-  return { fetched: raw.length, kept: keptIds.length, tagged, failed, dead };
+  return { fetched: raw.length, kept: keptIds.length, tagged, failed, pending, dead };
 }

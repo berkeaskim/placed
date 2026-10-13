@@ -25,3 +25,14 @@ describe("parseBatch", () => {
     expect(parseBatch("1.5")).toBe("invalid");
   });
 });
+
+import { shouldStartNext } from "@/lib/ingest/batch";
+describe("shouldStartNext", () => {
+  it("allows starts before the budget and stops at/after it", () => {
+    expect(shouldStartNext(0)).toBe(true);
+    expect(shouldStartNext(199_999)).toBe(true);
+    expect(shouldStartNext(200_000)).toBe(false);
+    expect(shouldStartNext(50, 100)).toBe(true);
+    expect(shouldStartNext(100, 100)).toBe(false);
+  });
+});

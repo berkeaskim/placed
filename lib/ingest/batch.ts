@@ -10,3 +10,10 @@ export function parseBatch(raw: string | null): number | null | "invalid" {
   if (raw === null) return null;
   return /^\d+$/.test(raw) ? Number(raw) : "invalid";
 }
+
+/** Stop starting new companies after this much elapsed time (maxDuration is 300s). */
+export const START_BUDGET_MS = 200_000;
+
+export function shouldStartNext(elapsedMs: number, budgetMs = START_BUDGET_MS): boolean {
+  return elapsedMs < budgetMs;
+}
