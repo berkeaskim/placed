@@ -9,7 +9,8 @@ import { contentHash } from "@/lib/ingest/fingerprint";
 import { scanCvSafety, stripFlaggedSpans, type SafetyReport } from "@/lib/cv/safety";
 import { SAFETY_WARNING_COPY } from "@/lib/cv/safety-copy";
 import { dropFlaggedContent } from "@/lib/cv/strip-parsed";
-import type { ParsedCV } from "@/lib/types";
+import { ARCHETYPES, YEARS, type Archetype, type ParsedCV, type Year } from "@/lib/types";
+import { scoreCv } from "@/lib/cv-score/run";
 import { canonicalize, extractSkills } from "@/lib/skills/extract";
 
 const MAX_BYTES = 5 * 1024 * 1024;
@@ -82,13 +83,26 @@ export async function uploadCv(formData: FormData): Promise<UploadCvResult> {
   const { data: prof, error: profErr } = await supabase.from("profiles").select("year, target_archetype").eq("user_id", user.id).single();
   // An unreadable (image-only) or empty parse must not wipe archetypes/skills from e.g. the quiz.
   const hasSignal = !imageOnly && (skills.length > 0 || scored.length > 0);
+  const target = prof?.target_archetype ?? (hasSignal ? scored[0]?.key : null) ?? null;
+  const year = prof?.year ?? parsed.yearGuess ?? null;
   // If the profile read failed we can't tell what the user already chose: skip rather than overwrite year/target.
   if (!profErr) {
     await supabase.from("profiles").update({
       ...(hasSignal ? { archetypes: scored, skills } : {}),
-      target_archetype: prof?.target_archetype ?? (hasSignal ? scored[0]?.key : null) ?? null,
-      year: prof?.year ?? parsed.yearGuess ?? null,
+      target_archetype: target,
+      year,
     }).eq("user_id", user.id);
+  }
+
+  // CV Score for the target sector. Never fails the upload: the profile page retries (Task 19).
+  // No XP for the score itself (amendment item 5).
+  if ((ARCHETYPES as readonly string[]).includes(target ?? "")) {
+    try {
+      const y: Year = (YEARS as readonly string[]).includes(year ?? "") ? (year as Year) : "2nd";
+      await scoreCv(supabase, { userId: user.id, cvId, sector: target as Archetype, year: y });
+    } catch (e) {
+      console.error("scoreCv failed after CV upload; retried on the profile page", e);
+    }
   }
 
   // The CV is saved at this point: an XP hiccup must not turn it into a failed upload.

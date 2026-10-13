@@ -1,8 +1,8 @@
 import { GoogleGenAI } from "@google/genai";
 import { z } from "zod";
 import { AiError, AI_BAD_FORMAT, AI_REFUSAL, AI_UNAVAILABLE, type StructuredRequest } from "./provider";
+import { GEMINI_MODELS as MODELS } from "./models";
 
-const MODELS = { fast: "gemini-3.8-flash", smart: "gemini-3.1-pro-preview" } as const;
 type ModelsClient = Pick<GoogleGenAI, "models">;
 let ai: GoogleGenAI | null = null;
 

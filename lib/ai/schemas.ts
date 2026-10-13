@@ -36,3 +36,19 @@ export const ParsedCvOutput = z.object({
   interests: z.string().nullable(), sectionOrder: z.array(z.string()),
   yearGuess: z.enum(YEARS).nullable(), archetypes: z.array(ArchetypeScoreOut),
 });
+
+/**
+ * judgeCvRules raw output. `status` is a free string on purpose: anything outside
+ * pass | fail | not_applicable (| partial for allowPartial rules) is mapped to not_applicable in code,
+ * so one odd verdict never fails the whole call.
+ */
+export const JudgeOutput = z.object({
+  verdicts: z.array(z.object({
+    rule_id: z.string(),
+    status: z.string(),
+    evidence_line: z.string().nullable(),
+    fix: z.string().nullable(),
+  })),
+  spelling_errors: z.array(z.string()),
+});
+export type JudgeOutputT = z.infer<typeof JudgeOutput>;

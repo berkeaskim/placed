@@ -1,8 +1,8 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { AiError, AI_BAD_FORMAT, AI_REFUSAL, AI_UNAVAILABLE, type StructuredRequest } from "./provider";
+import { ANTHROPIC_MODELS as MODELS } from "./models";
 
-const MODELS = { fast: "claude-haiku-4-5", smart: "claude-sonnet-5-5" } as const;
 type MessagesClient = Pick<Anthropic, "messages">;
 let client: Anthropic | null = null;
 
