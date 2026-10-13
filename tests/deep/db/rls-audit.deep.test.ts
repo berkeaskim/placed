@@ -73,10 +73,10 @@ describe("migration parser sanity", () => {
   it("finds the expected tables, policies and functions", () => {
     expect(files.length).toBeGreaterThanOrEqual(2);
     expect(tables.map((t) => t.name).sort()).toEqual(
-      ["applications", "badges", "companies", "confirmed_facts", "cv_scores", "cvs", "ingest_state", "jobs", "matches", "profiles", "xp_events"]);
-    expect(userOwned.sort()).toEqual(["applications", "badges", "confirmed_facts", "cv_scores", "cvs", "matches", "profiles", "xp_events"]);
-    // 8 user-owned tables × 4 ops + 2 public reads, minus profiles.own_insert and xp_events/badges writes (0003)
-    expect(policies.length).toBe(8 * 4 + 2 - 7);
+      ["applications", "badges", "companies", "confirmed_facts", "cv_scores", "cvs", "ingest_state", "jobs", "matches", "playbook_progress", "profiles", "xp_events"]);
+    expect(userOwned.sort()).toEqual(["applications", "badges", "confirmed_facts", "cv_scores", "cvs", "matches", "playbook_progress", "profiles", "xp_events"]);
+    // 9 user-owned tables × 4 ops + 2 public reads, minus profiles.own_insert and xp_events/badges writes (0006)
+    expect(policies.length).toBe(9 * 4 + 2 - 7);
     expect(functions.map((f) => f.name).sort()).toEqual(["public.activate_cv", "public.award_xp", "public.handle_new_user"]);
   });
 });
