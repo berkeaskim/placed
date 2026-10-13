@@ -429,18 +429,33 @@ const AFFIL_PARTICIPLE = /^\s+(sponsored|trained|backed|funded|led|mentored|cert
 const ROLE_NOUN = "interns?|internships?|placements?|schemes?|trainees?|traineeships?|programmes?|programs?|alumn(?:us|a|i|ae)|analysts?|associates?|" +
   "graduates?|apprentices?|apprenticeships?|insight|spring\\s+weeks?|summer\\s+analysts?|work\\s+experience";
 /** A role noun directly after, or one word after, a name ("Mercer placement", "Unilever summer intern"). */
-const ROLE_AFTER = new RegExp(`^(?:\\s+[A-Za-z]+)?\\s+(?:${ROLE_NOUN})\\b`, "i");
+/**
+ * Fix round 3 (ruling C): what may sit between a name and its role noun — a possessive ('s / ’s), a comma, colon, dash
+ * or plain space, a year or "(year)", and one more word ("Prudential, summer intern", "Prudential (2025) internship").
+ */
+const ROLE_GAP = "(?:['’]s)?(?:\\s*[,:–—]\\s*|\\s+-\\s+|\\s+)(?:\\(?(?:19|20)\\d{2}\\)?\\s+)?(?:[A-Za-z]+\\s+)?";
+const ROLE_AFTER = new RegExp(`^${ROLE_GAP}(?:${ROLE_NOUN}|employees?|staff|sponsorships?)\\b`, "i");
+/** Fix round 3 (ruling B): role nouns a CV tool may modify directly ("Python analyst", "Bloomberg analyst consensus"). */
+const TOOL_MODIFIER = /^\s+(?:analysts?|associates?|insight|programmes?|programs?|graduates?)\b/i;
 /** A 1–3-word capitalised run ("Slaughter and May", "Silverwater Partners") opening a sentence, followed by a role noun. */
-const ROLE_RUN = new RegExp(`(?:^|[.!?:;•▪|–—(\\n])\\s*([A-Z][A-Za-z0-9&'.]*(?:\\s+(?:(?:and|&)\\s+)?[A-Z][A-Za-z0-9&'.]*){0,2})(?=(?:\\s+[A-Za-z]+)?\\s+(?:${ROLE_NOUN})\\b)`, "g");
+const ROLE_RUN = new RegExp(`(?:^|[.!?:;•▪|–—(\\n])\\s*(?:-\\s+)?([A-Z][A-Za-z0-9&.]*(?:\\s+(?:(?:and|&)\\s+)?[A-Z][A-Za-z0-9&.]*){0,2})(?=${ROLE_GAP}(?:${ROLE_NOUN})\\b)`, "g");
+/** Fix round 3 (ruling A): sector/programme words that open role phrases ("Consulting internship", "Insurance graduate scheme"). */
+const SECTOR_NOUNS = new Set(("consulting banking investment operations pricing economic industrial professional insurance econometrics budding " +
+  "prospective remote hybrid virtual mentoring networking speaker careers onboarding policy tax treasury sandwich exchange insight trainee future " +
+  "aspiring data finance marketing research technology product strategy").split(" "));
 /** Ordinary words a role run may contain ("Summer intern", "Graduate scheme", "Economics graduate", "Charity volunteer"). */
 const ROLE_ORDINARY = new Set(("summer spring autumn winter vacation insight work graduate graduates events event charity intern internship placement " +
   "scheme trainee programme program analyst associate apprentice apprenticeship alumnus alumna").split(" "));
 /** Fix round 2: role titles that are ordinary words mid-sentence ("aspiring Economist", "become an Analyst"). */
 const ROLE_TITLES = new Set("economist economists analyst analysts associate associates researcher researchers officer officers assistant assistants".split(" "));
 /** Fix round 2 (ruling 2): contexts where an employer name claims an affiliation, not tool use ("former X intern", "at X", "X-sponsored"). */
-function employerClaim(text: string, start: number, end: number): boolean {
+function employerClaim(text: string, start: number, end: number, cvTool: boolean): boolean {
   const before = text.slice(0, start), after = text.slice(end);
-  return /(?:\b(?:at|for|former|formerly|joined|joining)\s+|\bex\s*-\s*|\bex\s+)$/i.test(before) || ROLE_AFTER.test(after) ||
+  if (/(?:\binterned\s+(?:at|with|for)\s+|\b(?:at|former|formerly|joined|joining|secured|won)\s+|\bex\s*-\s*|\bex\s+)$/i.test(before)) return true;
+  // fix round 3 (ruling B): "for/with <tool>" and "<tool> analyst" are tool use when the CV lists the tool
+  if (/\bfor\s+$/i.test(before) && !cvTool) return true;
+  if (cvTool && TOOL_MODIFIER.test(after)) return false;
+  return ROLE_AFTER.test(after) ||
     /^(?:-| - |\s+)(?:sponsored|funded|backed|mentored|commissioned|trained|hosted|employed|certified|accredited|endorsed|led|run|owned|hired|placed|partnered|approved)\b/i.test(after);
 }
 /** Task 22b: hyphen-like characters between letters (U+2010–U+2014, U+2212) read as "-" before tokenising. Same length, so indices hold. */
@@ -593,6 +608,10 @@ export function verifyTailoring(i: VerifyInput): VerifyReport {
   const nameCorpus = [i.source.summary, i.source.interests, ...i.source.education.flatMap((e) => [e.institution, e.degree, e.grade, ...e.details.map((d) => d.text)]),
     ...sections<ParsedCV, CvEntry>(i.source).flatMap((e) => [e.org, e.title, e.location, ...e.bullets.map((b) => b.text)]), ...i.confirmedFacts]
     .filter((t): t is string => !!t).join("\n");
+  /** The CV lists this company as a tool (skills list or vocab skill on the CV). */
+  const skillItems = new Set(i.source.skills.flatMap((g) => g.items.map((x) => x.toLowerCase())));
+  const cvTool = (k: KnownEmployer) => [k.name, ...(k.aliases ?? [])].some((n) => skillItems.has(n.toLowerCase()) ||
+    (extractSkills(n).length > 0 && extractSkills(n).every((x) => srcSkills.has(x))));
   const nameInCv = (tok: string) => new RegExp(`(?<![A-Za-z0-9])${escapeRegex(tok)}(?![A-Za-z0-9])`).test(nameCorpus);
   const inCvVocab = (lower: string) => cvHeadExact.has(lower) || cvHeadStems.has(headStem(lower));
   /** List vocabulary, -ly adverbs and domain nouns (rulings (a), (b), (d)), without COMMON or the CV route. */
@@ -770,7 +789,7 @@ export function verifyTailoring(i: VerifyInput): VerifyReport {
       const isTool = extractSkills(emp.name).length > 0;
       for (const re of res) for (const m of u.text.matchAll(re)) {
         // fix round 2: an employer claim ("former Snowflake intern", "at Figma", "Notion-sponsored") needs a non-skills mention
-        const claim = employerClaim(dText, m.index!, m.index! + m[0].length);
+        const claim = employerClaim(dText, m.index!, m.index! + m[0].length, cvTool(emp));
         if (isTool && !claim) continue; // skillInjection owns tool usage of companies that are also tools
         const known = employerInCv(claim ? nameCorpus : corpus, emp)
           || (!claim && VENDOR_PREFIX.has(m[0].toLowerCase()) && vendorOk(u.text, m.index! + m[0].length));
@@ -808,7 +827,9 @@ export function verifyTailoring(i: VerifyInput): VerifyReport {
       // "UCL, Class of 2027": a cohort, not a name
       if (lower === "class" && /^\s+of\s+\d{4}\b/.test(pText.slice(index + len))) continue;
       if (VENDOR_PREFIX.has(lower) && vendorOk(pText, index + len)) continue;
-      const ordinary = COMMON.has(lower) || ADJECTIVES.has(lower) || IRREGULAR_PAST.has(lower) || WORDISH.test(lower) || authorshipLevel(lower) !== null || IRREGULAR.has(lower);
+      const ordinary = COMMON.has(lower) || ADJECTIVES.has(lower) || IRREGULAR_PAST.has(lower) || WORDISH.test(lower) || authorshipLevel(lower) !== null || IRREGULAR.has(lower) ||
+        // fix round 3: domain, sector and role words open sentences too ("Policy analyst …", "Trainee analyst …", "Insight programme …")
+        DOMAIN_HEADS.has(lower) || SECTOR_NOUNS.has(lower) || ROLE_ORDINARY.has(lower);
       // Task 22b: "Unilever sponsored …" at sentence start is the spaced form of "Unilever-sponsored"; verbs ("Led trained …") stay ordinary
       const participle = !compound && isCap(tok) && sentenceStart ? pText.slice(index + len).match(AFFIL_PARTICIPLE)?.[1]?.toLowerCase() : undefined;
       const spacedAffil = participle !== undefined &&
@@ -816,7 +837,9 @@ export function verifyTailoring(i: VerifyInput): VerifyReport {
       // fix round 2: a role-run word is a name regardless of WORDISH shape unless it is ordinary or written as a name in the CV (not skills)
       const roleClaim = !compound && isCap(tok) && roleRuns.some(([a0, b0]) => index >= a0 && index < b0) &&
         !((COMMON.has(lower) && !COMMON_BRANDS.has(lower)) || ADJECTIVES.has(lower) || DOMAIN_HEADS.has(lower) || HYPHEN_HEADS.has(lower) ||
-          ROLE_ORDINARY.has(lower) || nameInCv(tok));
+          ROLE_ORDINARY.has(lower) || nameInCv(tok) ||
+          // fix round 3 (ruling A): verbs/gerunds, -ly adverbs, sector words and CV vocabulary; only loose -al/-er/-ian shapes and unknowns stay names
+          STRONG_WORDISH.test(lower) || LY_ADVERB.test(lower) || SECTOR_NOUNS.has(lower) || inCvVocab(lower));
       if (roleClaim && !flagged.has(lower)) {
         flagged.add(lower);
         issues.push({ type: "unsupportedFacts", severity: "block", ...where(u), claim: tok, reason: `"${tok}" isn't in your original CV — we don't add employers, tools or credentials` });

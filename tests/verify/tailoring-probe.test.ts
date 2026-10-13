@@ -320,3 +320,69 @@ describe("fix round 2 cheap: generic org heads and participles", () => {
     "Mercer placed Economics student at UCL", "Experian partnered Economics student at UCL", "Unilever approved Economics student at UCL"])(
     "'%s' blocks", (text) => { expect(runCv(same, "summary", text).verdict).toBe("block"); });
 });
+
+// ---------- Task 22b fix round 3 ----------
+
+describe("fix round 3 ruling A: ordinary words before a role noun are not names", () => {
+  it.each([
+    "Seeking an analyst role; Economics student at UCL",
+    "Pursuing an internship in markets; Economics student at UCL",
+    "Applying for spring weeks and summer internships; Economics student at UCL",
+    "Preparing for summer analyst applications; Economics student at UCL",
+    "Developing analyst skills with Python and Excel; Economics student at UCL",
+    "Organising an internship programme talk for the Economics Society",
+    "Consulting internship applicant; Economics student at UCL",
+    "Investment banking summer analyst applicant; Economics student at UCL",
+    "Operations analyst applicant; Economics student at UCL",
+    "Insurance graduate scheme applicant; Economics student at UCL",
+    "Econometrics analyst in training; Economics student at UCL",
+    "Prospective summer analyst; Economics student at UCL",
+    "Mentoring programme for 60 society members",
+    "Networking programme with alumni; Economics student at UCL",
+    "Careers programme support for Economics Society members",
+    "Policy analyst internship applicant; Economics student at UCL",
+    "Trainee analyst applicant with Excel and pandas",
+    "Insight programme attendee; Economics student at UCL",
+    "Economics student at UCL. Python analyst skills from a 2025 pandas footfall project",
+  ])("summary '%s' passes", (text) => {
+    const r = runCv(same, "summary", text);
+    expect(r.issues.filter((i) => i.severity === "block")).toEqual([]);
+  });
+});
+
+describe("fix round 3 ruling B: tool use is not an employer claim", () => {
+  const toolCv = (c: ParsedCV) => { c.skills = [{ group: "Skills", items: ["Excel", "Python", "pandas", "SQL", "Snowflake", "Figma", "Bloomberg", "Databricks"] }]; };
+  it.each([
+    "Wrote SQL queries for Snowflake data warehouse; Economics student at UCL",
+    "Economics student at UCL who designed event posters for Figma prototypes",
+    "Economics student at UCL who compared forecasts with Bloomberg analyst consensus",
+    "Economics student at UCL who built pipelines for Databricks notebooks",
+    "Bloomberg analyst consensus tracker built in Excel; Economics student at UCL",
+  ])("CV skills include the tool: '%s' passes", (text) => {
+    expect(runCv(toolCv, "summary", text).issues.filter((i) => i.severity === "block")).toEqual([]);
+  });
+  const claims = (x: string) => [`Economics student at UCL, former ${x} intern`, `${x}-sponsored Economics student at UCL`,
+    `Economics student at UCL who interned at ${x}`, `Economics student at UCL who interned with ${x}`, `Economics student at UCL; ${x}'s summer internship`,
+    `Economics student at UCL; ${x}’s summer internship`, `Economics student at UCL; ${x} 2025 internship`, `Economics student at UCL and ${x} employee`,
+    `Secured ${x} sponsorship as an Economics student at UCL`];
+  it.each(["Snowflake", "Figma", "Bloomberg", "Databricks"].flatMap((x) => claims(x).map((t) => [x, t])))("skills-only %s: '%s' blocks", (_x, text) => {
+    expect(runCv(toolCv, "summary", text).verdict).toBe("block");
+  });
+});
+
+describe("fix round 3 ruling C: punctuation, years and possessives between name and role", () => {
+  it.each([
+    ["summary", "Prudential, summer intern 2025; Economics student at UCL"],
+    ["summary", "Prudential: summer intern 2025; Economics student at UCL"],
+    ["summary", "Prudential — summer intern; Economics student at UCL"],
+    ["summary", "Prudential 2025 internship; Economics student at UCL"],
+    ["summary", "Prudential (2025) internship; Economics student at UCL"],
+    ["summary", "Prudential’s graduate scheme; Economics student at UCL"],
+    ["summary", "Prudential's graduate scheme; Economics student at UCL"],
+    ["summary", "Admiral’s internship 2025; Economics student at UCL"],
+    ["summary", "- Prudential summer intern; Economics student at UCL"],
+    ["summary", "Economics student at UCL. Admiral – internship 2025"],
+  ] as [Where, string][])("%s '%s' blocks", (where, text) => {
+    expect(runCv(same, where, text).verdict).toBe("block");
+  });
+});
