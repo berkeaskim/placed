@@ -179,7 +179,7 @@ export const GENERAL_RULES: CvRule[] = [
     citations: [TJ_6STEP, BRIGHT_INTERNSHIP_CV],
   },
   {
-    id: "G-22", sectors: "all", dimension: "impact", check: "code", checker: "quantified_bullets", params: { threshold: 0.4 }, severity: "major", evidence: "C",
+    id: "G-22", sectors: "all", dimension: "impact", check: "code", checker: "quantified_bullets", params: { threshold: 0.4 }, severity: "major", evidence: "D",
     statement: "Quantify where it's true: aim for at least 4 in 10 experience and project bullets to include a number (%, £, counts, time saved, users, ranking, team size). Never invent figures.",
     citations: [TJ_6STEP, T_S3, PROSPECTS_CV],
   },
@@ -221,7 +221,7 @@ export const GENERAL_RULES: CvRule[] = [
   {
     id: "G-28", sectors: "all", dimension: "clarity", check: "llm", severity: "major", evidence: "D",
     statement: "Use a standard font (Arial, Calibri, Garamond, Georgia and similar) at 10–12pt for body text, with margins around 1.5–2.5 cm and enough white space.",
-    llmGuidance: "Is the body text in a standard font at 10pt or larger, with no novelty fonts? (Not applicable if font metadata is unavailable.)",
+    llmGuidance: "Is the body text in a standard font at 9.5pt or larger, with no novelty fonts? (Not applicable if font metadata is unavailable.)",
     passExample: "Body text in Calibri 11pt",
     failExample: "Body text in Comic Sans 9pt",
     citations: [PROSPECTS_CV, NCS_SECTIONS],

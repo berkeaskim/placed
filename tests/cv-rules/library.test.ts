@@ -55,6 +55,19 @@ describe("CV rule library", () => {
     expect(MYTHS).toHaveLength(13);
     expect(MYTHS.map((m) => m.id)).toEqual(Array.from({ length: 13 }, (_, i) => `M${i + 1}`));
   });
+  it("pins each sector row: doc row shifted by the amended base change", () => {
+    const row = (ats: number, impact: number, clarity: number, relevance: number, uk: number) => ({ ats, impact, clarity, relevance, uk });
+    expect(DIMENSION_WEIGHTS).toEqual({
+      software_eng: row(15, 20, 20, 35, 10),
+      data_analytics: row(15, 20, 20, 35, 10),
+      quant_trading: row(5, 15, 25, 45, 10),
+      consulting: row(10, 30, 25, 20, 15),
+      product: row(10, 25, 30, 25, 10),
+      finance_banking: row(10, 20, 25, 25, 20),
+      marketing_growth: row(10, 25, 30, 25, 10),
+      research: row(10, 15, 25, 40, 10),
+    });
+  });
   it("uses the amended base weights", () => {
     expect(BASE_WEIGHTS).toEqual({ ats: 15, impact: 25, clarity: 25, relevance: 25, uk: 10 });
   });
@@ -80,7 +93,7 @@ describe("CV rule library", () => {
     }
   });
   it("applies the amended evidence grades", () => {
-    expect(RULES_BY_ID.get("G-22")?.evidence).toBe("C");
+    expect(RULES_BY_ID.get("G-22")?.evidence).toBe("D");
     expect(RULES_BY_ID.get("GEN-04")?.evidence).toBe("C");
     expect(RULES_BY_ID.get("SWE-07")?.evidence).toBe("B");
     expect(RULES_BY_ID.get("SWE-12")?.evidence).toBe("B");

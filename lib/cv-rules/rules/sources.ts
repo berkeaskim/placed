@@ -2,9 +2,10 @@ import type { Citation } from "../types";
 
 /**
  * Citation records resolved from the research docs' source lists.
- * Only sources with a URL are listed. Sources the docs flag as unverified
- * (snippet-only / login-gated pages, test-domain pages, unconfirmed figures)
- * carry " (unverified)" in the title, and the rules citing them are downgraded one evidence grade.
+ * Only sources with a URL are listed. The named unverified sources — snippet-only iCIMS, Lever and
+ * Bright Network pages, the PwC 2:1 date and the "216 UCAS points" figure (the LSE test-domain page has
+ * no URL and is omitted) — carry " (unverified)" in the title, and the rules citing them are downgraded
+ * one evidence grade. Other sources keep the grade the research doc already gave them.
  */
 
 // ---------- docs/research/cv-rules-general.md ----------
@@ -94,7 +95,7 @@ export const F_S16: Citation = { title: "How to prepare for an interview at IMC"
 export const F_S17: Citation = { title: "Quantitative Trading Internship (2027 Start), Amsterdam", publisher: "Optiver", year: "2026", url: "https://www.optiver.com/join-us/jobs/trading/amsterdam/quantitative-trading-internship-2027-start/" };
 export const F_S19: Citation = { title: "Our Campus Quantitative Research Interview Process", publisher: "Citadel Securities", year: "2024", url: "https://www.citadelsecurities.com/careers/career-perspectives/our-quantitative-research-interview-process/" };
 export const F_S20: Citation = { title: "Quantitative Trading Intern Summer 2027 (New York)", publisher: "Flow Traders", year: "2026", url: "https://www.flowtraders.com/careers/job-description/8047166" };
-/** [S21] McKinsey students pages (doc grade B: text from search-indexed excerpts). */
+/** [S21] McKinsey students pages. Doc source grade B (already reflects search-indexed excerpts); rules citing it keep the doc grade. */
 export const F_S21: Citation = { title: "Students: what we look for", publisher: "McKinsey & Company", year: "live 2026", url: "https://www.mckinsey.com/careers/students" };
 export const F_S21B: Citation = { title: "Interviewing at McKinsey", publisher: "McKinsey & Company", year: "live 2026", url: "https://www.mckinsey.com/careers/interviewing" };
 export const F_S22: Citation = { title: "Applying to McKinsey & Company: CVs, cover letters and interviews", publisher: "TARGETjobs", year: "2025", url: "https://targetjobs.co.uk/careers-advice/business-consulting-and-management/applying-mckinsey-company-cvs-cover-letters-and-interviews" };
@@ -110,7 +111,7 @@ export const F_S31: Citation = { title: "Early Careers Application", publisher: 
 export const F_S32: Citation = { title: "Early careers recruitment in 2025: integrity, inclusion, entry standards", publisher: "Prospects Luminate / Institute of Student Employers", year: "2025", url: "https://luminate.prospects.ac.uk/early-careers-recruitment-in-2025-integrity-inclusion-entry-standards" };
 export const F_S35: Citation = { title: "EMEA Early Insight FAQ (legacy)", publisher: "Morgan Stanley", year: "2016", url: "https://www.morganstanley.com/people-opportunities/emea-early-insight-faq" };
 export const F_S36: Citation = { title: "The perfect graduate CV for investment banking", publisher: "eFinancialCareers", year: "2015", url: "https://www.efinancialcareers.com/news/graduate-guide/the-perfect-graduate-cv-for-investment-banking" };
-/** [S37] Doc grade C: search-indexed excerpt only. */
+/** [S37] Doc source grade C (already reflects search-excerpt-only access); FIN-13 keeps its doc grade B. */
 export const F_S37: Citation = { title: "BlackRock EMEA early careers", publisher: "BlackRock", year: "live 2026", url: "https://careers.blackrock.com/early-careers/emea/" };
 
 // ---------- docs/research/market-2026 (02 recruiter evidence, 03 ATS/AI screening) ----------

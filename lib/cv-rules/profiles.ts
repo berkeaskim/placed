@@ -5,19 +5,18 @@ import type { Dimension } from "./types";
 export const BASE_WEIGHTS: Record<Dimension, number> = { ats: 15, impact: 25, clarity: 25, relevance: 25, uk: 10 };
 
 /**
- * Per-sector weights: the consolidated rows of the sector research docs
- * (cv-rules-tech-product.md §8; cv-rules-finance-consulting.md weighting table).
- * The docs grade these weights D (synthesis); tune against outcome data.
- * The 2026-10-13 amendments change only BASE_WEIGHTS ("sector profiles still shift these as before"),
- * so these absolute rows are kept as they were.
+ * Per-sector weights: each research doc's consolidated sector row (cv-rules-tech-product.md §8;
+ * cv-rules-finance-consulting.md weighting table) shifted by the approved base change (cv-amendments
+ * 2026-10-13: ats −5, impact −5, clarity +5, relevance +5, uk 0 — "sector profiles still shift these as before").
+ * The docs grade the sector offsets D (synthesis); tune against outcome data.
  */
 export const DIMENSION_WEIGHTS: Record<Archetype, Record<Dimension, number>> = {
-  software_eng: { ats: 20, impact: 25, clarity: 15, relevance: 30, uk: 10 },
-  data_analytics: { ats: 20, impact: 25, clarity: 15, relevance: 30, uk: 10 },
-  quant_trading: { ats: 10, impact: 20, clarity: 20, relevance: 40, uk: 10 },
-  consulting: { ats: 15, impact: 35, clarity: 20, relevance: 15, uk: 15 },
-  product: { ats: 15, impact: 30, clarity: 25, relevance: 20, uk: 10 },
-  finance_banking: { ats: 15, impact: 25, clarity: 20, relevance: 20, uk: 20 },
-  marketing_growth: { ats: 15, impact: 30, clarity: 25, relevance: 20, uk: 10 },
-  research: { ats: 15, impact: 20, clarity: 20, relevance: 35, uk: 10 },
+  software_eng: { ats: 15, impact: 20, clarity: 20, relevance: 35, uk: 10 },
+  data_analytics: { ats: 15, impact: 20, clarity: 20, relevance: 35, uk: 10 },
+  quant_trading: { ats: 5, impact: 15, clarity: 25, relevance: 45, uk: 10 },
+  consulting: { ats: 10, impact: 30, clarity: 25, relevance: 20, uk: 15 },
+  product: { ats: 10, impact: 25, clarity: 30, relevance: 25, uk: 10 },
+  finance_banking: { ats: 10, impact: 20, clarity: 25, relevance: 25, uk: 20 },
+  marketing_growth: { ats: 10, impact: 25, clarity: 30, relevance: 25, uk: 10 },
+  research: { ats: 10, impact: 15, clarity: 25, relevance: 40, uk: 10 },
 };
