@@ -56,6 +56,7 @@ export interface JobForScoring {
   textLines: string[];
   deadline: string | null; // YYYY-MM-DD
   postedAt: string | null; // ISO
+  cohortClash?: boolean; // term-time cohort (e.g. Winter); soft flag, default false
 }
 
 export interface ArchetypeScore {
