@@ -55,3 +55,11 @@ describe("computeAward", () => {
     expect(next.savesToday).toBe(1);
   });
 });
+
+import { londonDayStart } from "@/lib/gamify/core";
+describe("londonDayStart", () => {
+  it("handles BST and GMT", () => {
+    expect(londonDayStart("2026-07-01")).toBe("2026-06-30T23:00:00.000Z");
+    expect(londonDayStart("2026-12-01")).toBe("2026-12-01T00:00:00.000Z");
+  });
+});

@@ -69,3 +69,17 @@ export function computeAward(state: GamifyState, e: GamifyEvent, today: string) 
   };
   return { result, next };
 }
+
+/** UTC instant (ISO) at which the given London calendar day (YYYY-MM-DD) starts. */
+export function londonDayStart(day: string): string {
+  const midnightUtc = new Date(`${day}T00:00:00Z`);
+  const hour = Number(new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/London", hour: "2-digit", hourCycle: "h23" }).format(midnightUtc));
+  // At 00:00Z London is either GMT (hour 0) or BST (hour 1); local midnight is `hour` hours earlier.
+  return new Date(midnightUtc.getTime() - hour * 3_600_000).toISOString();
+}
+
+/** Zero-XP result reflecting current state (duplicate events). */
+export function noAward(xp: number, streakDays: number): AwardResult {
+  const l = levelFromXp(xp);
+  return { xpGained: 0, newXp: xp, level: l.level, levelName: l.name, levelUp: false, streakDays, newBadges: [] };
+}
