@@ -1,6 +1,7 @@
 import type { ParsedCV, Year } from "@/lib/types";
 import type { CheckerId, CvRule } from "@/lib/cv-rules/types";
 import { extractSkills, canonicalize } from "@/lib/skills/extract";
+import { escapeRegex } from "@/lib/text/regex";
 import { isImageOnly } from "@/lib/cv/image-only";
 import type { CvContext, RuleResult } from "./context";
 
@@ -20,13 +21,13 @@ export function thresholdFor(rule: CvRule, year: Year, fallback: number) {
 
 /** UK/US spelling variants are both correct (06 R12 / T14): never count them as spelling errors. */
 const VARIANT_PATTERNS: RegExp[] = [
-  /(is|iz)(e|es|ed|ing|er|ers|ation|ations)$/, // organise/organize, -isation/-ization
-  /(ys|yz)(e|es|ed|ing)$/, // analyse/analyze
-  /ou?r(s|ed|ing|ite|ites)?$/, // colour/color, behaviour/behavior
+  /^[a-z]{3,}(is|iz)(e|es|ed|ing|er|ers|ation|ations)$/, // organise/organize, -isation/-ization
+  /^[a-z]{2,}(ys|yz)(e|es|ed|ing)$/, // analyse/analyze
+  /^(colo|behavio|favo|hono|neighbo|labo|humo|rumo|harbo|flavo|savo|vigo|endeavo|rigo|splendo|armo)u?r(s|ed|ing|ite|ites|able|ful|less)?$/, // colour/color, behaviour/behavior
   /^(cent|met|lit|fib|theat|calib|sab|sombr)(re|er)s?$/, // centre/center
-  /og(ue|ues)?$/, // catalogue/catalog, dialogue/dialog
+  /^(catalog|dialog|analog|monolog|prolog|epilog)(ue|ues|s)?$/, // catalogue/catalog, dialogue/dialog
   /(licen|defen|offen|pretens|pretenc)[sc]e$/, // licence/license, defence/defense
-  /[aeiou]l(led|ling|ler|lers)$/, // travelled
+  /^(travel|model|label|cancel|level|signal|total|counsel|channel|fuel|marshal|quarrel)(led|ling|ler|lers)$/, // travelled
   /^(travel|model|label|cancel|level|signal|total|counsel|channel|fuel|marshal|quarrel)(ed|ing|er|ers)$/, // traveled
   /^programm?e?s?$/, // programme/program
   /^(grey|gray|ageing|aging|judgement|judgment|cheque|check|tyre|tire|plough|plow|mould|mold|sceptic|skeptic|artefact|artifact)s?$/,
@@ -34,6 +35,31 @@ const VARIANT_PATTERNS: RegExp[] = [
 export function isSpellingVariant(word: string): boolean {
   const w = word.trim().toLowerCase();
   return w.length > 2 && VARIANT_PATTERNS.some((p) => p.test(w));
+}
+
+/** True when the bullet has a real quantity, ignoring years, dates, quarters and tool versions. */
+function hasQuantity(text: string): boolean {
+  let t = text
+    .replace(/\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\.?\s+(?:19|20)\d{2}\b/gi, " ")
+    .replace(/\b\d{1,2}\/\d{1,2}\/\d{2,4}\b/g, " ")
+    .replace(/\b(?:19|20)\d{2}\s*[–—-]\s*(?:(?:19|20)?\d{2}|present|now)\b/gi, " ")
+    .replace(/\b(?:19|20)\d{2}\b/g, " ")
+    .replace(/\bQ[1-4]\b/gi, " ")
+    .replace(/\bv\d+(?:\.\d+)*\b|\b\d+\.\d+\.\d+\b/gi, " ");
+  for (const sk of extractSkills(text)) t = t.replace(new RegExp(`${escapeRegex(sk)}\\s?\\d+(?:\\.\\d+)*(?![\\d%])`, "gi"), sk);
+  return /\d/.test(t);
+}
+
+function ratingOutOf10(c: CvContext): RegExpMatchArray | null {
+  const re = /(?<![\d/.])\b\d{1,2}\s*\/\s*10\b(?!\s*\/\s*\d)/g;
+  const own = new Set(c.cv.skills.flatMap((g) => g.items).map((i) => i.toLowerCase()));
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(c.text)) !== null) {
+    const before = c.text.slice(Math.max(0, m.index - 30), m.index);
+    const near = extractSkills(before).length > 0 || [...own].some((i) => i.length > 2 && before.toLowerCase().includes(i));
+    if (near) return m;
+  }
+  return null;
 }
 
 const GENERIC = /^(reading|travel(l)?ing|socialising|socializing|music|films?|movies|sports?|cooking|gym|going out|friends|netflix|gaming)$/i;
@@ -67,11 +93,11 @@ export const CHECKERS: Record<CheckerId, (ctx: CvContext, rule: CvRule) => Out> 
   quantified_bullets: (c, r) => {
     const bullets = allBullets(c.cv);
     if (bullets.length === 0) return na();
-    const withNum = bullets.filter((b) => /\d/.test(b.text));
+    const withNum = bullets.filter((b) => hasQuantity(b.text));
     const share = withNum.length / bullets.length;
     const t = thresholdFor(r, c.year, 0.4);
     if (share >= t) return ok();
-    const first = bullets.find((b) => !/\d/.test(b.text))?.text ?? null;
+    const first = bullets.find((b) => !hasQuantity(b.text))?.text ?? null;
     return bad(share >= t / 2 ? "partial" : "fail", first, "Add a real number to this bullet: how many, how much, how often, or by how much it improved.");
   },
   we_vs_i: (c) => {
@@ -81,12 +107,12 @@ export const CHECKERS: Record<CheckerId, (ctx: CvContext, rule: CvRule) => Out> 
     return bad(we.length / Math.max(1, bullets.length) > 0.2 ? "fail" : "partial", we[0].text, "Say what you did, not what the team did — start with your own action verb.");
   },
   skill_rating_glyphs: (c) => {
-    const m = c.text.match(/[★☆●○■□◼◻]{2,}|\b\d{1,2}\s*\/\s*10\b/);
+    const m = c.text.match(/[★☆●○■□◼◻▮▯]{2,}/) ?? ratingOutOf10(c);
     return m ? bad("fail", m[0], "Replace rating bars/scores with plain labels like 'Proficient' or 'Familiar'.") : ok();
   },
   uk_grades: (c) => {
     const g = [c.cv.education.map((e) => `${e.grade ?? ""} ${e.details.map((d) => d.text).join(" ")}`).join(" ")].join(" ");
-    return /(first|1st class|2:1|2\.1|2:2|upper second|predicted|\b\d{2}(\.\d)?%|a\*|\baaa\b|a-levels?|\bib\b\s*\d{2})/i.test(g)
+    return /(\bfirst\b(?![- ](year|aid|term|team|lecture|module|semester))|\b1st\b(?![- ]year)|\b2:1\b|\b2\.1\b|\b2:2\b|upper second|\bpredicted\b|\b\d{2}(\.\d)?%|a\*|\baaa\b|a-levels?|\bib\b\s*\d{2})/i.test(g)
       ? ok() : bad("fail", null, "State your (predicted) degree classification and A-level/IB grades.");
   },
   github_link: (c) =>
@@ -149,7 +175,9 @@ export const CHECKERS: Record<CheckerId, (ctx: CvContext, rule: CvRule) => Out> 
     const lower = evidenceText.toLowerCase();
     const unevidenced = items.filter((i) => {
       const canon = (canonicalize(i) ?? i).toLowerCase();
-      return !found.has(canon) && !lower.includes(i.toLowerCase());
+      if (found.has(canon)) return false;
+      const re = new RegExp(`(?<![A-Za-z0-9])${escapeRegex(i)}(?![A-Za-z0-9+#])`, i.length <= 2 ? "" : "i");
+      return !re.test(evidenceText);
     });
     const share = (items.length - unevidenced.length) / items.length;
     const t = r.params?.threshold ?? 0.5;

@@ -106,4 +106,39 @@ describe("checkers", () => {
     const r = rule({ id: "Q", checker: "quantified_bullets", params: { threshold: 0.8 }, yearAdjust: { "2nd": { threshold: 0.3 } } });
     expect(runCodeChecks([r], ctx())[0].status).toBe("pass");
   });
+  describe("fix round 1", () => {
+    const ex = (text: string) => ({ id: "x0", org: "O", title: "T", dates: "2025", location: "", bullets: [{ id: "b", text }] });
+    it("skill_rating_glyphs ignores dates and non-skill scores", () => {
+      expect(CHECKERS.skill_rating_glyphs(ctx({ text: "Started 05/10/2023" }), rule({})).status).toBe("pass");
+      expect(CHECKERS.skill_rating_glyphs(ctx({ text: "Scored 8/10 in module" }), rule({})).status).toBe("pass");
+      expect(CHECKERS.skill_rating_glyphs(ctx({ text: "Python 8/10" }), rule({})).status).toBe("fail");
+      expect(CHECKERS.skill_rating_glyphs(ctx({ text: "Excel ●●●○○" }), rule({})).status).toBe("fail");
+    });
+    it("skills_evidenced uses word boundaries", () => {
+      const c = (b: string) => ctx({ cv: cv({ experience: [ex(b)], projects: [], leadership: [], skills: [{ group: "S", items: ["R", "Excel"] }] }) });
+      const out = CHECKERS.skills_evidenced(c("I excelled at teamwork"), rule({ params: { threshold: 0.5 } }));
+      expect(out.status).not.toBe("pass");
+      expect(out.detail).toContain("R");
+      expect(out.detail).toContain("Excel");
+      expect(CHECKERS.skills_evidenced(c("Built a model in R"), rule({ params: { threshold: 0.5 } })).detail).not.toMatch(/\bR\b/);
+    });
+    it("quantified_bullets ignores years, versions and quarters", () => {
+      const q = (b: string) => CHECKERS.quantified_bullets(ctx({ cv: cv({ experience: [ex(b)], projects: [], leadership: [] }) }), rule({ params: { threshold: 0.4 } })).status === "pass";
+      expect(q("During summer 2024, assisted the team")).toBe(false);
+      expect(q("Python 3 scripts")).toBe(false);
+      expect(q("Presented in Q3")).toBe(false);
+      expect(q("Cut costs by 15%")).toBe(true);
+      expect(q("Served 120 customers")).toBe(true);
+    });
+    it("isSpellingVariant is stem-specific", () => {
+      expect(isSpellingVariant("profesor")).toBe(false);
+      expect(isSpellingVariant("neighbour")).toBe(true);
+      expect(CHECKERS.spelling(ctx({ spellingErrors: ["profesor", "teh", "recieve"] }), rule({})).status).toBe("fail");
+    });
+    it("uk_grades ignores 'first-year' and 'First Aid'", () => {
+      const edu = (details: string) => cv({ education: [{ id: "e0", institution: "UCL", degree: "BSc", dates: "", grade: null, details: [{ id: "d", text: details }] }] });
+      expect(CHECKERS.uk_grades(ctx({ cv: edu("first-year modules; First Aid certified") }), rule({})).status).toBe("fail");
+      expect(CHECKERS.uk_grades(ctx({ cv: edu("First Class Honours") }), rule({})).status).toBe("pass");
+    });
+  });
 });
