@@ -1,0 +1,35 @@
+{{NAME}}
+{{EMAIL}} | {{PHONE}} | {{ADDRESS}}
+linkedin.com/in/{{LINKEDIN}} | github.com/{{GITHUB}} | {{PORTFOLIO}}
+
+PROFILE
+Second-year statistics student who likes turning messy public data into decisions. {{WORKAUTH}}
+
+EDUCATION
+{{UNIVERSITY}} — BSc Statistics, Data Science and Economics, 2024 – 2027
+Year 1: First (71%). Modules: Probability (84), Regression Modelling (76), Econometrics I
+Holy Cross Catholic High School — A-levels: Mathematics A*, Economics A, Geography A
+
+EXPERIENCE
+NHS England — Data Analyst Intern, Jul 2025 – Sep 2025
+• Cleaned 2.1m outpatient records in Python (pandas), reducing duplicate rows by 9%
+• Built a Power BI dashboard tracking 18-week waiting times for 14 trusts
+Sainsbury's — Customer Assistant (part-time), Oct 2023 – Jun 2024
+• Trained 6 new starters on stock-rotation procedures
+
+PROJECTS
+TfL Delay Predictor — Python, scikit-learn
+• Trained a gradient-boosted model on 400k journeys; MAE of 2.3 minutes on held-out data
+Kaggle: Housing Prices — top 12% of 4,100 teams
+
+LEADERSHIP & ACTIVITIES
+Treasurer, {{SOCIETY}}
+• Managed a £4k budget and grew membership from 40 to 95 in one year
+{{EXTRA}}
+Peer mentor, Department of Statistics, 2025 – present
+
+SKILLS
+Python (pandas, NumPy, scikit-learn), R, SQL, Power BI, Excel
+Languages: English (native), Hindi (conversational)
+
+Thank you for reading — {{NAME}}

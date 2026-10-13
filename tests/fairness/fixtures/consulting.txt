@@ -1,0 +1,32 @@
+CURRICULUM VITAE
+{{NAME}}
+{{PHONE}} · {{EMAIL}} · linkedin.com/in/{{LINKEDIN}}
+{{ADDRESS}}
+
+EDUCATION
+{{UNIVERSITY}} — BA Philosophy, Politics and Economics, 2023 – 2026
+Expected 2:1; dissertation on local-authority housing policy
+St Mary's Grammar School — A-levels: History A*, Economics A*, Mathematics A
+
+EXPERIENCE
+Deloitte — Consulting Virtual Experience (Forage), Mar 2025
+• Structured a market-entry case for a UK grocer and recommended 2 of 5 regions
+Citizens Advice Westminster — Volunteer Adviser, Oct 2023 – present
+• Advised 150+ clients on benefits and housing; 92% rated the session "very helpful"
+Pret A Manger — Team Member, Jun 2022 – Sep 2023
+• Handled 300+ transactions per shift during peak hours
+
+LEADERSHIP & ACTIVITIES
+Treasurer, {{SOCIETY}} — 2024 – 2025
+• Managed a £4k budget and negotiated a 20% venue discount for the annual dinner
+{{EXTRA}}
+Captain, College Debating Team — reached the quarter-finals of the 2025 Observer Mace
+UCL Consulting Society — Case Competition Finalist (top 6 of 48 teams), 2025
+
+ADDITIONAL
+{{WORKAUTH}}
+Languages: English (native), French (C1)
+Skills: Excel (pivot tables, VLOOKUP), PowerPoint, Tableau
+Interests: long-distance running (London Marathon 2025), chess
+
+References available on request. Signed, {{NAME}}

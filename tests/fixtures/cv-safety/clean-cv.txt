@@ -1,0 +1,16 @@
+Priya Shah
+priya.shah@example.com | +44 7700 900123 | London
+EDUCATION
+University College London — BSc Computer Science, 2024–2027. Ranked first in cohort for the Year 1 design module.
+EXPERIENCE
+Study Buddy (student start-up) — Software Engineer, 2025–present
+• Built an AI assistant that answers module FAQs for 300 students, using the OpenAI API and TypeScript
+• Wrote and evaluated the system prompt for the assistant and cut wrong answers by 40%
+• Designed a screening questionnaire so the society could rank applicants for 12 mentor roles
+Café Nero — Barista, 2023–2024
+• Served 200+ customers a shift and trained 3 new baristas
+PROJECTS
+Language model playground
+• Benchmarked three open-source language models on a UK legal Q&A dataset; the best one scored 100 on our pass test
+SKILLS
+Python, TypeScript, React, SQL, Git
