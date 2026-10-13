@@ -194,9 +194,34 @@ function dateFieldValues(cv: ParsedCV): Set<string> {
 const MONTH_OR_SEASON = "jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|june?|july?|aug(?:ust)?|sept?(?:ember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?|spring|summer|autumn|fall|winter";
 const YEAR_BEFORE = new RegExp(`(?:\\b(?:in|since|of|by|from|until|till|to|through|graduating|graduated|graduation|graduate|expected|during|before|after|circa|c\\.|${MONTH_OR_SEASON})|[(\\[–—-]|\\d{4}\\s*[–—-])\\s*$`, "i");
 const YEAR_AFTER = /^\s*(?:[–—-]\s*(?:\d{2,4}|present|now|current)|[)\]])/i;
-/** Words after a number that make it a count ("2026 first-year students", "2024 users"). */
-const COUNT_AFTER = /^\s+(?:[a-z]+-)?(?:[a-z]+s|people|staff|members?|users?|customers?|clients?|students?|attendees?|participants?|followers?|downloads?|sign-?ups?|volunteers?|children|alumni)\b/i;
-const NOT_COUNT = new Set("as is was has his its this thus plus across towards alongside besides whereas does goes always various previous".split(" "));
+/**
+ * Words after a year-shaped number that make it a count (round 3). Case-sensitive on purpose: only a lowercase
+ * plural ("students", "venues") or an irregular plural counts. Capitalised words ("Economics", "Physics") and
+ * singular nouns ("student", "member") don't, so "Class of 2027 Economics student" is a date.
+ */
+const PLURAL = /^[a-z][a-z]*s$/;
+const IRREG_PLURAL = new Set(["people", "staff", "children", "alumni", "personnel", "crew"]);
+const NOT_COUNT = new Set(("as is was has his its this thus plus across towards alongside besides whereas does goes always various previous " +
+  "gas bus yes us").split(" "));
+const FUNCTION_WORD = new Set("with as at in on for and or to of by from the a an while during under over into via when where who which that".split(" "));
+const isCountNoun = (w: string) => IRREG_PLURAL.has(w) || (PLURAL.test(w) && !NOT_COUNT.has(w) && !/(?:ss|ics|us|is)$/.test(w));
+/** True when the words after a number read as a count: a plural noun within 2 tokens (past closing brackets), or "in total". */
+function countAfter(after: string): boolean {
+  const rest = after.replace(/^\s*[)\]]+/, " ");
+  if (/^\s+in\s+total\b/i.test(rest)) return true;
+  const toks = rest.match(/^\s+([A-Za-z][A-Za-z-]*)(?:\s+([A-Za-z][A-Za-z-]*))?/);
+  if (!toks) return false;
+  const last = (w: string) => w.split("-").pop()!;
+  if (isCountNoun(last(toks[1]))) return true;
+  return !!toks[2] && !FUNCTION_WORD.has(toks[1].toLowerCase()) && /^[a-z]/.test(toks[1]) && isCountNoun(last(toks[2]));
+}
+/** "growing membership to 2025", "from 40 to 2025": a to/by year closing a numeric growth phrase is a count. */
+function growthTarget(before: string): boolean {
+  if (!/\b(?:to|by)\s*$/i.test(before)) return false;
+  const win = before.slice(-60);
+  const nonYearNumber = (win.match(/\d[\d,.]*/g) ?? []).some((d) => !isYearLike(d.replace(/[,.]/g, "")));
+  return nonYearNumber || /\b(?:grow\w*|grew|increas\w*|rais\w*|expand\w*|boost\w*|reach\w*|doubl\w*|tripl\w*|scal\w*|membership|attendance|audience|followers|sign-?ups?|users|revenue|sales)\b/i.test(win);
+}
 /**
  * Round 2: a year-shaped value from the CV's own date fields, used as a year ("graduating in 2027", "(2024–2027)",
  * "since 2024", "Sep 2023"), is a date, not a metric. Followed by a count noun it is still a count and still blocks.
@@ -207,8 +232,7 @@ function isYearUse(text: string, index: number, raw: string, dateVals: Set<strin
   const short = /^\d{2}$/.test(raw) ? before.match(/(\d{2})\d{2}\s*[–—-]\s*$/) : null;
   const v = short ? short[1] + raw : numValues(raw)[0];
   if (!v || !isYearLike(v) || !dateVals.has(v) || /%|k|m|bn|x/i.test(raw.replace(/\d/g, ""))) return false;
-  const cm = after.match(COUNT_AFTER);
-  if (cm && !NOT_COUNT.has(cm[0].trim().split(/[- ]/).pop()!.toLowerCase())) return false;
+  if (countAfter(after) || growthTarget(before)) return false;
   return YEAR_BEFORE.test(before) || YEAR_AFTER.test(after);
 }
 
@@ -321,6 +345,11 @@ const ADJECTIVES = new Set((
   "thoughtful tireless trustworthy upbeat vibrant warm keen eager friendly hard fast high low multi tech results detail people customer client " +
   "class cross well"
 ).split(" "));
+/** Ordinary heads of capitalised hyphen compounds (round 3): Hands-on, Part-time, Client-facing, Long-term… */
+const HYPHEN_HEADS = new Set(("hands hand detail fast self high low multi tech results client customer cross data team well long short full part " +
+  "year time first second third final top mid non pre post re co sub semi over under open end real large small cost user people problem goal " +
+  "award student community quick hard easy fact number numbers market public private front back side one two three four five half " +
+  "forward future solution value risk time budget deadline people").split(" "));
 /** Morphology that marks an ordinary verb/adjective/noun rather than a name ("Cleaned", "Analytical", "Leadership"). */
 const WORDISH = /(?:ed|ing|ise|ize|ises|izes|ly|ive|ful|ous|able|ible|ment|ments|ness|tion|tions|sion|ity|ship|ist|ists|ism|ics|ical|al|ent|ents|ant|ants|ary|ory|ic|er|ers|or|ors|ian|ians|ate|ates|ance|ence|ology|age)$/;
 
@@ -604,8 +633,12 @@ export function verifyTailoring(i: VerifyInput): VerifyReport {
       const allCaps = /^[A-Z0-9&+#]+$/.test(tok) && /[A-Z].*[A-Z]|[A-Z]\d/.test(tok);
       const before = u.text.slice(0, index).trimEnd();
       const sentenceStart = before === "" || /[.!?:;•▪|–—(]$/.test(before) || /\s-$/.test(` ${before}`);
-      // "Hands-on", "Fast-paced": a capitalised word glued to a lowercase word is an ordinary compound, not a name
-      const compound = isCap(tok) && !allCaps && /^-[a-z]/.test(u.text.slice(index + len, index + len + 2));
+      // "Hands-on", "Part-time": a capitalised compound is ordinary only when its head is ordinary vocabulary
+      // ("Zorblax-trained", "Ocado-sponsored" stay name candidates)
+      const compound = isCap(tok) && !allCaps && /^-[a-z]/.test(u.text.slice(index + len, index + len + 2))
+        && (COMMON.has(lower) || ADJECTIVES.has(lower) || HYPHEN_HEADS.has(lower));
+      // "UCL, Class of 2027": a cohort, not a name
+      if (lower === "class" && /^\s+of\s+\d{4}\b/.test(u.text.slice(index + len))) continue;
       const ordinary = COMMON.has(lower) || ADJECTIVES.has(lower) || IRREGULAR_PAST.has(lower) || WORDISH.test(lower) || authorshipLevel(lower) !== null || IRREGULAR.has(lower);
       const candidate = allCaps || (isCap(tok) && !sentenceStart && !compound) || (isCap(tok) && sentenceStart && !compound && !ordinary);
       if (!candidate) continue;

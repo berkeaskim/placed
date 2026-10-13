@@ -508,3 +508,75 @@ describe("fix round 2: multi-word numbers report once", () => {
     expect(r.issues.filter((i) => i.type === "inventedMetrics")).toHaveLength(1);
   });
 });
+
+// ---------- Fix round 3 (Economics fixture) ----------
+
+const econ: ParsedCV = {
+  name: "C", email: null, phone: null, location: "London", links: [], summary: null,
+  education: [{ id: "e0", institution: "UCL", degree: "BSc Economics", dates: "2024–2027", grade: "Predicted 2:1", details: [] }],
+  experience: [
+    { id: "x2", org: "Economics Society", title: "Events Officer", dates: "Sep 2025 – Jun 2026", location: "London", bullets: [
+      { id: "x2-b0", text: "Organised weekly society events for 60 members" },
+      { id: "x2-b1", text: "Secured £1,200 in sponsorship from 3 local firms" },
+    ] },
+    { id: "x3", org: "Corner Café", title: "Barista", dates: "Jun 2024 – Aug 2025", location: "London", bullets: [
+      { id: "x3-b0", text: "Served customers during busy weekend shifts" },
+      { id: "x3-b1", text: "Trained 2 new starters on the till" },
+    ] },
+  ],
+  projects: [], leadership: [], skills: [{ group: "Skills", items: ["Excel", "Stata"] }], interests: null, sectionOrder: [], yearGuess: null, archetypes: [],
+};
+const econText = "UCL BSc Economics 2024–2027 Predicted 2:1\nEconomics Society Events Officer Sep 2025 – Jun 2026\nOrganised weekly society events for 60 members\n" +
+  "Secured £1,200 in sponsorship from 3 local firms\nCorner Café Barista Jun 2024 – Aug 2025\nServed customers during busy weekend shifts\nTrained 2 new starters on the till\nExcel, Stata";
+const ex = (edit: (t: TailoredCV) => void) => {
+  const t = toTailored(econ);
+  edit(t);
+  return verifyTailoring({ source: econ, sourceText: econText, confirmedFacts: [], tailored: t, jdKeywords: ["Excel", "stakeholder"], coverageBefore: 0.3, coverageAfter: 0.5 });
+};
+const econBullet = (text: string) => (t: TailoredCV) => { t.experience[0].bullets[0] = { ...t.experience[0].bullets[0], text, changeType: "rephrased" }; };
+
+describe("fix round 3 #1: the CV's own years, Economics fixture", () => {
+  it.each([
+    "Class of 2027 Economics student at UCL",
+    "2024–2027 Economics student at UCL",
+    "Class of 2027 student at UCL",
+    "In 2025 Economics Society events: organised weekly society events for 60 members",
+    "Economics student at UCL, Class of 2027, with event experience",
+    "Events Officer at the Economics Society from 2025 to 2026",
+    "Economics student since 2024 with members of the Economics Society",
+  ])("summary '%s' doesn't block", (s) => {
+    const r = ex((t) => { t.summary = s; });
+    expect(r.issues.filter((i) => i.severity === "block")).toEqual([]);
+  });
+  it.each([
+    "Organised weekly society events for 2026 first-year students",
+    "Organised weekly society events for 2024 users",
+    "Led 2025 volunteers at weekly society events",
+    "Organised weekly society events in 2027 venues",
+    "Organised weekly society events (2024–2025 attendees)",
+    "Organised weekly society events for (2024) users",
+    "Organised weekly society events, growing membership to 2025",
+    "Organised weekly society events attended by 2024 in total",
+    "Organised weekly society events, growing from 60 to 2025 members",
+  ])("bullet '%s' blocks as a count", (text) => {
+    expect(blocksWith(ex(econBullet(text)), "inventedMetrics")).toBe(true);
+  });
+});
+
+describe("fix round 3 #2: hyphen compounds exempt only ordinary heads", () => {
+  it.each([
+    ["summary", "Zorblax-trained Economics student at UCL"],
+    ["summary", "Economics student at UCL, Zorblax-sponsored, with event experience"],
+    ["bullet", "Organised weekly Ocado-sponsored society events for 60 members"],
+  ])("%s '%s' blocks", (where, text) => {
+    const r = ex(where === "summary" ? (t) => { t.summary = text; } : econBullet(text));
+    expect(blocksWith(r, "unsupportedFacts")).toBe(true);
+  });
+  it.each([
+    "Hands-on Economics student at UCL", "Detail-focused Economics student", "Self-motivated Economics student",
+    "Part-time barista and Economics student", "Full-time Economics student", "Client-facing barista at Corner Café",
+    "Economics student with Part-time barista experience", "Economics student with Hands-on event experience",
+  ])("'%s' is not an unsupported fact", (s) => {
+    expect(has(ex((t) => { t.summary = s; }).issues, "unsupportedFacts")).toBe(false);
+  });
+});
