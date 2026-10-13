@@ -8,7 +8,7 @@ type LeverJob = {
 
 export function normalizeLever(json: unknown): RawJob[] {
   if (!Array.isArray(json)) return [];
-  return (json as LeverJob[]).map((j) => {
+  return (json as LeverJob[]).filter((j) => j && j.id && j.text && j.hostedUrl).map((j) => {
     const location = j.categories?.allLocations?.join("; ") || j.categories?.location || "";
     const lists = (j.lists ?? []).map((l) => `<h3>${l.text}</h3><ul>${l.content}</ul>`).join("");
     return {

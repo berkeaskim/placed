@@ -8,7 +8,7 @@ type AshbyJob = {
 export function normalizeAshby(json: unknown): RawJob[] {
   const jobs = (json as { jobs?: AshbyJob[] } | null)?.jobs;
   if (!Array.isArray(jobs)) return [];
-  return jobs.filter((j) => j.isListed !== false).map((j) => {
+  return jobs.filter((j) => j && j.isListed !== false && j.id && j.title && j.jobUrl).map((j) => {
     const locs = [j.location ?? "", ...(j.secondaryLocations ?? []).map((s) => s.location ?? "")].filter(Boolean);
     return {
       extId: j.id,

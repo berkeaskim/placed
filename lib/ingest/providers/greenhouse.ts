@@ -7,7 +7,7 @@ type GhJob = { id: number; title: string; absolute_url: string; location?: { nam
 export function normalizeGreenhouse(json: unknown, _slug: string, _host?: string): RawJob[] {
   const jobs = (json as { jobs?: GhJob[] } | null)?.jobs;
   if (!Array.isArray(jobs)) return [];
-  return jobs.map((j) => {
+  return jobs.filter((j) => j && j.id != null && j.title && j.absolute_url).map((j) => {
     const location = j.location?.name ?? "";
     return {
       extId: String(j.id),

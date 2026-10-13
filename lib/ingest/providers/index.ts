@@ -29,7 +29,12 @@ export async function fetchJobs(c: CompanySeed, fetchImpl: typeof fetch = fetch)
     throw new ProviderError(`${c.ats}/${c.slug}: ${(e as Error).message}`);
   }
   if (!res.ok) throw new ProviderError(`${c.ats}/${c.slug}: HTTP ${res.status}`);
-  const json = await res.json();
+  let json: unknown;
+  try {
+    json = await res.json();
+  } catch (e) {
+    throw new ProviderError(`${c.ats}/${c.slug}: invalid response body (${(e as Error).message})`);
+  }
   if (c.ats === "greenhouse") return normalizeGreenhouse(json, c.slug);
   if (c.ats === "lever") return normalizeLever(json);
   return normalizeAshby(json);
