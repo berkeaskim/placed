@@ -45,9 +45,9 @@ export function htmlToLines(html: string): string[] {
 export type TaggedLine = { text: string; isHeader: boolean; section: "must" | "nice" | "other" };
 
 const NICE_HEADER = /(preferred|nice[\s-]to[\s-]have|bonus|\bplus\b|it would be great|desirable|ideally|good to have)/i;
-const MUST_HEADER = /(required|requirements|qualifications|must[\s-]have|you'?ll (have|need|bring)|what we'?re looking for|who you are|minimum|essential|about you|what you'?ll need|skills( and|&) experience|you have)/i;
+const MUST_HEADER = /(required|requirements|qualifications|must[\s-]have|you'?ll (have|need|bring)|what we('?re| are) looking for|who we('?re| are) looking for|who you are|minimum|essential|about you|what you'?ll need|what you bring|your profile|skills( and| ?&) experience|you have)/i;
 const NICE_HEADER_START = /^(preferred|nice[\s-]to[\s-]have|bonus|desirable|good to have)\b/i;
-const MUST_HEADER_START = /^(requirements|minimum[\s-]requirements|qualifications|what we'?re looking for|you'?ll (have|need|bring)|about you|essential|must[\s-]have)\b/i;
+const MUST_HEADER_START = /^(requirements|minimum[\s-]requirements|qualifications|what we('?re| are) looking for|you'?ll (have|need|bring)|about you|essential|must[\s-]have)\b/i;
 const NICE_BULLET = /\((preferred|a plus|bonus|desirable)\)|\ba plus\b|\bideally\b|\bdesirable\b|\bbonus\b|\bnice to have\b/i;
 const MUST_BULLET = /\bmust\b|\brequired\b|\bessential\b/i;
 

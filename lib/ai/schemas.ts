@@ -3,7 +3,8 @@ import { ARCHETYPES, YEARS } from "@/lib/types";
 
 export const RequirementOut = z.object({
   text: z.string(),
-  skill: z.string().nullable(),
+  skills: z.array(z.string()),
+  skill_logic: z.enum(["all", "any"]),
   importance: z.enum(["critical", "high", "meaningful", "preferred", "low_signal"]),
   section: z.enum(["must", "nice"]),
   evidence_tier: z.enum(["stated", "structural", "inferred"]),

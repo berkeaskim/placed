@@ -39,6 +39,8 @@ export type Importance = "critical" | "high" | "meaningful" | "preferred" | "low
 export interface Requirement {
   text: string;
   skill: string | null;
+  /** Set when the posting accepts alternatives ("Python or Java"): every skill in the group, this one included. */
+  anyOf?: string[];
   importance: Importance;
   section: "must" | "nice";
   evidenceTier: "stated" | "structural" | "inferred";

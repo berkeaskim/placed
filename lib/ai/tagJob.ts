@@ -25,6 +25,19 @@ export function normalizeDeadline(d: string | null | undefined): string | null {
   return !Number.isNaN(t.getTime()) && t.toISOString().slice(0, 10) === d ? d : null;
 }
 
+type RequirementOutT = TagJobOutputT["requirements"][number];
+
+/** One Requirement per named skill, so "Excel and financial modelling" keeps both; "X or Y" share an anyOf group. */
+function expandRequirement(r: RequirementOutT): Requirement[] {
+  // enforce the inferred cap in code, whatever the model said
+  const importance = r.evidence_tier === "inferred" && (r.importance === "critical" || r.importance === "high") ? "meaningful" : r.importance;
+  const base = { text: r.text, importance, section: r.section, evidenceTier: r.evidence_tier } as const;
+  const skills = [...new Set(r.skills.map((s) => s.trim()).filter(Boolean).map((s) => canonicalize(s) ?? s))];
+  if (skills.length === 0) return [{ ...base, skill: null }];
+  const anyOf = r.skill_logic === "any" && skills.length > 1 ? skills : undefined;
+  return skills.map((skill) => (anyOf ? { ...base, skill, anyOf } : { ...base, skill }));
+}
+
 function fromOutput(o: TagJobOutputT): TaggedJob {
   return {
     archetype: o.archetype,
@@ -35,14 +48,7 @@ function fromOutput(o: TagJobOutputT): TaggedJob {
     firstYearFriendly: o.first_year_friendly,
     deadline: normalizeDeadline(o.deadline),
     summary: o.summary,
-    requirements: o.requirements.map((r) => ({
-      text: r.text,
-      skill: r.skill ? canonicalize(r.skill) ?? r.skill : null,
-      // enforce the inferred cap in code, whatever the model said
-      importance: r.evidence_tier === "inferred" && (r.importance === "critical" || r.importance === "high") ? "meaningful" : r.importance,
-      section: r.section,
-      evidenceTier: r.evidence_tier,
-    })),
+    requirements: o.requirements.flatMap(expandRequirement),
     status: "ok",
   };
 }
@@ -61,7 +67,7 @@ export async function tagJob(input: { title: string; textLines: string[] }): Pro
             system: SYSTEM_TAG_JOB,
             parts: [{ type: "text", text: wrapJob(input.textLines.join("\n"), input.title) }],
             schema: TagJobOutput,
-            maxTokens: 4000,
+            maxTokens: 8000, // Gemini counts thinking tokens here; 4000 truncated long JDs
           }),
         ),
       fallback,

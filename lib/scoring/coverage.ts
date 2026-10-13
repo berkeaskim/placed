@@ -3,7 +3,8 @@ import { tagSections } from "@/lib/text/jd";
 import { extractSkills, canonicalize } from "@/lib/skills/extract";
 
 export type CoverageStatus = "existing" | "supportedByResume" | "gap";
-export type CoverageItem = { skill: string; section: "must" | "nice"; status: CoverageStatus };
+export type CoverageItem = { skill: string; section: "must" | "nice"; anyOf?: string[]; status: CoverageStatus };
+export type JdSkill = { skill: string; section: "must" | "nice"; anyOf?: string[] };
 export type CoverageResult = {
   readable: boolean; weighted: number | null;
   must: { matched: number; total: number }; nice: { matched: number; total: number }; items: CoverageItem[];
@@ -13,17 +14,35 @@ export type CvSkillSource = { skillsList: string[]; bulletText: string; otherTex
 const CREDIT: Record<CoverageStatus, number> = { existing: 1, supportedByResume: 0.75, gap: 0 };
 const WEIGHT = { must: 2, nice: 1 } as const;
 
-export function jdRequirementSkills(textLines: string[], tagged: Requirement[]) {
+const norm = (s: string) => s.toLowerCase().replace(/\s+/g, " ").trim();
+
+/**
+ * Skills the JD asks for. "Python or Java" (a tagged anyOf group) becomes ONE item that any member satisfies,
+ * and the line it came from is not also scanned skill-by-skill (that would demand both).
+ */
+export function jdRequirementSkills(textLines: string[], tagged: Requirement[]): JdSkill[] {
   const map = new Map<string, "must" | "nice">();
   const add = (skill: string, section: "must" | "nice") => {
     if (map.get(skill) !== "must") map.set(skill, section);
   };
+  const groups = new Map<string, JdSkill>();
+  for (const r of tagged) {
+    if (!r.skill || !r.anyOf || r.anyOf.length < 2) continue;
+    const anyOf = r.anyOf.map((s) => canonicalize(s) ?? s);
+    const key = [...anyOf].map((s) => s.toLowerCase()).sort().join("|");
+    const prev = groups.get(key);
+    groups.set(key, { skill: anyOf.join(" or "), anyOf, section: prev?.section === "must" ? "must" : r.section });
+  }
+  const groupTexts = tagged.filter((r) => r.anyOf && r.anyOf.length > 1).map((r) => norm(r.text)).filter(Boolean);
   for (const l of tagSections(textLines)) {
     if (l.isHeader || l.section === "other") continue;
+    const t = norm(l.text);
+    if (groupTexts.some((g) => t.includes(g) || (t.length >= 12 && g.includes(t)))) continue;
     for (const s of extractSkills(l.text)) add(s, l.section);
   }
-  for (const r of tagged) if (r.skill) add(canonicalize(r.skill) ?? r.skill, r.section);
-  return [...map.entries()].map(([skill, section]) => ({ skill, section }));
+  for (const r of tagged) if (r.skill && !(r.anyOf && r.anyOf.length > 1)) add(canonicalize(r.skill) ?? r.skill, r.section);
+  const single = [...map.entries()].map(([skill, section]) => ({ skill, section }));
+  return [...single, ...groups.values()];
 }
 
 /** Structural subset of a CV that cvSkillSource reads; satisfied by ParsedCV and a later TailoredCV. */
@@ -33,7 +52,8 @@ export type SkillSourceCv = Pick<ParsedCV, "skills" | "experience" | "projects">
 export function cvSkillSource(cv: SkillSourceCv): CvSkillSource {
   const entries = [...cv.experience, ...cv.projects, ...(cv.leadership ?? [])];
   return {
-    skillsList: cv.skills.flatMap((g) => g.items.map((i) => canonicalize(i) ?? i)),
+    // "Python (Pandas, NumPy)" or "Python, SQL" in one item must still count each skill
+    skillsList: [...new Set(cv.skills.flatMap((g) => g.items.flatMap((i) => [canonicalize(i) ?? i, ...extractSkills(i)])))],
     bulletText: entries.flatMap((e) => [e.title, ...e.bullets.map((b) => b.text)]).join("\n"),
     otherText: [cv.summary ?? "", cv.interests ?? "", ...(cv.education ?? []).flatMap((e) => [e.degree, ...e.details.map((d) => d.text)])].join("\n"),
   };
@@ -43,13 +63,18 @@ export function profileSkillSource(skills: string[]): CvSkillSource {
   return { skillsList: skills, bulletText: "", otherText: "" };
 }
 
-export function computeCoverage(reqs: { skill: string; section: "must" | "nice" }[], cv: CvSkillSource): CoverageResult {
+export function computeCoverage(reqs: JdSkill[], cv: CvSkillSource): CoverageResult {
   const listed = new Set(cv.skillsList.map((s) => s.toLowerCase()));
   const inBullets = new Set(extractSkills(cv.bulletText).map((s) => s.toLowerCase()));
   const inOther = new Set(extractSkills(cv.otherText).map((s) => s.toLowerCase()));
+  const statusOf = (skill: string): CoverageStatus => {
+    const k = skill.toLowerCase();
+    return listed.has(k) || inBullets.has(k) ? "existing" : inOther.has(k) ? "supportedByResume" : "gap";
+  };
   const items: CoverageItem[] = reqs.map((r) => {
-    const k = r.skill.toLowerCase();
-    const status: CoverageStatus = listed.has(k) || inBullets.has(k) ? "existing" : inOther.has(k) ? "supportedByResume" : "gap";
+    // an anyOf group takes the best status among its alternatives
+    const statuses = (r.anyOf?.length ? r.anyOf : [r.skill]).map(statusOf);
+    const status = statuses.reduce((best, s) => (CREDIT[s] > CREDIT[best] ? s : best), "gap" as CoverageStatus);
     return { ...r, status };
   });
   if (items.length === 0) return { readable: false, weighted: null, must: { matched: 0, total: 0 }, nice: { matched: 0, total: 0 }, items };
