@@ -6,26 +6,17 @@ import { parseCV } from "@/lib/ai/parseCV";
 import { awardXP } from "@/lib/gamify/award";
 import type { AwardResult } from "@/lib/gamify/core";
 import { contentHash } from "@/lib/ingest/fingerprint";
-import { scanCvSafety, stripFlaggedSpans } from "@/lib/cv/safety";
+import { scanCvSafety, stripFlaggedSpans, type SafetyReport } from "@/lib/cv/safety";
+import { SAFETY_WARNING_COPY } from "@/lib/cv/safety-copy";
+import { dropFlaggedContent } from "@/lib/cv/strip-parsed";
 import type { ParsedCV } from "@/lib/types";
 import { canonicalize, extractSkills } from "@/lib/skills/extract";
 
 const MAX_BYTES = 5 * 1024 * 1024;
 
 export type UploadCvResult =
-  | { ok: true; award: AwardResult | null; imageOnly: boolean; cvId: string; safetyWarning: boolean }
+  | { ok: true; award: AwardResult | null; imageOnly: boolean; cvId: string; safetyWarning: string | null }
   | { error: string };
-
-const visibleSpan = (t: string) => t.replace(/[\u200B-\u200D\u2060\uFEFF\u202A-\u202E\u2066-\u2069]/g, "").trim();
-
-/** Removes bullets that contain text the safety scan flagged (invisible/injected spans). Tiny spans are ignored. */
-function dropFlaggedBullets(cv: ParsedCV, spans: string[]): ParsedCV {
-  const needles = spans.map(visibleSpan).filter((s) => s.length >= 4).map((s) => s.toLowerCase());
-  if (!needles.length) return cv;
-  const keep = <T extends { text: string }>(bs: T[]) => bs.filter((b) => !needles.some((n) => b.text.toLowerCase().includes(n)));
-  const fix = <T extends { bullets: { id: string; text: string }[] }>(es: T[]) => es.map((e) => ({ ...e, bullets: keep(e.bullets) }));
-  return { ...cv, experience: fix(cv.experience), projects: fix(cv.projects), leadership: fix(cv.leadership) };
-}
 
 export async function uploadCv(formData: FormData): Promise<UploadCvResult> {
   const { supabase, user } = await requireUser();
@@ -43,17 +34,21 @@ export async function uploadCv(formData: FormData): Promise<UploadCvResult> {
   const imageOnly = isImageOnly(pdf.pageTexts);
 
   // A4: the CV is untrusted input. Scan before parsing; flagged spans never reach the parser or the stored text.
-  let safety;
+  let safety: SafetyReport;
   try { safety = await scanCvSafety({ text: pdf.text, pdfBytes: bytes.slice() }); }
-  catch { safety = await scanCvSafety({ text: pdf.text }); }
+  catch {
+    try { safety = await scanCvSafety({ text: pdf.text }); }
+    catch (e) { console.error("scanCvSafety failed; treating CV as clean", e); safety = { verdict: "clean", issues: [] }; }
+  }
   const flagged = safety.verdict === "flag";
   const cleanText = flagged ? stripFlaggedSpans(pdf.text, safety) : pdf.text;
+  const cleanPages = flagged ? pdf.pageTexts.map((t) => stripFlaggedSpans(t, safety)) : pdf.pageTexts;
 
   let parsed: ParsedCV;
   try {
-    parsed = await parseCV({ base64, text: cleanText, fixtureKey: contentHash(base64).slice(0, 12) });
-    // The live LLM path reads the raw PDF, so also drop any parsed bullet that still carries a flagged span.
-    if (flagged) parsed = dropFlaggedBullets(parsed, safety.issues.map((i) => i.span));
+    parsed = await parseCV({ base64, text: cleanText, fixtureKey: contentHash(base64).slice(0, 12), textOnly: flagged });
+    // Defence in depth (flagged CVs are parsed text-only): drop any parsed content that still carries a flagged span.
+    if (flagged) parsed = dropFlaggedContent(parsed, safety.issues.map((i) => i.span));
   } catch { return { error: "We couldn't read this CV right now. Try again in a minute, or take the quiz." }; }
 
   const admin = createAdminClient();
@@ -64,7 +59,9 @@ export async function uploadCv(formData: FormData): Promise<UploadCvResult> {
   // Insert the new active row first, then deactivate the others: a failure never leaves the user without an active CV.
   const { data: cvRow, error } = await supabase.from("cvs").insert({
     user_id: user.id, storage_path: path, file_size: file.size, page_count: pdf.pageCount,
-    raw_text: cleanText, page_texts: pdf.pageTexts, parsed_json: { ...parsed, safety }, is_active: true,
+    raw_text: cleanText, page_texts: cleanPages,
+    // Never pass parsed_json wholesale into an LLM prompt: safety.issues contains the injected text.
+    parsed_json: { ...parsed, safety }, is_active: true,
   }).select("id").single();
   if (error || !cvRow) {
     await admin.storage.from("cvs").remove([path]);
@@ -91,5 +88,5 @@ export async function uploadCv(formData: FormData): Promise<UploadCvResult> {
   }).eq("user_id", user.id);
 
   const award = await awardXP(supabase, user.id, { type: "cv_uploaded", profileComplete: !imageOnly });
-  return { ok: true as const, award, imageOnly, cvId, safetyWarning: flagged };
+  return { ok: true as const, award, imageOnly, cvId, safetyWarning: flagged ? SAFETY_WARNING_COPY : null };
 }
