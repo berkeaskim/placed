@@ -3,10 +3,11 @@ import type { CheckerId, CvRule } from "@/lib/cv-rules/types";
 import { extractSkills, canonicalize } from "@/lib/skills/extract";
 import { escapeRegex } from "@/lib/text/regex";
 import { isImageOnly } from "@/lib/cv/image-only";
+import { clicheDensity } from "@/lib/cv/cliches";
+import type { SafetyReport } from "@/lib/cv/safety";
 import type { CvContext, RuleResult } from "./context";
 
 type Out = Omit<RuleResult, "ruleId">;
-const pending = (): Out => ({ status: "not_applicable", evidenceLine: null, fix: null, detail: "pending cv-modules" });
 const ok = (): Out => ({ status: "pass", evidenceLine: null, fix: null });
 const na = (): Out => ({ status: "not_applicable", evidenceLine: null, fix: null });
 const bad = (status: "fail" | "partial", evidenceLine: string | null, fix: string): Out => ({ status, evidenceLine, fix });
@@ -60,6 +61,15 @@ function ratingOutOf10(c: CvContext): RegExpMatchArray | null {
     if (near) return m;
   }
   return null;
+}
+
+function safetyCheck(report: SafetyReport | undefined, ruleId: "ATS-HID-01" | "ATS-INJ-01", fix: string): Out {
+  if (!report) return na();
+  const issues = report.issues.filter((i) => i.ruleId === ruleId);
+  if (issues.length === 0) return ok();
+  const show = (t: string) => t.replace(/[\u200B-\u200D\u2060\uFEFF\u202A-\u202E\u2066-\u2069]/g, (ch) => `<U+${ch.charCodeAt(0).toString(16).toUpperCase().padStart(4, "0")}>`);
+  const spans = issues.slice(0, 8).map((i) => show(i.span).slice(0, 120));
+  return { ...bad("fail", spans[0], fix), detail: `${issues.length} finding(s): ${spans.join(" | ")}` };
 }
 
 const GENERIC = /^(reading|travel(l)?ing|socialising|socializing|music|films?|movies|sports?|cooking|gym|going out|friends|netflix|gaming)$/i;
@@ -196,12 +206,15 @@ export const CHECKERS: Record<CheckerId, (ctx: CvContext, rule: CvRule) => Out> 
     if (n === checks.length) return ok();
     return bad(n >= 3 ? "partial" : "fail", null, "Put your name, latest role, dates and education in the top third of page one — recruiters decide in seconds.");
   },
-  // TODO(cv-modules): wire clicheDensity() (lib/cv/cliches.ts) once feat/cv-modules lands.
-  cliche_density: () => pending(),
-  // TODO(cv-modules): wire scanCvSafety() (lib/cv/safety.ts) hidden-text findings once feat/cv-modules lands.
-  hidden_text: () => pending(),
-  // TODO(cv-modules): wire scanCvSafety() (lib/cv/safety.ts) prompt-injection findings once feat/cv-modules lands.
-  prompt_injection: () => pending(),
+  cliche_density: (c) => {
+    const d = clicheDensity(c.text);
+    if (d.severity === "ok") return ok();
+    const spans = [...new Set(d.hits.map((h) => h.match.trim().toLowerCase()))].slice(0, 12);
+    const detail = `${d.severity === "major" ? "Major: " : "Minor: "}${d.per100Words.toFixed(1)} clichés per 100 words. Spans: ${spans.join("; ")}`;
+    return { ...bad("fail", d.hits[0]?.match ?? null, "Replace stock phrases ('passionate', 'results-driven', 'leverage') with what you actually did and the result."), detail };
+  },
+  hidden_text: (c) => safetyCheck(c.safety, "ATS-HID-01", "Remove the hidden text — ATS can read it even though people can't, and some reject CVs that contain it."),
+  prompt_injection: (c) => safetyCheck(c.safety, "ATS-INJ-01", "Remove the instruction-style text aimed at an AI screener — it won't help you and can get your CV rejected."),
 };
 
 export function runCodeChecks(rules: CvRule[], ctx: CvContext): RuleResult[] {

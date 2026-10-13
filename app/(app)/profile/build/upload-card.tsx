@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { celebrate } from "@/components/reward-toast";
+import { SAFETY_WARNING } from "@/lib/cv/safety";
 import { uploadCv } from "./actions";
 
 const STEPS = ["Reading your CV…", "Spotting your skills…", "Finding your roles…", "Scoring against recruiter rules…"];
@@ -13,6 +14,7 @@ export function UploadCard() {
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [unreadable, setUnreadable] = useState(false);
+  const [safetyWarning, setSafetyWarning] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [step, setStep] = useState(0);
   useEffect(() => {
@@ -25,11 +27,13 @@ export function UploadCard() {
     <form action={(fd) => start(async () => {
       setError(null);
       setUnreadable(false);
+      setSafetyWarning(false);
       const r = await uploadCv(fd);
       if (inputRef.current) inputRef.current.value = ""; // allow re-picking the same file
       if ("error" in r) { setError(r.error); return; }
       celebrate(r.award);
       if (r.imageOnly) { setUnreadable(true); return; }
+      if (r.safetyWarning) { setSafetyWarning(true); return; }
       router.push("/profile");
     })} className="card-quest flex flex-col gap-4 p-6">
       <h2 className="text-xl font-extrabold">Upload your CV</h2>
@@ -52,6 +56,12 @@ export function UploadCard() {
       </label>
       {pending && <p role="status" aria-live="polite" className="font-semibold text-[#3A20C4]">{STEPS[step]}</p>}
       {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+      {safetyWarning && (
+        <div role="alert" className="flex flex-col gap-2 rounded-2xl bg-[#FFF4E5] p-4 text-sm">
+          <p className="font-bold">{SAFETY_WARNING}</p>
+          <Link href="/profile" className="font-bold text-[#3A20C4] underline">Continue to your profile</Link>
+        </div>
+      )}
       {unreadable && (
         <div role="alert" className="flex flex-col gap-2 rounded-2xl bg-[#FFF4E5] p-4 text-sm">
           <p className="font-bold">We couldn&apos;t read this CV — try another file or take the quiz.</p>
