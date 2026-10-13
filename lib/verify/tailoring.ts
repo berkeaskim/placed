@@ -149,10 +149,15 @@ function vagueBacked(key: string, noun: string | null, keys: Set<string>, suppor
   if (keys.has(key)) return true;
   const min = VAGUE_MIN[key.slice(2)];
   if (noun === null) return keySupported(key, keys);
+  const followedByNoun = (end: number) =>
+    (supportText.slice(end).match(/[A-Za-z][A-Za-z-]*/g)?.slice(0, 4) ?? []).some((x) => stem(x.split("-").pop()!) === noun);
   for (const m of supportText.matchAll(NUM)) {
-    if (!numValues(m[0]).some((v) => +v >= min)) continue;
-    const next = supportText.slice(m.index! + m[0].length).match(/[A-Za-z][A-Za-z-]*/g)?.slice(0, 4) ?? [];
-    if (next.some((x) => stem(x.split("-").pop()!) === noun)) return true;
+    if (numValues(m[0]).some((v) => +v >= min) && followedByNoun(m.index! + m[0].length)) return true;
+  }
+  // Task 22b: number words count too ("Organised thirty weekly society events" backs "dozens of … events")
+  for (const w of wordMetrics(supportText)) {
+    if (!w.key.startsWith("n:") || +w.key.slice(2) < min) continue;
+    for (let at = supportText.indexOf(w.raw); at >= 0; at = supportText.indexOf(w.raw, at + 1)) if (followedByNoun(at + w.raw.length)) return true;
   }
   return false;
 }
@@ -396,6 +401,22 @@ const HYPHEN_HEADS = new Set(("hands hand detail fast self high low multi tech r
 const ATTITUDE_TAIL = /^(?:focused|driven|minded|oriented|conscious|aware|centred|centered|centric|first|facing)$/;
 /** Suffixes strong enough to mark a compound head as an ordinary word ("Leadership-trained"); not the loose -er/-ian/-al shapes. */
 const STRONG_WORDISH = /(?:ing|ed|ment|ness|tion|sion|ship|ology|ism)$/;
+/** Task 22b (b): -ly adverbs built on adjective endings ("Commercially-savvy", "Quantitatively-trained"). */
+const LY_ADVERB = /^[a-z]{3,}(?:al|ic|ive|ous|ful|ent|ant|ate|ar)ly$/i;
+/** Plain adverbs outside LY_ADVERB's shape that precede a participle ("Fully trained", "Newly funded"). */
+const ADVERBS = new Set("fully newly highly partly jointly widely well".split(" "));
+/** Task 22b (d): CV-domain nouns that head ordinary compounds ("Evidence-based", "Audit-ready", "Event-experienced"). */
+const DOMAIN_HEADS = new Set(("evidence insight policy analytics career interview workplace audit media digital commerce model theory survey revenue " +
+  "office cash case event data research finance market client project product team community sector industry numbers detail quality process " +
+  "risk impact growth value people customer service").split(" "));
+/** Task 22b (c): a head's stem — trailing s/es/ed/ing stripped ("Events" ≡ "Event"). */
+const headStem = (w: string) => { const s = w.toLowerCase(); const t = s.replace(/(?:ing|ed|es|s)$/, ""); return t.length >= 3 ? t : s; };
+/** Task 22b: participles that turn a preceding capitalised word into an affiliation claim ("Unilever sponsored"). */
+const AFFIL_PARTICIPLE = /^\s+(?:sponsored|trained|backed|funded|led|mentored|certified|accredited|hosted|employed|commissioned|endorsed)\b/i;
+/** Task 22b: hyphen-like characters between letters (U+2010–U+2013, U+2212) read as "-" before tokenising. Same length, so indices hold. */
+const dashNorm = (t: string) => t.replace(/(?<=[A-Za-z])[‐‑‒–−](?=[A-Za-z])/g, "-");
+/** Task 22b: vendor names allowed only directly before a tool the CV already has ("Microsoft Excel"). */
+const VENDOR_PREFIX = new Set(["microsoft", "google", "adobe", "apache", "amazon"]);
 /** Morphology that marks an ordinary verb/adjective/noun rather than a name ("Cleaned", "Analytical", "Leadership"). */
 const WORDISH = /(?:ed|ing|ise|ize|ises|izes|ly|ive|ful|ous|able|ible|ment|ments|ness|tion|tions|sion|ity|ship|ist|ists|ism|ics|ical|al|ent|ents|ant|ants|ary|ory|ic|er|ers|or|ors|ian|ians|ate|ates|ance|ence|ology|age)$/;
 
@@ -517,6 +538,23 @@ export function verifyTailoring(i: VerifyInput): VerifyReport {
   const yearsUsed = new Map<string, Set<string>>(); // unit key → years accepted as dates (scopedMetrics must not re-flag them)
   const srcSkills = new Set(extractSkills(corpus));
   const jdStems = new Set(i.jdKeywords.flatMap((k) => [...contentStems(k)]));
+  // Task 22b (c): stems of CV tokens, and of JD tokens that read as ordinary words. A JD token written capitalised and not
+  // in a sentence-case phrase ("Xero", "Power BI") is proper-noun-like and never makes a head ordinary: the JD is no fact source.
+  const cvHeadStems = new Set((corpus.match(/[A-Za-z]+/g) ?? []).map(headStem));
+  const jdHeadStems = new Set(i.jdKeywords.flatMap((k) => {
+    const ws = k.match(/[A-Za-z]+/g) ?? [];
+    return ws.filter((w, n) => /^[a-z]/.test(w) || (n === 0 && ws.length > 1 && ws.slice(1).every((x) => /^[a-z]/.test(x)))).map(headStem);
+  }));
+  /** Task 22b ruling: a compound head (or a word before an affiliation participle) is ordinary vocabulary, not a name. */
+  const headIsOrdinary = (lower: string) => COMMON.has(lower) || ADJECTIVES.has(lower) || HYPHEN_HEADS.has(lower) || STRONG_WORDISH.test(lower) ||
+    LY_ADVERB.test(lower) || ADVERBS.has(lower) || DOMAIN_HEADS.has(lower) || cvHeadStems.has(headStem(lower)) || jdHeadStems.has(headStem(lower));
+  /** "Microsoft Excel": a vendor word directly before a tool the CV already names. */
+  const vendorOk = (text: string, end: number) => {
+    const next = text.slice(end).match(/^\s+([A-Z][A-Za-z0-9+#]*)/)?.[1];
+    if (!next) return false;
+    const sk = extractSkills(next);
+    return sk.length ? sk.every((x) => srcSkills.has(x)) : new RegExp(`(?<![A-Za-z0-9])${escapeRegex(next)}(?![A-Za-z0-9])`).test(corpus);
+  };
   const hardJd = i.jdKeywords.filter((k) => isHardTerm(k) && extractSkills(k).length === 0 && !hasToken(cNorm, k));
   const srcUnits = sourceUnits(i.source).map((t) => ({ t, stems: contentStems(t) }));
   const factsText = i.confirmedFacts.join("\n");
@@ -663,7 +701,8 @@ export function verifyTailoring(i: VerifyInput): VerifyReport {
     for (const { k: emp, res } of EMPLOYER_RES) {
       if (extractSkills(emp.name).length) continue; // skillInjection owns tools that are also companies
       for (const re of res) for (const m of u.text.matchAll(re)) {
-        const known = [emp.name, ...(emp.aliases ?? [])].some((n) => hasToken(cNorm, n) || cCompact.has(norm(n).replace(/ /g, "")));
+        const known = [emp.name, ...(emp.aliases ?? [])].some((n) => hasToken(cNorm, n) || cCompact.has(norm(n).replace(/ /g, "")))
+          || (VENDOR_PREFIX.has(m[0].toLowerCase()) && vendorOk(u.text, m.index! + m[0].length));
         employerSpans.push([m.index!, m.index! + m[0].length]);
         if (known || issues.some((x) => key(x) === k && x.claim.toLowerCase() === m[0].toLowerCase())) continue;
         issues.push({ type: "unsupportedFacts", severity: "block", ...where(u), claim: m[0], check: "knownEmployer",
@@ -672,7 +711,8 @@ export function verifyTailoring(i: VerifyInput): VerifyReport {
     }
     // #2 proper nouns / acronyms (employers, tools) not whole-token in the corpus. Hyphens split tokens ("Ex-Deloitte").
     const flagged = new Set<string>();
-    const toks = [...u.text.matchAll(/[A-Za-z][A-Za-z0-9+#&']*/g)].map((m) => ({ tok: m[0].replace(/'s$|'$/, ""), index: m.index!, len: m[0].length }));
+    const pText = dashNorm(u.text);
+    const toks = [...pText.matchAll(/[A-Za-z][A-Za-z0-9+#&']*/g)].map((m) => ({ tok: m[0].replace(/'s$|'$/, ""), index: m.index!, len: m[0].length }));
     const isCap = (t: string) => /^[A-Z]/.test(t);
     for (let n = 0; n < toks.length; n++) {
       const { tok, index, len } = toks[n];
@@ -680,28 +720,32 @@ export function verifyTailoring(i: VerifyInput): VerifyReport {
       if (tok.length < 2 || PROPER_ALLOW.has(lower) || flagged.has(lower)) continue;
       if (employerSpans.some(([a, b]) => index < b && index + len > a)) continue;
       const allCaps = /^[A-Z0-9&+#]+$/.test(tok) && /[A-Z].*[A-Z]|[A-Z]\d/.test(tok);
-      const before = u.text.slice(0, index).trimEnd();
+      const before = pText.slice(0, index).trimEnd();
       const sentenceStart = before === "" || /[.!?:;•▪|–—(]$/.test(before) || /\s-$/.test(` ${before}`);
       // Round 5: a capitalised compound is exempt only when its head is ordinary vocabulary or its tail is attitude-only
       // ("Policy-focused", "Tax-savvy", "Till-trained" pass; "Xero-literate", "Zorblax-led", "Unilever-sponsored" don't).
       // A non-exempt compound head is a name candidate at any position, sentence start included.
-      const tail = isCap(tok) && !allCaps ? u.text.slice(index + len).match(/^-([a-z]+)/)?.[1] : undefined;
-      const headOrdinary = COMMON.has(lower) || ADJECTIVES.has(lower) || HYPHEN_HEADS.has(lower) || STRONG_WORDISH.test(lower);
+      const tail = isCap(tok) && !allCaps ? pText.slice(index + len).match(/^-([a-z]+)/)?.[1] : undefined;
+      const headOrdinary = headIsOrdinary(lower);
       const compound = tail !== undefined;
       const compoundExempt = compound && (headOrdinary || ATTITUDE_TAIL.test(tail));
       // "UCL, Class of 2027": a cohort, not a name
-      if (lower === "class" && /^\s+of\s+\d{4}\b/.test(u.text.slice(index + len))) continue;
+      if (lower === "class" && /^\s+of\s+\d{4}\b/.test(pText.slice(index + len))) continue;
+      if (VENDOR_PREFIX.has(lower) && vendorOk(pText, index + len)) continue;
       const ordinary = COMMON.has(lower) || ADJECTIVES.has(lower) || IRREGULAR_PAST.has(lower) || WORDISH.test(lower) || authorshipLevel(lower) !== null || IRREGULAR.has(lower);
-      const candidate = allCaps || (compound ? !compoundExempt : isCap(tok) && (!sentenceStart || !ordinary));
+      // Task 22b: "Unilever sponsored …" at sentence start is the spaced form of "Unilever-sponsored"; verbs ("Led trained …") stay ordinary
+      const spacedAffil = !compound && isCap(tok) && sentenceStart && AFFIL_PARTICIPLE.test(pText.slice(index + len)) &&
+        !(headOrdinary || IRREGULAR_PAST.has(lower) || IRREGULAR.has(lower) || authorshipLevel(lower) !== null);
+      const candidate = allCaps || spacedAffil || (compound ? !compoundExempt : isCap(tok) && (!sentenceStart || !ordinary));
       if (!candidate) continue;
       if (hasToken(cNorm, tok) || cCompact.has(lower) || (allCaps && inits.has(lower))) continue;
       // capitalised run ("Survey Monkey") compared with spaces removed
       let a = n, b = n;
-      while (a > 0 && isCap(toks[a - 1].tok) && /^\s+$/.test(u.text.slice(toks[a - 1].index + toks[a - 1].len, toks[a].index))) a--;
-      while (b < toks.length - 1 && isCap(toks[b + 1].tok) && /^\s+$/.test(u.text.slice(toks[b].index + toks[b].len, toks[b + 1].index))) b++;
+      while (a > 0 && isCap(toks[a - 1].tok) && /^\s+$/.test(pText.slice(toks[a - 1].index + toks[a - 1].len, toks[a].index))) a--;
+      while (b < toks.length - 1 && isCap(toks[b + 1].tok) && /^\s+$/.test(pText.slice(toks[b].index + toks[b].len, toks[b + 1].index))) b++;
       if (b > a && cCompact.has(toks.slice(a, b + 1).map((t) => t.tok.toLowerCase()).join(""))) continue;
       if (jdHits.some((kw) => hasToken(norm(kw), tok)) || [...inj].some((s) => hasToken(norm(s), tok))) continue;
-      if (partOfSkill(u.text, index, len)) continue;
+      if (partOfSkill(pText, index, len)) continue;
       flagged.add(lower);
       issues.push({ type: "unsupportedFacts", severity: "block", ...where(u), claim: tok, reason: `"${tok}" isn't in your original CV — we don't add employers, tools or credentials` });
     }

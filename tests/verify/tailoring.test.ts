@@ -745,3 +745,90 @@ describe("fix round 5: a vague quantity needs a big enough number for the same t
     expect(has(r.issues, "inventedMetrics")).toBe(false);
   });
 });
+
+// ---------- Task 22b: ordinary heads by shape / CV stem / domain noun; typographic variants; number words; vendor prefixes ----------
+
+const FALSE_BLOCKS_22B = ["Evidence-based", "Commercially-savvy", "Financially-literate", "Technically-proficient", "Digitally-literate", "Analytics-ready",
+  "Commercially-astute", "Numerically-skilled", "Economically-literate", "Internationally-experienced", "Quantitatively-trained", "Evidence-led",
+  "Evidence-informed", "Insight-led", "Insight-based", "Policy-literate", "Analytics-literate", "Career-ready", "Interview-ready", "Workplace-ready",
+  "Audit-ready", "Media-savvy", "Digital-savvy", "Commerce-savvy", "Model-literate", "Theory-grounded", "Survey-based", "Revenue-led",
+  "Office-proficient", "Event-experienced"];
+
+describe("task 22b finding 1: plain English heads are ordinary", () => {
+  it.each(FALSE_BLOCKS_22B)("'%s' passes as a summary opener and mid-sentence", (c) => {
+    expect(blocks4(ex4((t) => { t.summary = `${c} Economics student at UCL`; }))).toEqual([]);
+    expect(blocks4(ex4((t) => { t.summary = `Economics student at UCL, ${c} and numerate`; }))).toEqual([]);
+  });
+  it.each([
+    "Xero-literate Economics student at UCL", "Economics student at UCL, Xero-literate", "Economics student at UCL, Xero-based",
+    "Zorblax-trained Economics student at UCL", "Zorblax-sponsored Economics student at UCL", "Ocado-sponsored Economics student at UCL",
+    "PwC-trained Economics student at UCL", "McKinsey-mentored Economics student at UCL", "Unilever-led Economics student at UCL",
+  ])("'%s' still blocks", (s) => {
+    expect(blocksWith(ex4((t) => { t.summary = s; }), "unsupportedFacts")).toBe(true);
+  });
+  it("a JD-only proper noun is never an ordinary head: JD mentions Xero, CV doesn't", () => {
+    const t = toTailored(econ4);
+    t.summary = "Economics student at UCL, Xero-literate";
+    const r = verifyTailoring({ source: econ4, sourceText: econ4Text, confirmedFacts: [], tailored: t, jdKeywords: ["Xero", "Excel"], coverageBefore: 0.3, coverageAfter: 0.5 });
+    expect(r.verdict).toBe("block");
+    const t2 = toTailored(econ4);
+    t2.summary = "Xero-literate Economics student at UCL";
+    expect(verifyTailoring({ source: econ4, sourceText: econ4Text, confirmedFacts: [], tailored: t2, jdKeywords: ["Xero"], coverageBefore: 0.3, coverageAfter: 0.5 }).verdict).toBe("block");
+  });
+  it("a lowercase JD word is an ordinary head ('stakeholder-ready')", () => {
+    expect(blocks4(ex4((t) => { t.summary = "Stakeholder-ready Economics student at UCL"; }))).toEqual([]);
+  });
+});
+
+describe("task 22b finding 2: typographic variants of affiliation compounds", () => {
+  it.each([
+    "Unilever‑sponsored Economics student at UCL",
+    "Unilever–sponsored Economics student at UCL",
+    "Unilever‐sponsored Economics student at UCL",
+    "Unilever−sponsored Economics student at UCL",
+    "Unilever sponsored Economics student at UCL",
+    "Mercer trained Economics student at UCL",
+    "Experian backed Economics student at UCL",
+    "Zorblax funded Economics student at UCL",
+  ])("summary '%s' blocks", (s) => {
+    expect(blocksWith(ex4((t) => { t.summary = s; }), "unsupportedFacts")).toBe(true);
+  });
+  it.each(["Unilever sponsored weekly society events for 60 members", "Mercer‑trained volunteers at weekly society events for 60 members"])(
+    "bullet '%s' blocks", (s) => { expect(blocksWith(ex4(ex4Bullet(s)), "unsupportedFacts")).toBe(true); });
+  it.each([
+    ["Trained volunteers in organising weekly society events for 60 members", "experience", 0],
+    ["Led weekly sessions: organised society events for 60 members", "experience", 0],
+    ["Self funded Economics student at UCL", "summary", 0],
+    ["Society trained Economics student at UCL", "summary", 0],
+    ["Policy‑focused Economics student at UCL", "summary", 0],
+  ] as const)("'%s' behaves as before (no unsupported fact)", (s, where, e) => {
+    const r = ex4(where === "summary" ? (t) => { t.summary = s; } : ex4Bullet(s, where, e));
+    expect(has(r.issues, "unsupportedFacts")).toBe(false);
+  });
+});
+
+describe("task 22b cheap items", () => {
+  it("number words in the source back a vague quantity of the same thing", () => {
+    const cv = structuredClone(econ4);
+    cv.experience[0].bullets[0].text = "Organised thirty weekly society events";
+    const t = toTailored(cv);
+    t.experience[0].bullets[0] = { ...t.experience[0].bullets[0], text: "Organised dozens of weekly society events", changeType: "rephrased" };
+    const r = verifyTailoring({ source: cv, sourceText: econ4Text, confirmedFacts: [], tailored: t, jdKeywords: [], coverageBefore: 0.3, coverageAfter: 0.5 });
+    expect(has(r.issues, "inventedMetrics")).toBe(false);
+  });
+  it("a small number word still doesn't back 'dozens'", () => {
+    const cv = structuredClone(econ4);
+    cv.experience[0].bullets[0].text = "Organised twenty weekly society events";
+    const t = toTailored(cv);
+    t.experience[0].bullets[0] = { ...t.experience[0].bullets[0], text: "Organised dozens of weekly society events", changeType: "rephrased" };
+    const r = verifyTailoring({ source: cv, sourceText: econ4Text, confirmedFacts: [], tailored: t, jdKeywords: [], coverageBefore: 0.3, coverageAfter: 0.5 });
+    expect(blocksWith(r, "inventedMetrics")).toBe(true);
+  });
+  it.each(["Tracked weekly donations in Microsoft Excel", "Tracked weekly donations in Microsoft Excel"])("'%s' passes when Excel is on the CV", (s) => {
+    expect(blocks4(ex4(ex4Bullet(s, "leadership")))).toEqual([]);
+  });
+  it.each(["Analysed shop footfall data with pandas and Apache Spark", "Tracked weekly donations in Microsoft Access", "Tracked weekly donations for Microsoft"])(
+    "'%s' still blocks (vendor prefix only before a CV tool)", (s) => {
+      expect(ex4(ex4Bullet(s, s.startsWith("Analysed") ? "projects" : "leadership")).verdict).toBe("block");
+    });
+});
