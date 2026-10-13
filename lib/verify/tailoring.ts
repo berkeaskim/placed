@@ -392,7 +392,9 @@ const HYPHEN_HEADS = new Set(("hands hand detail fast self high low multi tech r
   "award student community quick hard easy fact number numbers market public private front back side one two three four five half " +
   "forward future solution value risk budget deadline till crowd industry peer government council family employee charity state " +
   "dry trial test home barista retail sales staff volunteer club society university college school field site job " +
-  "tax stats code spreadsheet money").split(" "));
+  "tax stats code spreadsheet money " +
+  // fix round 2: generic organisation nouns ("Grant-funded", "Committee-led", "Board-approved", "Shop-run", "Weekend-trained")
+  "employer company firm grant committee board manager supervisor trust union shop weekly members donations weekend shift hospitality").split(" "));
 /**
  * Round 5 ruling: tails that only describe an attitude ("Policy-focused", "Brand-aware") never make the head a claim.
  * Every other tail (competence: savvy, literate, proficient, based, ready…; affiliation: trained, led, sponsored,
@@ -422,7 +424,25 @@ const MONTH_TOKENS = new Set(("jan feb mar apr may jun jul aug sep sept oct nov 
 /** Task 22b (c): a head's stem — trailing s/es/ed/ing stripped ("Events" ≡ "Event"). */
 const headStem = (w: string) => { const s = w.toLowerCase(); const t = s.replace(/(?:ing|ed|es|s)$/, ""); return t.length >= 3 ? t : s; };
 /** Task 22b: participles that turn a preceding capitalised word into an affiliation claim ("Unilever sponsored"). */
-const AFFIL_PARTICIPLE = /^\s+(sponsored|trained|backed|funded|led|mentored|certified|accredited|hosted|employed|commissioned|endorsed)\b/i;
+const AFFIL_PARTICIPLE = /^\s+(sponsored|trained|backed|funded|led|mentored|certified|accredited|hosted|employed|commissioned|endorsed|run|owned|hired|placed|partnered|approved)\b/i;
+/** Fix round 2: role/claim nouns that make the capitalised words before them an employer claim ("Unilever summer intern"). */
+const ROLE_NOUN = "interns?|internships?|placements?|schemes?|trainees?|traineeships?|programmes?|programs?|alumn(?:us|a|i|ae)|analysts?|associates?|" +
+  "graduates?|apprentices?|apprenticeships?|insight|spring\\s+weeks?|summer\\s+analysts?|work\\s+experience";
+/** A role noun directly after, or one word after, a name ("Mercer placement", "Unilever summer intern"). */
+const ROLE_AFTER = new RegExp(`^(?:\\s+[A-Za-z]+)?\\s+(?:${ROLE_NOUN})\\b`, "i");
+/** A 1–3-word capitalised run ("Slaughter and May", "Silverwater Partners") opening a sentence, followed by a role noun. */
+const ROLE_RUN = new RegExp(`(?:^|[.!?:;•▪|–—(\\n])\\s*([A-Z][A-Za-z0-9&'.]*(?:\\s+(?:(?:and|&)\\s+)?[A-Z][A-Za-z0-9&'.]*){0,2})(?=(?:\\s+[A-Za-z]+)?\\s+(?:${ROLE_NOUN})\\b)`, "g");
+/** Ordinary words a role run may contain ("Summer intern", "Graduate scheme", "Economics graduate", "Charity volunteer"). */
+const ROLE_ORDINARY = new Set(("summer spring autumn winter vacation insight work graduate graduates events event charity intern internship placement " +
+  "scheme trainee programme program analyst associate apprentice apprenticeship alumnus alumna").split(" "));
+/** Fix round 2: role titles that are ordinary words mid-sentence ("aspiring Economist", "become an Analyst"). */
+const ROLE_TITLES = new Set("economist economists analyst analysts associate associates researcher researchers officer officers assistant assistants".split(" "));
+/** Fix round 2 (ruling 2): contexts where an employer name claims an affiliation, not tool use ("former X intern", "at X", "X-sponsored"). */
+function employerClaim(text: string, start: number, end: number): boolean {
+  const before = text.slice(0, start), after = text.slice(end);
+  return /(?:\b(?:at|for|former|formerly|joined|joining)\s+|\bex\s*-\s*|\bex\s+)$/i.test(before) || ROLE_AFTER.test(after) ||
+    /^(?:-| - |\s+)(?:sponsored|funded|backed|mentored|commissioned|trained|hosted|employed|certified|accredited|endorsed|led|run|owned|hired|placed|partnered|approved)\b/i.test(after);
+}
 /** Task 22b: hyphen-like characters between letters (U+2010–U+2014, U+2212) read as "-" before tokenising. Same length, so indices hold. */
 const dashNorm = (t: string) => t.replace(/(?<=[A-Za-z])[‐‑‒–—−](?=[A-Za-z])/g, "-");
 /** Task 22b: vendor names allowed only directly before a tool the CV already has ("Microsoft Excel"). */
@@ -477,6 +497,8 @@ export const KNOWN_EMPLOYERS: KnownEmployer[] = [
   E("Tractable", [], true), E("Trainline"), E("UNIQLO"), E("UiPath"), E("Vercel"), E("Verkada"), E("Viridien"), E("Virtu Financial", ["Virtu"]),
   E("Wayve"), E("Wellington Management"), E("Wise", [], true), E("Xantium"), E("Zilch", [], true), E("Zopa"), E("iSAM"), E("Econic Partners"),
   E("Lloyds"),
+  // fix round 2: employers whose names look like ordinary words (-er/-ers/-ian/-ing) at sentence start
+  E("Unilever"), E("Mercer"), E("Linklaters"), E("Boeing"), E("Schroders"), E("Gartner"), E("Experian"), E("Ocado"), E("Slaughter and May", [], true),
 ];
 /** Single-word employer names/aliases, lowercased: never an ordinary affiliation head (fix round 1, ruling 3). */
 const EMPLOYER_WORDS = new Set(KNOWN_EMPLOYERS.flatMap((k) => [k.name, ...(k.aliases ?? [])]).filter((n) => /^[A-Za-z0-9.]+$/.test(n)).map((n) => n.toLowerCase()));
@@ -566,6 +588,12 @@ export function verifyTailoring(i: VerifyInput): VerifyReport {
   const cvWords = (corpus.match(/[A-Za-z]+/g) ?? []).map((w) => w.toLowerCase()).filter((w) => !MONTH_TOKENS.has(w));
   const cvHeadExact = new Set(cvWords);
   const cvHeadStems = new Set(cvWords.filter((w) => w.length >= 4).map(headStem));
+  // fix round 2 (ruling 2): where an employer *claim* is made, only org/title/bullet/summary text counts — never the skills list
+  // or the raw text (which repeats the skills list). "Snowflake" as a skill does not back "former Snowflake intern".
+  const nameCorpus = [i.source.summary, i.source.interests, ...i.source.education.flatMap((e) => [e.institution, e.degree, e.grade, ...e.details.map((d) => d.text)]),
+    ...sections<ParsedCV, CvEntry>(i.source).flatMap((e) => [e.org, e.title, e.location, ...e.bullets.map((b) => b.text)]), ...i.confirmedFacts]
+    .filter((t): t is string => !!t).join("\n");
+  const nameInCv = (tok: string) => new RegExp(`(?<![A-Za-z0-9])${escapeRegex(tok)}(?![A-Za-z0-9])`).test(nameCorpus);
   const inCvVocab = (lower: string) => cvHeadExact.has(lower) || cvHeadStems.has(headStem(lower));
   /** List vocabulary, -ly adverbs and domain nouns (rulings (a), (b), (d)), without COMMON or the CV route. */
   const listHead = (lower: string) => ADJECTIVES.has(lower) || HYPHEN_HEADS.has(lower) || STRONG_WORDISH.test(lower) ||
@@ -737,11 +765,15 @@ export function verifyTailoring(i: VerifyInput): VerifyReport {
     injectedByUnit.set(k, inj);
     // #2 known employers, any case (fix 2)
     const employerSpans: [number, number][] = [];
+    const dText = dashNorm(u.text);
     for (const { k: emp, res } of EMPLOYER_RES) {
-      if (extractSkills(emp.name).length) continue; // skillInjection owns tools that are also companies
+      const isTool = extractSkills(emp.name).length > 0;
       for (const re of res) for (const m of u.text.matchAll(re)) {
-        const known = employerInCv(corpus, emp)
-          || (VENDOR_PREFIX.has(m[0].toLowerCase()) && vendorOk(u.text, m.index! + m[0].length));
+        // fix round 2: an employer claim ("former Snowflake intern", "at Figma", "Notion-sponsored") needs a non-skills mention
+        const claim = employerClaim(dText, m.index!, m.index! + m[0].length);
+        if (isTool && !claim) continue; // skillInjection owns tool usage of companies that are also tools
+        const known = employerInCv(claim ? nameCorpus : corpus, emp)
+          || (!claim && VENDOR_PREFIX.has(m[0].toLowerCase()) && vendorOk(u.text, m.index! + m[0].length));
         employerSpans.push([m.index!, m.index! + m[0].length]);
         if (known || issues.some((x) => key(x) === k && x.claim.toLowerCase() === m[0].toLowerCase())) continue;
         issues.push({ type: "unsupportedFacts", severity: "block", ...where(u), claim: m[0], check: "knownEmployer",
@@ -753,6 +785,8 @@ export function verifyTailoring(i: VerifyInput): VerifyReport {
     const pText = dashNorm(u.text);
     const toks = [...pText.matchAll(/[A-Za-z][A-Za-z0-9+#&']*/g)].map((m) => ({ tok: m[0].replace(/'s$|'$/, ""), index: m.index!, len: m[0].length }));
     const isCap = (t: string) => /^[A-Z]/.test(t);
+    // fix round 2 (ruling 1b): spans of sentence-opening capitalised runs followed by a role noun ("Mercer placement", "Linklaters trainee")
+    const roleRuns = [...pText.matchAll(ROLE_RUN)].map((m) => { const s0 = m.index! + m[0].length - m[1].length; return [s0, s0 + m[1].length] as const; });
     for (let n = 0; n < toks.length; n++) {
       const { tok, index, len } = toks[n];
       const lower = tok.toLowerCase();
@@ -779,7 +813,17 @@ export function verifyTailoring(i: VerifyInput): VerifyReport {
       const participle = !compound && isCap(tok) && sentenceStart ? pText.slice(index + len).match(AFFIL_PARTICIPLE)?.[1]?.toLowerCase() : undefined;
       const spacedAffil = participle !== undefined &&
         !(affilHeadOk(tok, participle) || IRREGULAR_PAST.has(lower) || IRREGULAR.has(lower) || authorshipLevel(lower) !== null);
-      const candidate = allCaps || spacedAffil || (compound ? !compoundExempt : isCap(tok) && (!sentenceStart || !ordinary));
+      // fix round 2: a role-run word is a name regardless of WORDISH shape unless it is ordinary or written as a name in the CV (not skills)
+      const roleClaim = !compound && isCap(tok) && roleRuns.some(([a0, b0]) => index >= a0 && index < b0) &&
+        !((COMMON.has(lower) && !COMMON_BRANDS.has(lower)) || ADJECTIVES.has(lower) || DOMAIN_HEADS.has(lower) || HYPHEN_HEADS.has(lower) ||
+          ROLE_ORDINARY.has(lower) || nameInCv(tok));
+      if (roleClaim && !flagged.has(lower)) {
+        flagged.add(lower);
+        issues.push({ type: "unsupportedFacts", severity: "block", ...where(u), claim: tok, reason: `"${tok}" isn't in your original CV — we don't add employers, tools or credentials` });
+        continue;
+      }
+      const roleTitle = !compound && ROLE_TITLES.has(lower);
+      const candidate = allCaps || spacedAffil || (compound ? !compoundExempt : isCap(tok) && !roleTitle && (!sentenceStart || !ordinary));
       if (!candidate) continue;
       // an affiliation head was already judged against the CV in affilHeadOk; a matching lowercase CV word doesn't excuse it
       if (!affilTail && !spacedAffil && (hasToken(cNorm, tok) || cCompact.has(lower) || (allCaps && inits.has(lower)))) continue;

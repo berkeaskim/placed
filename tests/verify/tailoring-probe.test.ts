@@ -253,3 +253,70 @@ describe("fix round 1 ruling 5: em dash and spaced hyphen compounds", () => {
     expect(runCv(same, text.startsWith("Society") ? "events" : "summary", text).verdict).not.toBe("block");
   });
 });
+
+// ---------- Task 22b fix round 2 ----------
+
+describe("fix round 2 ruling 1: employer-shaped names opening a sentence block", () => {
+  it.each([
+    ["summary", "Unilever summer intern 2025; Economics student at UCL"],
+    ["project", "Mercer placement project: analysed shop footfall data with pandas to suggest staffing changes"],
+    ["retail", "Served customers on the till during weekend shifts. Linklaters trainee programme alumnus"],
+    ["summary", "Boeing graduate scheme applicant and Economics student at UCL"],
+    ["summary", "Schroders spring week attendee; Economics student at UCL"],
+    ["summary", "Prudential insight programme participant; Economics student at UCL"],
+    ["summary", "Admiral summer analyst and Economics student at UCL"],
+    ["summary", "Gartner work experience; Economics student at UCL"],
+    ["summary", "Experian internship 2025; Economics student at UCL"],
+    ["summary", "Jupiter graduate associate; Economics student at UCL"],
+    ["summary", "Slaughter and May vacation scheme; Economics student at UCL"],
+    ["summary", "Economics student at UCL. Brightwater apprenticeship completed"],
+    ["summary", "Silverwater Partners graduate scheme; Economics student at UCL"],
+    ["events", "Unilever intern; organised weekly society events for 60 members"],
+    ["summary", "Economics student at UCL; Unilever placement 2025"],
+    ["summary", "Economics student at UCL, Boeing intern"],
+  ] as [Where, string][])("%s: '%s' blocks", (where, text) => {
+    expect(runCv(same, where, text).verdict).toBe("block");
+  });
+  const cafeCv = (c: ParsedCV) => { c.experience[1].org = "Northside Café"; };
+  it.each([
+    ["summary", "Summer intern at Northside Café and Economics student at UCL"],
+    ["summary", "Economics Society events officer and UCL student"],
+    ["summary", "Graduate scheme applicant; Economics student at UCL"],
+    ["summary", "Spring week applicant; Economics student at UCL"],
+    ["summary", "Economics graduate (2027) from UCL"],
+    ["summary", "Charity volunteer and Economics student at UCL"],
+    ["summary", "Events Officer; Economics student at UCL seeking an internship"],
+    ["summary", "Aspiring Economist and Economics student at UCL"],
+    ["summary", "Economics student at UCL aiming to become an Analyst or Researcher"],
+  ] as [Where, string][])("%s: '%s' passes", (where, text) => {
+    expect(runCv(cafeCv, where, text).verdict).not.toBe("block");
+  });
+});
+
+describe("fix round 2 ruling 2: a skills-list tool is not an employer", () => {
+  const tools = ["Snowflake", "Figma", "Databricks", "Datadog", "Palantir", "UiPath", "Vercel", "Notion", "Bloomberg"];
+  const withTool = (tool: string) => (c: ParsedCV) => { c.skills = [{ group: "Skills", items: ["Excel", "Python", "pandas", tool] }]; };
+  const claims = (tool: string) => [`Economics student at UCL, former ${tool} intern`, `${tool}-sponsored Economics student at UCL`,
+    `Economics student at UCL who interned at ${tool}`, `Economics student at UCL; ${tool} summer internship`];
+  it.each(tools.flatMap((tool) => claims(tool).map((text) => [tool, text])))("skills list has %s: '%s' blocks", (tool, text) => {
+    expect(runCv(withTool(tool), "summary", text).verdict).toBe("block");
+  });
+  it.each(tools)("skills list has %s: a tool-usage claim still passes", (tool) => {
+    expect(runCv(withTool(tool), "summary", `Economics student at UCL using ${tool} and Excel`).verdict).not.toBe("block");
+  });
+  it("an org mention still counts as presence", () => {
+    expect(runCv((c) => { c.experience[1].org = "Datadog"; }, "summary", "Economics student at UCL, former Datadog intern").verdict).not.toBe("block");
+  });
+});
+
+describe("fix round 2 cheap: generic org heads and participles", () => {
+  it.each(["Grant-funded", "Committee-led", "Board-approved", "Hospitality-ready", "Shop-run", "Weekend-trained", "Employer-sponsored",
+    "Company-sponsored", "Firm-wide", "Trust-funded", "Union-backed", "Manager-approved", "Supervisor-trained", "Shift-based", "Members-only",
+    "Donations-led", "Weekly-run"])("'%s' passes at the start and mid-sentence", (c) => {
+    expect(runCv(same, "summary", `${c} Economics student at UCL`).verdict).not.toBe("block");
+    expect(runCv(same, "summary", `Economics student at UCL, ${c} and numerate`).verdict).not.toBe("block");
+  });
+  it.each(["Unilever run Economics society events", "Mercer owned Economics student at UCL", "Unilever hired Economics student at UCL",
+    "Mercer placed Economics student at UCL", "Experian partnered Economics student at UCL", "Unilever approved Economics student at UCL"])(
+    "'%s' blocks", (text) => { expect(runCv(same, "summary", text).verdict).toBe("block"); });
+});
