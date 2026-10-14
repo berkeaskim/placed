@@ -14,12 +14,14 @@ type Tpl = { fields: { type: string; text: string; required: boolean; options?: 
 export function parseLever(html: string, site: string, id: string): NormalizedForm {
   if (!/name="email"/.test(html)) throw new FormUnavailableError();
   const fields: FormField[] = [];
+  const seen = new Set<string>();
+  const add = (f: FormField) => { if (!seen.has(f.target)) { seen.add(f.target); fields.push(f); } };
   const std: [string, string, FieldType, boolean][] = [
     ["resume", "Resume/CV", "file", true], ["name", "Full name", "text", true], ["email", "Email", "text", true],
     ["phone", "Phone", "text", false], ["location", "Current location", "location", false], ["org", "Current company", "text", false],
   ];
-  for (const [name, label, type, required] of std) if (html.includes(`name="${name}"`)) fields.push({ key: name, target: name, label, type, required, options: [] });
-  for (const m of html.matchAll(/name="(urls\[([^\]]+)\])"/g)) fields.push({ key: m[1], target: m[1], label: m[2], type: "text", required: false, options: [] });
+  for (const [name, label, type, required] of std) if (html.includes(`name="${name}"`)) add({ key: name, target: name, label, type, required, options: [] });
+  for (const m of html.matchAll(/name="(urls\[([^\]]+)\])"/g)) add({ key: m[1], target: m[1], label: m[2], type: "text", required: false, options: [] });
   // Attribute order varies: value before name (recorded fixture) or name before value.
   const cards: [string, string][] = [];
   for (const m of html.matchAll(/value="([^"]*)"\s+name="cards\[([0-9a-f-]+)\]\[baseTemplate\]"/g)) cards.push([m[2], m[1]]);
@@ -31,10 +33,10 @@ export function parseLever(html: string, site: string, id: string): NormalizedFo
       const type = CARD_TYPE[f.type];
       if (!type) return;
       const target = `cards[${cardId}][field${i}]`;
-      fields.push({ key: target, target, label: f.text.trim(), type, required: f.required,
-        options: (f.options ?? []).map((o) => ({ label: o.text, value: o.text })), wordLimit: type === "textarea" ? wordLimitOf(f.text) : undefined });
+      add({ key: target, target, label: String(f.text ?? "").trim(), type, required: f.required,
+        options: (f.options ?? []).map((o) => ({ label: o.text, value: o.text })), wordLimit: type === "textarea" ? wordLimitOf(String(f.text ?? "")) : undefined });
     });
   }
-  if (/name="comments"/.test(html)) fields.push({ key: "comments", target: "comments", label: "Additional information", type: "textarea", required: false, options: [] });
+  if (/name="comments"/.test(html)) add({ key: "comments", target: "comments", label: "Additional information", type: "textarea", required: false, options: [] });
   return { ats: "lever", url: `https://jobs.lever.co/${site}/${id}/apply`, fields };
 }

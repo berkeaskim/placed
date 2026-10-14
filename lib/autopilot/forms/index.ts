@@ -12,15 +12,18 @@ export async function fetchForm(job: { url: string; ats: Ats }, fetchImpl: typeo
     if (!r || !r.ok) throw new FormUnavailableError();
     return r;
   };
+  const run = async (read: () => Promise<NormalizedForm>) => {
+    try { return await read(); } catch (e) { throw e instanceof FormUnavailableError ? e : new FormUnavailableError(); }
+  };
   if (job.ats === "greenhouse") {
     const ref = greenhouseRef(job.url); if (!ref) throw new FormUnavailableError();
-    return parseGreenhouse(await (await get(`https://boards-api.greenhouse.io/v1/boards/${ref.board}/jobs/${ref.id}?questions=true`)).json(), ref.board, ref.id);
+    return run(async () => parseGreenhouse(await (await get(`https://boards-api.greenhouse.io/v1/boards/${ref.board}/jobs/${ref.id}?questions=true`)).json(), ref.board, ref.id));
   }
   if (job.ats === "ashby") {
     const ref = ashbyRef(job.url); if (!ref) throw new FormUnavailableError();
     const body = JSON.stringify({ operationName: "ApiJobPosting", variables: { organizationHostedJobsPageName: ref.org, jobPostingId: ref.id }, query: ASHBY_QUERY });
-    return parseAshby(await (await get("https://jobs.ashbyhq.com/api/non-user-graphql?op=ApiJobPosting", { method: "POST", body, headers: { "content-type": "application/json" } })).json(), ref.org, ref.id);
+    return run(async () => parseAshby(await (await get("https://jobs.ashbyhq.com/api/non-user-graphql?op=ApiJobPosting", { method: "POST", body, headers: { "content-type": "application/json" } })).json(), ref.org, ref.id));
   }
   const ref = leverRef(job.url); if (!ref) throw new FormUnavailableError();
-  return parseLever(await (await get(`https://jobs.lever.co/${ref.site}/${ref.id}/apply`)).text(), ref.site, ref.id);
+  return run(async () => parseLever(await (await get(`https://jobs.lever.co/${ref.site}/${ref.id}/apply`)).text(), ref.site, ref.id));
 }

@@ -17,20 +17,20 @@ export function greenhouseRef(url: string): { board: string; id: string } | null
 
 export function parseGreenhouse(json: unknown, board: string, id: string): NormalizedForm {
   const j = json as { questions?: GhQ[]; location_questions?: GhQ[] };
-  if (!j?.questions) throw new FormUnavailableError();
+  if (!Array.isArray(j?.questions)) throw new FormUnavailableError();
   const fields: FormField[] = [];
   const seen = new Set<string>();
   for (const q of [...j.questions, ...(j.location_questions ?? [])]) {
-    const f = q.fields[0];
+    const f = q.fields?.find((x) => x.type === "input_file") ?? q.fields?.[0];
     if (!f || seen.has(f.name)) continue;
     let type = TYPE[f.type] ?? null;
     if (!type) continue;
     if (f.name === "location") type = "location";
     seen.add(f.name);
     fields.push({
-      key: f.name, target: f.name, label: q.label.trim(), type, required: q.required,
+      key: f.name, target: f.name, label: String(q.label ?? "").trim(), type, required: q.required,
       options: (f.values ?? []).map((v) => ({ label: v.label, value: String(v.value) })),
-      wordLimit: type === "textarea" ? wordLimitOf(q.label) : undefined,
+      wordLimit: type === "textarea" ? wordLimitOf(String(q.label ?? "")) : undefined,
     });
   }
   return { ats: "greenhouse", url: `https://job-boards.greenhouse.io/${board}/jobs/${id}`, fields };

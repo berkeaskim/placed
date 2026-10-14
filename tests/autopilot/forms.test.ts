@@ -74,4 +74,31 @@ describe("fetchForm", () => {
     expect(wordLimitOf("Tell us in max 150 words")).toBe(150);
     expect(wordLimitOf("Why us?")).toBeUndefined();
   });
+  const gj = { url: "https://job-boards.greenhouse.io/monzo/jobs/1", ats: "greenhouse" as const };
+  const ok = (b: string) => vi.fn(async () => new Response(b)) as unknown as typeof fetch;
+  it("wraps a non-JSON 200 body", async () => {
+    await expect(fetchForm(gj, ok("<html>captcha</html>"))).rejects.toThrow(FormUnavailableError);
+    await expect(fetchForm({ url: "https://jobs.ashbyhq.com/x/e001dc0b-6e0f-46a7-95ba-38a3733db2f4", ats: "ashby" }, ok("<html>"))).rejects.toThrow(FormUnavailableError);
+  });
+  it("wraps network failure", async () => {
+    const f = vi.fn(async () => { throw new Error("down"); }) as unknown as typeof fetch;
+    await expect(fetchForm(gj, f)).rejects.toThrow(FormUnavailableError);
+  });
+  it("wraps malformed shapes", async () => {
+    await expect(fetchForm(gj, ok(JSON.stringify({ questions: [{ label: "x", required: true }] })))).resolves.toMatchObject({ fields: [] });
+    await expect(fetchForm(gj, ok(JSON.stringify({ questions: null })))).rejects.toThrow(FormUnavailableError);
+    await expect(fetchForm({ url: "https://jobs.ashbyhq.com/x/e001dc0b-6e0f-46a7-95ba-38a3733db2f4", ats: "ashby" }, ok(JSON.stringify({ data: { jobPosting: { applicationForm: { sections: [null] } } } })))).resolves.toMatchObject({ fields: [] });
+  });
+});
+
+describe("malformed inputs", () => {
+  it("greenhouse prefers the file field", () => {
+    const f = parseGreenhouse({ questions: [{ label: "CV", required: true, fields: [{ name: "a", type: "input_text" }, { name: "resume", type: "input_file" }] }] }, "b", "1");
+    expect(f.fields[0].target).toBe("resume");
+  });
+  it("lever skips malformed cards and dedupes", () => {
+    const html = '<input name="email"><input name="email"><input value="(trimmed)" name="cards[a69a985a-eae9-4c14-90fb-b5a4b891523e][baseTemplate]"><input type="text" name="urls[X]"><input type="text" name="urls[X]">';
+    const f = parseLever(html, "s", "i");
+    expect(f.fields.map((x) => x.target)).toEqual(["email", "urls[X]"]);
+  });
 });

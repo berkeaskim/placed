@@ -19,8 +19,8 @@ export function parseAshby(json: unknown, org: string, id: string): NormalizedFo
   if (!jp?.applicationForm) throw new FormUnavailableError();
   const fields: FormField[] = [];
   const seen = new Set<string>();
-  for (const s of jp.applicationForm.sections) for (const { field, isRequired } of s.fieldEntries) {
-    const type = TYPE[field.type];
+  for (const s of jp.applicationForm.sections ?? []) for (const { field, isRequired } of s?.fieldEntries ?? []) {
+    const type = field && TYPE[field.type];
     if (!type || seen.has(field.path)) continue;
     seen.add(field.path);
     fields.push({
