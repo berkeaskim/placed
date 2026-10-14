@@ -37,7 +37,7 @@ Biggest UK gains: Lloyds (0 → 57 UK), P&G (20 UK), Oliver Wyman / Marsh McLenn
 | Workday, simply not seeded | Santander, Mizuho, Brevan Howard, PIMCO, S&P, M&G, Aviva, Mastercard, Visa, Accenture, Linklaters, NRF, Hogan Lovells, White & Case, Unilever, Mars, Diageo, Salesforce, NVIDIA, Intel, Cisco, Adobe, Sky, AstraZeneca, Rolls-Royce | Added (about 30 tenants). Several were already in career-ops `portals.yml` |
 | Greenhouse board with a non-obvious slug | HRT (`wehrtyou`), Qube, Squarepoint, Ocado, Forvis Mazars DE | Added |
 | **Wrong company** | `greenhouse/wise` is "Wise Worksite Field Sales" (US sales agents), not Wise the fintech | Disabled; the real Wise board is SmartRecruiters |
-| ATS not supported | Clifford Chance, Roland Berger, PA Consulting, Legal & General, Forvis Mazars, ASOS, Wise (all on SmartRecruiters) | New `smartrecruiters` provider using the public Posting API. Needs migration `0010_smartrecruiters.sql` (written, **not applied**) |
+| ATS not supported | Clifford Chance, Roland Berger, PA Consulting, Legal & General, Forvis Mazars, ASOS, Wise (all on SmartRecruiters) | New `smartrecruiters` provider using the public Posting API. Needs migration `0011_smartrecruiters.sql` (written, **not applied**) |
 
 ## Filter fixes (precision; found while auditing the new boards, then corrected after review)
 

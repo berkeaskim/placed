@@ -6,7 +6,7 @@ async function main() {
   const db = scriptClient();
   const rows = (YAML.parse(readFileSync("seed/companies.yml", "utf8")) as { slug: string; name: string; ats: string; apiHost?: string; enabled?: boolean }[])
     .map((r) => ({ slug: r.slug, name: r.name, ats: r.ats, api_host: r.apiHost ?? null, enabled: r.enabled !== false }));
-  // Upsert per ATS: a new ATS whose check-constraint migration isn't applied yet (e.g. 0010 smartrecruiters)
+  // Upsert per ATS: a new ATS whose check-constraint migration isn't applied yet (e.g. 0011 smartrecruiters)
   // fails on its own instead of blocking every other company.
   let seeded = 0;
   for (const ats of [...new Set(rows.map((r) => r.ats))]) {
@@ -15,7 +15,7 @@ async function main() {
     if (!error) { seeded += group.length; continue; }
     // 23514 = check_violation: companies_ats_check doesn't allow this ATS yet. Anything else is a real failure.
     if (error.code !== "23514") throw error;
-    console.error(`companies/${ats}: skipped ${group.length}; apply the migration that allows this ATS (e.g. 0010_smartrecruiters)`);
+    console.error(`companies/${ats}: skipped ${group.length}; apply the migration that allows this ATS (e.g. 0011_smartrecruiters)`);
     process.exitCode = 1;
   }
   console.log(`companies: ${seeded}/${rows.length}`);

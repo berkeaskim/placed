@@ -164,7 +164,7 @@
 - { slug: bpinternational/bpCareers, name: BP, ats: workday, apiHost: bpinternational.wd3.myworkdayjobs.com, enabled: true } # 0 UK/EU today (3 Asia roles, filtered out)
 - { slug: rollsroyce/professional, name: Rolls-Royce, ats: workday, apiHost: rollsroyce.wd3.myworkdayjobs.com, enabled: true } # 0 after the staff-title fix
 
-# SmartRecruiters (public Posting API, no key). Needs migration 0010_smartrecruiters before `npm run seed`.
+# SmartRecruiters (public Posting API, no key). Needs migration 0011_smartrecruiters before `npm run seed`.
 - { slug: wise, name: Wise, ats: smartrecruiters, enabled: true } # 0 early-career today; replaces the wrong greenhouse/wise board
 - { slug: cliffordchance, name: Clifford Chance, ats: smartrecruiters, enabled: true } # 10
 - { slug: rolandberger, name: Roland Berger, ats: smartrecruiters, enabled: true } # 19
