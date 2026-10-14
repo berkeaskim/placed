@@ -80,6 +80,20 @@ describe("fetchRecentEmails", () => {
     expect(emails.map(e => e.id)).toEqual(["1", "3"]);
   });
 
+  it("never fetches the bodies of messages in skipIds", async () => {
+    const got: string[] = [];
+    vi.stubGlobal("fetch", async (url: string | Request) => {
+      const urlStr = typeof url === "string" ? url : url.toString();
+      if (urlStr.includes("/messages?")) return new Response(JSON.stringify({ messages: [{ id: "1" }, { id: "2" }, { id: "3" }] }), { status: 200 });
+      const id = urlStr.match(/\/messages\/(\d+)\?/)![1];
+      got.push(id);
+      return new Response(JSON.stringify({ id, internalDate: String(Date.now()), payload: { mimeType: "text/plain", body: { data: b64("x") } } }), { status: 200 });
+    });
+    const emails = await fetchRecentEmails("token", "test", 100, new Set(["1", "3"]));
+    expect(got).toEqual(["2"]);
+    expect(emails.map((e) => e.id)).toEqual(["2"]);
+  });
+
   it("rethrows GmailAuthError on 401", async () => {
     vi.stubGlobal("fetch", async (url: string | Request) => {
       const urlStr = typeof url === "string" ? url : url.toString();

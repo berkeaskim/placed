@@ -15,7 +15,9 @@ export function InboxBanner({ connected, googleEmail, lastSynced, demo, flash, d
   const [msg, setMsg] = useState<string | null>(flash);
   const sync = () => start(async () => {
     const r = await syncInbox();
-    setMsg(r.ok ? `Checked ${r.scanned} emails: ${r.moved} card${r.moved === 1 ? "" : "s"} moved, ${r.suggested} to review.` : REASON[r.reason]);
+    setMsg(r.ok
+      ? `Checked ${r.scanned} emails: ${r.moved} card${r.moved === 1 ? "" : "s"} moved, ${r.suggested} to review.${r.remaining > 0 ? ` ${r.remaining} more next sync.` : ""}`
+      : REASON[r.reason]);
   });
   return (
     <section aria-label="Inbox" className="card-quest flex flex-wrap items-center gap-3 p-4">

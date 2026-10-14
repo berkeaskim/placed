@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { claimEffect, planInboxEvents, safeClassify } from "@/lib/inbox/plan";
+import { CLASSIFY_CONCURRENCY, MAX_NEW_PER_SYNC, classifierFor, claimEffect, planInboxEvents, safeClassify, unseenBatch } from "@/lib/inbox/plan";
 import { targetStatus } from "@/lib/inbox/rules";
 import type { AppRef, Classification, RawEmail } from "@/lib/inbox/types";
 
@@ -58,5 +58,58 @@ describe("claimEffect", () => {
     expect(claimEffect({ effect: "moved", to: "applied" })).toBe("none");
     expect(claimEffect({ effect: "suggested", reason: "unmatched" })).toBe("suggested");
     expect(claimEffect({ effect: "none" })).toBe("none");
+  });
+});
+
+describe("sync cost bounds", () => {
+  const many = (n: number) => Array.from({ length: n }, (_, i) => mail(`m${String(i).padStart(3, "0")}`, new Date(Date.UTC(2026, 8, 1) + i * 3_600_000).toISOString()));
+
+  it(`classifies at most ${CLASSIFY_CONCURRENCY} emails at once`, async () => {
+    let inFlight = 0, peak = 0;
+    const classify = async () => {
+      inFlight++; peak = Math.max(peak, inFlight);
+      await new Promise((r) => setTimeout(r, 2));
+      inFlight--;
+      return cls("other");
+    };
+    const out = await planInboxEvents({ apps: [app], seen: new Set(), emails: many(30), classify });
+    expect(out).toHaveLength(30);
+    expect(peak).toBe(CLASSIFY_CONCURRENCY);
+  });
+
+  it(`handles the newest ${MAX_NEW_PER_SYNC} unseen emails, oldest first, and counts the rest`, async () => {
+    const emails = many(55).reverse(); // newest first, as Gmail lists
+    const seen = new Set(["m054", "m000"]);
+    const { batch, remaining } = unseenBatch(emails, seen);
+    expect(batch).toHaveLength(MAX_NEW_PER_SYNC);
+    expect(remaining).toBe(53 - MAX_NEW_PER_SYNC);
+    expect(batch[0].id).toBe("m014");
+    expect(batch.at(-1)!.id).toBe("m053");
+    const classify = vi.fn(async () => cls("other"));
+    const out = await planInboxEvents({ apps: [app], seen, emails, classify });
+    expect(out.map((p) => p.email.id)).toEqual(batch.map((e) => e.id));
+    expect(classify).toHaveBeenCalledTimes(MAX_NEW_PER_SYNC);
+    expect(unseenBatch(emails.slice(0, 10), new Set()).remaining).toBe(0);
+  });
+});
+
+describe("classifierFor", () => {
+  const demo: Classification = { kind: "assessment", company: "Lendable", roleHint: "Credit Analyst Intern", deadline: "2026-10-16", actionUrl: "https://demo.placed.test/a", confidence: 0.95 };
+  it("never calls the live classifier for the demo account", async () => {
+    const live = vi.fn(async () => cls("offer"));
+    const f = classifierFor(true, new Map([["d1", demo]]), live);
+    const email = { ...mail("d1", "2026-10-12T00:00:00Z"), text: "Test link: https://demo.placed.test/a" };
+    expect(await f(email)).toEqual(demo);
+    expect((await f(mail("unknown", "2026-10-12T00:00:00Z"))).kind).toBe("other");
+    expect(live).not.toHaveBeenCalled();
+  });
+  it("guards the demo classification like a model answer (a link not in the email is dropped)", async () => {
+    const f = classifierFor(true, new Map([["d1", demo]]), vi.fn());
+    expect((await f(mail("d1", "2026-10-12T00:00:00Z"))).actionUrl).toBeNull();
+  });
+  it("uses the live classifier for everyone else", async () => {
+    const live = vi.fn(async () => cls("offer"));
+    expect((await classifierFor(false, new Map([["d1", demo]]), live)(mail("d1", "2026-10-12T00:00:00Z"))).kind).toBe("offer");
+    expect(live).toHaveBeenCalledOnce();
   });
 });

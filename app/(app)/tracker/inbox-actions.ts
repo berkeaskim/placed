@@ -12,14 +12,14 @@ import { dropConnection } from "@/lib/gmail/connection";
 import { refreshAccessToken } from "@/lib/gmail/oauth";
 import { GmailAuthError, buildGmailQuery, fetchRecentEmails } from "@/lib/gmail/search";
 import { classifyEmail } from "@/lib/inbox/classify";
-import { claimEffect, planInboxEvents, safeClassify } from "@/lib/inbox/plan";
+import { claimEffect, classifierFor, planInboxEvents, safeClassify, unseenBatch } from "@/lib/inbox/plan";
 import { canUndo, nextDeadline, targetStatus } from "@/lib/inbox/rules";
 import { companyMatches } from "@/lib/inbox/match";
 import type { AppRef, Classification, InboxKind, RawEmail } from "@/lib/inbox/types";
 import { updateStatus } from "./actions";
 
 export type SyncResult =
-  | { ok: true; moved: number; suggested: number; scanned: number }
+  | { ok: true; moved: number; suggested: number; scanned: number; remaining: number }
   | { ok: false; reason: "not_connected" | "reconnect" | "failed" };
 
 type Db = ReturnType<typeof createAdminClient>;
@@ -51,9 +51,15 @@ export async function syncInbox(): Promise<SyncResult> {
   const apps = await loadApps(supabase, user.id);
   if (!apps) return { ok: false, reason: "failed" };
 
+  // Seen ids first: Gmail bodies of recorded messages are never downloaded (or classified) again.
+  const { data: seenRows, error: seenErr } = await supabase.from("inbox_events").select("gmail_message_id").eq("user_id", user.id);
+  if (seenErr) { console.error("syncInbox: loading seen messages failed", seenErr.message); return { ok: false, reason: "failed" }; }
+  const seen = new Set((seenRows ?? []).map((r) => r.gmail_message_id as string));
+
   let emails: RawEmail[];
+  const demo = isDemoEmail(user.email);
   const demoById = new Map<string, Classification>();
-  if (isDemoEmail(user.email)) {
+  if (demo) {
     const set = demoEmails(); // once, so email dates and deadlines share one `now`
     for (const d of set) demoById.set(d.email.id, d.classification);
     emails = set.map((d) => d.email);
@@ -65,7 +71,7 @@ export async function syncInbox(): Promise<SyncResult> {
     catch { await dropConnection(db, user.id, false); return { ok: false, reason: "reconnect" }; } // rotated/wrong GMAIL_TOKEN_KEY
     try {
       const access = await refreshAccessToken(refresh);
-      emails = await fetchRecentEmails(access, buildGmailQuery(apps.map((a) => a.company)));
+      emails = await fetchRecentEmails(access, buildGmailQuery(apps.map((a) => a.company)), 100, seen);
     } catch (e) {
       if (e instanceof GmailAuthError) { await dropConnection(db, user.id, false); return { ok: false, reason: "reconnect" }; }
       console.error("syncInbox: Gmail fetch failed", e instanceof Error ? e.message : e);
@@ -73,12 +79,9 @@ export async function syncInbox(): Promise<SyncResult> {
     }
   }
 
-  const { data: seenRows, error: seenErr } = await supabase.from("inbox_events").select("gmail_message_id").eq("user_id", user.id);
-  if (seenErr) { console.error("syncInbox: loading seen messages failed", seenErr.message); return { ok: false, reason: "failed" }; }
-  const planned = await planInboxEvents({
-    apps, emails, seen: new Set((seenRows ?? []).map((r) => r.gmail_message_id as string)),
-    classify: safeClassify((e) => classifyEmail(e, demoById.get(e.id))),
-  });
+  // The demo account never reaches the model (deterministic on stage, whatever AI_MODE is).
+  const planned = await planInboxEvents({ apps, emails, seen, classify: safeClassify(classifierFor(demo, demoById, (e) => classifyEmail(e))) });
+  const { remaining } = unseenBatch(emails, seen);
 
   let moved = 0, suggested = 0;
   const touched: string[] = [];
@@ -118,7 +121,7 @@ export async function syncInbox(): Promise<SyncResult> {
   await refreshDeadlines(db, user.id, touched);
   await db.from("gmail_connections").update({ last_synced_at: new Date().toISOString() }).eq("user_id", user.id);
   revalidatePath("/tracker");
-  return { ok: true, moved, suggested, scanned: emails.length };
+  return { ok: true, moved, suggested, scanned: emails.length, remaining };
 }
 
 export async function undoInboxEvent(eventId: string): Promise<{ ok: boolean; message?: string }> {

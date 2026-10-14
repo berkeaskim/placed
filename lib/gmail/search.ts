@@ -81,10 +81,13 @@ async function gmail<T>(token: string, path: string): Promise<T> {
   return r.json() as Promise<T>;
 }
 
-/** Newest first, at most `max`; message bodies fetched 8 at a time. */
-export async function fetchRecentEmails(token: string, query: string, max = 100): Promise<RawEmail[]> {
+/**
+ * Newest first, at most `max`; message bodies fetched 8 at a time. Ids in `skipIds` (messages a sync already recorded)
+ * are dropped after the list call, so their bodies are never downloaded again.
+ */
+export async function fetchRecentEmails(token: string, query: string, max = 100, skipIds?: ReadonlySet<string>): Promise<RawEmail[]> {
   const list = await gmail<{ messages?: { id: string }[] }>(token, `/messages?maxResults=${max}&q=${encodeURIComponent(query)}`);
-  const ids = (list.messages ?? []).map((m) => m.id);
+  const ids = (list.messages ?? []).map((m) => m.id).filter((id) => !skipIds?.has(id));
   const out: RawEmail[] = [];
   for (let i = 0; i < ids.length; i += 8) {
     const batchIds = ids.slice(i, i + 8);
