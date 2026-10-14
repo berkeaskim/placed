@@ -14,7 +14,7 @@ function variants(c: CompanySeed): CompanySeed[] {
     out.push(c.apiHost ? { ...c, apiHost: null } : { ...c, apiHost: EU_GH });
   } else if (c.ats === "lever") {
     if (!c.apiHost) out.push({ ...c, apiHost: EU_LEVER });
-  } else {
+  } else if (c.ats === "ashby") {
     const lower = c.slug.toLowerCase();
     const cap = c.slug.charAt(0).toUpperCase() + c.slug.slice(1);
     for (const s of [lower, cap]) if (s !== c.slug) out.push({ ...c, slug: s });

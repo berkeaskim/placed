@@ -561,6 +561,21 @@ function employerClaim(text: string, start: number, end: number, cvTool: boolean
   return ROLE_AFTER.test(after) ||
     /^(?:-| - |\s+)(?:sponsored|funded|backed|mentored|commissioned|trained|hosted|employed|certified|accredited|endorsed|led|run|owned|hired|placed|partnered|approved)\b/i.test(after);
 }
+/**
+ * Case-sensitive one-word employers that are also ordinary words ("Visa", "Intel", "Sky", "Mars", "Apple", "Shell"):
+ * "Visa applications…" at the start of a sentence is the CV's own "visa applications" capitalised, not the employer.
+ * Exempt only when the word AND the word after it appear together, lowercase, in the CV ("apple pie" doesn't excuse
+ * "Apple engineers…"), and never when punctuation follows the name ("Apple: built…", "Apple (2025)"). The caller has
+ * already ruled out affiliation claims ("Interned at Visa").
+ */
+function ordinaryWordAtSentenceStart(text: string, index: number, match: string, emp: KnownEmployer, corpus: string): boolean {
+  if (!emp.caseSensitive || /\s/.test(match) || match.toUpperCase() === match) return false; // "BP", "EY" are never ordinary words
+  if (!/(?:^|[.!?:;]\s+|\n\s*|^[-•*]\s*)$/.test(text.slice(0, index))) return false;
+  const next = text.slice(index + match.length).match(/^(-[a-z]+|\s+[a-z]+)/)?.[1]; // "-high" or " applications"
+  if (!next) return false;
+  const phrase = `${match.toLowerCase()}${next.replace(/^\s+/, " ")}`;
+  return new RegExp(`(?<![A-Za-z0-9])${escapeRegex(phrase).replace(/ /g, "\\s+")}(?![A-Za-z0-9])`).test(corpus);
+}
 /** Task 22b: hyphen-like characters between letters (U+2010–U+2014, U+2212) read as "-" before tokenising. Same length, so indices hold. */
 const dashNorm = (t: string) => t.replace(/(?<=[A-Za-z])[‐‑‒–—−](?=[A-Za-z])/g, "-");
 /** Task 22b: vendor names allowed only directly before a tool the CV already has ("Microsoft Excel"). */
@@ -619,6 +634,13 @@ export const KNOWN_EMPLOYERS: KnownEmployer[] = [
   E("Unilever"), E("Mercer"), E("Linklaters"), E("Boeing"), E("Schroders"), E("Gartner"), E("Experian"), E("Ocado"), E("Slaughter and May", [], true),
   // fix round 4: tool companies that also employ graduates
   E("Tableau"), E("Salesforce"),
+  // seed/companies.yml additions (2026-10-14 coverage audit)
+  E("Squarepoint Capital"), E("Qube Research & Technologies"), E("Forvis Mazars", ["Mazars"]), E("Ocado Group"), E("NatWest Group"),
+  E("Brevan Howard"), E("PIMCO"), E("S&P Global"), E("M&G"), E("Aviva"), E("Mastercard"), E("Visa", [], true),
+  E("Marsh McLennan", ["Marsh & McLennan"]), E("Norton Rose Fulbright"), E("Hogan Lovells"), E("White & Case", [], true),
+  E("Procter & Gamble", ["P&G"]), E("Mars", [], true), E("Mondelez", ["Mondelez International"]), E("Diageo"), E("NVIDIA"),
+  E("Intel", [], true), E("Cisco"), E("Adobe", [], true), E("Sky", [], true), E("AstraZeneca"), E("BP", [], true), E("Rolls-Royce"),
+  E("Clifford Chance"), E("PA Consulting", [], true), E("Legal & General"), E("ASOS"),
 ];
 /** Single-word employer names/aliases, lowercased: never an ordinary affiliation head (fix round 1, ruling 3). */
 const EMPLOYER_WORDS = new Set(KNOWN_EMPLOYERS.flatMap((k) => [k.name, ...(k.aliases ?? [])]).filter((n) => /^[A-Za-z0-9.]+$/.test(n)).map((n) => n.toLowerCase()));
@@ -906,7 +928,8 @@ export function verifyTailoring(i: VerifyInput): VerifyReport {
         const claim = employerClaim(dText, m.index!, m.index! + m[0].length, cvTool(emp));
         if (isTool && !claim) continue; // skillInjection owns tool usage of companies that are also tools
         const known = employerInCv(claim ? nameCorpus : corpus, emp)
-          || (!claim && VENDOR_PREFIX.has(m[0].toLowerCase()) && vendorOk(u.text, m.index! + m[0].length));
+          || (!claim && VENDOR_PREFIX.has(m[0].toLowerCase()) && vendorOk(u.text, m.index! + m[0].length))
+          || (!claim && ordinaryWordAtSentenceStart(u.text, m.index!, m[0], emp, corpus));
         employerSpans.push([m.index!, m.index! + m[0].length]);
         if (known || issues.some((x) => key(x) === k && x.claim.toLowerCase() === m[0].toLowerCase())) continue;
         issues.push({ type: "unsupportedFacts", severity: "block", ...where(u), claim: m[0], check: "knownEmployer",

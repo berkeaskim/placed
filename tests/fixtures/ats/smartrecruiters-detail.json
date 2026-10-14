@@ -1,0 +1,157 @@
+{
+ "id": "744000154944720",
+ "name": "Junior Consultant Summer Internship 2027",
+ "uuid": "7d8ec73a-522a-4e7a-befb-4e800f4dc844",
+ "jobId": "4657f3dd-816d-4c8a-ad3b-f48f96b114a0",
+ "jobAdId": "2c580b6c-2758-4389-8b31-820e1c0672e7",
+ "defaultJobAd": true,
+ "refNumber": "REF4557P",
+ "company": {
+  "name": "Roland Berger",
+  "identifier": "RolandBerger"
+ },
+ "location": {
+  "city": "London",
+  "region": "England",
+  "country": "gb",
+  "remote": false,
+  "hybrid": false,
+  "latitude": "51.5072178",
+  "longitude": "-0.1275862",
+  "fullLocation": "London, England, United Kingdom"
+ },
+ "customField": [
+  {
+   "fieldId": "5d9336bc46c05d6ef6110327",
+   "fieldLabel": "Department",
+   "valueId": "1629270",
+   "valueLabel": "Not specified (default)"
+  },
+  {
+   "fieldId": "5d9336bc46c05d6ef6110326",
+   "fieldLabel": "Brands",
+   "valueId": "default",
+   "valueLabel": "Roland Berger"
+  },
+  {
+   "fieldId": "5e4b978a620ec92aa06415a6",
+   "fieldLabel": "Type",
+   "valueId": "3e60dc39-7c66-4fac-9d6b-f811cdeb97d3",
+   "valueLabel": "Job"
+  },
+  {
+   "fieldId": "5ede3391318d407ba2543b07",
+   "fieldLabel": "Job location",
+   "valueId": "de32b44e-882b-4f46-b49a-ab69706f5897",
+   "valueLabel": "London"
+  },
+  {
+   "fieldId": "5e4cf51d620ec92aa06415cf",
+   "fieldLabel": "Job category (access rights)",
+   "valueId": "dfa63d6e-4b99-4ee0-ac77-aad5f8cad105",
+   "valueLabel": "Consultants"
+  },
+  {
+   "fieldId": "5e4b974b8dda492796197d1c",
+   "fieldLabel": "Internal position name",
+   "valueLabel": "Junior Consultant Summer Internship 2027"
+  },
+  {
+   "fieldId": "60e5998f018449163fda7256",
+   "fieldLabel": "Platform",
+   "valueId": "144e8ca1-8b6b-4d8c-8fa4-9a899940483d",
+   "valueLabel": "General / 9000"
+  },
+  {
+   "fieldId": "5ede3184318d407ba2543aa6",
+   "fieldLabel": "Audience",
+   "valueId": "b5abc648-5c2c-445b-8e7e-c08e987e164e",
+   "valueLabel": "Consulting - Internship"
+  },
+  {
+   "fieldId": "COUNTRY",
+   "fieldLabel": "Country/Region",
+   "valueId": "gb",
+   "valueLabel": "United Kingdom"
+  },
+  {
+   "fieldId": "5e4cf5849ff37623bf5e5868",
+   "fieldLabel": "Application form (Screening questions sets)",
+   "valueId": "15645333-97cb-4bb0-a289-c46535615dca",
+   "valueLabel": "UK - Consultants - NEW"
+  },
+  {
+   "fieldId": "5e4b97c684a7453214b15f73",
+   "fieldLabel": "HR country (access rights)",
+   "valueId": "829c398b-7210-41dd-a392-0c200e0e676e",
+   "valueLabel": "RB UK"
+  },
+  {
+   "fieldId": "5ed8e97bf2759978170e5c6d",
+   "fieldLabel": "Job / Event country",
+   "valueId": "a9b167da-e4a8-4bbc-89db-0b69f63679ec",
+   "valueLabel": "United Kingdom"
+  },
+  {
+   "fieldId": "63692ee4d82be41f8a33eb85",
+   "fieldLabel": "Expertise",
+   "valueId": "3f16787d-7459-48ac-a502-a58b8eecdc25",
+   "valueLabel": "Other"
+  }
+ ],
+ "releasedDate": "2026-10-12T08:05:57.306Z",
+ "creator": {
+  "name": "",
+  "avatarUrl": ""
+ },
+ "postingUrl": "https://jobs.smartrecruiters.com/RolandBerger/744000154944720-junior-consultant-summer-internship-2027",
+ "applyUrl": "https://jobs.smartrecruiters.com/RolandBerger/744000154944720-junior-consultant-summer-internship-2027?oga=true",
+ "referralUrl": "https://jobs.smartrecruiters.com/external-referrals/company/RolandBerger/publication/7d8ec73a-522a-4e7a-befb-4e800f4dc844?dcr_ci=RolandBerger",
+ "jobAd": {
+  "sections": {
+   "companyDescription": {
+    "title": "Company Description",
+    "text": "<p><strong>Start Your Career with Consulting at Roland Berger</strong></p><p><em>What if your first few years after university could take you further than you expected?</em></p><p>Consulting is about curiosity, creativity, strategic thinking and teamwork. It’s about getting to grips with a problem, understanding what really matters and working with others to find a solution.</p><p>At Roland Berger, you’ll work on challenging business problems for leading organisations, alongside people who are experts in what they do. You’ll learn quickly, take on responsibility early and gain experience across industries, countries and topics.</p><p>From your first day, you’ll contribute to real client work, learn from experienced colleagues and develop the skills to build a career you’re proud of.</p><p>We’re looking for people who are curious about how businesses work, enjoy solving problems and bring their own perspective to the table.</p><p><strong>Find Your People</strong></p><p>Our London office is a genuinely international and multicultural community, bringing together people from a wide range of nationalities, cultures, backgrounds and experiences. We believe that this diversity makes us stronger, giving us different perspectives, challenging our thinking and helping us do better work for our clients.</p><p>We’re committed to creating an environment where everyone can bring their whole self to work, feel a sense of belonging and have the opportunity to thrive. That means valuing diff"
+   },
+   "jobDescription": {
+    "title": "Job Description",
+    "text": "<p>When you join us as an intern, we help you become the best you can be. Prepare to expand your repertoire and learn about successful consulting from day one. As an integral part of our professional team of consultants you will be actively involved in the projects for our clients. With the guidance from your personal mentor you will constantly develop, as well as learn about life as a consultant.</p><p>This is an in-person internship in our vibrant, busy London office, and will run for approximately&#xa0;8 weeks in July 2027. You could also be working on projects where you are expected to be on client sites. Hybrid working and travel are an important and expected part of this role from day one, so you should expect to travel beyond London across a number of locations.</p><p><strong>Life as a Junior Consultant</strong></p><p>As a Junior Consultant, you’ll work as part of project teams to help clients solve complex business problems and make important decisions.</p><p>Your work could involve analysing data, researching markets, building financial or operational models, developing strategies, exploring new technologies or helping a client respond to major change.</p><p>No two projects are the same. You’ll work across different industries, clients and challenges, giving you the opportunity to build a broad set of skills and discover where your interests and strengths lie.</p><p>You’ll be given meaningful responsibility from an early stage, while working closely with experienced "
+   },
+   "qualifications": {
+    "title": "Qualifications",
+    "text": "<p>The internship is designed for students completing their<strong>&#xa0;Bachelors or Masters degree of all study fields in their penultimate/ final year of their degree.&#xa0;</strong></p><p><u><strong>You must be on track to achieve, or have already achieved, a 2:1 equivalent or above in either 2027 or 2028</strong></u>, Offers of employment are conditional following satisfactory referencing checks, including the right to work in the UK. Candidates that do not meet the criteria will be withdrawn.</p><p><u><strong>To be eligible for this internship, applicants must possess the right to work in the UK. </strong></u><u><strong>Visa sponsorship is not offered for this role.&#xa0;</strong></u></p><p><strong>What you’ll bring</strong></p><p>We know that great consultants come from many different backgrounds, and your degree subject is only one part of what you bring to the table.</p><p>We’re particularly interested in candidates who have developed strong analytical thinking, quantitative reasoning, structured problem-solving and commercial awareness. Degrees in STEM, management and economics-related subjects can provide a strong foundation for these skills. Equally, candidates from humanities, languages, law, social sciences and other disciplines can bring valuable strengths of their own, from research and critical thinking to communicating complex ideas, building compelling arguments and seeing problems from different perspectives.</p><p>What matters most is how you think, how y"
+   },
+   "additionalInformation": {
+    "title": "Additional Information",
+    "text": "<p><strong>Ready to Get Started?</strong></p><p><u><strong>Key Dates</strong></u></p><p><strong>Applications close:</strong> Monday 4th January. Late applications will not be considered.</p><p><strong>Pre-interview case study workshop:</strong> Week commencing 18th January for candidates invited to the first-round interview stage.</p><p><strong>First-round interviews:</strong> Saturday 23rd January, in person at our London office.</p><p><strong>Internship dates:&#xa0;</strong>We expect successful applicants to join us from Monday 5th July 2027 - Friday 27th August 2027</p><p><u><strong>Before You Apply</strong></u></p><p>Please make sure you understand the following before submitting your application:</p><ul><li>Due to the high volume of applications, only applications that include a covering letter will be considered.</li><li>Tell us about your ‘why’,&#xa0; your motivation for Roland Berger and consulting, specific areas of interest in the London office, and the experiences and transferable skills you would bring.</li><li>Please only apply if you are genuinely comfortable with the level of travel and mobility that consulting can require.</li></ul><p><u><strong>Application Process</strong></u></p><p><strong>1. Screening</strong></p><p>We appreciate the time and commitment it takes to submit graduate applications, &#xa0;which is why we are proud to commit to you that we don’t take AI shortcuts with our screening. Every application is reviewed by a member of our (human) recruit"
+   }
+  }
+ },
+ "active": true,
+ "visibility": "PUBLIC",
+ "industry": {
+  "id": "management_consulting",
+  "label": "Management Consulting"
+ },
+ "function": {
+  "id": "consulting",
+  "label": "Consulting"
+ },
+ "department": {
+  "id": 1629270,
+  "label": "Not specified (default)"
+ },
+ "experienceLevel": {
+  "id": "entry_level",
+  "label": "Entry Level"
+ },
+ "typeOfEmployment": {
+  "id": "intern",
+  "label": "Intern"
+ },
+ "language": {
+  "code": "en",
+  "label": "English",
+  "labelNative": "English (US)"
+ }
+}

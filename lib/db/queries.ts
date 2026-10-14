@@ -58,12 +58,23 @@ function toJob(r: JobDbRow): JobListItem {
 }
 
 /** Live jobs that have not closed. `today` is the London day; a job closing today is still returned. */
+export const LIVE_JOBS_PAGE = 1000; // PostgREST's default max-rows
+export const LIVE_JOBS_MAX = 5000;
+
 export async function getLiveJobs(supabase: SupabaseClient, today: string): Promise<JobListItem[]> {
-  const { data, error } = await withRollingFallback((cols) => supabase.from("jobs").select(cols).eq("is_live", true)
-    .or(`deadline.is.null,deadline.gte.${today}`)
-    .order("posted_at", { ascending: false, nullsFirst: false }).order("id").limit(500));
-  if (error) throw error;
-  return ((data ?? []) as unknown as JobDbRow[]).map(toJob);
+  // Paged: a single capped query (it was .limit(500)) silently dropped the oldest live jobs once the seed list grew
+  // past ~1000 live postings, so they never reached ranking.
+  const rows: JobDbRow[] = [];
+  for (let from = 0; from < LIVE_JOBS_MAX; from += LIVE_JOBS_PAGE) {
+    const { data, error } = await withRollingFallback((cols) => supabase.from("jobs").select(cols).eq("is_live", true)
+      .or(`deadline.is.null,deadline.gte.${today}`)
+      .order("posted_at", { ascending: false, nullsFirst: false }).order("id").range(from, from + LIVE_JOBS_PAGE - 1));
+    if (error) throw error;
+    const page = (data ?? []) as unknown as JobDbRow[];
+    rows.push(...page);
+    if (page.length < LIVE_JOBS_PAGE) break;
+  }
+  return rows.map(toJob);
 }
 
 export async function getJob(supabase: SupabaseClient, id: string): Promise<JobListItem | null> {

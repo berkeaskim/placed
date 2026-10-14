@@ -1,0 +1,269 @@
+{
+ "offset": 0,
+ "limit": 100,
+ "totalFound": 2,
+ "content": [
+  {
+   "id": "744000154944720",
+   "name": "Junior Consultant Summer Internship 2027",
+   "uuid": "7d8ec73a-522a-4e7a-befb-4e800f4dc844",
+   "jobAdId": "2c580b6c-2758-4389-8b31-820e1c0672e7",
+   "defaultJobAd": true,
+   "refNumber": "REF4557P",
+   "company": {
+    "identifier": "RolandBerger",
+    "name": "Roland Berger"
+   },
+   "releasedDate": "2026-10-12T08:05:57.306Z",
+   "location": {
+    "city": "London",
+    "region": "England",
+    "country": "gb",
+    "remote": false,
+    "hybrid": false,
+    "latitude": "51.5072178",
+    "longitude": "-0.1275862",
+    "fullLocation": "London, England, United Kingdom"
+   },
+   "industry": {
+    "id": "management_consulting",
+    "label": "Management Consulting"
+   },
+   "department": {
+    "id": "1629270",
+    "label": "Not specified (default)"
+   },
+   "function": {
+    "id": "consulting",
+    "label": "Consulting"
+   },
+   "typeOfEmployment": {
+    "id": "intern",
+    "label": "Intern"
+   },
+   "experienceLevel": {
+    "id": "entry_level",
+    "label": "Entry Level"
+   },
+   "customField": [
+    {
+     "fieldId": "5d9336bc46c05d6ef6110327",
+     "fieldLabel": "Department",
+     "valueId": "1629270",
+     "valueLabel": "Not specified (default)"
+    },
+    {
+     "fieldId": "5d9336bc46c05d6ef6110326",
+     "fieldLabel": "Brands",
+     "valueId": "default",
+     "valueLabel": "Roland Berger"
+    },
+    {
+     "fieldId": "5e4b978a620ec92aa06415a6",
+     "fieldLabel": "Type",
+     "valueId": "3e60dc39-7c66-4fac-9d6b-f811cdeb97d3",
+     "valueLabel": "Job"
+    },
+    {
+     "fieldId": "5ede3391318d407ba2543b07",
+     "fieldLabel": "Job location",
+     "valueId": "de32b44e-882b-4f46-b49a-ab69706f5897",
+     "valueLabel": "London"
+    },
+    {
+     "fieldId": "5e4cf51d620ec92aa06415cf",
+     "fieldLabel": "Job category (access rights)",
+     "valueId": "dfa63d6e-4b99-4ee0-ac77-aad5f8cad105",
+     "valueLabel": "Consultants"
+    },
+    {
+     "fieldId": "60e5998f018449163fda7256",
+     "fieldLabel": "Platform",
+     "valueId": "144e8ca1-8b6b-4d8c-8fa4-9a899940483d",
+     "valueLabel": "General / 9000"
+    },
+    {
+     "fieldId": "5ede3184318d407ba2543aa6",
+     "fieldLabel": "Audience",
+     "valueId": "b5abc648-5c2c-445b-8e7e-c08e987e164e",
+     "valueLabel": "Consulting - Internship"
+    },
+    {
+     "fieldId": "COUNTRY",
+     "fieldLabel": "Country/Region",
+     "valueId": "gb",
+     "valueLabel": "United Kingdom"
+    },
+    {
+     "fieldId": "5e4cf5849ff37623bf5e5868",
+     "fieldLabel": "Application form (Screening questions sets)",
+     "valueId": "15645333-97cb-4bb0-a289-c46535615dca",
+     "valueLabel": "UK - Consultants - NEW"
+    },
+    {
+     "fieldId": "5e4b97c684a7453214b15f73",
+     "fieldLabel": "HR country (access rights)",
+     "valueId": "829c398b-7210-41dd-a392-0c200e0e676e",
+     "valueLabel": "RB UK"
+    },
+    {
+     "fieldId": "5ed8e97bf2759978170e5c6d",
+     "fieldLabel": "Job / Event country",
+     "valueId": "a9b167da-e4a8-4bbc-89db-0b69f63679ec",
+     "valueLabel": "United Kingdom"
+    },
+    {
+     "fieldId": "63692ee4d82be41f8a33eb85",
+     "fieldLabel": "Expertise",
+     "valueId": "3f16787d-7459-48ac-a502-a58b8eecdc25",
+     "valueLabel": "Other"
+    },
+    {
+     "fieldId": "5e4b974b8dda492796197d1c",
+     "fieldLabel": "Internal position name",
+     "valueLabel": "Junior Consultant Summer Internship 2027"
+    }
+   ],
+   "visibility": "PUBLIC",
+   "ref": "https://api.smartrecruiters.com/v1/companies/rolandberger/postings/744000154944720",
+   "language": {
+    "code": "en",
+    "label": "English",
+    "labelNative": "English (US)"
+   }
+  },
+  {
+   "id": "744000155454282",
+   "name": "Roland Berger Exclusive Dinner Solvay",
+   "uuid": "c4569192-b310-4ca6-aac9-013c09142243",
+   "jobAdId": "ee818d37-af6d-4b92-bb8a-6ae5e27742c0",
+   "defaultJobAd": true,
+   "refNumber": "REF4581I",
+   "company": {
+    "identifier": "RolandBerger",
+    "name": "Roland Berger"
+   },
+   "releasedDate": "2026-10-14T09:23:11.837Z",
+   "location": {
+    "city": "Brussels",
+    "region": "Brussels",
+    "country": "be",
+    "remote": false,
+    "hybrid": true,
+    "latitude": "50.84770289999999",
+    "longitude": "4.357200100000001",
+    "fullLocation": "Brussels, Brussels, Belgium"
+   },
+   "industry": {
+    "id": "management_consulting",
+    "label": "Management Consulting"
+   },
+   "department": {},
+   "function": {
+    "id": "consulting",
+    "label": "Consulting"
+   },
+   "typeOfEmployment": {
+    "id": "permanent",
+    "label": "Full-time"
+   },
+   "experienceLevel": {
+    "id": "entry_level",
+    "label": "Entry Level"
+   },
+   "customField": [
+    {
+     "fieldId": "5e4cf6b784a7453214b15f94",
+     "fieldLabel": "Stage picture",
+     "valueId": "63061b65-befd-4f95-9d69-0e6114b32417",
+     "valueLabel": "Network-Event"
+    },
+    {
+     "fieldId": "5d9336bc46c05d6ef6110326",
+     "fieldLabel": "Brands",
+     "valueId": "default",
+     "valueLabel": "Roland Berger"
+    },
+    {
+     "fieldId": "COUNTRY",
+     "fieldLabel": "Country/Region",
+     "valueId": "be",
+     "valueLabel": "Belgium"
+    },
+    {
+     "fieldId": "5ede27a8f2759978170e6b21",
+     "fieldLabel": "Select standard Be-Claim: Be...",
+     "valueId": "b4c1a0b3-f336-4f4b-8389-04114078fdae",
+     "valueLabel": "curious."
+    },
+    {
+     "fieldId": "5e4cf5849ff37623bf5e5868",
+     "fieldLabel": "Application form (Screening questions sets)",
+     "valueId": "0382bebe-5013-4e7a-bede-157c746c14a9",
+     "valueLabel": "BEL, CAN, FRA, MOR - Event EN"
+    },
+    {
+     "fieldId": "5e4b978a620ec92aa06415a6",
+     "fieldLabel": "Type",
+     "valueId": "8dadd47d-81c8-4767-9f25-1fd11d9f90ca",
+     "valueLabel": "Event"
+    },
+    {
+     "fieldId": "5e4cf51d620ec92aa06415cf",
+     "fieldLabel": "Job category (access rights)",
+     "valueId": "dfa63d6e-4b99-4ee0-ac77-aad5f8cad105",
+     "valueLabel": "Consultants"
+    },
+    {
+     "fieldId": "5e4b97c684a7453214b15f73",
+     "fieldLabel": "HR country (access rights)",
+     "valueId": "48a2d2ff-465e-4fab-a19e-10d1ccd81cc6",
+     "valueLabel": "RB Belgium"
+    },
+    {
+     "fieldId": "5ed8e97bf2759978170e5c6d",
+     "fieldLabel": "Job / Event country",
+     "valueId": "9692cdbc-7439-4e72-afb8-2ba5abc82984",
+     "valueLabel": "Belgium"
+    },
+    {
+     "fieldId": "60e5998f018449163fda7256",
+     "fieldLabel": "Platform",
+     "valueId": "4f7758b7-5e7d-4fa8-b853-fc1a5e2f3333",
+     "valueLabel": "Not specified (default)"
+    },
+    {
+     "fieldId": "5ede3184318d407ba2543aa6",
+     "fieldLabel": "Audience",
+     "valueId": "1d8cc22c-e128-4abc-9e59-eada95790cc0",
+     "valueLabel": "Event"
+    },
+    {
+     "fieldId": "5e4cf38ba5dc7148f1d14f66",
+     "fieldLabel": "Event city",
+     "valueLabel": "Brussels"
+    },
+    {
+     "fieldId": "5e4b974b8dda492796197d1c",
+     "fieldLabel": "Internal position name",
+     "valueLabel": "Solvay Roland Berger Exclusive Dinner"
+    },
+    {
+     "fieldId": "5e4cf7c08dda492796197d41",
+     "fieldLabel": "Event date (MM.DD.YYYY)",
+     "valueLabel": "11.18.2026"
+    }
+   ],
+   "visibility": "PUBLIC",
+   "ref": "https://api.smartrecruiters.com/v1/companies/rolandberger/postings/744000155454282",
+   "creator": {
+    "name": "Christina Cadron"
+   },
+   "language": {
+    "code": "en",
+    "label": "English",
+    "labelNative": "English (US)"
+   }
+  }
+ ]
+}
