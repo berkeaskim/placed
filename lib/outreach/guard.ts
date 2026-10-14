@@ -31,7 +31,7 @@ const RECIPIENT_CLAIMS: { reason: string; re: RegExp; noteFor: (m: RegExpMatchAr
  */
 const LEXICON: { reason: string; re: RegExp; stem?: boolean }[] = [
   { reason: "a title", re: /\b(?:Vice[- ]President|President|Head of|Chair(?:man|person)?|Captain|Co-?founder|Founder|Director|Lead(?:er)? of|Treasurer|Secretary)\b/gi },
-  { reason: "a title", re: /\bco-?found(?:ed|er|ing)\b|\bfounded\b|\b(?:set up|started) (?:a|the|my|our) (?:club|society|company|startup|start-up|business|charity|fund)\b|\b(?:[A-Z][\w&'’-]*\s+)*[Cc]ommittee(?: member)?\b/g },
+  { reason: "a title", re: /\bco-?found(?:ed|er|ing)\b|\bfounded\b|\b(?:set up|started) (?:a|the|my|our) (?:club|society|company|startup|start-up|business|charity|fund)\b|\b(?:[A-Z][\w&'’-]*\s+){0,6}[Cc]ommittee(?: member)?\b/g },
   { reason: "a grade or honour", re: /\bfirst[- ]class\b|\ba First\b|\bpredicted (?:a )?first\b|\bDistinction\b|\bdean['’]s list\b|\bGPA\b|\bsumma\b|\bmagna\b/gi },
   { reason: "an award", re: /\b(?:prize|award|scholarship|bursary|fellowship|winner|won(?!['’]t))\b/gi },
   { reason: "work history", re: /\binterned\b|\b(?:my|our) (?:internships?|placements?)\b(?! (?:applications?|search|hunt|plans?|options|goals)\b)|\b(?:previous|prior|past) internships? (?:at|with)\b|\bdid an? internship\b/gi },
@@ -65,10 +65,12 @@ const AT_FIRM_SIGNAL = /\b(?:hosted me|took me on|had me|overlapped|spent (?:las
 const CO = "QQCO";
 const APPLY_FRAME = /\bappl(?:y|ying|ied|ications?)\s+(?:to|for|at|with)\b.*QQCO|\bmy application (?:to|for|at|with)\b.*QQCO/i;
 /** Interest and intent; only without a past marker in the same clause ("I'd love to work at Lendable again" is a claim). */
-const INTEREST_FRAME = /\b(?:interested in|keen (?:to|on)|hop(?:e|es|ed|ing)(?: to)?|want(?:s|ed)? to|would love|would like|['’]d (?:love|like)|aim(?:ing)? to|aspir(?:e|es|ing)|excited (?:about|by)|drawn to|appeals? to (?:me|us)|why I['’]m applying|part of why|still (?:very )?interested|follow(?:ing|ed)?|read(?:ing)? about|impressed by|inspired by|admire)\b/i;
-const LEARN_FRAME = /\b(?:learn (?:more )?about|know (?:more )?about|hear (?:about|how|what|more)|understand|curious|ask (?:you )?(?:about|a)|questions? about|what (?:it['’]s|it is) like|how you found|advice (?:on|about)|update on|timeline)\b/i;
+const INTEREST_FRAME = /\b(?:interested in|(?:my |an? )?interest in|would (?:be|welcome)|['’]d (?:be|welcome)|thrilled|excited (?:to|about|by)|(?:good |great |strong |natural )?fit (?:for|with)|place to (?:start|begin|grow|learn)|(?:start|begin|build|launch) (?:my|a) career|contribute to|keen (?:to|on)|hop(?:e|es|ed|ing)(?: to)?|want(?:s|ed)? to|would love|would like|['’]d (?:love|like)|aim(?:ing)? to|aspir(?:e|es|ing)|drawn to|appeals? to (?:me|us)|why I['’]m applying|part of why|still (?:very )?interested|follow(?:ing|ed)?|read(?:ing)? about|impressed by|inspired by|admire)\b/i;
+const LEARN_FRAME = /\b(?:learn(?:ing)? (?:more )?about|know(?:ing)? (?:more )?about|hear (?:about|how|what|more)|understand|curious|ask (?:you )?(?:about|a)|questions? about|what (?:it['’]s|it is) like|how you found|advice (?:on|about)|update on|timeline)\b/i;
+/** How the student found the firm: "I first heard about Lendable", "after researching Lendable", "I saw Lendable's post". */
+const DISCOVERY_FRAME = /\b(?:heard (?:about|of)|learn(?:ed|t) (?:about|of)|came across|found out about|discovered|research(?:ing|ed)?|read(?:ing)?|follow(?:ing|ed)?)\s+(?:[\w-]+\s+){0,2}?QQCO|\b(?:saw|seen|noticed|visited|checked|browsing|browsed) QQCO['’]s (?:[\w-]+ ){0,2}?(?:posts?|page|site|website|blog|advert|ad|listing|article|announcement|video|careers)\b|\b(?:use|used|using) QQCO['’]s (?:[\w-]+ )?(?:app|product|products|card|platform|service)\b/i;
 /** The firm as a topic or a subject: "Lendable's credit work", "lenders like Lendable", "Lendable was named …". */
-const TOPIC_FRAME = /QQCO['’]s (?:[\w-]+ ){0,2}(?:mission|work|team|approach|culture|programmes?|programs?|products?|customers|growth|roles?|internships?|scheme|process|values|business|platform|story|model|lending)\b|\b(?:a|the) (?:team|firm|company|lender|place) like QQCO|\b(?:lenders|firms|companies|fintechs|employers|banks|places) (?:like|such as) QQCO|QQCO (?:is|was|has|had|won|wins|launched|announced|raised|grew|hires|hired|recently|just|became|does|looks|seems|seemed|runs|offers)\b/i;
+const TOPIC_FRAME = /QQCO['’]s (?:[\w-]+ ){0,2}(?:mission|work|team|approach|culture|programmes?|programs?|products?|customers|growth|roles?|internships?|scheme|process|values|business|platform|story|model|lending)\b|\b(?:a|the) (?:team|firm|company|lender|place) like QQCO|\b(?:like|such as) QQCO|QQCO (?:is|was|has|had|won|wins|launched|announced|raised|grew|hires|hired|recently|just|became|does|looks|seems|seemed|runs|offers|would|presented|spoke|visited|came|exhibited|hosted|posted|published|shared|stood out|stands out|appeals?|interests? me)\b/i;
 /** Claims that no frame can cover: first-person work verbs, "my summer at", "worked there", "I'm on Lendable's scheme". */
 const CLAIM_VETO = [
   AT_FIRM_SIGNAL,
@@ -77,6 +79,31 @@ const CLAIM_VETO = [
   /\b(?:interned|interning|worked|working|been|time|summer|stint|spent [\w ]{0,20}?)\s+there\b|\bdid so\b|\b(?:I|we) did\s*[.!?]?\s*$/i,
   /\b(?:did|done|completed|finished|attended|loved|enjoyed|(?:I['’]m|I am|we['’]re|we are)\s+(?:(?:[a-z]+ly|already|now|still)\s+)?(?:on|in|part of))\s+(?:[\w-]+\s+){0,2}QQCO/i,
 ];
+/**
+ * One sentence-wide veto for any sentence naming the firm, whatever frame it is in: the student as the object of something the
+ * firm (or "you"/"they") did to them ("Lendable hired me", "whose team hosted me"), the student possessing a tie to it ("my first
+ * employer", "after my spring week", "I was on Lendable's programme"), or going back to it. A "me" inside a request to the
+ * recipient ("could you tell me", "let me know", "give me advice") is removed first, so asks still pass.
+ */
+const REQUEST_ME = /\b(?:tell|help|let|give|show|point|connect|send|introduce|put)\s+(?:me|us)\b/gi;
+const DONE_TO_ME = /\b(?:hired|employed|trained|taught|hosted|onboarded|gave|offered|took|invited|selected|accepted|mentored|supervised|paid|sponsored)\s+(?:me|us)\b/gi;
+const SUBJECT = /QQCO|\b(?:you|your|they|their|them|it|its|who|whose|which|I|my|we|our)\b/gi;
+const TIE_VETO = [
+  /\b(?:my|our) (?:first |second |previous |last |former |old )?(?:employer|manager|boss|team|internship|placement|spring week|insight (?:day|week|programme|program)|time|summer|stint)\b(?! (?:applications?|search|hunt|plans?|options|goals|in mind)\b)/i,
+  /\b(?:after|during|from|since) (?:my|our) (?:[\w-]+ ){0,2}?(?:spring week|internship|placement|insight|programme|program|summer)\b/i,
+  /\b(?:I|we)(?:['’](?:m|re)| am| are| was| were| have been| had been)\s+(?:(?:already|also|still|once)\s+)?(?:part of|on|in|at|with)\s+(?:[\w-]+\s+){0,2}?QQCO/i,
+  /\b(?:return(?:ing|ed)?|com(?:e|ing) back|go(?:ing)? back|get(?:ting)? back|(?:be|being|been) back|rejoin(?:ing|ed)?)\s+(?:to\s+|at\s+)?(?:[\w-]+\s+){0,2}?QQCO|\brejoin/i,
+];
+function experienceVeto(t: string): boolean {
+  const u = t.replace(REQUEST_ME, (m) => " ".repeat(m.length));
+  if (TIE_VETO.some((re) => re.test(u))) return true;
+  for (const m of u.matchAll(DONE_TO_ME)) {
+    // The nearest subject before the verb: the firm, "you" or "they" did it to the student (not "my project gave me").
+    const subj = [...u.slice(0, m.index!).matchAll(SUBJECT)].pop()?.[0].toLowerCase();
+    if (subj && !["i", "my", "we", "our"].includes(subj)) return true;
+  }
+  return false;
+}
 /** Clause boundaries for check 5; the conjunction is kept so "…, where I worked" reads as about the firm. */
 const CLAUSE_SPLIT = /(\s*[,;:–—]\s*|\s+-\s+|\s+(?:and|but|while|which|where|because|whereas)\s+)/i;
 /** A later clause that points back at the firm: "and did so", "where I …", "worked there". */
@@ -174,8 +201,11 @@ export function checkOutreach(text: string, s: GuardSource): GuardIssue[] {
   // 1. verifyTailoring with the message as the summary. Fact source is CV + confirmed facts only: the note is NOT
   //    a fact source, so "I'm a Goldman Sachs intern" in a note can't launder that claim.
   const stripped = text.replace(TIME_ASK, " ");
+  // verifyTailoring's job-title detector backtracks quadratically over a long run of bare words; a comma every 40 words caps it
+  // (real prose has punctuation long before that, so normal messages are unchanged).
+  const bounded = stripped.replace(/(?:[A-Za-z][A-Za-z&]*[ \t]+){40}/g, (m) => `${m.trimEnd()}, `);
   const report = verifyTailoring({
-    source: s.cv, sourceText: s.cvText, confirmedFacts: s.facts, tailored: { ...toTailored(s.cv), summary: stripped },
+    source: s.cv, sourceText: s.cvText, confirmedFacts: s.facts, tailored: { ...toTailored(s.cv), summary: bounded },
     jdKeywords: [], coverageBefore: null, coverageAfter: null,
   });
   for (const i of report.issues) {
@@ -236,7 +266,7 @@ export function checkOutreach(text: string, s: GuardSource): GuardIssue[] {
   const tokenize = (sen: string) => byLength.reduce((acc, n) => acc.replace(wholeWord(n, "gi"), CO), mask(sen));
   const allowed = (c: string, question: boolean) => {
     if (CLAIM_VETO.some((re) => re.test(c))) return false;
-    if (question || APPLY_FRAME.test(c) || LEARN_FRAME.test(c) || TOPIC_FRAME.test(c)) return true;
+    if (question || APPLY_FRAME.test(c) || LEARN_FRAME.test(c) || TOPIC_FRAME.test(c) || DISCOVERY_FRAME.test(c)) return true;
     if (INTEREST_FRAME.test(c) && !PAST_MARKER.test(c)) return true;
     if (s.allowInterviewClaim && /\binterview/i.test(c)) return true;
     const at = c.indexOf(CO);
@@ -246,6 +276,7 @@ export function checkOutreach(text: string, s: GuardSource): GuardIssue[] {
     if (!firstPerson(sen) && !SUBJECTLESS.test(sen)) continue;
     const t = tokenize(sen);
     if (!t.includes(CO)) continue;
+    if (experienceVeto(t)) { add(sen, `says you have a connection to ${s.company} that your CV doesn't show`); continue; }
     const question = /\?\s*$/.test(sen);
     const parts = t.split(CLAUSE_SPLIT); // clause, delimiter, clause, …
     let seen = false, prev = "";

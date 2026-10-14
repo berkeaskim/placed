@@ -297,3 +297,64 @@ describe("fix round 4", () => {
     expect(checkOutreach(fill(`${note} ${chat}`), { ...src(), allowInterviewClaim: kind === "interview_prep" })).toEqual([]);
   });
 });
+
+describe("fix round 5", () => {
+  const full = (x: string) => `Hi Sam, I'm a second-year Economics student at UCL. ${x} Could we chat?`;
+
+  it.each([
+    "I first heard about Lendable at a UCL careers fair.",
+    "I'm looking forward to learning more about Lendable.",
+    "I've been reading Lendable's engineering blog.",
+    "I believe my skills would be a good fit for Lendable.",
+    "I think Lendable would be a great place to start my career.",
+    "Lendable stood out to me because of its focus on fair lending.",
+    "I'm reaching out because of my interest in Lendable.",
+    "I'd be thrilled to start my career at Lendable.",
+    "I'd welcome the chance to contribute to Lendable.",
+    "I learned about Lendable from a classmate.",
+    "I came across Lendable through a friend's recommendation.",
+    "I saw Lendable's post about the internship on LinkedIn.",
+    "I visited Lendable's careers page and saw the internship.",
+    "After researching Lendable, I'm keen to apply.",
+    "My goal is to build a career at a fintech like Lendable.",
+    "I use Lendable's app myself.",
+    "I was at a careers fair where Lendable presented.",
+    "My rent tracker gave me a feel for credit data, which is why I'm applying to Lendable.",
+  ])("passes: %s", (x) => expect(checkOutreach(full(x), src())).toEqual([]));
+
+  it.each([
+    "I'm applying to Lendable, whose team hosted me last summer.",
+    "Lendable's internship gave me my first taste of credit.",
+    "Lendable hired me last summer.",
+    "Lendable was my first employer.",
+    "Lendable has employed me since June.",
+    "Lendable's credit team trained me on SQL last summer.",
+    "Lendable's team taught me a lot last summer.",
+    "I'm interested in returning to Lendable's credit team.",
+    "I'd love to come back to Lendable's credit team.",
+    "I'm applying to Lendable after my spring week.",
+    "I was part of Lendable's insight programme in 2025.",
+    "I was on Lendable's insight programme last year.",
+    "You hired me at Lendable last summer.",
+    "Your team at Lendable onboarded me in June.",
+    "I'd love to be back at Lendable.",
+    "Lendable hosted me for a week in 2025, so I'm applying.",
+  ])("blocks: %s", (x) => {
+    const t = full(x);
+    const issues = checkOutreach(t, src());
+    expect(issues.some((i) => i.sentence === x)).toBe(true);
+    expect(issues.every((i) => i.sentence === x)).toBe(true);
+  });
+
+  it("requests to the recipient that use 'me' still pass", () => {
+    for (const x of ["Could you tell me what the Lendable credit team looks for?", "I'd be grateful if you could give me advice on applying to Lendable.",
+      "Please let me know if Lendable runs a spring week."]) expect(checkOutreach(full(x), src())).toEqual([]);
+  });
+
+  it("a 20,000-char run of capitalised words completes in under 300 ms", () => {
+    const t = `Hi Sam, ${"Abc ".repeat(5000)}committee.`;
+    const start = performance.now();
+    checkOutreach(t, src());
+    expect(performance.now() - start).toBeLessThan(300);
+  });
+});
