@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildTargetView, type JobRow } from "@/lib/target/view";
+import { buildTargetView, targetFor, type JobRow } from "@/lib/target/view";
 import type { ParsedCV, Requirement } from "@/lib/types";
 
 const TODAY = "2026-10-14";
@@ -69,5 +69,14 @@ describe("buildTargetView", () => {
   it("bullet steps ask about the dashboard tool the market wants", () => {
     const v = buildTargetView(base);
     expect(v.plan.bullets[0].tips.find((t) => t.kind === "tool_question")?.text).toMatch(/^Did you use Tableau/);
+  });
+});
+
+describe("targetFor", () => {
+  it("saved target, else top role, else consulting; year defaults to 2nd", () => {
+    expect(targetFor({ target_archetype: "product", year: "final" })).toEqual({ sector: "product", year: "final" });
+    expect(targetFor({ target_archetype: null, archetypes: [{ key: "research", score: 40 }, { key: "data_analytics", score: 80 }] }))
+      .toEqual({ sector: "data_analytics", year: "2nd" });
+    expect(targetFor({ target_archetype: "nonsense", year: "7th" })).toEqual({ sector: "consulting", year: "2nd" });
   });
 });

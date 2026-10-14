@@ -3,9 +3,9 @@ import Link from "next/link";
 import { requireUser } from "@/lib/supabase/server";
 import { getActiveCv, getProfile } from "@/lib/db/queries";
 import { todayLondon } from "@/lib/scoring/dates";
-import { buildTargetView, type JobRow, type ProgressRow, type TargetView } from "@/lib/target/view";
+import { buildTargetView, targetFor, type JobRow, type ProgressRow, type TargetView } from "@/lib/target/view";
 import type { PickedAction } from "@/lib/target/actions";
-import { ARCHETYPES, ARCHETYPE_LABELS, YEARS, type Archetype, type Year } from "@/lib/types";
+import { ARCHETYPE_LABELS } from "@/lib/types";
 import { ActionCard } from "@/components/target/action-card";
 import { SignalCard } from "@/components/target/signal-card";
 import { SkillConfirm } from "@/components/target/skill-confirm";
@@ -134,10 +134,7 @@ function Steps({ v, role }: { v: TargetView; role: string }) {
 export default async function TargetRolePage() {
   const { supabase, user } = await requireUser();
   const p = await getProfile(supabase, user.id);
-  const top = [...(p.archetypes ?? [])].sort((a, b) => b.score - a.score)[0]?.key;
-  const sector: Archetype = p.target_archetype && (ARCHETYPES as readonly string[]).includes(p.target_archetype)
-    ? p.target_archetype : top && (ARCHETYPES as readonly string[]).includes(top) ? top : "consulting";
-  const year: Year = p.year && (YEARS as readonly string[]).includes(p.year) ? p.year : "2nd";
+  const { sector, year } = targetFor(p);
   const today = todayLondon();
 
   const [cv, jobsRes, progress, factsRes] = await Promise.all([

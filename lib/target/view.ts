@@ -1,5 +1,5 @@
 /** Everything /profile/target shows, computed in one pure step from loaded rows (spec §15.4, §15.6). */
-import type { Archetype, ParsedCV, Requirement, Year } from "@/lib/types";
+import { ARCHETYPES, YEARS, type Archetype, type ParsedCV, type Requirement, type Year } from "@/lib/types";
 import { PLAYBOOKS, type Action } from "@/lib/playbooks";
 import { cvSkillSource, jdRequirementSkills, profileSkillSource, type CoverageStatus } from "@/lib/scoring/coverage";
 import { marketDemand, readiness, type DemandJob, type MarketDemand } from "./market";
@@ -24,6 +24,17 @@ export type TargetView = {
   guidance: { line: string | null; dated: string[] };
   signals: (typeof PLAYBOOKS)[Archetype]["signals"];
 };
+
+const isArchetype = (s: unknown): s is Archetype => typeof s === "string" && (ARCHETYPES as readonly string[]).includes(s);
+
+/** The role and year Target Role works with: the saved target, else the top quiz/CV role, else Consulting; year defaults to 2nd. */
+export function targetFor(p: { target_archetype?: unknown; archetypes?: unknown; year?: unknown }): { sector: Archetype; year: Year } {
+  const ranked = Array.isArray(p.archetypes) ? [...p.archetypes as { key?: unknown; score?: number }[]].sort((a, b) => (b.score ?? 0) - (a.score ?? 0)) : [];
+  const top = ranked.find((a) => isArchetype(a.key))?.key as Archetype | undefined;
+  const sector = isArchetype(p.target_archetype) ? p.target_archetype : top ?? "consulting";
+  const year = typeof p.year === "string" && (YEARS as readonly string[]).includes(p.year) ? (p.year as Year) : "2nd";
+  return { sector, year };
+}
 
 export function toDemandJobs(rows: JobRow[]): DemandJob[] {
   return rows.map((r) => ({

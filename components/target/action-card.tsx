@@ -69,9 +69,11 @@ export function ActionCard({ action, builds, planned }: { action: PickedAction; 
           setError(null);
           start(async () => {
             const r = await completeAction(action.id, note, link || undefined);
-            if ("error" in r && r.error) { setError(r.error); return; }
-            celebrate("award" in r ? r.award ?? null : null);
-            toast.success("Added to your facts — tailoring can use it now.");
+            if ("error" in r) { setError(r.error); return; }
+            celebrate(r.award);
+            if (!r.firstTime) toast.success("Updated your note.");
+            else if (r.award && r.award.xpGained === 0) toast.success("Saved. Tailoring can use what you wrote. No XP this time: you've reached today's limit of 3 playbook steps.");
+            else toast.success("Saved. Tailoring can now use what you wrote.");
             setOpen(false);
           });
         }}>

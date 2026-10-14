@@ -515,6 +515,14 @@ The rest of the app runs **CV → roles**. Target Role mode runs the other way: 
   - **Top-up:** if 1–2 actions match, `topUp` adds signal-linked actions up to 3, shown as "Also worth doing". Many market skills (e.g. C++ in data roles) have no playbook action, and the screen should never look empty.
 - **`visibleHints(coverage)`:** for each item with status `supportedByResume`, a template hint: "Your CV mentions {skill} but not in your skills list or bullets — add a bullet about what you did with it." No generated text.
 
+- **`strengthenPlan(...)`** (added 2026-10-14): "Make your CV stronger, step by step". Deterministic, no generated text.
+  1. **Show what you already have:** `supportedByResume` skills, quoting the CV line that evidences them.
+  2. **Sharpen these bullets** (max 6, at most 3 that only need a number): the CV Score's own checks (`hasQuantity`, we/our, >35 words, clichés), "lead {entry} with this" when a bullet shows a market skill, and **tool questions** — a bullet that implies a tool ("built a dashboard") gets "Did you use Tableau or Power BI? Only if you really did, name it", only for market tools the CV and confirmed facts don't show. Questions are tagged "only if true"; nothing is ever written into the CV.
+  3. **Skills the CV doesn't show:** a question first ("I have used X" → the student writes where, in their own words → `confirmed_facts` claim `"{Skill}: {note}"`, no XP), then the playbook actions that build it.
+  - **Projected readiness:** the same coverage maths with steps 1 and confirmed skills added; shown only when higher, never 100% with a gap.
+- **Facts from playbook actions** are the student's note only — never the action title (which would put the playbook's skills into the `verifyTailoring` corpus) and never the link. The fact is written before the action is marked done. Actions are accepted only from the student's target-role playbook and year.
+- **Migration:** `0010_playbook_progress.sql` (0008/0009 were taken). The page renders without it (no saved progress); "Delete my data" tolerates the table being missing.
+
 ### 15.5 Gamification (extends §10)
 
 | Event | XP |
