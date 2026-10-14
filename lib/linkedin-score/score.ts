@@ -33,7 +33,8 @@ export function renderLinkedIn(li: ParsedLinkedIn): string {
     if (e.details) out.push(...e.details.split("\n").map((l) => `  ${l}`));
   }
   const list = (h: string, xs: string[]) => out.push(h, xs.length ? xs.join(", ") : "(none)");
-  list("TOP SKILLS", li.topSkills);
+  if (li.warnings.includes("public_view_no_skills")) out.push("TOP SKILLS", "(not visible on the public profile: treat rules about the skills list as not_applicable)");
+  else list("TOP SKILLS", li.topSkills);
   list("CERTIFICATIONS", li.certifications);
   list("HONORS-AWARDS", li.honors);
   list("PUBLICATIONS", li.publications);

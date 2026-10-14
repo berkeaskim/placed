@@ -4,6 +4,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Archetype, ParsedCV, Year } from "@/lib/types";
 import { extractLinkedInLines } from "@/lib/linkedin/extract";
 import { parseLinkedInExport, type ParsedLinkedIn } from "@/lib/linkedin/parse-export";
+import { fetchPublicProfile, normalizeProfileUrl } from "@/lib/linkedin/fetch-public";
+import { parsePublicProfile } from "@/lib/linkedin/parse-public";
 import { judgeLinkedIn } from "@/lib/ai/judgeLinkedIn";
 import { scoreLinkedIn, type LiScoreResult } from "./score";
 import type { LiFix } from "./aggregate";
@@ -42,6 +44,40 @@ export function looksLikeLinkedInExport(li: ParsedLinkedIn, text: string): boole
 }
 
 export class NotLinkedInExportError extends Error {}
+/** The profile's name doesn't match the CV on file: we only score the student's own profile. */
+export class NotYourProfileError extends Error {}
+
+const nameTokens = (s: string) => s.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().split(/[^a-z]+/).filter((t) => t.length > 1);
+/** True when the profile and CV share at least two name tokens (or the one token of a mononym). */
+export function sameName(a: string, b: string): boolean {
+  const ta = nameTokens(a), tb = new Set(nameTokens(b));
+  const shared = ta.filter((t) => tb.has(t)).length;
+  return shared >= Math.min(2, ta.length, tb.size);
+}
+
+async function activeCv(supabase: SupabaseClient, userId: string): Promise<ParsedCV | null> {
+  const { data } = await supabase
+    .from("cvs").select("parsed_json").eq("user_id", userId).eq("is_active", true)
+    .maybeSingle<{ parsed_json: ParsedCV & { safety?: unknown } }>();
+  return data?.parsed_json ?? null;
+}
+
+/**
+ * Pasted profile link → public page → score. Refuses a profile whose name doesn't match the CV on file, so a
+ * student can't run someone else's profile through the AI. Throws LinkedInFetchError when LinkedIn blocks the read.
+ */
+export async function scoreLinkedInUrl(
+  supabase: SupabaseClient,
+  i: { userId: string; url: string; sector: Archetype; year: Year; today?: Date },
+): Promise<LiPanelData> {
+  const cv = await activeCv(supabase, i.userId);
+  const canonical = normalizeProfileUrl(i.url);
+  const html = await fetchPublicProfile(canonical);
+  const { li, text } = parsePublicProfile(html, canonical);
+  const cvName = cv?.name?.trim();
+  if (cvName && li.name && !sameName(li.name, cvName)) throw new NotYourProfileError("profile name does not match the CV");
+  return scoreParsed(supabase, { ...i, li, text, cv, source: "url" });
+}
 
 /**
  * PDF bytes → parsed profile → score for one sector, compared with the user's active CV when there is one.
@@ -51,15 +87,19 @@ export async function scoreLinkedInPdf(
   supabase: SupabaseClient,
   i: { userId: string; bytes: Uint8Array; sector: Archetype; year: Year; today?: Date },
 ): Promise<LiPanelData> {
-  const { data: cvRow } = await supabase
-    .from("cvs").select("parsed_json").eq("user_id", i.userId).eq("is_active", true)
-    .maybeSingle<{ parsed_json: ParsedCV & { safety?: unknown } }>();
-  const cv: ParsedCV | null = cvRow?.parsed_json ?? null;
-
+  const cv = await activeCv(supabase, i.userId);
   const { lines, text } = await extractLinkedInLines(i.bytes);
   const li = parseLinkedInExport(lines, { knownName: cv?.name?.trim() || undefined });
   if (!looksLikeLinkedInExport(li, text)) throw new NotLinkedInExportError("not a LinkedIn export");
+  return scoreParsed(supabase, { ...i, li, text, cv, source: "pdf" });
+}
 
+/** Shared core for both inputs: score, persist (when migration 0013 is applied), return the panel data. */
+async function scoreParsed(
+  supabase: SupabaseClient,
+  i: { userId: string; li: ParsedLinkedIn; text: string; cv: ParsedCV | null; sector: Archetype; year: Year; today?: Date; source: "pdf" | "url" },
+): Promise<LiPanelData> {
+  const { li, text, cv } = i;
   const hash = createHash("sha256").update(text.replace(/\s+/g, " ").trim()).digest("hex");
   const score = await scoreLinkedIn({
     li, rawText: text, cv, sector: i.sector, year: i.year, today: i.today ?? new Date(),
@@ -79,7 +119,7 @@ export async function scoreLinkedInPdf(
   const ins = await supabase.from("linkedin_scores").insert({
     user_id: i.userId, sector: i.sector, year: i.year, total: data.total, label: data.label, dimensions: data.dimensions,
     caps_applied: data.capsApplied, fixes: data.fixes, rule_results: score.results, tips: data.tips,
-    meta: { assessed: data.assessed, passed: data.passed, notCovered: data.notCovered, couldNotAssess: data.couldNotAssess, aiUnavailable: data.aiUnavailable, hasCv: data.hasCv, parseWarnings: data.parseWarnings, profile: data.profile },
+    meta: { source: i.source, assessed: data.assessed, passed: data.passed, notCovered: data.notCovered, couldNotAssess: data.couldNotAssess, aiUnavailable: data.aiUnavailable, hasCv: data.hasCv, parseWarnings: data.parseWarnings, profile: data.profile },
     profile_json: profileJson, text_hash: hash,
   });
   if (missingTable(ins.error)) console.warn("linkedin_scores missing: run supabase/migrations/0013_linkedin_scores.sql");

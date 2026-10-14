@@ -9,6 +9,8 @@ const fail = (evidenceLine: string | null, fix: string): Out => ({ status: "fail
 const threshold = (c: LiContext, r: LiResolvedRule, fallback: number) => r.yearAdjust?.[c.year]?.threshold ?? r.params?.threshold ?? fallback;
 
 const about = (c: LiContext) => c.li.about ?? "";
+/** The public profile page doesn't show the skills list: rules that read it can't be decided (not a fail). */
+const skillsHidden = (c: LiContext) => c.li.warnings.includes("public_view_no_skills");
 const expText = (c: LiContext) => c.li.experience.map((e) => `${e.title}\n${e.description}`).join("\n");
 const eduText = (c: LiContext) => c.li.education.map((e) => `${e.degree ?? ""}\n${e.details}`).join("\n");
 /** Everything a skill could be evidenced in: skills, headline, About, Experience, Education, certifications. */
@@ -109,6 +111,7 @@ export const LI_CHECKERS: Record<string, (c: LiContext, r: LiResolvedRule) => Ou
     return fail(null, "Add your GitHub or portfolio under Contact info > Website (or in About) so a reader can see your code in one click.");
   },
   "LI-SOFTWARE_ENG-06": (c) => {
+    if (skillsHidden(c)) return na("skills not public");
     const top = c.li.topSkills.slice(0, 3);
     if (!top.length) return na("no Top Skills in export");
     const noise = top.find((s) => NOISE_SKILL_RE.test(s.trim()));
@@ -134,6 +137,7 @@ export const LI_CHECKERS: Record<string, (c: LiContext, r: LiResolvedRule) => Ou
 
   // --- data_analytics ---
   "LI-DATA_ANALYTICS-03": (c) => {
+    if (skillsHidden(c)) return na("skills not public");
     const sql = /\b(SQL|PostgreSQL|MySQL|T-SQL|BigQuery|SQLite|Snowflake)\b/i;
     if (c.li.topSkills.some((s) => sql.test(s))) return ok();
     const where = anyLine(allText(c), sql);
@@ -180,6 +184,7 @@ export const LI_CHECKERS: Record<string, (c: LiContext, r: LiResolvedRule) => Ou
     return fail(null, `Only ${hits.length} of Python, probability, statistics, linear algebra, C++ and algorithms appear. Show at least ${need} where you actually use them.`);
   },
   "LI-QUANT_TRADING-08": (c) => {
+    if (skillsHidden(c)) return na("skills not public");
     const office = c.li.topSkills.find((s) => OFFICE_RE.test(s.trim()));
     if (office) return fail(office, `Drop "${office}" from your skills; quant firms read office tools as padding.`);
     return ok();

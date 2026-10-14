@@ -2,9 +2,37 @@
 import { requireUser } from "@/lib/supabase/server";
 import { cvSizeError } from "@/lib/cv/upload-limits";
 import { ARCHETYPES, YEARS, type Archetype, type Year } from "@/lib/types";
-import { NotLinkedInExportError, scoreLinkedInPdf, type LiPanelData } from "@/lib/linkedin-score/run";
+import { NotLinkedInExportError, NotYourProfileError, scoreLinkedInPdf, scoreLinkedInUrl, type LiPanelData } from "@/lib/linkedin-score/run";
+import { LinkedInFetchError } from "@/lib/linkedin/fetch-public";
 
-export type UploadLinkedInResult = { ok: true; data: LiPanelData } | { error: string };
+/** `offerPdf`: LinkedIn wouldn't show the profile to us, so the page opens the PDF fallback. */
+export type UploadLinkedInResult = { ok: true; data: LiPanelData } | { error: string; offerPdf?: boolean };
+
+async function sectorAndYear(formData: FormData): Promise<{ sector: Archetype; year: Year } | { error: string }> {
+  const { supabase, user } = await requireUser();
+  const s = String(formData.get("sector") ?? "");
+  if (!(ARCHETYPES as readonly string[]).includes(s)) return { error: "Pick a sector to score against." };
+  const { data: prof } = await supabase.from("profiles").select("year").eq("user_id", user.id).maybeSingle<{ year: string | null }>();
+  const year: Year = prof?.year && (YEARS as readonly string[]).includes(prof.year) ? (prof.year as Year) : "2nd";
+  return { sector: s as Archetype, year };
+}
+
+/** Score the student's own public profile from a pasted linkedin.com/in/… link. */
+export async function scoreLinkedInLink(formData: FormData): Promise<UploadLinkedInResult> {
+  const { supabase, user } = await requireUser();
+  const url = String(formData.get("url") ?? "").trim();
+  if (!url) return { error: "Paste your LinkedIn profile link first." };
+  const sy = await sectorAndYear(formData);
+  if ("error" in sy) return sy;
+  try {
+    return { ok: true, data: await scoreLinkedInUrl(supabase, { userId: user.id, url, ...sy }) };
+  } catch (e) {
+    if (e instanceof LinkedInFetchError) return { error: e.message, offerPdf: e.kind !== "invalid_url" && e.kind !== "not_found" };
+    if (e instanceof NotYourProfileError) return { error: "The name on that profile doesn't match your CV. Paste your own profile link." };
+    console.error("scoreLinkedInLink failed", e);
+    return { error: "We couldn't score this profile right now. Try again in a minute." };
+  }
+}
 
 /**
  * Score a LinkedIn "Save to PDF" export for the chosen sector. The PDF is read in memory and never stored;
@@ -20,14 +48,12 @@ export async function uploadLinkedIn(formData: FormData): Promise<UploadLinkedIn
   const bytes = new Uint8Array(await file.arrayBuffer());
   if (new TextDecoder().decode(bytes.subarray(0, 5)) !== "%PDF-") return { error: "That doesn't look like a PDF." };
 
-  const s = String(formData.get("sector") ?? "");
-  if (!(ARCHETYPES as readonly string[]).includes(s)) return { error: "Pick a sector to score against." };
-  const { data: prof } = await supabase.from("profiles").select("year").eq("user_id", user.id).maybeSingle<{ year: string | null }>();
-  const year: Year = prof?.year && (YEARS as readonly string[]).includes(prof.year) ? (prof.year as Year) : "2nd";
+  const sy = await sectorAndYear(formData);
+  if ("error" in sy) return sy;
 
   try {
     // pdf.js may detach the buffer it is given, so hand it a copy.
-    const data = await scoreLinkedInPdf(supabase, { userId: user.id, bytes: bytes.slice(), sector: s as Archetype, year });
+    const data = await scoreLinkedInPdf(supabase, { userId: user.id, bytes: bytes.slice(), ...sy });
     return { ok: true, data };
   } catch (e) {
     if (e instanceof NotLinkedInExportError) {

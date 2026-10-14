@@ -8,7 +8,7 @@ import { LinkedInView } from "./linkedin-view";
 
 export const metadata: Metadata = { title: "LinkedIn Score · Placed" };
 
-/** /profile/linkedin: upload a LinkedIn "Save to PDF" export and see the latest score for the target sector. */
+/** /profile/linkedin: paste a profile link (or upload the "Save to PDF" export) and see the latest score for the target sector. */
 export default async function LinkedInPage() {
   const { supabase, user } = await requireUser();
   const p = await getProfile(supabase, user.id);

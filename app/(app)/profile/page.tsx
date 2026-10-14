@@ -116,7 +116,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
         )}
         <Link href="/profile/linkedin" className="card-quest flex flex-col gap-1 p-5 no-underline hover:bg-[#F8F7FF]">
           <span className="text-base font-bold">Score your LinkedIn</span>
-          <span className="text-sm text-[#5B5B6B]">Upload your profile PDF: we check it matches your CV and how it reads to a recruiter for your sector.</span>
+          <span className="text-sm text-[#5B5B6B]">Paste your profile link: we check it matches your CV and how it reads to a recruiter for your sector.</span>
         </Link>
         <MythCard />
       </aside>
