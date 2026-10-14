@@ -1,10 +1,18 @@
 "use client";
-import { useActionState, useEffect, useRef, useState } from "react";
+import { useActionState, useEffect, useRef, useState, useTransition } from "react";
 import confetti from "canvas-confetti";
 import { toast } from "sonner";
 import { RTW_LABELS, type Core } from "@/lib/autopilot/vault";
 import { YEARS } from "@/lib/types";
 import { deleteVault, saveVault, type SaveState } from "./actions";
+
+const LABELS: Record<string, string> = {
+  first_name: "First name", last_name: "Last name", preferred_name: "Preferred name", pronouns: "Pronouns", email: "Email", phone: "Phone",
+  country: "Country", city: "City", university: "University", degree: "Degree", year_of_study: "Year of study", grades: "Grades so far",
+  grad_month: "Graduation month", grad_year: "Graduation year", rtw_uk: "Right to work in the UK", needs_sponsorship: "Visa sponsorship",
+  start_date: "Earliest start date", internship_length: "Preferred length", outstanding_offers: "Outstanding offers or deadlines",
+  linkedin: "LinkedIn", github: "GitHub", portfolio: "Portfolio or website", languages: "Languages", heard_about: "How did you hear about the role?",
+};
 
 const YEAR_LABELS: Record<(typeof YEARS)[number], string> = {
   "1st": "1st year", "2nd": "2nd year", penultimate: "Penultimate year", final: "Final year", masters: "Master's",
@@ -42,8 +50,14 @@ function Card({ title, children }: { title: string; children: React.ReactNode })
 export function SetupForm({ initial, unlocked, needsVisaHint }: { initial: Partial<Core>; unlocked: boolean; needsVisaHint: boolean }) {
   const [state, action, pending] = useActionState<SaveState, FormData>(saveVault, null);
   const formRef = useRef<HTMLFormElement>(null);
+  const [formKey, setFormKey] = useState(0);
+  const [clearedFor, setClearedFor] = useState<{ s: SaveState } | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deleting, startDelete] = useTransition();
+  const cleared = clearedFor !== null && clearedFor.s === state;
+  const values: Record<string, string> = cleared ? {} : (state?.values ?? (initial as Record<string, string>));
+  const isUnlocked = cleared ? false : state ? state.unlocked : unlocked;
   const [filled, setFilled] = useState(() => REQUIRED.filter((k) => Boolean(initial[k])).length);
-  const isUnlocked = unlocked || Boolean(state?.unlocked);
 
   const recount = () => {
     const f = formRef.current;
@@ -52,6 +66,15 @@ export function SetupForm({ initial, unlocked, needsVisaHint }: { initial: Parti
     setFilled(REQUIRED.filter((k) => String(data.get(k) ?? "").trim() !== "").length);
   };
 
+  // React resets the form after an action; the fields re-mount (key) seeded from the returned values, so typing is kept. Recount from the DOM afterwards.
+  useEffect(() => {
+    recount();
+    if (state && !cleared) {
+      const first = [...state.invalid, ...state.missing][0];
+      if (first) document.getElementById(first)?.focus();
+    }
+  }, [state, formKey, cleared]);
+
   useEffect(() => {
     if (state?.unlocked && state.xp) {
       toast.success(`Autopilot unlocked 🚀 +${state.xp} XP`);
@@ -59,18 +82,32 @@ export function SetupForm({ initial, unlocked, needsVisaHint }: { initial: Parti
     }
   }, [state]);
 
-  const v = (k: keyof Core) => (initial[k] as string | undefined) ?? "";
+  const v = (k: keyof Core) => values[k] ?? "";
+  const labelList = (keys: string[]) => keys.map((k) => LABELS[k] ?? k).join(", ");
+  const shownInvalid = cleared ? [] : (state?.invalid ?? []);
+  const shownMissing = cleared ? [] : (state?.missing ?? []).filter((k) => !shownInvalid.includes(k));
+
+  const onDelete = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!window.confirm("Delete your saved Autopilot answers and packs? This can't be undone.")) return;
+    setDeleteError(null);
+    startDelete(async () => {
+      const r = await deleteVault();
+      if (r.ok) { setClearedFor({ s: state }); setFormKey((n) => n + 1); }
+      else setDeleteError(r.error ?? "We couldn't delete your Autopilot data. Please try again.");
+    });
+  };
   const pct = Math.round((filled / REQUIRED.length) * 100);
 
   return (
     <div className="flex flex-col gap-4">
-      <form ref={formRef} action={action} onChange={recount} className="flex flex-col gap-4">
+      <form key={`${formKey}:${JSON.stringify(values)}`} ref={formRef} action={action} onChange={recount} className="flex flex-col gap-4">
         <div className="rounded-[20px] border bg-white p-5" role="group" aria-label="Progress">
           <div className="mb-2 flex items-center justify-between text-sm font-bold">
             <span>{filled} of {REQUIRED.length} required answers</span>
             {isUnlocked && <span className="rounded-full bg-[#E3F6EE] px-2.5 py-0.5 text-xs text-[#0B6B49]">Autopilot unlocked</span>}
           </div>
-          <div className="h-2.5 rounded-full bg-[#E6E6EF]" role="progressbar" aria-valuemin={0} aria-valuemax={REQUIRED.length} aria-valuenow={filled}>
+          <div className="h-2.5 rounded-full bg-[#E6E6EF]" role="progressbar" aria-label="Required answers completed" aria-valuemin={0} aria-valuemax={REQUIRED.length} aria-valuenow={filled}>
             <div className="h-2.5 rounded-full bg-[#5B3DF5]" style={{ width: `${pct}%` }} />
           </div>
         </div>
@@ -82,7 +119,7 @@ export function SetupForm({ initial, unlocked, needsVisaHint }: { initial: Parti
             <Field name="preferred_name" label="Preferred name" hint="Optional. Only if you go by something else."><input id="preferred_name" name="preferred_name" defaultValue={v("preferred_name")} placeholder="Ash" className={inputCls} /></Field>
             <Field name="pronouns" label="Pronouns" hint="Optional."><input id="pronouns" name="pronouns" defaultValue={v("pronouns")} placeholder="she/her" className={inputCls} /></Field>
             <Field name="email" label="Email" required><input id="email" name="email" type="email" required autoComplete="email" defaultValue={v("email")} placeholder="you@university.ac.uk" className={inputCls} /></Field>
-            <Field name="phone" label="Phone" required><input id="phone" name="phone" type="tel" required autoComplete="tel" defaultValue={v("phone")} placeholder="+44 7700 900123" className={inputCls} /></Field>
+            <Field name="phone" label="Phone" required><input id="phone" name="phone" type="tel" required minLength={5} autoComplete="tel" defaultValue={v("phone")} placeholder="+44 7700 900123" className={inputCls} /></Field>
             <Field name="country" label="Country" required><input id="country" name="country" required autoComplete="country-name" defaultValue={v("country")} placeholder="United Kingdom" className={inputCls} /></Field>
             <Field name="city" label="City" required><input id="city" name="city" required autoComplete="address-level2" defaultValue={v("city")} placeholder="London" className={inputCls} /></Field>
           </div>
@@ -148,11 +185,14 @@ export function SetupForm({ initial, unlocked, needsVisaHint }: { initial: Parti
 
         <p className="text-sm text-[#4A4A57]">We never store questions about gender, ethnicity, disability and similar. You answer those on the form yourself.</p>
 
-        {state && !state.ok && <p role="alert" className="text-sm font-semibold text-destructive">We couldn&apos;t save that. Please try again.</p>}
-        {state?.ok && !state.unlocked && state.missing.length > 0 && (
-          <p role="status" className="rounded-[14px] bg-[#FFF1DC] px-3 py-2 text-sm font-medium text-[#7A4100]">Progress saved. Still to answer: {state.missing.length} required {state.missing.length === 1 ? "field" : "fields"}.</p>
+        {!cleared && state && !state.ok && <p role="alert" className="text-sm font-semibold text-destructive">We couldn&apos;t save that. Please try again.</p>}
+        {shownInvalid.length > 0 && (
+          <p role="alert" className="rounded-[14px] bg-[#FFF1DC] px-3 py-2 text-sm font-medium text-[#7A4100]">These answers don&apos;t look right, so we kept your last saved version: {labelList(shownInvalid)}.</p>
         )}
-        {state?.ok && state.unlocked && (
+        {shownMissing.length > 0 && (
+          <p role="status" className="rounded-[14px] bg-[#FFF1DC] px-3 py-2 text-sm font-medium text-[#7A4100]">Progress saved. Still to answer: {labelList(shownMissing)}.</p>
+        )}
+        {!cleared && state?.ok && state.unlocked && shownInvalid.length === 0 && (
           <p role="status" className="rounded-[14px] bg-[#E3F6EE] px-3 py-2 text-sm font-bold text-[#0B6B49]">Autopilot unlocked 🚀{state.xp ? ` +${state.xp} XP` : ""}</p>
         )}
 
@@ -161,11 +201,9 @@ export function SetupForm({ initial, unlocked, needsVisaHint }: { initial: Parti
         </button>
       </form>
 
-      <form
-        action={deleteVault}
-        onSubmit={(e) => { if (!window.confirm("Delete your saved Autopilot answers and packs? This can't be undone.")) e.preventDefault(); }}
-      >
-        <button type="submit" className="min-h-11 w-full rounded-[14px] border-2 border-destructive px-4 py-3 font-bold text-destructive">Delete my Autopilot data</button>
+      <form onSubmit={onDelete}>
+        {deleteError && <p role="alert" className="mb-2 text-sm font-semibold text-destructive">{deleteError}</p>}
+        <button type="submit" disabled={deleting} className="min-h-11 w-full rounded-[14px] border-2 border-destructive px-4 py-3 font-bold text-destructive disabled:opacity-60">{deleting ? "Deleting..." : "Delete my Autopilot data"}</button>
       </form>
     </div>
   );

@@ -5,32 +5,63 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { awardXP } from "@/lib/gamify/award";
 import { CoreSchema } from "@/lib/autopilot/vault";
 
-export type SaveState = { ok: boolean; missing: string[]; unlocked: boolean; xp?: number } | null;
+export type SaveState = {
+  ok: boolean;
+  /** Required fields still empty in the merged core. */
+  missing: string[];
+  /** Fields that were posted but rejected by validation (the previously saved value, if any, is kept). */
+  invalid: string[];
+  /** Currently complete, i.e. isComplete(merged core). `completed_at` is only the once-only XP marker. */
+  unlocked: boolean;
+  xp?: number;
+  /** What to show in the form after the action: the merged core, with rejected posted values overlaid so the user's typing isn't lost. */
+  values?: Record<string, string>;
+} | null;
+export type DeleteResult = { ok: boolean; error?: string };
 const KEYS = Object.keys(CoreSchema.shape) as (keyof typeof CoreSchema.shape)[];
 
 export async function saveVault(_prev: SaveState, form: FormData): Promise<SaveState> {
   const { supabase, user } = await requireUser();
-  const raw: Record<string, string> = {};
-  for (const k of KEYS) { const v = form.get(k); if (typeof v === "string" && v.trim()) raw[k] = v.trim(); }
-  const partial = CoreSchema.partial().safeParse(raw);
-  const core = partial.success ? partial.data : Object.fromEntries(Object.entries(raw).filter(([k]) => !partial.error.issues.some((i) => i.path[0] === k)));
-  const full = CoreSchema.safeParse(core);
-  const missing = full.success ? [] : [...new Set(full.error.issues.map((i) => String(i.path[0])))];
   const db = createAdminClient();
-  const { data: prior } = await db.from("autopilot_vault").select("completed_at").eq("user_id", user.id).maybeSingle();
-  const completedAt = prior?.completed_at ?? (full.success ? new Date().toISOString() : null);
-  const { error } = await db.from("autopilot_vault").upsert({ user_id: user.id, core, completed_at: completedAt, updated_at: new Date().toISOString() }, { onConflict: "user_id" });
-  if (error) return { ok: false, missing, unlocked: false };
+  const { data: prior } = await db.from("autopilot_vault").select("core, completed_at").eq("user_id", user.id).maybeSingle();
+  const merged: Record<string, unknown> = { ...((prior?.core ?? {}) as Record<string, unknown>) };
+  const invalid: string[] = [];
+  const rejected: Record<string, string> = {};
+  for (const k of KEYS) {
+    const v = form.get(k);
+    if (typeof v !== "string") continue; // not posted: keep what is saved
+    const t = v.trim();
+    if (!t) { delete merged[k]; continue; } // explicitly cleared
+    const r = CoreSchema.shape[k].safeParse(t);
+    if (r.success && r.data !== undefined) merged[k] = r.data;
+    else { invalid.push(k); rejected[k] = t; }
+  }
+  const full = CoreSchema.safeParse(merged);
+  const missing = full.success ? [] : [...new Set(full.error.issues.map((i) => String(i.path[0])))];
+  const unlocked = full.success;
+  const completedAt = prior?.completed_at ?? (unlocked ? new Date().toISOString() : null);
+  const values: Record<string, string> = {};
+  for (const [k, v] of Object.entries({ ...merged, ...rejected })) if (typeof v === "string") values[k] = v;
+  const { error } = await db.from("autopilot_vault").upsert({ user_id: user.id, core: merged, completed_at: completedAt, updated_at: new Date().toISOString() }, { onConflict: "user_id" });
+  if (error) return { ok: false, missing, invalid, unlocked: false, values };
   let xp: number | undefined;
-  if (full.success && !prior?.completed_at) xp = (await awardXP(supabase, user.id, { type: "autopilot_ready" }).catch(() => null))?.xpGained;
+  if (unlocked && !prior?.completed_at) {
+    xp = (await awardXP(supabase, user.id, { type: "autopilot_ready" }).catch((e) => {
+      console.error("autopilot_ready XP award failed:", e instanceof Error ? e.message : "unknown error");
+      return null;
+    }))?.xpGained;
+  }
   revalidatePath("/autopilot/setup");
-  return { ok: true, missing, unlocked: Boolean(completedAt), xp };
+  return { ok: true, missing, invalid, unlocked, xp, values };
 }
 
-export async function deleteVault(): Promise<void> {
+export async function deleteVault(): Promise<DeleteResult> {
   const { user } = await requireUser();
   const db = createAdminClient();
-  await db.from("autopilot_packs").delete().eq("user_id", user.id);
-  await db.from("autopilot_vault").delete().eq("user_id", user.id);
+  const packs = await db.from("autopilot_packs").delete().eq("user_id", user.id);
+  if (packs.error) return { ok: false, error: "We couldn't delete your Autopilot data. Please try again." };
+  const vault = await db.from("autopilot_vault").delete().eq("user_id", user.id);
+  if (vault.error) return { ok: false, error: "We couldn't delete your Autopilot data. Please try again." };
   revalidatePath("/autopilot/setup");
+  return { ok: true };
 }
