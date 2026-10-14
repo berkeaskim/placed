@@ -23,6 +23,11 @@ describe("statesMatch", () => {
     expect(statesMatch("", "")).toBe(false);
     expect(statesMatch("abc", null)).toBe(false);
   });
+  it("returns false (never throws) for same-length strings with different byte lengths", () => {
+    expect(() => statesMatch("abé", "abc")).not.toThrow();
+    expect(statesMatch("abé", "abc")).toBe(false);
+    expect(statesMatch("abé", "abé")).toBe(true);
+  });
 });
 
 describe("refreshAccessToken", () => {

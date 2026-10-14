@@ -18,8 +18,10 @@ export function consentUrl(o: { clientId: string; redirectUri: string; state: st
 }
 
 export function statesMatch(cookie: string | undefined, query: string | null): boolean {
-  if (!cookie || !query || cookie.length !== query.length) return false;
-  return timingSafeEqual(Buffer.from(cookie), Buffer.from(query));
+  if (!cookie || !query) return false;
+  // Compare byte lengths: "abé" and "abc" have the same string length but not the same UTF-8 length (timingSafeEqual throws).
+  const a = Buffer.from(cookie), b = Buffer.from(query);
+  return a.length === b.length && timingSafeEqual(a, b);
 }
 
 async function token(params: Record<string, string>): Promise<Record<string, string>> {

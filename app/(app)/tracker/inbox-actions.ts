@@ -179,7 +179,9 @@ export async function addSuggestedApplication(eventId: string): Promise<{ ok: bo
   const to = targetStatus(app.status, ev.kind as InboxKind);
   const db = createAdminClient();
   if (!to) {
-    await db.from("inbox_events").update({ application_id: app.id, effect: "none" }).eq("id", ev.id).eq("user_id", user.id);
+    const { error: linkErr } = await db.from("inbox_events").update({ application_id: app.id, effect: "none" }).eq("id", ev.id).eq("user_id", user.id);
+    if (linkErr) console.error("addSuggestedApplication: linking event failed", linkErr.message);
+    else await refreshDeadlines(db, user.id, [app.id]); // the linked email's deadline now counts for this card
     revalidatePath("/tracker");
     return { ok: true, message: "Already tracked, so nothing was moved." };
   }
@@ -191,6 +193,7 @@ export async function addSuggestedApplication(eventId: string): Promise<{ ok: bo
     ? { application_id: app.id, effect: "moved", prev_status: app.status, new_status: to }
     : { application_id: app.id, effect: "none" }).eq("id", ev.id).eq("user_id", user.id);
   if (upErr) console.error("addSuggestedApplication: updating event failed", upErr.message);
+  else await refreshDeadlines(db, user.id, [app.id]);
   revalidatePath("/tracker");
   return { ok: done };
 }

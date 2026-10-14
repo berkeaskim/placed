@@ -6,6 +6,7 @@ import { OUTREACH_TARGETS, type OutreachTarget } from "@/lib/outreach/targets";
 import { isDemoEmail } from "@/lib/demo/is-demo";
 import { todayLondon } from "@/lib/scoring/dates";
 import { InboxBanner } from "@/components/tracker/inbox-banner";
+import { showDeadline } from "@/components/tracker/deadline-chip";
 import { InboxSuggestions, type Suggestion } from "@/components/tracker/inbox-suggestions";
 import type { AppStatus } from "@/lib/types";
 import { Board, type Card } from "./board";
@@ -56,7 +57,7 @@ export default async function Tracker({ searchParams }: { searchParams: Promise<
     const j = a.jobs as unknown as { title: string; companies: { name: string } | null } | null;
     const mine = events.filter((e) => e.application_id === a.id);
     const moved = mine.find((e) => e.effect === "moved");
-    const due = mine.filter((e) => e.deadline && e.deadline === a.next_deadline)[0];
+    const due = mine.filter((e) => e.deadline && e.deadline === a.next_deadline && showDeadline(e.deadline, today, a.status))[0];
     return {
       id: a.id, jobId: a.job_id, status: a.status, title: j?.title ?? "Role", company: j?.companies?.name ?? "",
       updatedAt: a.updated_at, lastEventAt: a.last_event_at,
@@ -73,7 +74,7 @@ export default async function Tracker({ searchParams }: { searchParams: Promise<
   const suggestions: Suggestion[] = events.filter((e) => e.effect === "suggested")
     .map((e) => ({ eventId: e.id, subject: e.subject, company: e.company, reason: e.application_id ? "matched" : "unmatched" }));
   const flash = { connected: "Gmail connected. Press Sync inbox.", denied: "Gmail wasn't connected.", error: "Couldn't connect Gmail. Try again.",
-    unconfigured: "Gmail isn't set up on this server yet." }[(await searchParams).gmail ?? ""] ?? null;
+    unconfigured: "Gmail isn't set up on this server yet.", demo: "The demo account uses a sample inbox; Gmail can't be connected to it." }[(await searchParams).gmail ?? ""] ?? null;
   return (
     <div className="flex flex-col gap-4">
       <h1 className="text-[28px] font-extrabold tracking-tight">Your applications</h1>

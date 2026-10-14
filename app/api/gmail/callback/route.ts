@@ -3,6 +3,7 @@ import { requireUser } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { encryptToken } from "@/lib/gmail/crypto";
 import { STATE_COOKIE, exchangeCode, fetchProfileEmail, statesMatch } from "@/lib/gmail/oauth";
+import { isDemoEmail } from "@/lib/demo/is-demo";
 
 /** Stores the encrypted refresh token for the session user (never a user id from the query). */
 export async function GET(req: NextRequest) {
@@ -12,6 +13,7 @@ export async function GET(req: NextRequest) {
     res.cookies.delete({ name: STATE_COOKIE, path: "/api/gmail" });
     return res;
   };
+  if (isDemoEmail(user.email)) return back("demo"); // nothing is exchanged or stored for the demo account
   const q = req.nextUrl.searchParams;
   if (q.get("error")) return back("denied");
   if (!statesMatch(req.cookies.get(STATE_COOKIE)?.value, q.get("state"))) return back("error");

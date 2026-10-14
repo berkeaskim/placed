@@ -3093,4 +3093,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 - Apply `supabase/migrations/0013_inbox_outreach.sql`.
 - Google Cloud: create an OAuth client (Web), enable the Gmail API, consent screen in Testing, add test users, register redirect URIs `http://localhost:3200/api/gmail/callback` and `https://<vercel domain>/api/gmail/callback`.
 - Set `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GMAIL_TOKEN_KEY` (`openssl rand -base64 32`) in `.env.local` and Vercel.
-- Before the demo: `npm run demo:tracker`.
+- Before the demo run: `npm run demo:reset`, then `npm run demo:tracker`, in that order (the demo account's active CV is currently not the demo CV; the reset wipes the account's data so the tracker seed starts clean).
+- Set `AI_MODE=fixture` on any deployment used for the stage demo. (Since the final fix wave the demo account's inbox never calls the model in any AI mode, so this is a second safety net, not a requirement.)
+- Register the exact Vercel host that will serve the demo (production domain or the specific preview host) as `https://<that host>/api/gmail/callback` in the Google OAuth client; Google matches redirect URIs exactly.
+- `e2e/inbox.spec.ts` resets the demo user's tracker in the shared Supabase project: don't run it against a deployment while someone is rehearsing or presenting with the demo account.
