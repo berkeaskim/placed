@@ -3,7 +3,7 @@
 (function (root) {
   const Guard = () => root.PlacedGuard;
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-  const norm = (s) => String(s == null ? "" : s).replace(/\s+/g, " ").trim().toLowerCase();
+  const norm = (s) => String(s == null ? "" : s).replace(/[\u2018\u2019]/g, "'").replace(/\s+/g, " ").trim().toLowerCase(); // fold curly apostrophes
   const attrEsc = (s) => String(s).replace(/["\\]/g, "\\$&");
   const CONTROL_CHARS = /[\u0000-\u001F\u007F]/g;
   let trustedReady = false; // set once the debugger is attached and the infobar has settled
@@ -57,18 +57,36 @@
 
   /** A real (trusted) mouse click, only after checking what is actually under the pointer. */
   async function trustedClickOn(el) {
-    if (!trustedReady || !el || Guard().isSubmitControl(el)) return false;
-    el.scrollIntoView({ block: "center", inline: "nearest" });
-    await sleep(150); // let scrolling settle before measuring
-    const p = point(el);
-    const hit = document.elementFromPoint(p.x, p.y);
-    if (!hit || !(hit === el || el.contains(hit))) return false; // something else (overlay, banner, button) is on top
-    if (Guard().isSubmitControl(hit)) return false;
+    const fail = (why) => { api.lastWhy = why; return false; };
+    if (!trustedReady) return fail("debugger-not-attached");
+    if (!el || Guard().isSubmitControl(el)) return fail("no-element-or-submit");
+    // Scroll, wait until the control stops moving, and re-measure; layout can shift under us (menus closing, the debugger
+    // infobar, React re-rendering a selected value), so retry a few times before giving up.
+    let p = null, hit = null, tries = 0;
+    for (; tries < 4; tries++) {
+      el.scrollIntoView({ block: "center", inline: "nearest", behavior: "instant" });
+      await sleep(150);
+      let last = el.getBoundingClientRect().top;
+      for (let i = 0; i < 10; i++) {
+        await sleep(100);
+        const t = el.getBoundingClientRect().top;
+        if (Math.abs(t - last) < 0.5) break;
+        last = t;
+      }
+      p = point(el);
+      hit = document.elementFromPoint(p.x, p.y);
+      if (hit && (hit === el || el.contains(hit))) break;
+    }
+    if (!hit || !(hit === el || el.contains(hit))) {
+      return fail(`covered after ${tries} tries at (${p.x},${p.y}) viewport=${innerWidth}x${innerHeight} scrollY=${Math.round(scrollY)} hit=${hit ? hit.tagName + "." + String(hit.className).slice(0, 50) : "none"}`);
+    }
+    if (Guard().isSubmitControl(hit)) return fail("submit-under-point");
     const n = nonce();
     el.setAttribute("data-placed-target", n); // the service worker refuses any point not inside this element
     try {
       const r = await send({ kind: "trustedClick", x: p.x, y: p.y, nonce: n });
-      return Boolean(r && r.ok);
+      if (r && r.ok) return true;
+      return fail(`service-worker: ${r && r.error ? r.error : "no reply"} at (${p.x},${p.y})`);
     } finally {
       el.removeAttribute("data-placed-target");
     }
@@ -143,7 +161,7 @@
     return true;
   }
 
-  const api = { sleep, norm, attrEsc, setNative, uploadFile, send, prepareTrusted, trustedClickOn, trustedType, waitFor, findOption, markPicked, armAutoPick };
+  const api = { lastWhy: "", sleep, norm, attrEsc, setNative, uploadFile, send, prepareTrusted, trustedClickOn, trustedType, waitFor, findOption, markPicked, armAutoPick };
   root.PlacedDom = api;
   if (typeof module !== "undefined") module.exports = api;
 })(globalThis);

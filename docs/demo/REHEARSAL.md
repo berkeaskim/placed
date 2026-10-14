@@ -58,9 +58,12 @@ Analyst Intern (June 2027)**, London. Everything the AI "says" in fixture mode i
    ATS-safe PDF. Back on the page, click "Show likely interview questions" to get, for example, "How many people
    came to your weekly events…?"
 10. **Autopilot (40 s).** Open Monzo, "Associate Data Scientist - Intern" (a real, unedited posting). Click "Autopilot this
-    application". Point at the groups: ✅ filled from setup, ☑️ Right to Work she confirms herself, 🚫 consent stays hers,
-    ✍️ "Why Monzo?" built only from her CV, "Caught it: 1 sentence removed" (the AI swapped in a tool she never used).
-    Approve, click "Open & fill". The real Monzo form fills in seconds; the panel says "Check everything. You press Submit."
+    application". Walk the pack headings: "From your setup" (collapsed, filled for her), "Answer once", "Please confirm"
+    (Right to work and sponsorship: she confirms them herself, Placed never assumes), "Your answer" ("Why Monzo?" built
+    only from her CV; open "Caught it: 1 sentence removed", the AI swapped in a tool she never used; click "This is my
+    answer" to approve it), "You'll fill these" (consent, diversity, pronouns: stay hers). Click "Open & fill". The real
+    Monzo form fills in seconds: **15 of 20 fields filled (CV and both Right-to-work and sponsorship dropdowns included),
+    5 left for her**, and the panel says "Check everything. You press Submit." (Numbers from the final e2e run.)
     Say: "17 questions, 100 applications: 1,700 boxes. Autopilot fills the boring 90%. Placed never presses Submit."
     Chrome shows a "Placed Autopilot started debugging this browser" bar while the dropdowns are filled. That is expected
     (it makes real clicks on dropdowns that ignore scripted ones); tell the room before they ask.

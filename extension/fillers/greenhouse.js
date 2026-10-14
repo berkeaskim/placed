@@ -30,10 +30,17 @@
       ctx.armed = D().armAutoPick({ input, scope: shell, optionSelector: ".select__option", label, prefix, sourceLabel: ctx.sourceLabel, hasValue });
       return "select-yourself";
     };
-    if (!(await D().trustedClickOn(control))) return arm();
-    if (type && !(await D().trustedType(type, input, shell))) return arm();
-    const opt = await D().waitFor(() => D().findOption(shell, ".select__option", label, prefix), type ? 25 : 12, 150);
-    if (!opt || G().isSubmitControl(opt)) return arm();
+    const why = (r) => { input.setAttribute("data-placed-why", r.slice(0, 300)); };
+    if (!(await D().trustedClickOn(control))) {
+      why(`click-refused: ${D().lastWhy}`);
+      return arm();
+    }
+    if (type && !(await D().trustedType(type, input, shell))) { why("type-refused"); return arm(); }
+    const opt = await D().waitFor(() => D().findOption(shell, ".select__option", label, prefix), type ? 25 : 25, 150);
+    if (!opt || G().isSubmitControl(opt)) {
+      why(`no-option want=${JSON.stringify(label)} menu=${Boolean(shell.querySelector(".select__menu"))} seen=${JSON.stringify([...shell.querySelectorAll(".select__option")].map((o) => o.textContent.trim().slice(0, 40)))}`);
+      return arm();
+    }
     G().safeClick(opt);
     return "filled";
   }

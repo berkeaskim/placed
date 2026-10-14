@@ -18,6 +18,15 @@ beforeAll(() => {
   ashbyFullOptions = rtwField.field.selectableValues.map((v: any) => ({ label: v.label, value: v.value }));
 });
 
+describe("matchOption apostrophes", () => {
+  it("matches an option whose apostrophe is curly (U+2019) the same as a straight one", () => {
+    const curly = opt("I\u2019m a citizen or have permanent residency", "I\u2019d need Monzo to sponsor my visa to work in this location");
+    expect(matchOption("rtw_uk", { rtw_uk: "citizen_or_settled" }, curly)).toMatchObject({ value: "0" });
+    expect(matchOption("rtw_uk", { rtw_uk: "needs_sponsorship" }, curly)).toMatchObject({ value: "1" });
+    expect(matchOption("university", { university: "King\u2019s College London" } as never, opt("King's College London"))).toMatchObject({ value: "0" });
+  });
+});
+
 describe("matchOption", () => {
   it("maps each RTW answer to exactly one Monzo option", () => {
     expect(matchOption("rtw_uk", { rtw_uk: "citizen_or_settled" }, MONZO_RTW)).toMatchObject({ value: "0" });

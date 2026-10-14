@@ -10,6 +10,9 @@ import { hasDemoCreds } from "./fixtures/helpers";
  * clicks a submit control and closes the context at the end, discarding the unsent form. Only the FICTIONAL persona
  * Ayşe Demir's values are ever typed.
  *
+ * Chromium runs with --headless=new (headless:false + that arg): the old headless mode cannot load extensions, and a headed
+ * window is not needed in CI/agent shells. Remove the arg to watch it. The extension is a TEMP COPY (see makeExtensionCopy).
+ *
  * Run: NEXT_PUBLIC_AUTOPILOT=1 AI_MODE=fixture E2E_PORT=3100 npx playwright test e2e/autopilot.spec.ts
  * The extension is loaded from a TEMP COPY whose PLACED_ORIGIN and host_permissions point at the e2e port,
  * so the committed extension/ (default http://localhost:3200) is never edited.
@@ -19,7 +22,12 @@ test.skip(!hasDemoCreds || process.env.NEXT_PUBLIC_AUTOPILOT !== "1", "needs dem
 const PORT = Number(process.env.E2E_PORT ?? 3100);
 const ORIGIN = `http://localhost:${PORT}`;
 const MONZO_JOB_ID = "2993de0d-80fd-4dff-a708-c16fa593df41"; // ext_id 8232726
-const SUBMIT_RE = /greenhouse\.io\/.*(applications|submit)/i;
+// Every request to any greenhouse.io host (job-boards., boards., boards-api., recruiting.cdn. ...) other than a read is aborted.
+const GREENHOUSE_RE = /^https?:\/\/([^/]+\.)?greenhouse\.io\//i;
+const READ_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
+// Non-read requests tolerated (still aborted) because they are page telemetry, never a submission. Anything else fails the test.
+// Observed in a real run: Greenhouse page analytics (Snowplow collector c.spl.greenhouse.io, path /com.snowplowanalytics.snowplow/tp2).
+const TELEMETRY_ALLOW = /^https:\/\/c\.spl\.greenhouse\.io\/com\.snowplowanalytics\.snowplow\/tp2(\?|$)/;
 
 function makeExtensionCopy(): string {
   const dest = fs.mkdtempSync(path.join(os.tmpdir(), "placed-ext-"));
@@ -51,11 +59,17 @@ test("Autopilot fills the real Monzo form and never submits", async () => {
     ],
     viewport: { width: 1280, height: 1000 },
   });
-  const posts: string[] = [];
-  const aborted: string[] = [];
+  const blocked: { method: string; url: string }[] = [];
   try {
-    ctx.on("request", (r) => { if (r.method() === "POST" && SUBMIT_RE.test(r.url())) posts.push(r.url()); });
-    await ctx.route(SUBMIT_RE, (route) => { aborted.push(route.request().url()); return route.abort(); }); // a submit could never leave the machine
+    await ctx.route(GREENHOUSE_RE, (route) => {
+      const r = route.request();
+      if (READ_METHODS.has(r.method())) return route.continue();
+      blocked.push({ method: r.method(), url: r.url() });
+      return route.abort(); // a submission could never leave the machine
+    });
+    // Belt and braces: also observe every request the context makes, independent of the route handler.
+    const seenWrites: string[] = [];
+    ctx.on("request", (r) => { if (GREENHOUSE_RE.test(r.url()) && !READ_METHODS.has(r.method())) seenWrites.push(`${r.method()} ${r.url()}`); });
 
     const page = await ctx.newPage();
     await page.goto(`${ORIGIN}/login`);
@@ -125,33 +139,53 @@ test("Autopilot fills the real Monzo form and never submits", async () => {
     await expect(form.locator("#question_69481992")).toHaveCount(1); // "Why Monzo?" exists; filled only if approved
     if (draftState === "approved") await expect(form.locator("#question_69481992")).not.toHaveValue("");
     else await expect(form.locator("#question_69481992")).toHaveValue("");
-    // CV: a file is attached (name shown by Greenhouse) unless there was no tailored CV
-    // CV: Greenhouse swaps the file input for a filename readout once a file is attached
-    const cvName: string = await form.evaluate(`((document.querySelector(".file-upload__filename") || {}).textContent || "").trim()`);
-    console.log(`CV_FILENAME=${JSON.stringify(cvName)}`);
-    // The demo user only has a tailored CV for this job after "Tailor my CV" was run on it; without one the CV field is the student's own.
-    if (cvName) expect(cvName).toMatch(/\.pdf/i);
+    // CV: Greenhouse swaps the file input for a filename readout once a file is attached. The demo user has an active CV.
+    const readCv = () => form.evaluate<string>(`((document.querySelector(".file-upload__filename") || {}).textContent || "").trim()`);
+    await expect.poll(readCv, { timeout: 15_000, message: "Greenhouse shows no CV filename: the CV was not attached (demo user must have an active CV)" }).toMatch(/\.pdf/i);
+    console.log(`CV_FILENAME=${JSON.stringify(await readCv())}`);
     expect(form.url()).not.toContain("placed=");
 
-    // Field audit
-    const audit: string[] = await form.evaluate(`[...document.querySelectorAll("[data-placed]")].map((el) => {
+    // Per-field audit: state, the tag text the student sees, and (for react-selects Autopilot could not fill) why.
+    type Row = { state: string; id: string; kind: string; shown: string; tag: string; why: string };
+    const audit: Row[] = await form.evaluate(`[...document.querySelectorAll("[data-placed]")].map((el) => {
       const inner = el.querySelector("input,textarea,select");
-      const rs = el.querySelector(".select__control") ? "react-select" : "plain";
-      const shown = (el.querySelector(".select__single-value") || {}).textContent || "";
-      return el.dataset.placed + ":" + ((inner && inner.id) || el.id || String(el.className).slice(0, 30)) + ":" + rs + (shown ? "=" + shown.slice(0, 24) : "");
+      return {
+        state: el.dataset.placed,
+        id: (inner && inner.id) || el.id || String(el.className).slice(0, 30),
+        kind: el.querySelector(".select__control") ? "react-select" : "plain",
+        shown: ((el.querySelector(".select__single-value") || {}).textContent || "").slice(0, 40),
+        tag: ((el.querySelector(":scope > .placed-tag") || {}).textContent || ""),
+        why: (inner && inner.getAttribute("data-placed-why")) || "",
+      };
     })`);
-    console.log(`AUDIT filled=${audit.filter((a) => a.startsWith("filled")).length} select=${audit.filter((a) => a.startsWith("select")).length} yours=${audit.filter((a) => a.startsWith("yours")).length}`);
-    console.log(`AUDIT_DETAIL ${audit.join(" ")}`);
-    const selectSingles = audit.filter((a) => a.startsWith("select"));
-    const rsFilled = audit.filter((a) => a.startsWith("filled") && a.includes("react-select"));
-    console.log(`REACT_SELECT_FILLED=${rsFilled.length}: ${rsFilled.join(" ")}`);
-    console.log(`REACT_SELECT_PATH: ${selectSingles.length === 0 ? "all trusted-click selects succeeded" : `fell back to select-yourself for ${selectSingles.length}`}`);
+    for (const r of audit) console.log(`AUDIT ${r.state.padEnd(6)} ${r.id.padEnd(30)} ${r.kind.padEnd(12)} shown=${JSON.stringify(r.shown)} tag=${JSON.stringify(r.tag)}${r.why ? ` why=${r.why}` : ""}`);
+    const count = (st: string) => audit.filter((r) => r.state === st).length;
+    console.log(`AUDIT_TOTAL filled=${count("filled")} select=${count("select")} yours=${count("yours")}`);
+    const panelFilled = Number(((await form.locator(".placed-panel").innerText()).match(/(\d+)\/\d+ filled/) ?? [])[1] ?? 0);
+    expect(panelFilled, "panel's filled count (the CV counts too)").toBeGreaterThanOrEqual(10);
+    expect(count("filled"), "filled floor").toBeGreaterThanOrEqual(10);
 
+    // The demo's key moment: Right to Work and sponsorship are confirmed in the pack and must be filled on the form.
+    // KNOWN_GAP lists keys that genuinely cannot be filled (explain each); it is empty because both fill.
+    const KNOWN_GAP: Record<string, string> = {};
+    for (const [id, what] of [["question_69482005", "Right to work (UK)"], ["question_69482001", "Visa sponsorship"]] as const) {
+      const row = audit.find((r) => r.id === id);
+      if (KNOWN_GAP[id]) { console.log(`KNOWN_GAP ${id}: ${KNOWN_GAP[id]}`); continue; }
+      expect(row, `${what} (${id}) is in the audit`).toBeTruthy();
+      expect(row?.state, `${what} (${id}) filled; tag=${row?.tag} why=${row?.why}`).toBe("filled");
+      expect(row?.shown, `${what} shows a chosen option`).not.toBe("");
+    }
     // Autopilot never ticks consent and never fills diversity answers
     expect(await form.evaluate(`document.querySelectorAll("input[type=checkbox][id*=consent]:checked, input[type=checkbox][name*=consent]:checked").length`)).toBe(0);
+    expect(audit.filter((r) => r.state === "yours" && r.shown), "fields left to the student stay empty").toEqual([]);
     await form.waitForTimeout(3000);
-    expect(posts, "zero submission POSTs").toEqual([]);
-    console.log(`NETWORK submit POSTs=${posts.length} aborted-requests=${aborted.length}`);
+    const selectGaps = audit.filter((r) => r.state === "select").map((r) => r.id);
+    console.log(`REACT_SELECT_PATH: ${selectGaps.length === 0 ? "every single select filled via the trusted click" : `amber (select-yourself): ${selectGaps.join(", ")}`}`);
+    console.log(`NETWORK non-read greenhouse requests (all aborted): ${JSON.stringify(blocked)}`);
+    console.log(`NETWORK observed non-read greenhouse requests: ${JSON.stringify(seenWrites)}`);
+    const unexplained = blocked.filter((b) => !TELEMETRY_ALLOW.test(b.url));
+    expect(unexplained, "no non-read request to greenhouse.io other than allow-listed telemetry (a form submission would land here)").toEqual([]);
+    expect(seenWrites.length, "observer and route handler agree").toBe(blocked.length);
   } finally {
     await ctx.close(); // discards the unsent form
     fs.rmSync(extDir, { recursive: true, force: true });

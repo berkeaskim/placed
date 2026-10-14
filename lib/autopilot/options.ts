@@ -10,7 +10,7 @@ const RTW_RULES: Record<Core["rtw_uk"], (t: string) => boolean> = {
   visa_temporary: (t) => /visa|permit/.test(t) && /temporar|limited/.test(t),
   needs_sponsorship: (t) => /sponsor/.test(t) && !/\bdo\s+not\s+have|\bno\s+sponsor|\bnot\s+(need|require).*?sponsor|\bwithout\s+sponsor/.test(t),
 };
-const norm = (s: string) => s.toLowerCase().replace(/['']/g, "'").trim();
+const norm = (s: string) => s.toLowerCase().replace(/[\u2018\u2019]/g, "'").trim(); // fold curly apostrophes
 
 function one(options: FieldOption[], pred: (t: string) => boolean): OptionMatch {
   const hits = options.filter((o) => pred(norm(o.label)));
