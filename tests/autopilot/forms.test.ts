@@ -85,9 +85,9 @@ describe("fetchForm", () => {
     await expect(fetchForm(gj, f)).rejects.toThrow(FormUnavailableError);
   });
   it("wraps malformed shapes", async () => {
-    await expect(fetchForm(gj, ok(JSON.stringify({ questions: [{ label: "x", required: true }] })))).resolves.toMatchObject({ fields: [] });
+    await expect(fetchForm(gj, ok(JSON.stringify({ questions: [{ label: "x", required: true }] })))).rejects.toThrow(FormUnavailableError);
     await expect(fetchForm(gj, ok(JSON.stringify({ questions: null })))).rejects.toThrow(FormUnavailableError);
-    await expect(fetchForm({ url: "https://jobs.ashbyhq.com/x/e001dc0b-6e0f-46a7-95ba-38a3733db2f4", ats: "ashby" }, ok(JSON.stringify({ data: { jobPosting: { applicationForm: { sections: [null] } } } })))).resolves.toMatchObject({ fields: [] });
+    await expect(fetchForm({ url: "https://jobs.ashbyhq.com/x/e001dc0b-6e0f-46a7-95ba-38a3733db2f4", ats: "ashby" }, ok(JSON.stringify({ data: { jobPosting: { applicationForm: { sections: [null] } } } })))).rejects.toThrow(FormUnavailableError);
   });
 });
 

@@ -13,7 +13,7 @@ export async function fetchForm(job: { url: string; ats: Ats }, fetchImpl: typeo
     return r;
   };
   const run = async (read: () => Promise<NormalizedForm>) => {
-    try { return await read(); } catch (e) { throw e instanceof FormUnavailableError ? e : new FormUnavailableError(); }
+    try { const form = await read(); if (form.fields.length === 0) throw new FormUnavailableError(); return form; } catch (e) { throw e instanceof FormUnavailableError ? e : new FormUnavailableError(); }
   };
   if (job.ats === "greenhouse") {
     const ref = greenhouseRef(job.url); if (!ref) throw new FormUnavailableError();
