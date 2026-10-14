@@ -43,6 +43,7 @@ describe("deleteMyData", () => {
       expect(await deleteMyData(null, f)).toEqual({ error: "Type DELETE to confirm." });
     }
     expect(resetUserData).not.toHaveBeenCalled();
+    expect(dropConnection).not.toHaveBeenCalled();
     expect(redirect).not.toHaveBeenCalled();
   });
 

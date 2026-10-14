@@ -13,9 +13,9 @@ import { refreshAccessToken } from "@/lib/gmail/oauth";
 import { GmailAuthError, buildGmailQuery, fetchRecentEmails } from "@/lib/gmail/search";
 import { classifyEmail } from "@/lib/inbox/classify";
 import { planInboxEvents, safeClassify } from "@/lib/inbox/plan";
-import { canUndo, nextDeadline } from "@/lib/inbox/rules";
+import { canUndo, nextDeadline, targetStatus } from "@/lib/inbox/rules";
 import { companyMatches } from "@/lib/inbox/match";
-import type { AppRef, Classification, RawEmail } from "@/lib/inbox/types";
+import type { AppRef, Classification, InboxKind, RawEmail } from "@/lib/inbox/types";
 import { updateStatus } from "./actions";
 
 export type SyncResult =
@@ -24,8 +24,9 @@ export type SyncResult =
 
 type Db = ReturnType<typeof createAdminClient>;
 
-async function loadApps(supabase: Awaited<ReturnType<typeof requireUser>>["supabase"], userId: string): Promise<AppRef[]> {
-  const { data } = await supabase.from("applications").select("id, job_id, status, jobs(title, companies(name))").eq("user_id", userId);
+async function loadApps(supabase: Awaited<ReturnType<typeof requireUser>>["supabase"], userId: string): Promise<AppRef[] | null> {
+  const { data, error } = await supabase.from("applications").select("id, job_id, status, jobs(title, companies(name))").eq("user_id", userId);
+  if (error) { console.error("syncInbox: loading applications failed", error.message); return null; }
   return (data ?? []).filter((a) => isAppStatus(a.status)).map((a) => {
     const j = a.jobs as unknown as { title: string; companies: { name: string } | null } | null;
     return { id: a.id, jobId: a.job_id, status: a.status, title: j?.title ?? "", company: j?.companies?.name ?? "" };
@@ -48,6 +49,7 @@ export async function syncInbox(): Promise<SyncResult> {
   const { supabase, user } = await requireUser();
   const db = createAdminClient();
   const apps = await loadApps(supabase, user.id);
+  if (!apps) return { ok: false, reason: "failed" };
 
   let emails: RawEmail[];
   const demoById = new Map<string, Classification>();
@@ -58,8 +60,11 @@ export async function syncInbox(): Promise<SyncResult> {
   } else {
     const { data: conn } = await db.from("gmail_connections").select("refresh_token_enc").eq("user_id", user.id).maybeSingle();
     if (!conn) return { ok: false, reason: "not_connected" };
+    let refresh: string;
+    try { refresh = decryptToken(conn.refresh_token_enc); }
+    catch { await dropConnection(db, user.id, false); return { ok: false, reason: "reconnect" }; } // rotated/wrong GMAIL_TOKEN_KEY
     try {
-      const access = await refreshAccessToken(decryptToken(conn.refresh_token_enc));
+      const access = await refreshAccessToken(refresh);
       emails = await fetchRecentEmails(access, buildGmailQuery(apps.map((a) => a.company)));
     } catch (e) {
       if (e instanceof GmailAuthError) { await dropConnection(db, user.id, false); return { ok: false, reason: "reconnect" }; }
@@ -68,28 +73,48 @@ export async function syncInbox(): Promise<SyncResult> {
     }
   }
 
-  const { data: seenRows } = await supabase.from("inbox_events").select("gmail_message_id").eq("user_id", user.id);
+  const { data: seenRows, error: seenErr } = await supabase.from("inbox_events").select("gmail_message_id").eq("user_id", user.id);
+  if (seenErr) { console.error("syncInbox: loading seen messages failed", seenErr.message); return { ok: false, reason: "failed" }; }
   const planned = await planInboxEvents({
     apps, emails, seen: new Set((seenRows ?? []).map((r) => r.gmail_message_id as string)),
     classify: safeClassify((e) => classifyEmail(e, demoById.get(e.id))),
   });
 
   let moved = 0, suggested = 0;
+  const touched: string[] = [];
   for (const p of planned) {
-    if (p.decision.effect === "moved" && p.appId) {
-      await updateStatus(p.appId, p.decision.to); // same path as a drag: XP once per stage, fit label for "applied"
-      moved++;
-    }
-    if (p.decision.effect === "suggested") suggested++;
-    const { error } = await db.from("inbox_events").insert({
+    if (p.failed) continue; // not recorded, so the next sync retries it
+    // The insert is the claim: the unique (user_id, gmail_message_id) means only one sync ever acts on a message.
+    const { data: row, error } = await db.from("inbox_events").insert({
       user_id: user.id, gmail_message_id: p.email.id, application_id: p.appId, company: p.c.company,
       subject: p.email.subject.slice(0, 300), received_at: p.email.date, kind: p.c.kind, deadline: p.c.deadline,
-      action_url: p.c.actionUrl, confidence: p.c.confidence, effect: p.decision.effect,
-      prev_status: p.prevStatus, new_status: p.decision.effect === "moved" ? p.decision.to : null,
-    });
-    if (error && error.code !== "23505") console.error("syncInbox: insert failed", error.message); // 23505 = a parallel sync got there first
+      action_url: p.c.actionUrl, confidence: p.c.confidence, effect: p.decision.effect, prev_status: null, new_status: null,
+    }).select("id").single();
+    if (error || !row) {
+      if (error?.code !== "23505") console.error("syncInbox: insert failed", error?.message); // 23505 = another sync claimed it
+      continue;
+    }
+    if (p.appId) touched.push(p.appId);
+    if (p.decision.effect === "suggested") { suggested++; continue; }
+    if (p.decision.effect !== "moved" || !p.appId) continue;
+
+    // The board may have changed since planning (a drag, a parallel sync): re-read and recompute before moving.
+    const { data: cur } = await supabase.from("applications").select("status").eq("id", p.appId).eq("user_id", user.id).maybeSingle();
+    const from = cur && isAppStatus(cur.status) ? cur.status : null;
+    const to = from ? targetStatus(from, p.c.kind) : null;
+    let done = false;
+    if (from && to) {
+      await updateStatus(p.appId, to); // same path as a drag: XP once per stage, fit label for "applied"
+      // updateStatus returns null both on failure and when only the XP award failed, so the card itself is the signal
+      const { data: after } = await supabase.from("applications").select("status").eq("id", p.appId).eq("user_id", user.id).maybeSingle();
+      done = after?.status === to;
+    }
+    await db.from("inbox_events").update(done
+      ? { effect: "moved", prev_status: from, new_status: to }
+      : { effect: "none", prev_status: null, new_status: null }).eq("id", row.id).eq("user_id", user.id);
+    if (done) moved++;
   }
-  await refreshDeadlines(db, user.id, planned.map((p) => p.appId).filter((x): x is string => !!x));
+  await refreshDeadlines(db, user.id, touched);
   await db.from("gmail_connections").update({ last_synced_at: new Date().toISOString() }).eq("user_id", user.id);
   revalidatePath("/tracker");
   return { ok: true, moved, suggested, scanned: emails.length };
@@ -120,16 +145,28 @@ export async function disconnectGmail(): Promise<void> {
 export async function addSuggestedApplication(eventId: string): Promise<{ ok: boolean; message?: string }> {
   if (!isUuid(eventId)) return { ok: false };
   const { supabase, user } = await requireUser();
-  const { data: ev } = await supabase.from("inbox_events").select("id, company, kind").eq("id", eventId).eq("user_id", user.id).maybeSingle();
-  if (!ev?.company) return { ok: false };
+  const { data: ev } = await supabase.from("inbox_events").select("id, company, kind, effect, application_id").eq("id", eventId).eq("user_id", user.id).maybeSingle();
+  if (!ev?.company || ev.effect !== "suggested") return { ok: false };
   const { data: jobs } = await supabase.from("jobs").select("id, posted_at, companies!inner(name)").eq("is_live", true).order("posted_at", { ascending: false }).limit(500);
   const job = (jobs ?? []).find((j) => companyMatches(ev.company!, (j.companies as unknown as { name: string }).name));
   if (!job) return { ok: false, message: `Placed doesn't list a live ${ev.company} role, so it can't be tracked here yet.` };
-  const status = ev.kind === "rejection" ? "rejected" : ev.kind === "interview" ? "interview" : ev.kind === "offer" ? "offer" : "applied";
-  const { data: app, error } = await supabase.from("applications").upsert({ user_id: user.id, job_id: job.id, status: "saved" }, { onConflict: "user_id,job_id" }).select("id").single();
-  if (error || !app) return { ok: false };
-  await updateStatus(app.id, status);
-  await createAdminClient().from("inbox_events").update({ application_id: app.id, effect: "moved", prev_status: "saved", new_status: status }).eq("id", ev.id).eq("user_id", user.id);
+  // Insert-if-absent: an already-tracked job keeps its status (an email never moves a card backwards or revives a rejected one).
+  await supabase.from("applications").upsert({ user_id: user.id, job_id: job.id, status: "saved" }, { onConflict: "user_id,job_id", ignoreDuplicates: true });
+  const { data: app } = await supabase.from("applications").select("id, status").eq("user_id", user.id).eq("job_id", job.id).maybeSingle();
+  if (!app || !isAppStatus(app.status)) return { ok: false };
+  const to = targetStatus(app.status, ev.kind as InboxKind);
+  const db = createAdminClient();
+  if (!to) {
+    await db.from("inbox_events").update({ application_id: app.id, effect: "none" }).eq("id", ev.id).eq("user_id", user.id);
+    revalidatePath("/tracker");
+    return { ok: true, message: "Already tracked, so nothing was moved." };
+  }
+  await updateStatus(app.id, to);
+  const { data: after } = await supabase.from("applications").select("status").eq("id", app.id).eq("user_id", user.id).maybeSingle();
+  const done = after?.status === to;
+  await db.from("inbox_events").update(done
+    ? { application_id: app.id, effect: "moved", prev_status: app.status, new_status: to }
+    : { application_id: app.id, effect: "none" }).eq("id", ev.id).eq("user_id", user.id);
   revalidatePath("/tracker");
-  return { ok: true };
+  return { ok: done };
 }

@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { planInboxEvents, safeClassify } from "@/lib/inbox/plan";
+import { targetStatus } from "@/lib/inbox/rules";
 import type { AppRef, Classification, RawEmail } from "@/lib/inbox/types";
 
 const app: AppRef = { id: "a1", jobId: "j1", status: "saved", company: "Lendable", title: "Credit Analyst Intern" };
@@ -40,6 +41,14 @@ describe("planInboxEvents", () => {
     });
     expect(out).toHaveLength(2);
     expect(out[0].decision).toEqual({ effect: "none" });
+    expect(out[0].failed).toBe(true);
+    expect(out[1].failed).toBe(false);
     expect(out[1].decision).toEqual({ effect: "moved", to: "applied" });
   });
+});
+
+describe("target for a suggested add (targetStatus)", () => {
+  it("does not move a tracked interview card on a 'received' email", () => expect(targetStatus("interview", "received")).toBeNull());
+  it("does not revive a rejected card", () => expect(targetStatus("rejected", "received")).toBeNull());
+  it("moves a fresh (saved) row to applied", () => expect(targetStatus("saved", "received")).toBe("applied"));
 });
