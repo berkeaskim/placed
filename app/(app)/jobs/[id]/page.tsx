@@ -7,6 +7,7 @@ import { scoreFit } from "@/lib/scoring/fit";
 import { closingLabel, todayLondon } from "@/lib/scoring/dates";
 import { FINDABILITY_HINT, findabilityBand, keywordStuffing, shouldWarnStuffing } from "@/lib/scoring/requirements";
 import { clicheDensity } from "@/lib/cv/cliches";
+import { env } from "@/lib/env";
 import { isUuid } from "@/lib/feed/save-result";
 import { applyXp } from "@/lib/feed/rank";
 import { safeHttpUrl } from "@/lib/text/url";
@@ -15,6 +16,7 @@ import { SaveButton } from "@/components/save-button";
 import { ExplainPanel } from "./explain-panel";
 import { ApplyButton } from "./apply-button";
 import { TailorPanel } from "./tailor-panel";
+import { AutopilotPanel } from "./autopilot-panel";
 import type { StoredTailoring } from "./actions";
 
 const BAND_TONE = {
@@ -112,6 +114,8 @@ export default async function JobPage({ params }: { params: Promise<{ id: string
             original={{ skills: cv?.parsed.skills ?? [], summary: cv?.parsed.summary ?? null }}
             initial={stored?.v === 1 && stored.outcome ? { outcome: stored.outcome, final: stored.final ?? null } : null}
           />
+
+          {env.autopilot && <AutopilotPanel jobId={job.id} />}
 
           <section className="flex flex-col gap-2 rounded-[20px] border bg-white p-5">
             <ApplyButton jobId={job.id} url={safeHttpUrl(job.url)} company={job.company} alreadyApplied={alreadyApplied} />
