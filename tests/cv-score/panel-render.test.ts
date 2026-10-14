@@ -18,6 +18,7 @@ const data: CvScorePanelData = {
     { ruleId: "CON-02", statement: "Show leadership.", dimension: "relevance", lostPoints: 4, evidenceLine: null, fix: null, citation: null, evidence: "D", convention: true },
   ],
   assessed: 31, passed: 23, couldNotAssess: 2, history: [55, 61, 68], aiSaw: "CV\n[NAME]\nEDUCATION",
+  aiUnavailable: false,
 };
 
 describe("CvScorePanel render", () => {
@@ -43,5 +44,15 @@ describe("CvScorePanel render", () => {
     expect(html).toContain("<polyline");
     expect(html).toContain("Score history: first 55, latest 68, 3 points");
     expect(html).toContain('target="_blank"');
+  });
+});
+
+describe("CvScorePanel when the AI review failed", () => {
+  it("says the score is the automatic checks only", () => {
+    const html = renderToStaticMarkup(createElement(CvScorePanel, { data: { ...data, aiUnavailable: true } }));
+    expect(html).toContain("AI review unavailable — showing the automatic checks only");
+  });
+  it("shows no such note otherwise", () => {
+    expect(renderToStaticMarkup(createElement(CvScorePanel, { data }))).not.toContain("AI review unavailable");
   });
 });

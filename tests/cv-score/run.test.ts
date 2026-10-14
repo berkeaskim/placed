@@ -113,6 +113,16 @@ describe("scoreCv", () => {
     expect(judgeCvRules).toHaveBeenCalledTimes(1);
   });
 
+  it("judge unavailable: stores the code-only score without a cache key and flags aiUnavailable", async () => {
+    vi.mocked(judgeCvRules).mockResolvedValueOnce({ results: [], spellingErrors: null, modelId: "anthropic:claude-sonnet-5-5", cacheable: false, aiUnavailable: true });
+    const { client, upserts } = fakeSupabase({ cvs: [cvRow], cv_scores: [] });
+    const score = await scoreCv(client, { userId: "u1", cvId: "cv1", sector: "consulting", year: "2nd" });
+    expect(score.aiUnavailable).toBe(true);
+    const row = upserts[0].row;
+    expect(row).toMatchObject({ model_id: null, prompt_version: null, rules_version: null });
+    expect((row.rule_results as { aiUnavailable?: boolean }).aiUnavailable).toBe(true);
+  });
+
   it("re-judges when the stored prompt_version differs", async () => {
     const first = fakeSupabase({ cvs: [cvRow], cv_scores: [] });
     await scoreCv(first.client, { userId: "u1", cvId: "cv1", sector: "consulting", year: "2nd" });

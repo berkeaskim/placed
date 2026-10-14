@@ -14,7 +14,7 @@ import { rulesGained } from "@/lib/tailor/rules-gained";
 import { countStudentEdits, type RulesGained } from "@/lib/tailor/view";
 import { normalizeTailored } from "@/lib/ai/tailorCV";
 import { TailoredCvFixture } from "@/lib/ai/schemas";
-import { defendQuestions, type DefendQuestionT } from "@/lib/ai/defendQuestions";
+import { defendQuestions, type DefendQuestionT, type DefendSource } from "@/lib/ai/defendQuestions";
 import type { VerifyReport } from "@/lib/verify/tailoring";
 import { confirmNumber, finalizeTailoredCv, type StoredTailoring } from "./actions";
 
@@ -25,7 +25,7 @@ export type SaveResult =
   | { report: VerifyReport; pdfUrl: string; signedUrl: string | null; award: AwardResult | null }
   | { error: string; report?: VerifyReport };
 export type ConfirmResult = { ok: true; stored: string | null; award: AwardResult | null } | { error: string };
-export type DefendResult = { questions: DefendQuestionT[] } | { error: string };
+export type DefendResult = { questions: DefendQuestionT[]; source: DefendSource } | { error: string };
 
 const GONE = "This role is no longer available.";
 
@@ -127,15 +127,16 @@ export async function getDefendQuestions(jobId: string, bullets: unknown): Promi
   const lines = new Set([saved.summary ?? "", ...(["experience", "projects", "leadership"] as const)
     .flatMap((s) => saved[s].flatMap((e) => e.bullets.map((b) => b.text)))].map(norm));
   if (clean.some((b) => !lines.has(norm(b.after)))) return { error: "Save your version first, then we can prepare questions for it." };
-  if (stored.defend?.key === key) return { questions: stored.defend.questions };
+  if (stored.defend?.key === key) return { questions: stored.defend.questions, source: "ai" }; // only AI answers are cached
   try {
-    const { questions } = await defendQuestions({ bullets: clean, jobTitle: job.title, company: job.company, fixtureKey: job.extId });
-    {
+    const { questions, source } = await defendQuestions({ bullets: clean, jobTitle: job.title, company: job.company, fixtureKey: job.extId });
+    // The heuristic fallback is cheap and must not mask an AI answer once the model is back, so it is not cached.
+    if (source === "ai") {
       const { error } = await supabase.from("applications").update({ tailored_json: { ...stored, defend: { key, questions } } })
         .eq("user_id", user.id).eq("job_id", jobId);
       if (error) console.error("getDefendQuestions: cache write failed", error.message);
     }
-    return { questions };
+    return { questions, source };
   } catch (e) {
     console.error("getDefendQuestions: failed", e instanceof Error ? e.message : e);
     return { error: "We couldn't prepare questions right now. Try again in a moment." };

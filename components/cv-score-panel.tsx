@@ -216,6 +216,12 @@ export function CvScorePanel({ data }: { data: CvScorePanelData }) {
           </div>
         </div>
 
+        {data.aiUnavailable && (
+          <p role="status" className="flex gap-2 rounded-xl bg-[#FFF1DC] px-3 py-2 text-sm text-[#7A4100]">
+            {Icon.info}<span><b>AI review unavailable — showing the automatic checks only.</b> Rules that need the AI to read your bullets aren&apos;t counted yet; score again in a moment for the full review.</span>
+          </p>
+        )}
+
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[#5B5B6B]">
           <span className="font-semibold text-[#16161D]">{rulesPassedLabel(data.passed, data.assessed)}</span>
           {cna && <span title="The AI's answer didn't match a line in your CV, so these rules aren't counted.">{cna}</span>}

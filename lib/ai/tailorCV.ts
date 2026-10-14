@@ -7,14 +7,11 @@ import { TailoredCvFixture, TailoredCvOutput, type TailoredCvFixtureT } from "./
 import { heuristicTailor } from "./heuristics";
 
 /**
- * tailorCV (spec §7.1, 05 §2 [2]). Smart tier, low temperature. `allowed` = existing ∪ supportedByResume skills only:
+ * tailorCV (spec §7.1, 05 §2 [2]). Smart tier, default temperature. `allowed` = existing ∪ supportedByResume skills only:
  * the caller's deterministic pre-pass never passes a gap skill. The output is NOT trusted: lib/tailor/run.ts runs
  * verifyTailoring on it, retries once and reverts what still blocks.
  */
 export type TailorInput = { cv: ParsedCV; job: JobListItem; allowed: string[]; supported: string[]; feedback: string[] | null };
-
-/** Honoured by Gemini only; the Anthropic adapter drops it (current Claude models reject temperature). */
-const TEMPERATURE = 0.2;
 
 /** tailorCV's answer, plus whether it came from the reorder-only heuristic instead of the model (and why). */
 export type TailorCvResult = TailoredCV & { usedFallback?: boolean; fallbackReason?: string };
@@ -99,7 +96,7 @@ export async function tailorCV(i: TailorInput): Promise<TailorCvResult> {
       fromFixture: (raw) => normalizeTailored(raw, i.cv),
       live: async () => {
         const o = await generateStructured({
-          tier: "smart", system: SYSTEM_TAILOR, schema: TailoredCvOutput, maxTokens: 16000, temperature: TEMPERATURE,
+          tier: "smart", system: SYSTEM_TAILOR, schema: TailoredCvOutput, maxTokens: 16000, // no temperature: Claude rejects it, Gemini 3 should stay at its default
           parts: [{ type: "text", text: buildTailorPrompt(i) }],
         });
         return normalizeTailored(o, i.cv);

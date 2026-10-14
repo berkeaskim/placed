@@ -148,10 +148,26 @@ describe("explainMatch fixture parity (C6)", () => {
     expect(generateStructured).not.toHaveBeenCalled();
     expect(e.rows.length).toBe(REQS.length);
   });
-  it("live AiError propagates so the UI can offer a retry", async () => {
+  it("live AiError falls back to the heuristic explanation, flagged and never cacheable", async () => {
     liveMode();
     vi.mocked(generateStructured).mockRejectedValue(new AiError("down"));
-    await expect(explainMatch(INPUT)).rejects.toBeInstanceOf(AiError);
+    const r = await explainMatchWithSource(INPUT);
+    expect(r.source).toBe("heuristic");
+    expect(r.aiFailed).toBe(true);
+    expect(shouldCacheExplanation(r.source)).toBe(false);
+    expect(r.explanation.rows.length).toBe(REQS.length);
+  });
+  it("a non-AiError (a bug) still propagates", async () => {
+    liveMode();
+    vi.mocked(generateStructured).mockRejectedValue(new TypeError("bug"));
+    await expect(explainMatch(INPUT)).rejects.toBeInstanceOf(TypeError);
+  });
+  it("live call budgets 16000 tokens (Gemini counts thinking tokens in maxOutputTokens)", async () => {
+    liveMode();
+    vi.mocked(generateStructured).mockResolvedValue(RAW);
+    const r = await explainMatchWithSource(INPUT);
+    expect(vi.mocked(generateStructured).mock.calls[0][0].maxTokens).toBe(16000);
+    expect(r.aiFailed).toBe(false);
   });
 });
 

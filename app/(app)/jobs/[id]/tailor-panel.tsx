@@ -14,17 +14,17 @@ import { DownloadIcon, InfoIcon, UndoIcon } from "@/components/tailor/icons";
 import {
   applyGateBlocks, blockedByBullet, buildFinal, caughtNumbers, defendBullets, fallbackNotice, fillPlaceholder, hasPlaceholder,
   anyConfirmed, caughtStatus, decisionsFromFinal, isDirty, keywordCounts, stripPlaceholder, verificationCopy, verificationState,
-  type DefendQuestion, type Decision, type Decisions, type OriginalParts, type TailorOutcome,
+  type DefendQuestion, type DefendSource, type Decision, type Decisions, type OriginalParts, type TailorOutcome,
 } from "@/lib/tailor/view";
 import type { TailoredCV } from "@/lib/types";
 import { tailorForJob } from "./actions";
 import { confirmNumberWithXp, getDefendQuestions, previewTailoring, saveTailoredVersion, type PreviewResult } from "./tailor-actions";
 
 type Preview = Exclude<PreviewResult, { error: string }>;
-type DefendState = { status: "idle" } | { status: "loading" } | { status: "error"; message: string } | { status: "ready"; key: string; questions: DefendQuestion[] };
+type DefendState = { status: "idle" } | { status: "loading" } | { status: "error"; message: string } | { status: "ready"; key: string; questions: DefendQuestion[]; source: DefendSource };
 
 /** C13 questions cached per job and exact lines for the session (the server also caches in tailored_json). */
-const defendCache = new Map<string, DefendQuestion[]>();
+const defendCache = new Map<string, { questions: DefendQuestion[]; source: DefendSource }>();
 
 const SECTIONS = ["experience", "projects", "leadership"] as const;
 function lineOf(t: TailoredCV, id: string): string {
@@ -205,12 +205,12 @@ export function TailorPanel({ jobId, hasCv, original, initial }: {
 
   const loadDefend = () => {
     const hit = defendCache.get(defendKey);
-    if (hit) { setDefend({ status: "ready", key: defendKey, questions: hit }); return; }
+    if (hit) { setDefend({ status: "ready", key: defendKey, ...hit }); return; }
     setDefend({ status: "loading" });
     getDefendQuestions(jobId, toDefend).then((r) => {
       if ("error" in r) { setDefend({ status: "error", message: r.error }); return; }
-      defendCache.set(defendKey, r.questions);
-      setDefend({ status: "ready", key: defendKey, questions: r.questions });
+      if (r.source === "ai") defendCache.set(defendKey, { questions: r.questions, source: r.source });
+      setDefend({ status: "ready", key: defendKey, questions: r.questions, source: r.source });
     }).catch(() => setDefend({ status: "error", message: "We couldn't prepare questions right now. Try again in a moment." }));
   };
 
@@ -304,7 +304,7 @@ export function TailorPanel({ jobId, hasCv, original, initial }: {
         {toDefend.length === 0 ? (
           <p className="text-sm text-muted-foreground">Accept or edit a change and we&apos;ll show the question an interviewer is most likely to ask about it.</p>
         ) : defend.status === "ready" && defend.key === defendKey ? (
-          <DefendList bullets={toDefend} questions={defend.questions} />
+          <DefendList bullets={toDefend} questions={defend.questions} source={defend.source} />
         ) : defend.status === "loading" ? (
           <div className="flex flex-col gap-2" role="status"><Skeleton className="h-14 w-full" /><Skeleton className="h-14 w-full" /></div>
         ) : (

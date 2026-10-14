@@ -115,10 +115,18 @@ export function alignToBullets(raw: DefendQuestionsOutputT, bullets: DefendBulle
   return { questions: bullets.map((b) => byId.get(b.id) ?? heuristicQuestion(b)) };
 }
 
-export async function defendQuestions(input: DefendInput): Promise<DefendQuestionsOutputT> {
-  if (input.bullets.length === 0) return { questions: [] };
-  const fallback = () => heuristicDefendQuestions(input);
-  const align = (raw: DefendQuestionsOutputT) => alignToBullets(raw, input.bullets);
+/** "ai": at least one question came from the model (live or a recorded fixture); "heuristic": all are the deterministic fallback. */
+export type DefendSource = "ai" | "heuristic";
+export type DefendQuestionsResult = DefendQuestionsOutputT & { source: DefendSource };
+
+export async function defendQuestions(input: DefendInput): Promise<DefendQuestionsResult> {
+  if (input.bullets.length === 0) return { questions: [], source: "heuristic" };
+  const fallback = (): DefendQuestionsResult => ({ ...heuristicDefendQuestions(input), source: "heuristic" });
+  const align = (raw: DefendQuestionsOutputT): DefendQuestionsResult => {
+    const out = alignToBullets(raw, input.bullets);
+    const fromModel = out.questions.some((q) => raw.questions.includes(q));
+    return { ...out, source: fromModel ? "ai" : "heuristic" };
+  };
   try {
     return await runAi({
       fn: "defendQuestions",
@@ -132,7 +140,7 @@ export async function defendQuestions(input: DefendInput): Promise<DefendQuestio
             system: SYSTEM_DEFEND_QUESTIONS,
             parts: [{ type: "text", text: buildDefendPrompt(input) }],
             schema: DefendQuestionsOutput,
-            maxTokens: 300 + 200 * input.bullets.length,
+            maxTokens: 2000 + 600 * input.bullets.length, // Gemini counts thinking tokens in this budget
           }),
         ),
       fallback,

@@ -7,7 +7,7 @@ import { isSpellingVariant } from "@/lib/cv-score/checkers";
 import { aiMode } from "@/lib/env";
 import { escapeRegex } from "@/lib/text/regex";
 import { currentModelId } from "./models";
-import { generateStructured, runAi } from "./provider";
+import { AiError, generateStructured, runAi } from "./provider";
 import { SYSTEM_JUDGE } from "./prompts";
 import { JudgeOutput, type JudgeOutputT } from "./schemas";
 
@@ -27,8 +27,11 @@ export type JudgeInput = {
   /** Fixture mode only: an EXACT fixture under fixtures/ai/judgeCvRules/<key>.json (no default fallback). */
   fixtureKey?: string;
 };
-/** `cacheable: false` when no verdicts were obtained (fixture mode without an exact fixture): never cache those. */
-export type JudgeResult = { results: ScoredRuleResult[]; spellingErrors: string[] | null; modelId: string; cacheable: boolean };
+/**
+ * `cacheable: false` when no verdicts were obtained (fixture mode without an exact fixture, or a live AI failure): never
+ * cache those. `aiUnavailable`: the live judge failed, so the score is the automatic (code) checks only.
+ */
+export type JudgeResult = { results: ScoredRuleResult[]; spellingErrors: string[] | null; modelId: string; cacheable: boolean; aiUnavailable?: boolean };
 
 const escapeData = (s: string) => s.replace(/</g, "&lt;").replace(/>/g, "&gt;");
 const unescapeData = (s: string) => s.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
@@ -118,8 +121,9 @@ function hasExactFixture(key: string | undefined): key is string {
 }
 
 /**
- * One smart-tier call judges every llm rule for the sector. Input is already redacted (pii.ts);
- * throws AiError on live failure so a code-only result is never cached under a live model id.
+ * One smart-tier call judges every llm rule for the sector. Input is already redacted (pii.ts).
+ * Live AiError: every llm rule is not_applicable with `aiUnavailable: true` and `cacheable: false`, so the code-only
+ * score is shown (and labelled) but never cached under the live model id. Other errors are bugs and propagate.
  * Fixture mode without an exact fixture: every llm rule is not_applicable (score = code rules only).
  */
 export async function judgeCvRules(i: JudgeInput): Promise<JudgeResult> {
@@ -134,21 +138,29 @@ export async function judgeCvRules(i: JudgeInput): Promise<JudgeResult> {
   if (llmRules.length === 0) return { ...none(), cacheable: true };
   if (aiMode() === "fixture" && !hasExactFixture(i.fixtureKey)) return none();
 
-  const raw = await runAi<JudgeOutputT | null, JudgeOutputT>({
-    fn: FN,
-    fixtureKey: i.fixtureKey,
-    schema: JudgeOutput,
-    fromFixture: (r) => r,
-    live: () =>
-      generateStructured({
-        tier: "smart",
-        system: SYSTEM_JUDGE,
-        schema: JudgeOutput,
-        maxTokens: 400 + 180 * llmRules.length,
-        parts: [{ type: "text", text: buildJudgePrompt(i) }],
-      }),
-    fallback: () => null,
-  });
+  let raw: JudgeOutputT | null;
+  try {
+    raw = await runAi<JudgeOutputT | null, JudgeOutputT>({
+      fn: FN,
+      fixtureKey: i.fixtureKey,
+      schema: JudgeOutput,
+      fromFixture: (r) => r,
+      live: () =>
+        generateStructured({
+          tier: "smart",
+          system: SYSTEM_JUDGE,
+          schema: JudgeOutput,
+          // Gemini counts thinking tokens in maxOutputTokens, so a per-rule budget (400 + 180/rule) truncated. Billing is per token used.
+          maxTokens: Math.max(16000, 400 + 180 * llmRules.length),
+          parts: [{ type: "text", text: buildJudgePrompt(i) }],
+        }),
+      fallback: () => null,
+    });
+  } catch (err) {
+    if (!(err instanceof AiError)) throw err;
+    console.error("judgeCvRules: AI failed, scoring the automatic checks only", err.message);
+    return { ...none(), aiUnavailable: true };
+  }
   if (!raw) return none();
-  return { results: mapVerdicts(raw, llmRules, i.redactedText), spellingErrors: cleanSpelling(raw.spelling_errors, i.redactedText), modelId, cacheable: true };
+  return { results: mapVerdicts(raw, llmRules, i.redactedText), spellingErrors: cleanSpelling(raw.spelling_errors, i.redactedText), modelId, cacheable: true, aiUnavailable: false };
 }

@@ -11,6 +11,8 @@ import { DIM_LABEL } from "@/lib/cv-score/present";
 export type { Counts, RevertedChange, TailorChangeView, TailoredFor, TailorOutcome, VerifyReport };
 /** Same shape as lib/ai/defendQuestions DefendQuestionT (client-safe copy). */
 export type DefendQuestion = { bulletId: string; question: string; whyTheyAsk: string; prepTip: string };
+/** Same as lib/ai/defendQuestions DefendSource: "ai" (model-written) or "heuristic" (automatic fallback). */
+export type DefendSource = "ai" | "heuristic";
 
 // ---------- NEEDS_NUMBER placeholders (B9) ----------
 

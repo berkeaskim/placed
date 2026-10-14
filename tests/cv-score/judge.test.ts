@@ -6,7 +6,7 @@ vi.mock("@/lib/ai/provider", async (orig) => {
   return { ...actual, generateStructured: vi.fn() };
 });
 
-import { generateStructured } from "@/lib/ai/provider";
+import { AiError, generateStructured } from "@/lib/ai/provider";
 import { judgeCvRules, mapVerdicts, buildJudgePrompt, countUnevidencedFails, PROMPT_VERSION } from "@/lib/ai/judgeCvRules";
 import { SYSTEM_JUDGE } from "@/lib/ai/prompts";
 
@@ -83,7 +83,8 @@ describe("buildJudgePrompt", () => {
 
 describe("judgeCvRules", () => {
   const saved = { AI_MODE: process.env.AI_MODE, ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY, GEMINI_API_KEY: process.env.GEMINI_API_KEY };
-  beforeEach(() => vi.mocked(generateStructured).mockReset());
+  // Braces matter: a function returned from beforeEach runs as teardown, and mockReset() returns the mock itself.
+  beforeEach(() => { vi.mocked(generateStructured).mockReset(); });
   afterEach(() => {
     for (const [k, val] of Object.entries(saved)) {
       if (val === undefined) delete process.env[k];
@@ -112,5 +113,32 @@ describe("judgeCvRules", () => {
     const req = vi.mocked(generateStructured).mock.calls[0][0];
     expect(req.tier).toBe("smart");
     expect(req.system).toBe(SYSTEM_JUDGE);
+    expect(out.aiUnavailable).toBe(false);
+  });
+
+  it("live budget leaves room for Gemini thinking tokens (>= 16000)", async () => {
+    delete process.env.AI_MODE;
+    process.env.ANTHROPIC_API_KEY = "test-key-not-used";
+    vi.mocked(generateStructured).mockResolvedValue({ verdicts: [], spelling_errors: [] });
+    await judgeCvRules({ redactedText: text, structuredText: "", rules: [llm("L1")] });
+    expect(vi.mocked(generateStructured).mock.calls[0][0].maxTokens).toBeGreaterThanOrEqual(16000);
+  });
+
+  it("live AiError: code-rules-only verdicts (llm not_applicable), flagged aiUnavailable and never cacheable", async () => {
+    delete process.env.AI_MODE;
+    process.env.ANTHROPIC_API_KEY = "test-key-not-used";
+    vi.mocked(generateStructured).mockRejectedValue(new AiError("down"));
+    const out = await judgeCvRules({ redactedText: text, structuredText: "", rules: [llm("L1"), llm("L2"), code] });
+    expect(out.results.map((r) => r.status)).toEqual(["not_applicable", "not_applicable"]);
+    expect(out.spellingErrors).toBeNull();
+    expect(out.cacheable).toBe(false);
+    expect(out.aiUnavailable).toBe(true);
+  });
+
+  it("a non-AiError (a bug) still throws", async () => {
+    delete process.env.AI_MODE;
+    process.env.ANTHROPIC_API_KEY = "test-key-not-used";
+    vi.mocked(generateStructured).mockRejectedValue(new TypeError("bug"));
+    await expect(judgeCvRules({ redactedText: text, structuredText: "", rules: [llm("L1")] })).rejects.toBeInstanceOf(TypeError);
   });
 });

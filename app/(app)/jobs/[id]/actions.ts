@@ -18,7 +18,12 @@ import { TailoredCvFixture } from "@/lib/ai/schemas";
 import type { ParsedCV, TailoredCV } from "@/lib/types";
 import type { VerifyReport } from "@/lib/verify/tailoring";
 
-export type ExplanationResult = Explanation | { error: string };
+/**
+ * `aiWritten`: the free text (why you fit, closest experience, how to close) came from the model (live or recorded
+ * fixture) and is labelled "AI-written" in the panel. `aiFailed`: the live model failed, so this is the automatic estimate.
+ */
+export type ExplanationView = Explanation & { aiWritten: boolean; aiFailed: boolean };
+export type ExplanationResult = ExplanationView | { error: string };
 export type ApplyResult = { ok: boolean; award: AwardResult | null; error?: string };
 
 const EXPLAIN_FAILED = "We couldn't build the explanation right now. Try again in a moment.";
@@ -36,7 +41,7 @@ export async function getExplanation(jobId: string): Promise<ExplanationResult> 
   const student = toStudent(profile);
   const key = explainCacheKey({ mode: aiMode(), cvId: cv?.id ?? null, requirements: job.requirements, skills: student.skills });
   const hit = readCachedExplanation(cached.data?.explanation_json, key);
-  if (hit) return hit;
+  if (hit) return { ...hit, aiWritten: true, aiFailed: false }; // heuristic results are never cached
 
   const coverage = coverageFor(job, cv?.parsed ?? null, student.skills);
   let r: Awaited<ReturnType<typeof explainMatchWithSource>>;
@@ -46,12 +51,13 @@ export async function getExplanation(jobId: string): Promise<ExplanationResult> 
     console.error("getExplanation: explainMatch failed", err instanceof Error ? err.message : err);
     return { error: EXPLAIN_FAILED };
   }
-  const { explanation: e, source } = r;
-  if (!shouldCacheExplanation(source)) return e; // heuristic: cheap, and must not mask a fixture/live answer later
+  const { explanation: e, source, aiFailed } = r;
+  const view: ExplanationView = { ...e, aiWritten: source !== "heuristic", aiFailed };
+  if (!shouldCacheExplanation(source)) return view; // heuristic: cheap, and must not mask a fixture/live answer later
   const { error } = await supabase.from("matches")
     .upsert({ user_id: user.id, job_id: jobId, explanation_json: toCacheRecord(e, key, source), created_at: new Date().toISOString() }, { onConflict: "user_id,job_id" });
   if (error) console.error("getExplanation: cache write failed", error.message); // the explanation itself is fine
-  return e;
+  return view;
 }
 
 /**

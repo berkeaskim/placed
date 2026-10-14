@@ -10,7 +10,7 @@ import { renderCvContent, stripPii } from "@/lib/cv-score/pii";
 import { canonicalize, extractSkills } from "@/lib/skills/extract";
 import { escapeRegex } from "@/lib/text/regex";
 import { aiMode } from "@/lib/env";
-import { generateStructured, runAi } from "./provider";
+import { AiError, generateStructured, runAi } from "./provider";
 import { SYSTEM_EXPLAIN, wrapJob } from "./prompts";
 import { ExplainOutput, type ExplainOutputT } from "./schemas";
 import { heuristicExplain } from "./heuristics";
@@ -162,9 +162,12 @@ export type ExplainSource = "ai" | "fixture" | "heuristic";
 /**
  * Requirement table + why you fit + gaps (spec §7.1/§7.2), with where it came from. Smart tier, fixture-backed
  * (fixtures/ai/explainMatch/<extId>.json, raw schema shape). No CV -> deterministic heuristic, no AI call.
- * A live AiError propagates so the UI can offer a retry.
+ * A live AiError (outage, truncation, refusal) falls back to the heuristic with `aiFailed: true`, so the panel can say
+ * so; heuristic results are never cached (shouldCacheExplanation). Any other error is a bug and propagates.
  */
-export async function explainMatchWithSource(i: ExplainInput): Promise<{ explanation: Explanation; source: ExplainSource }> {
+export async function explainMatchWithSource(
+  i: ExplainInput,
+): Promise<{ explanation: Explanation; source: ExplainSource; aiFailed: boolean }> {
   const reqs = requirementsFor(i.job, i.coverage);
   let usedFallback = false;
   const fallback = () => {
@@ -175,22 +178,30 @@ export async function explainMatchWithSource(i: ExplainInput): Promise<{ explana
     });
     return finalizeExplanation(h.rows, h.gaps, h.whyFit);
   };
-  if (!i.cv || reqs.length === 0) return { explanation: fallback(), source: "heuristic" };
+  if (!i.cv || reqs.length === 0) return { explanation: fallback(), source: "heuristic", aiFailed: false };
   const cv = i.cv;
   const lines = cvEvidenceLines(cv, i.cvText);
   const map = (raw: ExplainOutputT) => toExplanation(raw, reqs, lines);
-  const explanation = await runAi({
-    fn: "explainMatch",
-    fixtureKey: i.job.extId,
-    schema: ExplainOutput,
-    fromFixture: map,
-    live: async () => map(await generateStructured({
-      tier: "smart", system: SYSTEM_EXPLAIN, schema: ExplainOutput, maxTokens: 4000,
-      parts: [{ type: "text", text: buildExplainPrompt({ cv, job: i.job, reqs }) }],
-    })),
-    fallback,
-  });
-  return { explanation, source: usedFallback ? "heuristic" : aiMode() === "fixture" ? "fixture" : "ai" };
+  let explanation: Explanation;
+  try {
+    explanation = await runAi({
+      fn: "explainMatch",
+      fixtureKey: i.job.extId,
+      schema: ExplainOutput,
+      fromFixture: map,
+      live: async () => map(await generateStructured({
+        // Gemini counts thinking tokens in maxOutputTokens: 4000 truncated (tagJob.ts note), so give the full budget.
+        tier: "smart", system: SYSTEM_EXPLAIN, schema: ExplainOutput, maxTokens: 16000,
+        parts: [{ type: "text", text: buildExplainPrompt({ cv, job: i.job, reqs }) }],
+      })),
+      fallback,
+    });
+  } catch (err) {
+    if (!(err instanceof AiError)) throw err;
+    console.error("explainMatch: AI failed, showing the heuristic explanation", err.message);
+    return { explanation: fallback(), source: "heuristic", aiFailed: true };
+  }
+  return { explanation, source: usedFallback ? "heuristic" : aiMode() === "fixture" ? "fixture" : "ai", aiFailed: false };
 }
 
 export async function explainMatch(i: ExplainInput): Promise<Explanation> {

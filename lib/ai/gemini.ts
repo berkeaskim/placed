@@ -9,6 +9,9 @@ let ai: GoogleGenAI | null = null;
 /** Finish reasons that mean the model/policy refused, not that the output was malformed. */
 const REFUSAL_FINISH = new Set(["SAFETY", "RECITATION", "BLOCKLIST", "PROHIBITED_CONTENT", "SPII", "IMAGE_SAFETY"]);
 
+/** Google advises keeping Gemini 3 models at their default temperature, so a requested one is dropped for gemini-3+ ids. */
+export const geminiAcceptsTemperature = (model: string) => !/^gemini-([3-9]|\d{2,})/.test(model);
+
 export async function geminiStructured<T>(req: StructuredRequest<T>, c?: ModelsClient): Promise<T> {
   const api: ModelsClient = c ?? (ai ??= new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY })); // server only
   const parts = req.parts.map((p) =>
@@ -26,7 +29,7 @@ export async function geminiStructured<T>(req: StructuredRequest<T>, c?: ModelsC
           responseMimeType: "application/json",
           responseJsonSchema: jsonSchema,
           maxOutputTokens: req.maxTokens ?? 16000,
-          ...(req.temperature !== undefined ? { temperature: req.temperature } : {}),
+          ...(req.temperature !== undefined && geminiAcceptsTemperature(MODELS[req.tier]) ? { temperature: req.temperature } : {}),
         },
       });
     } catch (cause) {

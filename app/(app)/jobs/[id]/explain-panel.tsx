@@ -1,10 +1,11 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { mustHavesLabel, mustHavesMet, type Explanation, type RequirementRow } from "@/lib/scoring/requirements";
-import { getExplanation } from "./actions";
+import { AiWrittenTag } from "@/components/ai-written-tag";
+import { mustHavesLabel, mustHavesMet, type RequirementRow } from "@/lib/scoring/requirements";
+import { getExplanation, type ExplanationView } from "./actions";
 
-type State = { status: "loading" } | { status: "error"; message: string } | { status: "ready"; e: Explanation };
+type State = { status: "loading" } | { status: "error"; message: string } | { status: "ready"; e: ExplanationView };
 
 const MATCH_LABEL: Record<RequirementRow["match"], string> = { strong: "Strong", partial: "Partial", missing: "Missing" };
 const MATCH_TONE: Record<RequirementRow["match"], string> = {
@@ -90,6 +91,13 @@ export function ExplainPanel({ jobId, children }: { jobId: string; children?: Re
       </div>
       {children}
 
+      {e.aiFailed && (
+        <p className="rounded-xl bg-[#F6F6FA] p-3 text-xs text-[#4A4A57]" role="status">
+          The AI explanation is unavailable right now, so this is an automatic estimate from keyword matching.
+          Open the role again later for the full explanation.
+        </p>
+      )}
+
       {e.rows.length > 0 && (
         <section aria-labelledby="req-table">
           <h3 id="req-table" className="mb-2 font-bold">Requirements</h3>
@@ -114,14 +122,14 @@ export function ExplainPanel({ jobId, children }: { jobId: string; children?: Re
 
       {e.whyFit.length > 0 && (
         <section aria-labelledby="why-fit">
-          <h3 id="why-fit" className="mb-1 font-bold">Why you fit</h3>
+          <h3 id="why-fit" className="mb-1 flex items-center gap-2 font-bold">Why you fit{e.aiWritten && <AiWrittenTag />}</h3>
           <ul className="list-disc pl-5 text-sm">{e.whyFit.map((w, i) => <li key={i}>{w}</li>)}</ul>
         </section>
       )}
 
       {e.gaps.length > 0 && (
         <section aria-labelledby="gaps">
-          <h3 id="gaps" className="mb-2 font-bold">What&apos;s missing, and how to close it</h3>
+          <h3 id="gaps" className="mb-2 flex flex-wrap items-center gap-2 font-bold">What&apos;s missing, and how to close it{e.aiWritten && <AiWrittenTag />}</h3>
           <ul className="flex flex-col gap-2 text-sm">
             {e.gaps.map((g, i) => (
               <li key={`${i}-${g.requirement}`} className="flex flex-col gap-0.5 rounded-xl bg-[#F6F6FA] p-3">

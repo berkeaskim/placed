@@ -23,13 +23,15 @@ export type CvScorePanelData = {
   history: number[];
   /** "What our AI saw": the redacted text the judge received (prepareJudgeInput), never the raw CV. */
   aiSaw: string | null;
+  /** The AI review failed when this was scored: the score is the automatic checks only. */
+  aiUnavailable: boolean;
 };
 
 type ScoreRow = {
   total: number; dimensions: Record<Dimension, number | null>; caps_applied: string[] | null; fixes: Fix[] | null;
   rule_results: StoredResults | null;
 };
-type StoredResults = { code?: ScoredRuleResult[]; llm?: ScoredRuleResult[]; couldNotAssess?: number; assessed?: number; passed?: number };
+type StoredResults = { code?: ScoredRuleResult[]; llm?: ScoredRuleResult[]; couldNotAssess?: number; assessed?: number; passed?: number; aiUnavailable?: boolean };
 
 /**
  * "Rules passed X/Y" counts for a stored cv_scores row. Rows scored since Task 18b persist them (run.ts);
@@ -53,7 +55,7 @@ const NEUTRAL_FACTS = { imageOnly: false, spellingErrors: 0, hasPhone: true, has
  */
 export async function loadCvScorePanel(
   supabase: SupabaseClient,
-  i: { userId: string; cvId: string; sector: Archetype; year: Year; score?: CvScore },
+  i: { userId: string; cvId: string; sector: Archetype; year: Year; score?: CvScore & { aiUnavailable?: boolean } },
 ): Promise<CvScorePanelData | null> {
   const [scoreRes, cvRes, histRes] = await Promise.all([
     i.score
@@ -68,10 +70,13 @@ export async function loadCvScorePanel(
   if (scoreRes.error) console.error("cv score panel: score read failed", scoreRes.error);
   if (histRes.error) console.error("cv score panel: history read failed", histRes.error);
 
-  let core: Pick<CvScorePanelData, "total" | "dimensions" | "capsApplied" | "fixes" | "assessed" | "passed" | "couldNotAssess">;
+  let core: Pick<CvScorePanelData, "total" | "dimensions" | "capsApplied" | "fixes" | "assessed" | "passed" | "couldNotAssess" | "aiUnavailable">;
   if (i.score) {
     const s = i.score;
-    core = { total: s.total, dimensions: s.dimensions, capsApplied: s.capsApplied, fixes: s.fixes, assessed: s.assessed, passed: s.passed, couldNotAssess: s.couldNotAssess };
+    core = {
+      total: s.total, dimensions: s.dimensions, capsApplied: s.capsApplied, fixes: s.fixes, assessed: s.assessed, passed: s.passed,
+      couldNotAssess: s.couldNotAssess, aiUnavailable: s.aiUnavailable === true,
+    };
   } else {
     const row = scoreRes.data as ScoreRow | null;
     if (!row) return null;
@@ -79,6 +84,7 @@ export async function loadCvScorePanel(
     core = {
       total: row.total, dimensions: row.dimensions, capsApplied: row.caps_applied ?? [], fixes: row.fixes ?? [],
       ...storedCounts(row.rule_results, rulesFor(i.sector), i.sector, i.year),
+      aiUnavailable: row.rule_results?.aiUnavailable === true,
     };
   }
 
