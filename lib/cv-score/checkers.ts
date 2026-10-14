@@ -198,10 +198,20 @@ export const CHECKERS: Record<CheckerId, (ctx: CvContext, rule: CvRule) => Out> 
   read_time: (c) => {
     const page = c.pageTexts[0];
     if (!page || !page.trim()) return na();
-    const head = page.slice(0, Math.ceil(page.length / 3)).toLowerCase();
+    // Fairness (T1): identity fields are swapped for fixed-length tokens before measuring the top third, so a longer
+    // name, email or profile URL never pushes the latest role out of it.
+    const NAME = "\u0001name\u0001";
+    let neutral = page;
+    const swapOut = (s: string | null | undefined, token: string) => {
+      const v = s?.trim();
+      if (v) neutral = neutral.split(v).join(token);
+    };
+    swapOut(c.cv.name, NAME);
+    for (const s of [c.cv.email, c.cv.phone, ...(c.cv.links ?? [])]) swapOut(s, "\u0001id\u0001");
+    const head = neutral.slice(0, Math.ceil(neutral.length / 3)).toLowerCase();
     const has = (s: string | null | undefined) => !!s && s.trim().length > 0 && head.includes(s.trim().toLowerCase());
     const role = c.cv.experience[0];
-    const checks = [has(c.cv.name), has(role?.title), has(role?.dates), has(c.cv.education[0]?.institution)];
+    const checks = [!!c.cv.name?.trim() && head.includes(NAME), has(role?.title), has(role?.dates), has(c.cv.education[0]?.institution)];
     const n = checks.filter(Boolean).length;
     if (n === checks.length) return ok();
     return bad(n >= 3 ? "partial" : "fail", null, "Put your name, latest role, dates and education in the top third of page one — recruiters decide in seconds.");
