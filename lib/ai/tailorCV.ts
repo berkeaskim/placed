@@ -5,9 +5,10 @@ import { AiError, generateStructured, runAi } from "./provider";
 import { SYSTEM_TAILOR, wrapJob } from "./prompts";
 import { TailoredCvFixture, TailoredCvOutput, type TailoredCvFixtureT } from "./schemas";
 import { heuristicTailor } from "./heuristics";
+import { playbookPrompt } from "@/lib/tailor/playbooks";
 
 /**
- * tailorCV (spec §7.1, 05 §2 [2]). Smart tier, default temperature. `allowed` = existing ∪ supportedByResume skills only:
+ * tailorCV (spec §7.1, 05 §2 [2]). Fast tier (latency), low thinking, default temperature. `allowed` = existing ∪ supportedByResume skills only:
  * the caller's deterministic pre-pass never passes a gap skill. The output is NOT trusted: lib/tailor/run.ts runs
  * verifyTailoring on it, retries once and reverts what still blocks.
  */
@@ -39,10 +40,12 @@ export function styleAnchors(cv: ParsedCV, max = 3): string[] {
 
 export function buildTailorPrompt(i: TailorInput): string {
   const anchors = styleAnchors(i.cv).map((b) => `- ${escapeData(b)}`).join("\n") || "- (none)";
+  const playbook = playbookPrompt(i.job.archetype);
   const out = [
     `ALLOWED KEYWORDS: ${i.allowed.map(escapeData).join(", ") || "(none)"}`,
     `MAY MOVE INTO SKILLS (already in the CV's prose): ${i.supported.map(escapeData).join(", ") || "(none)"}`,
     wrapJob(i.job.textLines.join("\n"), i.job.title),
+    ...(playbook ? [playbook] : []),
     `STYLE ANCHORS (the student's own lines):\n${anchors}`,
     `<cv>\n${escapeData(JSON.stringify(cvForPrompt(i.cv)))}\n</cv>`,
   ];
@@ -53,6 +56,18 @@ export function buildTailorPrompt(i: TailorInput): string {
 }
 
 type RawBullet = TailoredCvFixtureT["experience"][number]["bullets"][number];
+
+/** Same words as the single source line, only punctuation/spacing/case differ ("…further maths." for "…further maths"). */
+const sameWords = (a: string, b: string) => {
+  const k = (s: string) => s.toLowerCase().replace(/[^\p{L}\p{N}%£$€]+/gu, " ").trim();
+  return k(a) === k(b);
+};
+
+/** A punctuation-only edit is not a suggestion: restore the student's own line, so the change view counts it as kept/reordered. */
+function unpunctuated(b: RawBullet, src: Map<string, string>): string {
+  const orig = b.sourceRefs.length === 1 ? src.get(b.sourceRefs[0]) : undefined;
+  return orig !== undefined && b.text !== orig && b.changeType !== "dropped" && sameWords(b.text, orig) ? orig : b.text;
+}
 type RawEntry = TailoredCvFixtureT["experience"][number];
 
 /**
@@ -62,8 +77,9 @@ type RawEntry = TailoredCvFixtureT["experience"][number];
  */
 export function normalizeTailored(raw: TailoredCvFixtureT, cv: ParsedCV): TailoredCV {
   const heads = new Map([...cv.experience, ...cv.projects, ...cv.leadership].map((e) => [e.id, e]));
+  const srcText = new Map([...heads.values()].flatMap((e) => e.bullets.map((b) => [b.id, b.text] as const)));
   const bullet = (b: RawBullet): TailoredBullet => ({
-    id: b.id, text: b.text, sourceRefs: [...b.sourceRefs],
+    id: b.id, text: unpunctuated(b, srcText), sourceRefs: [...b.sourceRefs],
     ...(b.changeType ? { changeType: b.changeType } : {}),
     ...(b.qualifiersKept.length ? { qualifiersKept: [...b.qualifiersKept] } : {}),
     ...(b.changeType === "dropped" && b.dropReason ? { dropReason: b.dropReason } : {}),
@@ -96,7 +112,7 @@ export async function tailorCV(i: TailorInput): Promise<TailorCvResult> {
       fromFixture: (raw) => normalizeTailored(raw, i.cv),
       live: async () => {
         const o = await generateStructured({
-          tier: "smart", system: SYSTEM_TAILOR, schema: TailoredCvOutput, maxTokens: 16000, // no temperature: Claude rejects it, Gemini 3 should stay at its default
+          tier: "fast", system: SYSTEM_TAILOR, schema: TailoredCvOutput, maxTokens: 16000, thinking: "low", // fast: Pro took 130-300s per call (300s function limit); no temperature: Claude rejects it
           parts: [{ type: "text", text: buildTailorPrompt(i) }],
         });
         return normalizeTailored(o, i.cv);
