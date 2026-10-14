@@ -3,7 +3,7 @@ import { escapeRegex } from "@/lib/text/regex";
 
 export const TITLE_POSITIVE = [
   "word:intern", "Internship", "Interns", "Vacation Scheme", "Summer Programme", "Summer Program",
-  "Summer Scheme", "Summer Student", "Undergraduate", "Placement", "Industrial Placement", "Sandwich Year",
+  "Summer Scheme", "Summer Student", "Undergraduate", "stem:placement", "Industrial Placement", "Sandwich Year",
   "Year in Industry", "Summer Analyst", "Summer Associate", "Off-Cycle", "Offcycle", "Off Cycle",
   "Working Student", "Werkstudent", "Spring Week", "Spring Insight", "Insight Programme", "Insight Program",
   "Insight Week", "Insight Day", "Discovery Day", "Discovery Programme", "Taster", "Penultimate",
@@ -20,6 +20,10 @@ export const TITLE_NEGATIVE = [
   "Years of Experience", "Sales Representative", "Account Executive", "Recruiter", "Recruitment Consultant",
   "Training Contract", "Talent Acquisition", "Nurse", "Teacher", "Driver", "Warehouse", "Customer Care",
   "Customer Support", "Call Center", "Call Centre",
+  // Staff who run early-careers programmes, not the programmes themselves.
+  "Programme Coordinator", "Program Coordinator", "Talent Delivery", "Team Manager",
+  // Experienced grades and insurance-broking "placement" (placing policies), not student placements.
+  "word:ii", "word:iii", "Placement Specialist", "Placement Broker", "Courtier",
 ];
 
 const COHORT_CLASH = [/winter 20\d\d/i, /\(winter/i];
@@ -46,9 +50,14 @@ const LONDON = /\blondon\b/i;
 const UK = /\b(united kingdom|uk|england|gbr|great britain|scotland|wales|northern ireland|manchester|birmingham|edinburgh|glasgow|bristol|leeds|cambridge|oxford|belfast|cardiff|reading|milton keynes)\b/i;
 const EUROPE = /\b(europe|emea|eu|amsterdam|dublin|ireland|paris|france|berlin|munich|frankfurt|hamburg|germany|zurich|geneva|switzerland|madrid|barcelona|spain|milan|italy|stockholm|sweden|copenhagen|denmark|warsaw|poland|lisbon|portugal|brussels|belgium|netherlands|vienna|austria|oslo|helsinki|prague|istanbul|t[uü]rkiye|turkey)\b/i;
 const REMOTE = /\b(remote|anywhere|distributed)\b/i;
-const BLOCK = /\b(united states|usa|u\.s\.|new york|ny|san francisco|ca|chicago|boston|seattle|austin|los angeles|denver|miami|toronto|canada|vancouver|india|bangalore|bengaluru|hyderabad|mumbai|singapore|hong kong|sydney|melbourne|tokyo|shanghai|beijing|s[aã]o paulo|mexico)\b/i;
+const BLOCK = /\b(united states|usa|u\.s\.|new york|ny|san francisco|ca|chicago|boston|seattle|austin|los angeles|denver|miami|toronto|canada|vancouver|india|bangalore|bengaluru|hyderabad|mumbai|singapore|hong kong|sydney|melbourne|tokyo|shanghai|beijing|s[aã]o paulo|mexico|australia|japan|china|korea|seoul|taiwan|taipei|indonesia|jakarta|malaysia|kuala lumpur|philippines|manila|vietnam|thailand|bangkok|pakistan|brazil|argentina|chile|colombia|south africa|johannesburg|nigeria|kenya|egypt|cairo|uae|dubai|abu dhabi|saudi|riyadh|qatar|doha|israel|tel aviv|jamaica)\b/i;
 
-export function classifyRegion(location: string, remote: boolean): Region {
+// London, Ontario (e.g. BDO Canada, "London, Canada") is not London.
+const LONDON_ONTARIO = /\blondon\s*,\s*(on|ontario|canada)\b/gi;
+const withoutLondonOntario = (location: string) => location.replace(LONDON_ONTARIO, "Ontario, Canada");
+
+export function classifyRegion(rawLocation: string, remote: boolean): Region {
+  const location = withoutLondonOntario(rawLocation);
   if (LONDON.test(location)) return "london";
   if (UK.test(location)) return "uk";
   if (EUROPE.test(location)) return "europe";
@@ -62,15 +71,19 @@ const EXCLUSIONARY = [
 ];
 const INCLUSIVE = ["united kingdom", "uk-based", "london", "europe", "emea", "visa sponsorship available", "we sponsor"];
 
-export function passesLocationFilter(location: string, remote: boolean, jdText: string): { pass: boolean; reason?: string } {
+export function passesLocationFilter(rawLocation: string, remote: boolean, jdText: string): { pass: boolean; reason?: string } {
+  const location = withoutLondonOntario(rawLocation);
   const text = jdText.toLowerCase();
   const usOnly = EXCLUSIONARY.some((p) => text.includes(p)) && !INCLUSIVE.some((p) => text.includes(p));
   if (!location.trim()) return usOnly ? { pass: false, reason: "US work authorisation required" } : { pass: true };
   if (LONDON.test(location) || /united kingdom/i.test(location)) return { pass: true };
   if (usOnly) return { pass: false, reason: "US work authorisation required" };
-  const region = classifyRegion(location, remote);
-  if (region !== "other") return { pass: true };
+  const placeRegion = classifyRegion(location, false);
+  if (placeRegion !== "other") return { pass: true };
   if (BLOCK.test(location)) return { pass: false, reason: `Location outside UK/Europe: ${location}` };
+  // A remote flag on a role pinned to a named place outside UK/Europe ("Costa Rica - Cartago", "San Francisco") means
+  // remote within that country, not open to UK students. Only generic remote locations ("Remote - International") pass.
+  if (REMOTE.test(location)) return { pass: true };
   return { pass: false, reason: `Location not in UK/Europe/remote: ${location}` };
 }
 
@@ -87,7 +100,7 @@ export function detectEmploymentType(title: string): JobForScoring["employmentTy
   const t = title.toLowerCase();
   if (/spring (week|insight)/.test(t)) return "spring_week";
   if (/insight|discovery|taster/.test(t)) return "insight";
-  if (/placement|sandwich|year in industry/.test(t)) return "placement";
+  if (/\bplacement|sandwich|year in industry/.test(t)) return "placement";
   if (/graduate/.test(t)) return "graduate";
   if (/\bintern|internship|summer (analyst|associate|programme|program|scheme|student)|off[- ]?cycle|working student|werkstudent|vacation scheme|co-op|externship/.test(t)) return "internship";
   return "other";

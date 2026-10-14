@@ -98,3 +98,63 @@ describe("detectEmploymentType", () => {
     expect(detectEmploymentType(title)).toBe(expected);
   });
 });
+
+describe("coverage-audit filter fixes (2026-10-14)", () => {
+  it("'replacement' is not a placement", () => {
+    expect(passesTitleFilter("Operations Specialist with Dutch - 12 months replacement - Remote")).toBe(false);
+    expect(passesTitleFilter("Industrial Placement - Data")).toBe(true);
+    expect(passesTitleFilter("Summer Placements 2027")).toBe(true);
+    expect(detectEmploymentType("Maternity Replacement Intern")).toBe("internship");
+  });
+  it("staff who run early-careers programmes are not early-careers roles", () => {
+    expect(passesTitleFilter("Early Careers Programme Coordinator")).toBe(false);
+    expect(passesTitleFilter("Emerging Talent Delivery Team Manager (Germany, Poland, UK)")).toBe(false);
+    expect(passesTitleFilter("Product Manager Intern")).toBe(true);
+  });
+  it("London, Ontario is not London", () => {
+    expect(passesLocationFilter("London, Canada; Windsor - Rhodes Drive", false, "").pass).toBe(false);
+    expect(passesLocationFilter("London, ON", false, "").pass).toBe(false);
+    expect(classifyRegion("London, Ontario, Canada", false)).toBe("other");
+    expect(classifyRegion("London, United Kingdom", false)).toBe("london");
+    expect(passesLocationFilter("London, Canada; London, United Kingdom", false, "").pass).toBe(true);
+  });
+});
+
+describe("remote roles pinned to a non-UK/EU place", () => {
+  it("a remote flag doesn't let US-located roles through", () => {
+    expect(passesLocationFilter("San Francisco, California; New York, New York", true, "").pass).toBe(false);
+    expect(passesLocationFilter("New York, NY (HQ)", true, "").pass).toBe(false);
+  });
+  it("still keeps genuinely remote and UK/EU roles", () => {
+    expect(passesLocationFilter("", true, "").pass).toBe(true);
+    expect(passesLocationFilter("Remote - International", false, "").pass).toBe(true);
+    expect(passesLocationFilter("Poland", true, "").pass).toBe(true);
+    expect(passesLocationFilter("London; New York", true, "").pass).toBe(true);
+  });
+});
+
+describe("more non-UK/EU places are blocked even when flagged remote", () => {
+  it.each(["Malaysia - Kuala Lumpur", "Indonesia - Jakarta", "Cairo - ETIC, Egypt", "Dubai, UAE", "Kingston, Jamaica"])("%s", (loc) => {
+    expect(passesLocationFilter(loc, true, "").pass).toBe(false);
+  });
+});
+
+describe("remote flag on a role pinned to a non-UK/EU country", () => {
+  it.each(["Costa Rica - Cartago - Tres Rios", "New Zealand - North Island - Auckland"])("%s fails", (loc) => {
+    expect(passesLocationFilter(loc, true, "").pass).toBe(false);
+  });
+  it("generic remote text still passes", () => {
+    expect(passesLocationFilter("Remote (EMEA)", true, "").pass).toBe(true);
+    expect(passesLocationFilter("Anywhere", false, "").pass).toBe(true);
+  });
+});
+
+describe("insurance-broking placement and experienced grades", () => {
+  it.each(["Analyst II - Placement", "Associate Placement Specialist - Placement", "Software Engineer III, Early Career"])("%s fails", (t) => {
+    expect(passesTitleFilter(t)).toBe(false);
+  });
+  it("student placements still pass", () => {
+    expect(passesTitleFilter("Communications Industrial Placement, 2027")).toBe(true);
+    expect(passesTitleFilter("Placement Year - Software Engineer")).toBe(true);
+  });
+});
