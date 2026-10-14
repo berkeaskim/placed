@@ -194,3 +194,41 @@ describe("fix round 2", () => {
     expect(removeSentences("Dear Mr. Patel, could we chat? Bad one.", ["Bad one."])).toBe("Dear Mr. Patel, could we chat?");
   });
 });
+
+describe("fix round 3", () => {
+  const blocked = (x: string, source: GuardSource = src()) => {
+    const t = wrap(x);
+    const issues = checkOutreach(t, source);
+    expect(issues.some((i) => i.sentence === x)).toBe(true);
+    expect(removeSentences(t, issues.map((i) => i.sentence))).not.toContain(x);
+  };
+  it.each([
+    // A: plural claims are the student's
+    "We won the Economics Prize last year.", "Our team won the Economics Prize.", "We were ranked first in the UCL trading challenge.",
+    "Our team took first place and a scholarship.", "We received a bursary for the project.", "We won a Distinction.",
+    // B
+    "I loved my internship.", "My internship taught me credit modelling.",
+    // C: intent cannot cover a real claim
+    "I wanted to intern at Lendable and did so last summer.", "I'd love to return to Lendable after my internship there.",
+    "I wanted to work at Lendable after my internship at Lendable.", "I always wanted to work at Lendable, and last summer I did.",
+    "I hoped to join Lendable and was lucky enough to intern there in 2025.", "I'd love to work at Lendable again.",
+    "I'd love to rejoin Lendable.", "I'd like to build on my time at Lendable.",
+    // D: recipient-phrased
+    "Your team at Lendable hosted me as an intern last summer.", "You and I overlapped at Lendable.", "Same as you, I spent last summer at Lendable.",
+    // F, G
+    "As Head of Events at the UCL Finance Society, I ran our flagship conference.", "My Spanish is fluent.",
+  ])("blocks: %s", (x) => blocked(x));
+
+  it("blocks a Goldman target with the same intent cover", () => blocked("I wanted to intern at Goldman Sachs and did so last summer.", { ...src(), company: "Goldman Sachs" }));
+
+  it.each([
+    "I noticed Lendable won an award recently.", "Congrats on winning the award!",
+    "Any advice for my internship applications would be great.",
+    "I'm hoping to work at Lendable one day.", "I want to work at Lendable after I graduate.", "I'd love to work at Lendable.",
+    "I saw you joined Lendable after UCL.",
+    "I'm applying for the Credit Analyst Intern role at Lendable.", "I've applied for the Credit Analyst Intern (June 2027) position at Lendable.",
+    "I'm interested in the intern role at Lendable.",
+    "I noticed you were promoted to Head of Credit last year.",
+    "My English is fluent.",
+  ])("passes: %s", (x) => expect(checkOutreach(`Hi Sam, ${x}`, src())).toEqual([]));
+});
