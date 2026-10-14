@@ -9,12 +9,12 @@ import { ARCHETYPE_LABELS } from "@/lib/types";
 import { ActionCard } from "@/components/target/action-card";
 import { SignalCard } from "@/components/target/signal-card";
 import { SkillConfirm } from "@/components/target/skill-confirm";
+import { CountUp, DrawCircle, GrowBar } from "@/components/agent/reveal";
 import { SectorSelect } from "../sector-select";
 import { ProfileTabs } from "../tabs";
 
 export const metadata: Metadata = { title: "Target role · Placed" };
 
-const RING = 327; // 2πr for r = 52
 const STATUS_CHIP = {
   existing: { text: "On your CV", cls: "bg-[#E3F6EE] text-[#0E6B4A]" },
   supportedByResume: { text: "Hidden on your CV", cls: "bg-[#FFF1DC] text-[#7A4100]" },
@@ -34,10 +34,9 @@ function Ring({ pct, label }: { pct: number | null; label: string }) {
       <svg width="120" height="120" viewBox="0 0 120 120" className="shrink-0" role="img" aria-label={pct === null ? label : `${pct}% — ${label}`}>
         <circle cx="60" cy="60" r="52" fill="none" stroke="#ECECF3" strokeWidth="12" />
         {pct !== null && (
-          <circle cx="60" cy="60" r="52" fill="none" stroke="#5B3DF5" strokeWidth="12" strokeLinecap="round"
-            strokeDasharray={RING} strokeDashoffset={RING * (1 - pct / 100)} transform="rotate(-90 60 60)" />
+          <g transform="rotate(-90 60 60)"><DrawCircle cx={60} cy={60} r={52} value={pct / 100} stroke="#5B3DF5" strokeWidth={12} /></g>
         )}
-        <text x="60" y="68" textAnchor="middle" className="num-quest" fontSize="28" fill="currentColor">{pct === null ? "—" : `${pct}%`}</text>
+        <text x="60" y="68" textAnchor="middle" className="num-quest" fontSize="28" fill="currentColor">{pct === null ? "—" : <><CountUp to={pct} duration={1.1} />%</>}</text>
       </svg>
       <p className="text-sm font-semibold text-[#5B5B6B]">{label}. <span className="font-normal">This isn&apos;t your chance of being hired. It&apos;s how much of what these roles ask for your CV shows.</span></p>
     </div>
@@ -203,7 +202,7 @@ export default async function TargetRolePage() {
               : `Across ${v.demand.n} live, open roles on the job boards we scan.`}>
             {v.demand.items.length > 0 && (
               <ul className="flex flex-col gap-2">
-                {v.demand.items.map((d) => {
+                {v.demand.items.map((d, i) => {
                   const st = STATUS_CHIP[v.status[d.skill] ?? "gap"];
                   return (
                     <li key={d.skill} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1">
@@ -214,9 +213,9 @@ export default async function TargetRolePage() {
                       </span>
                       <span className="text-xs text-[#5B5B6B]">in {d.jobs} of {v.demand.n} roles</span>
                       {!v.demand.smallSample && (
-                        <span className="col-span-2 h-2 overflow-hidden rounded-full bg-[#ECECF3]" aria-hidden="true">
-                          <span className="block h-full rounded-full bg-[#5B3DF5]" style={{ width: `${Math.round(d.share * 100)}%` }} />
-                        </span>
+                        <div className="col-span-2 h-2 overflow-hidden rounded-full bg-[#ECECF3]" aria-hidden="true">
+                          <GrowBar value={Math.round(d.share * 100) / 100} delay={Math.min(i, 8) * 0.05} className="h-full rounded-full bg-[#5B3DF5]" />
+                        </div>
                       )}
                     </li>
                   );

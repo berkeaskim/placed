@@ -11,12 +11,16 @@ import { roleCards } from "@/lib/quiz/view";
 import { ARCHETYPES, YEARS, type Archetype, type Year } from "@/lib/types";
 import { CvScorePanel } from "@/components/cv-score-panel";
 import { MythCard } from "@/components/myth-card";
+import { LiveScoring, ScoringSteps } from "@/components/cv-score/scoring-agent";
+import { rulesFor } from "@/lib/cv-rules";
 import { SectorSelect } from "./sector-select";
 import { ProfileTabs } from "./tabs";
 import { ScoreNowButton } from "./score-now-button";
 import { scoreMyCv } from "./actions";
 
 export const metadata: Metadata = { title: "Your profile · Placed" };
+
+const llmRuleCount = (sector: Archetype) => rulesFor(sector).filter((r) => r.check === "llm").length;
 
 function RetryScoreForm({ sector }: { sector: Archetype }) {
   return (
@@ -39,16 +43,7 @@ async function ScoreSection(p: {
   const base = { userId: p.userId, cvId: p.cvId, sector: p.sector, year: p.year };
   let data: CvScorePanelData | null = await loadCvScorePanel(p.supabase, base);
   if (!data && p.uploadScoring && !p.failed) {
-    return (
-      <div role="status" aria-live="polite" className="flex flex-col gap-3 rounded-[20px] border border-[#E6E6EF] bg-white p-5">
-        <h2 className="text-base font-bold">Your CV Score</h2>
-        <p className="text-sm font-semibold text-[#3A20C4]">Scoring your CV…</p>
-        <p className="text-sm text-[#5B5B6B]">
-          This takes up to a minute after an upload.{" "}
-          <Link href="/profile" className="font-semibold underline underline-offset-2">Refresh</Link> to see your score.
-        </p>
-      </div>
-    );
+    return <LiveScoring llmRules={llmRuleCount(p.sector)} />;
   }
   if (!data && !p.failed) {
     try {
@@ -77,12 +72,11 @@ async function ScoreSection(p: {
   );
 }
 
-function ScoreLoading() {
+function ScoreLoading({ sector }: { sector: Archetype }) {
   return (
-    <div role="status" aria-live="polite" className="flex flex-col gap-3 rounded-[20px] border border-[#E6E6EF] bg-white p-5">
+    <div className="flex flex-col gap-3 rounded-[20px] border border-[#E6E6EF] bg-white p-5">
       <h2 className="text-base font-bold">Your CV Score</h2>
-      <p className="text-sm font-semibold text-[#3A20C4]">Scoring your CV against recruiter guidance…</p>
-      <div className="h-28 animate-pulse rounded-xl bg-[#F6F6FA] motion-reduce:animate-none" />
+      <ScoringSteps llmRules={llmRuleCount(sector)} />
     </div>
   );
 }
@@ -107,7 +101,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
     <div className="grid gap-6 lg:grid-cols-[minmax(0,400px)_1fr]">
       <aside className="flex min-w-0 flex-col gap-4" aria-label="CV Score">
         {cv ? (
-          <Suspense key={`${cv.id}-${sector}`} fallback={<ScoreLoading />}>
+          <Suspense key={`${cv.id}-${sector}`} fallback={<ScoreLoading sector={sector} />}>
             <ScoreSection supabase={supabase} userId={user.id} cvId={cv.id} sector={sector} year={year} failed={score === "failed"} uploadScoring={uploadScoring} />
           </Suspense>
         ) : (

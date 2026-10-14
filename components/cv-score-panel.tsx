@@ -9,6 +9,7 @@ import {
   scoreBand, sourceChip, sparklineLabel, sparklinePoints, splitFixes,
 } from "@/lib/cv-score/present";
 import { DisagreeButton } from "@/components/cv-score/disagree-button";
+import { CountUp, DrawCircle, GrowBar } from "@/components/agent/reveal";
 
 /**
  * CV Score panel (spec §6.4, amendments B11). Server component; data comes from loadCvScorePanel().
@@ -16,7 +17,6 @@ import { DisagreeButton } from "@/components/cv-score/disagree-button";
  */
 
 const DIMS: Dimension[] = ["ats", "impact", "clarity", "relevance", "uk"];
-const RING = 327; // 2πr for r = 52
 
 const Icon = {
   alert: (
@@ -163,7 +163,6 @@ export function CvScorePanel({ data }: { data: CvScorePanelData }) {
   const { next, rest } = splitFixes(data.fixes, 4);
   const caveat = SECTOR_CAVEATS[sector];
   const cna = couldntAssessLabel(data.couldNotAssess);
-  const dash = Math.round((Math.min(100, Math.max(0, total)) / 100) * RING);
 
   return (
     <div className="flex w-full flex-col gap-4">
@@ -193,8 +192,8 @@ export function CvScorePanel({ data }: { data: CvScorePanelData }) {
           <div className="flex shrink-0 flex-col items-center gap-1">
             <svg width="112" height="112" viewBox="0 0 120 120" role="img" aria-label={`CV score ${total} out of 100 for ${label}`}>
               <circle cx="60" cy="60" r="52" fill="none" stroke="#ECECF3" strokeWidth="12" />
-              <circle cx="60" cy="60" r="52" fill="none" stroke="#5B3DF5" strokeWidth="12" strokeLinecap="round" strokeDasharray={`${dash} ${RING}`} transform="rotate(-90 60 60)" />
-              <text x="60" y="66" textAnchor="middle" fontSize="34" fontWeight="700" fill="#16161D" style={{ fontFamily: "var(--font-quest)" }}>{total}</text>
+              <g transform="rotate(-90 60 60)"><DrawCircle cx={60} cy={60} r={52} value={total / 100} stroke="#5B3DF5" strokeWidth={12} /></g>
+              <text x="60" y="66" textAnchor="middle" fontSize="34" fontWeight="700" fill="#16161D" style={{ fontFamily: "var(--font-quest)" }}><CountUp to={total} duration={1.1} /></text>
               <text x="60" y="84" textAnchor="middle" fontSize="12" fontWeight="600" fill="#5B5B6B">/100</text>
             </svg>
             <p className="text-center text-sm font-semibold">
@@ -202,13 +201,13 @@ export function CvScorePanel({ data }: { data: CvScorePanelData }) {
             </p>
           </div>
           <div className="flex w-full flex-1 flex-col gap-2 text-xs">
-            {DIMS.map((d) => {
+            {DIMS.map((d, i) => {
               const v = dimensions[d];
               return (
                 <div key={d} className="flex flex-col gap-0.5">
                   <div className="flex justify-between"><span>{DIM_LABEL[d]}</span><b>{v ?? "—"}</b></div>
                   <div className="h-[5px] rounded-full bg-[#ECECF3]">
-                    {v !== null && <div className="h-[5px] rounded-full" style={{ width: `${v}%`, background: barColor(v) }} />}
+                    {v !== null && <GrowBar value={v / 100} delay={0.15 + i * 0.06} className="h-[5px] rounded-full" style={{ background: barColor(v) }} />}
                   </div>
                 </div>
               );

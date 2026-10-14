@@ -44,7 +44,7 @@ test("image-only PDF shows the unreadable-CV guidance", async ({ page }) => {
   test.setTimeout(150_000);
   await page.goto("/profile/build");
   await cvInput(page).setInputFiles(GEN("image-only-cv.pdf"));
-  await expect(page.getByRole("status").filter({ hasText: /Reading your CV|Spotting|Finding|Scoring/ })).toBeVisible();
+  await expect(page.getByRole("status").filter({ hasText: /Extracting the text|Checking for hidden text|Reading your roles|Saving your profile/ })).toBeVisible();
   await expect(page.getByText("We couldn't read this CV")).toBeVisible({ timeout: 120_000 });
   await expect(page.getByRole("link", { name: "Take the quiz" })).toBeVisible();
 });
@@ -56,7 +56,7 @@ test.fail("realistic CV PDF parses live and lands on the profile page", async ({
   const errors = trackConsole(page);
   await page.goto("/profile/build");
   await cvInput(page).setInputFiles(GEN("realistic-cv.pdf"));
-  await expect(page.getByRole("status").filter({ hasText: /Reading your CV/ })).toBeVisible();
+  await expect(page.getByRole("status").filter({ hasText: /Extracting the text/ })).toBeVisible();
   await expect(page).toHaveURL(/\/profile$/, { timeout: 120_000 });
   await expect(page.getByText(/could not be found|404/i)).toHaveCount(0);
   expect(errors.filter((e) => !/404/.test(e))).toEqual([]);

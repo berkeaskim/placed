@@ -1,4 +1,5 @@
 import type { RulesGained } from "@/lib/tailor/view";
+import { AgentStatus } from "@/components/agent/agent-steps";
 
 /** Score after tailoring as rules gained per dimension (amendments): never a single before→after LLM number. */
 export function RulesGainedPanel({ rules }: { rules: RulesGained | null }) {
@@ -8,7 +9,7 @@ export function RulesGainedPanel({ rules }: { rules: RulesGained | null }) {
         <h3 id="rules-gained" className="text-sm font-bold">CV Score rules</h3>
         <span className="rounded-full bg-[#EEEEF2] px-2 py-0.5 text-xs font-semibold text-[#3F3F4C]">AI-assisted rewrite</span>
       </div>
-      {rules === null ? <p className="text-xs text-muted-foreground">Checking the score rules…</p>
+      {rules === null ? <AgentStatus className="text-xs">Checking the score rules…</AgentStatus>
         : rules.dims.length === 0 ? <p className="text-xs text-muted-foreground">No score rules changed: these edits are about this posting, not your overall CV.</p>
           : (
             <ul className="flex flex-wrap gap-1.5 text-xs font-bold">
