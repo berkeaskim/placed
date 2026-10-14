@@ -2,7 +2,9 @@
 import { useState, useTransition } from "react";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { signInWithEmail, signInWithGoogle } from "./actions";
+import { signInDemo, signInWithEmail, signInWithGoogle } from "./actions";
+
+const DEMO = process.env.NEXT_PUBLIC_DEMO_MODE === "1";
 
 function MailIcon() {
   return (
@@ -65,6 +67,22 @@ export default function LoginPage() {
           >
             Continue with Google
           </button>
+          {DEMO && (
+            <button
+              type="button"
+              disabled={pending}
+              className="h-12 w-full rounded-[14px] border-2 border-dashed border-[#C9C2FF] bg-[#F8F7FF] font-bold text-[#3A20C4] transition-colors hover:bg-[#EEEBFF] disabled:opacity-50"
+              onClick={() =>
+                start(async () => {
+                  setError(null);
+                  const r = await signInDemo();
+                  if (r?.error) setError(r.error);
+                })
+              }
+            >
+              Try the demo as Ayşe (fictional student)
+            </button>
+          )}
           {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
         </CardContent>
       </Card>

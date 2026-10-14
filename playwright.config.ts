@@ -28,6 +28,9 @@ export default defineConfig({
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: {
     command: `npx next dev -p ${PORT}`,
+    // Task 25: the server Playwright starts shows "Try the demo" and replays the recorded AI fixtures
+    // (deterministic, no API spend). Override with AI_MODE=live in the shell to exercise a real model.
+    env: { NEXT_PUBLIC_DEMO_MODE: "1", AI_MODE: process.env.AI_MODE || "fixture" },
     url: baseURL,
     reuseExistingServer: true,
     timeout: 120_000,

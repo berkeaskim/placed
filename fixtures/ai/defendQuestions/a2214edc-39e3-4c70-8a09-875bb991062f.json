@@ -1,0 +1,16 @@
+{
+ "questions": [
+  {
+   "bulletId": "l0-b0",
+   "question": "How many people came to your weekly events, and what did you change to keep them coming back?",
+   "whyTheyAsk": "They want to check the number on your CV is real and that you know what drove it.",
+   "prepTip": "Know your typical attendance and how you counted it (sign-ups, ticket sales). Pick one change you made yourself and what happened next."
+  },
+  {
+   "bulletId": "p0-b0",
+   "question": "Where did the 1,200 listings come from, and what did cleaning them involve?",
+   "whyTheyAsk": "A credit analyst works with messy data every day, so they check you really handled the dataset yourself.",
+   "prepTip": "Have two or three concrete cleaning steps ready (duplicates, missing rents, odd postcodes) and say which part you did in Python and which in SQL."
+  }
+ ]
+}

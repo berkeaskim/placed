@@ -1,0 +1,14 @@
+{
+ "rows": [
+  { "index": 0, "match": "strong", "cv_evidence": "Used Python and SQL to collect and clean 1,200 rental listings" },
+  { "index": 1, "match": "strong", "cv_evidence": "Used Python and SQL to collect and clean 1,200 rental listings" },
+  { "index": 2, "match": "missing", "cv_evidence": null }
+ ],
+ "why_fit": [
+  "Your London Rent Tracker project uses both Python and SQL, which the posting lists under what they're looking for.",
+  "Your Econometrics and Statistics modules fit the role's hypothesis testing and default-rate modelling."
+ ],
+ "gaps": [
+  { "index": 2, "blocking": false, "adjacent_experience": "You managed a £2,000 events budget, which gives you a real example of weighing costs and trade-offs.", "how_to_close": "The interview includes case studies. Practise two or three timed cases out loud with a friend before you apply, using a free casebook or your society's case workshops." }
+ ]
+}

@@ -1,0 +1,47 @@
+{
+ "verdicts": [
+  {
+   "rule_id": "GEN-03",
+   "status": "fail",
+   "evidence_line": "Organised weekly society events",
+   "fix": "Add a number and a result: how many people came, how often, what changed. For example: \"Organised weekly society events for [add your real number] members\"."
+  },
+  {
+   "rule_id": "FIN-05",
+   "status": "fail",
+   "evidence_line": "Served customers in a busy café",
+   "fix": "Frame the café job commercially with a real number, for example: \"Served [add your real number] customers per shift\"."
+  },
+  {
+   "rule_id": "FIN-04",
+   "status": "pass",
+   "evidence_line": "Events Officer, UCL Finance Society | 2025–present",
+   "fix": null
+  },
+  {
+   "rule_id": "G-20",
+   "status": "pass",
+   "evidence_line": "Trained 3 new staff on the till and opening routine",
+   "fix": null
+  },
+  {
+   "rule_id": "AU-02",
+   "status": "pass",
+   "evidence_line": "Used Python and SQL to collect and clean 1,200 rental listings",
+   "fix": null
+  },
+  {
+   "rule_id": "G-33",
+   "status": "pass",
+   "evidence_line": "A-levels: Maths A*, Economics A, History A",
+   "fix": null
+  },
+  {
+   "rule_id": "G-34",
+   "status": "pass",
+   "evidence_line": "Managed a £2,000 events budget",
+   "fix": null
+  }
+ ],
+ "spelling_errors": []
+}

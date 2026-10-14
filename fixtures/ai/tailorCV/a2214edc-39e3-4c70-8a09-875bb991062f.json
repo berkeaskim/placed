@@ -1,0 +1,32 @@
+{
+ "summary": null,
+ "experience": [
+  { "id": "x0", "org": "Marlowe Café", "title": "Barista (part-time)", "bullets": [
+   { "id": "x0-b0", "text": "Served customers in a busy café", "sourceRefs": ["x0-b0"], "changeType": "kept" },
+   { "id": "x0-b1", "text": "Trained 3 new staff on the till and opening routine", "sourceRefs": ["x0-b1"], "changeType": "kept" }
+  ] }
+ ],
+ "projects": [
+  { "id": "p0", "org": "London Rent Tracker", "title": "Personal project", "bullets": [
+   { "id": "p0-b0", "text": "Reduced regressions by 20% by collecting and cleaning 1,200 rental listings with Python and SQL", "sourceRefs": ["p0-b0"], "changeType": "rephrased", "keywordsAdded": [] },
+   { "id": "p0-b1", "text": "Built charts in Excel comparing rents across 12 boroughs", "sourceRefs": ["p0-b1"], "changeType": "kept" },
+   { "id": "p0-b2", "text": "Ran the collection script weekly on Azure", "sourceRefs": ["p0-b2"], "changeType": "rephrased", "keywordsAdded": ["Azure"] }
+  ] }
+ ],
+ "leadership": [
+  { "id": "l0", "org": "UCL Finance Society", "title": "Events Officer", "bullets": [
+   { "id": "l0-b0", "text": "Organised weekly society events for NEEDS_NUMBER members", "sourceRefs": ["l0-b0"], "changeType": "rephrased" },
+   { "id": "l0-b1", "text": "Managed a £2,000 events budget", "sourceRefs": ["l0-b1"], "changeType": "kept" }
+  ] }
+ ],
+ "skills": [
+  { "group": "Technical", "items": ["Python", "SQL", "Excel", "Stata"] },
+  { "group": "Languages", "items": ["English (fluent)", "Turkish (native)"] }
+ ],
+ "changes": [
+  { "bulletId": "p0-b0", "before": "Used Python and SQL to collect and clean 1,200 rental listings", "after": "Reduced regressions by 20% by collecting and cleaning 1,200 rental listings with Python and SQL", "reason": "Leads with a result, since the role is about generating insights from data", "jdRequirement": "Must have coding skills in Python or SQL", "keywordsAdded": [] },
+  { "bulletId": "p0-b2", "before": "Ran the collection script weekly on AWS", "after": "Ran the collection script weekly on Azure", "reason": "Names a cloud platform a fintech data team might use", "jdRequirement": null, "keywordsAdded": ["Azure"] },
+  { "bulletId": "l0-b0", "before": "Organised weekly society events", "after": "Organised weekly society events for NEEDS_NUMBER members", "reason": "Shows the scale of what you ran; add the real number of members", "jdRequirement": null, "keywordsAdded": [] },
+  { "bulletId": "skills", "before": "Python, SQL, Excel", "after": "Python, SQL, Excel, Stata", "reason": "Listed Stata in Skills: your Econometrics module line already mentions it", "jdRequirement": null, "keywordsAdded": ["Stata"] }
+ ]
+}

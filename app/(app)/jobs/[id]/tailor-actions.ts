@@ -129,7 +129,7 @@ export async function getDefendQuestions(jobId: string, bullets: unknown): Promi
   if (clean.some((b) => !lines.has(norm(b.after)))) return { error: "Save your version first, then we can prepare questions for it." };
   if (stored.defend?.key === key) return { questions: stored.defend.questions };
   try {
-    const { questions } = await defendQuestions({ bullets: clean, jobTitle: job.title, company: job.company });
+    const { questions } = await defendQuestions({ bullets: clean, jobTitle: job.title, company: job.company, fixtureKey: job.extId });
     {
       const { error } = await supabase.from("applications").update({ tailored_json: { ...stored, defend: { key, questions } } })
         .eq("user_id", user.id).eq("job_id", jobId);

@@ -14,7 +14,11 @@
     "snapshot": "tsx --env-file=.env.local scripts/snapshot.ts",
     "seed": "tsx --env-file=.env.local scripts/seed.ts",
     "validate-slugs": "tsx scripts/validate-slugs.ts",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "demo:cv": "node scripts/run-ts.mjs scripts/make-demo-cv.ts",
+    "demo:user": "tsx --env-file=.env.local scripts/create-demo-user.ts",
+    "demo:reset": "tsx --env-file=.env.local scripts/reset-demo.ts",
+    "reliability": "node --env-file=.env.local scripts/run-ts.mjs scripts/reliability.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.133.0",
@@ -49,6 +53,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.4.0",
+    "jiti": "^2.7.0",
     "tailwindcss": "^4",
     "tsx": "^4.23.15",
     "typescript": "^5",
