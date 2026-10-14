@@ -4,7 +4,8 @@ import { extractSkills } from "@/lib/skills/extract";
 
 export const CONNECTION_NOTE_MAX = 300;
 
-export type GuardSource = { cv: ParsedCV; cvText: string; facts: string[]; note: string | null; company: string; jobTitle: string };
+/** `allowInterviewClaim`: the interview_prep purpose may say "I have an interview at {company}"; every other purpose may not. */
+export type GuardSource = { cv: ParsedCV; cvText: string; facts: string[]; note: string | null; company: string; jobTitle: string; allowInterviewClaim?: boolean };
 export type GuardIssue = { sentence: string; reason: string };
 
 const NEGATION = /^(?:never|not|no|without|\w+n't|\w+n’t)$/i;
@@ -23,22 +24,59 @@ const RECIPIENT_CLAIMS: { reason: string; re: RegExp; noteFor: (m: RegExpMatchAr
   { reason: "says you follow their work", re: /\b(?:been )?(?:following|followed) your (?:work|career|posts?|journey)\b/i, noteFor: () => /\bfollow/gi },
 ];
 
-/** Titles, grades, awards, credentials: blocked unless the same phrase is on the CV. */
-const LEXICON: { reason: string; re: RegExp }[] = [
+/**
+ * Titles, grades, awards, credentials, activities: blocked unless the same phrase is on the CV. `key` (capture group 1, else the
+ * whole match) is what must appear in the CV; `stem` matches it as a prefix so "tutor" backs "tutored".
+ */
+const LEXICON: { reason: string; re: RegExp; stem?: boolean }[] = [
   { reason: "a title", re: /\b(?:Vice[- ]President|President|Head of|Chair(?:man|person)?|Captain|Co-?founder|Founder|Director|Lead(?:er)? of|Treasurer|Secretary)\b/gi },
   { reason: "a grade or honour", re: /\bfirst[- ]class\b|\ba First\b|\bpredicted (?:a )?first\b|\bDistinction\b|\bdean['’]s list\b|\bGPA\b|\bsumma\b|\bmagna\b/gi },
-  { reason: "an award", re: /\b(?:prize|award|scholarship|bursary|fellowship|winner|won)\b/gi },
-  { reason: "work history", re: /\binterned\b|\b(?:my|previous|prior|past|did an?) internships?\b/gi },
+  { reason: "an award", re: /\b(?:prize|award|scholarship|bursary|fellowship|winner|won(?!['’]t))\b/gi },
+  { reason: "work history", re: /\binterned\b|\b(?:my|previous|prior|past) internships? (?:at|with)\b|\b(?:during|in|from|after) my internships?\b|\bdid an? internship\b/gi },
   { reason: "a credential", re: /\b(?:CFA|ACCA|ACA|CIMA|FRM|MSc|MBA|PhD)\b|\b(?:certified|certification)\b|\bMaster['’]s\b/g },
+  { reason: "a membership", re: /\bmember of (?:the )?([A-Z][\w&'’-]*(?:\s+[A-Z][\w&'’-]*)*)/g },
+  { reason: "a ranking", re: /\btop of (?:my|the) (?:class|cohort|year)\b|\branked (?:first|top|\d+\w*)\b|\bbest in (?:my|the)\b/gi },
+  { reason: "a school grade", re: /\bA\* in ((?:[A-Z][A-Za-z]*)(?: [A-Z][A-Za-z]*)*)|\bA\*|\bgrade [A-E]\b/g },
+  { reason: "an activity", re: /\bI(?:['’]m|['’]ve| am| have)? (tutor|volunteer|mentor)(?:ed|ing|s)?\b/gi, stem: true },
 ];
 const LANGUAGE = /\b(?:fluent in|fluent|native|speak|speaking|proficient in)\s+([A-Z][a-z]+(?:(?:,|\s+and|,\s*and)\s+[A-Z][a-z]+)*)/g;
+const LANGUAGE_LOWER = /\b(?:fluent in|fluent|native|speak|speaking|proficient in)\s+(spanish|french|german|italian|portuguese|mandarin|cantonese|chinese|japanese|korean|arabic|hindi|urdu|russian|dutch|polish|greek|swedish|hebrew|persian|farsi|bengali|punjabi)\b/gi;
+
+const FIRST_PERSON = /\bI\b|\bI['’]|\bmy\b|\bme\b/gi;
+const THIRD_PARTY = /\b(?:you|your|they|their|them|he|she|his|her)\b/i;
+/** Intent or wish before a verb: "hoping to work at", "I'd love to": not a claim of having done it. */
+const INTENT = /\b(?:hop(?:e|ing)|want(?:ed)?|wish|keen|love|like|aim|aspire|plan|would|interested in|to (?:work|intern|join))\b|['’]d\b/i;
+/** First-person progress at the target firm: offers, rounds, interviews. */
+const PROGRESS = /\boffer(?:ed)?\b|\b(?:first|second|third|final) round\b|\bassessment cent(?:re|er)\b|\bsuperday\b|\bpassed\b/i;
+const INTERVIEW = /\binterview(?:ing|s|ed)?\b[^.!?]{0,30}\b(?:with|at)\b/i;
 
 /** Words that make a sentence about work at an employer. */
 const WORK_WORD = /\b(?:interned|intern|internship|worked|work(?:ing)? at|joined|offered|placement|spring week|insight week|employee|analyst at)\b/i;
 /** Before the company, these mean the student is applying or curious, not claiming to have worked there. */
 const APPLYING = /\b(?:appl(?:y|ying|ied|ication)|interested in|learn(?:ing)?(?: more)? about|love to|excited (?:about|by)|keen)\b/i;
 
-const sentences = (t: string) => t.match(/[^.!?\n]+[.!?]*/g)?.map((s) => s.trim()).filter(Boolean) ?? [];
+/** Splits on . ! ? followed by space, but not inside "£1.5m", "U.C.L." or after "Mr."/"Dr."/"St.". */
+function sentences(t: string): string[] {
+  const out: string[] = [];
+  let cur = "";
+  const flush = () => { if (cur.trim()) out.push(cur.trim()); cur = ""; };
+  for (let i = 0; i < t.length; i++) {
+    const c = t[i];
+    if (c === "\n") { flush(); continue; }
+    cur += c;
+    if (!/[.!?]/.test(c)) continue;
+    const next = t[i + 1];
+    if (next !== undefined && !/[\s"'”’)\]]/.test(next)) continue;
+    if (/[.!?]/.test(next ?? "")) continue;
+    if (c === ".") {
+      const tok = cur.slice(cur.search(/\S+$/));
+      if (/^(?:Mr|Mrs|Ms|Dr|Prof|St)\.$/.test(tok) || /^(?:[A-Za-z]\.){2,}$/.test(tok)) continue;
+    }
+    flush();
+  }
+  flush();
+  return out;
+}
 const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const wholeWord = (needle: string, flags = "i") => new RegExp(`(?<![A-Za-z0-9])${esc(needle)}(?![A-Za-z0-9])`, flags);
 const NUMBER = /£?\$?€?\d[\d,]*(?:\.\d+)?%?/g;
@@ -48,15 +86,32 @@ const TIME_ASK = /\b\d{1,2}[- ]?(?:min(?:ute)?s?)\b/gi;
 /** "two quick questions", "one or two pointers", "a chat": an ask, not a metric about the student. */
 const ASK_AFTER = /^\s+(?:[A-Za-z]+\s+){0,2}?(?:questions?|pointers?|minutes?|mins?|call|chat)\b/i;
 
-/** Every sentence of `text` that contains `claim` as a whole word; falls back to sentences sharing a token with it. */
+/**
+ * Every sentence of `text` that the claim is about: contains it, or (for a skill) extracts to it, or shares a token with it.
+ * Returns [] when none does: never blame an unrelated sentence (removeSentences would delete it); other checks cover the claim.
+ */
 function attribute(text: string, claim: string): string[] {
   const ss = sentences(text);
   const direct = ss.filter((s) => wholeWord(claim).test(s));
   if (direct.length) return direct;
-  const toks = claim.split(/\W+/).filter((t) => t.length > 1);
-  const partial = ss.filter((s) => toks.some((t) => wholeWord(t).test(s)));
-  return partial.length ? partial : ss.slice(0, 1);
+  const viaSkill = ss.filter((s) => extractSkills(s).some((k) => k.toLowerCase() === claim.toLowerCase()));
+  if (viaSkill.length) return viaSkill;
+  const toks = claim.split(/\W+/).filter((t) => t.length > 3);
+  return ss.filter((s) => toks.some((t) => wholeWord(t).test(s)));
 }
+
+/** True when `idx` in `sen` is the student's own claim: a first-person marker, and no other subject between it and the hit. */
+function ownClaim(sen: string, idx: number, others: string[]): boolean {
+  const marks = [...sen.matchAll(FIRST_PERSON)];
+  if (!marks.length) return false;
+  const before = marks.filter((m) => m.index! < idx).pop();
+  if (!before) return true; // "As Head of Events …, I ran": the hit leads a first-person sentence
+  const seg = sen.slice(before.index! + before[0].length, idx);
+  return !THIRD_PARTY.test(seg) && !others.some((n) => wholeWord(n).test(seg));
+}
+
+/** The clause of `sen` before `idx`, cut at the last comma, semicolon, "but" or "and". */
+const clauseBefore = (sen: string, idx: number) => sen.slice(0, idx).split(/[,;:]|\b(?:but|and)\b/).pop() ?? "";
 
 /** Keyword matches in the note that are not negated within the three words before them. */
 function noteBacks(note: string | null, re: RegExp): boolean {
@@ -100,7 +155,14 @@ export function checkOutreach(text: string, s: GuardSource): GuardIssue[] {
       const at = stripped.toLowerCase().indexOf(i.claim.toLowerCase());
       if (at >= 0 && ASK_AFTER.test(stripped.slice(at + i.claim.length))) continue;
     }
-    for (const sen of attribute(text, i.claim)) add(sen, i.reason);
+    let sens = attribute(text, i.claim);
+    if (promoted) {
+      // Excluded: "won't" is not "won".
+      if (new RegExp(`${esc(i.claim)}['’]t`, "i").test(stripped)) continue;
+      // Excluded: "Lendable won an award" is about them, not a claim by the student.
+      sens = sens.filter((sen) => { const at = sen.search(wholeWord(i.claim)); return at < 0 || ownClaim(sen, at, companyNames); });
+    }
+    for (const sen of sens) add(sen, i.reason);
   }
 
   // 2. Skills not on the CV. A skill in the job title is what the student wants, not what they have.
@@ -123,31 +185,53 @@ export function checkOutreach(text: string, s: GuardSource): GuardIssue[] {
   }
 
   // 5. Employment claims about the target firm ("I interned at Lendable"): naming it is fine, claiming to have worked there is not.
+  const firstPerson = (sen: string) => /\bI\b|\bI['’]|\bmy\b/i.test(sen);
   for (const sen of ss) {
-    if (!/\bI\b|\bI['’]|\bmy\b/i.test(sen)) continue;
+    if (!firstPerson(sen)) continue;
     for (const name of companyNames) {
       for (const m of sen.matchAll(wholeWord(name, "gi"))) {
-        const words = sen.split(/(\s+)/);
-        let pos = 0, idx = 0;
-        for (let w = 0; w < words.length; w++) { if (pos + words[w].length > m.index!) { idx = w; break; } pos += words[w].length; }
-        const win = words.slice(Math.max(0, idx - 10), idx + 10).join("");
         const wordsBefore = sen.slice(0, m.index!).split(/\s+/).filter(Boolean);
-        const near = (re: RegExp, str: string) => re.test(str);
         const before = wordsBefore.slice(-5).join(" ");
         const after = sen.slice(m.index! + m[0].length).split(/\s+/).filter(Boolean).slice(0, 4).join(" ");
-        if (!near(WORK_WORD, `${before} ${after}`)) continue;
-        if (APPLYING.test(wordsBefore.slice(-7).join(" ")) && !/\b(?:interned|worked|joined|offered)\b/i.test(win)) continue;
+        const wb = before.match(WORK_WORD), wa = after.match(WORK_WORD);
+        if (!wb && !wa) continue;
+        // where the work word sits, to read the clause leading up to it
+        const wordAt = wb ? sen.lastIndexOf(wb[0], m.index!) : sen.indexOf(wa![0], m.index!);
+        const clause = clauseBefore(sen, wordAt < 0 ? m.index! : wordAt);
+        // Excluded: intent ("hoping to work at", "I'd love to").
+        if (INTENT.test(clause)) continue;
+        // Excluded: the recipient's history ("I saw you joined"): "you" with no first-person subject after it.
+        const lastYou = Math.max(clause.search(/\byou(?:r)?\b(?![\s\S]*\byou(?:r)?\b)/i), -1);
+        if (lastYou >= 0 && !/\bI\b|\bI['’]|\bwe\b/i.test(clause.slice(lastYou + 3))) continue;
+        // Excluded: applying for / curious about the firm.
+        if (APPLYING.test(wordsBefore.slice(-7).join(" ")) && !/\b(?:interned|worked|joined|offered)\b/i.test(`${before} ${after}`)) continue;
         add(sen, `says you worked at ${s.company}, which your CV doesn't`);
       }
     }
   }
 
-  // 6. Titles, grades, awards, credentials, languages not on the CV.
+  // 5b. Offers and progress at the target firm are claims the inbox, not this guard, can know. Interview claims pass only for interview_prep.
   for (const sen of ss) {
-    for (const { reason, re } of LEXICON) for (const m of sen.matchAll(re)) {
-      if (!wholeWord(m[0]).test(corpus)) add(sen, `${m[0]} (${reason}) is not on your CV`);
+    if (!firstPerson(sen)) continue;
+    const mentionsCompany = companyNames.some((n) => wholeWord(n).test(sen));
+    if (mentionsCompany) {
+      for (const m of sen.matchAll(new RegExp(PROGRESS.source, "gi"))) if (!INTENT.test(clauseBefore(sen, m.index!))) add(sen, `claims progress at ${s.company}, and nothing you gave us says so`);
     }
-    for (const m of sen.matchAll(LANGUAGE)) for (const lang of m[1].split(/,|\band\b/).map((l) => l.trim()).filter(Boolean)) {
+    if (s.allowInterviewClaim) continue;
+    const iv = sen.match(INTERVIEW);
+    if (iv && mentionsCompany && !INTENT.test(clauseBefore(sen, iv.index!))) add(sen, `claims an interview at ${s.company}, and nothing you gave us says so`);
+    else if (/\bI(?:['’]ve| have)\b[^.!?]{0,25}\binterview/i.test(sen)) add(sen, "claims an interview, and nothing you gave us says so");
+  }
+
+  // 6. Titles, grades, awards, credentials, languages not on the CV, in the student's own claims.
+  for (const sen of ss) {
+    for (const { reason, re, stem } of LEXICON) for (const m of sen.matchAll(re)) {
+      if (!ownClaim(sen, m.index!, companyNames)) continue; // "Lendable won an award" is about them
+      const key = m[1] ?? m[0];
+      const found = stem ? new RegExp(esc(key), "i").test(corpus) : wholeWord(key).test(corpus);
+      if (!found) add(sen, `${m[0]} (${reason}) is not on your CV`);
+    }
+    for (const re of [LANGUAGE, LANGUAGE_LOWER]) for (const m of sen.matchAll(re)) for (const lang of m[1].split(/,|\band\b/).map((l) => l.trim()).filter(Boolean)) {
       if (!wholeWord(lang).test(corpus)) add(sen, `${lang} is not a language on your CV`);
     }
   }

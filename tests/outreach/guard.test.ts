@@ -134,3 +134,63 @@ describe("checkOutreach passes honest messages", () => {
     expect(checkOutreach(t, src())).toEqual([]);
   });
 });
+
+describe("fix round 2", () => {
+  const has = (t: string, sentence: string, source: GuardSource = src()) => checkOutreach(t, source).some((i) => i.sentence === sentence);
+
+  it("never blames an unrelated sentence (the greeting survives removal)", () => {
+    const t = "Hi Sam, I'm a second-year Economics student at UCL. I led a team at the café. Could we chat?";
+    const issues = checkOutreach(t, src());
+    expect(issues.every((i) => i.sentence === "I led a team at the café.")).toBe(true);
+    expect(removeSentences(t, issues.map((i) => i.sentence))).toContain("Hi Sam, I'm a second-year Economics student at UCL.");
+  });
+
+  it.each([
+    "I won't take more than 15 minutes.",
+    "I'm hoping to work at Lendable one day.",
+    "I want to work at Lendable after I graduate.",
+    "I've always wanted to intern at Lendable.",
+    "I'd love to work at Lendable.",
+    "I saw you joined Lendable after UCL.",
+    "Keen to hear how you found the move to Lendable.",
+    "Any advice for my internship applications would be great.",
+    "I noticed Lendable won an award recently.",
+    "I'm a member of the UCL Finance Society.",
+    "I got A* in Maths.",
+  ])("passes: %s", (x) => {
+    expect(checkOutreach(`Hi Sam, ${x}`, src())).toEqual([]);
+  });
+
+  it.each([
+    "I hold a Lendable offer for the summer.",
+    "I've already passed the first round at Lendable.",
+    "I have an interview with Lendable next week.",
+    "I'm a member of the Oxford Chess Society.",
+    "I was top of my class.",
+    "I got A* in Further Maths.",
+    "I tutor GCSE students.",
+    "I volunteered at a food bank.",
+    "I speak spanish at home.",
+    "I told you I interned at Lendable.",
+  ])("blocks: %s", (x) => {
+    expect(has(wrap(x), x)).toBe(true);
+  });
+
+  it("interview claim at the target passes only with allowInterviewClaim", () => {
+    const x = "I have an interview coming up at Lendable.";
+    expect(has(wrap(x), x)).toBe(true);
+    expect(checkOutreach(`Hi Sam, ${x}`, { ...src(), allowInterviewClaim: true })).toEqual([]);
+    const o = "I hold a Lendable offer for the summer.";
+    expect(has(wrap(o), o, { ...src(), allowInterviewClaim: true })).toBe(true);
+  });
+
+  it("does not split on decimals, initialisms or titles", () => {
+    const x = "I'm at U.C.L. and raised £1.5m for charity.";
+    const t = wrap(x);
+    const issues = checkOutreach(t, src());
+    expect(issues.some((i) => i.sentence === x)).toBe(true);
+    expect(removeSentences(t, issues.map((i) => i.sentence))).not.toMatch(/£1|charity/);
+    expect(removeSentences("Dear Mr. Patel, could we chat?", [])).toBe("Dear Mr. Patel, could we chat?");
+    expect(removeSentences("Dear Mr. Patel, could we chat? Bad one.", ["Bad one."])).toBe("Dear Mr. Patel, could we chat?");
+  });
+});
