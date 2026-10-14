@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { planInboxEvents, safeClassify } from "@/lib/inbox/plan";
+import { claimEffect, planInboxEvents, safeClassify } from "@/lib/inbox/plan";
 import { targetStatus } from "@/lib/inbox/rules";
 import type { AppRef, Classification, RawEmail } from "@/lib/inbox/types";
 
@@ -51,4 +51,12 @@ describe("target for a suggested add (targetStatus)", () => {
   it("does not move a tracked interview card on a 'received' email", () => expect(targetStatus("interview", "received")).toBeNull());
   it("does not revive a rejected card", () => expect(targetStatus("rejected", "received")).toBeNull());
   it("moves a fresh (saved) row to applied", () => expect(targetStatus("saved", "received")).toBe("applied"));
+});
+
+describe("claimEffect", () => {
+  it("never claims a row as moved before the move is confirmed", () => {
+    expect(claimEffect({ effect: "moved", to: "applied" })).toBe("none");
+    expect(claimEffect({ effect: "suggested", reason: "unmatched" })).toBe("suggested");
+    expect(claimEffect({ effect: "none" })).toBe("none");
+  });
 });

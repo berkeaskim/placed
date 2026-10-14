@@ -12,7 +12,7 @@ import { dropConnection } from "@/lib/gmail/connection";
 import { refreshAccessToken } from "@/lib/gmail/oauth";
 import { GmailAuthError, buildGmailQuery, fetchRecentEmails } from "@/lib/gmail/search";
 import { classifyEmail } from "@/lib/inbox/classify";
-import { planInboxEvents, safeClassify } from "@/lib/inbox/plan";
+import { claimEffect, planInboxEvents, safeClassify } from "@/lib/inbox/plan";
 import { canUndo, nextDeadline, targetStatus } from "@/lib/inbox/rules";
 import { companyMatches } from "@/lib/inbox/match";
 import type { AppRef, Classification, InboxKind, RawEmail } from "@/lib/inbox/types";
@@ -88,7 +88,7 @@ export async function syncInbox(): Promise<SyncResult> {
     const { data: row, error } = await db.from("inbox_events").insert({
       user_id: user.id, gmail_message_id: p.email.id, application_id: p.appId, company: p.c.company,
       subject: p.email.subject.slice(0, 300), received_at: p.email.date, kind: p.c.kind, deadline: p.c.deadline,
-      action_url: p.c.actionUrl, confidence: p.c.confidence, effect: p.decision.effect, prev_status: null, new_status: null,
+      action_url: p.c.actionUrl, confidence: p.c.confidence, effect: claimEffect(p.decision), prev_status: null, new_status: null,
     }).select("id").single();
     if (error || !row) {
       if (error?.code !== "23505") console.error("syncInbox: insert failed", error?.message); // 23505 = another sync claimed it
@@ -109,9 +109,10 @@ export async function syncInbox(): Promise<SyncResult> {
       const { data: after } = await supabase.from("applications").select("status").eq("id", p.appId).eq("user_id", user.id).maybeSingle();
       done = after?.status === to;
     }
-    await db.from("inbox_events").update(done
-      ? { effect: "moved", prev_status: from, new_status: to }
-      : { effect: "none", prev_status: null, new_status: null }).eq("id", row.id).eq("user_id", user.id);
+    if (done) {
+      const { error: upErr } = await db.from("inbox_events").update({ effect: "moved", prev_status: from, new_status: to }).eq("id", row.id).eq("user_id", user.id);
+      if (upErr) console.error("syncInbox: confirming move failed", upErr.message);
+    }
     if (done) moved++;
   }
   await refreshDeadlines(db, user.id, touched);
@@ -147,12 +148,18 @@ export async function addSuggestedApplication(eventId: string): Promise<{ ok: bo
   const { supabase, user } = await requireUser();
   const { data: ev } = await supabase.from("inbox_events").select("id, company, kind, effect, application_id").eq("id", eventId).eq("user_id", user.id).maybeSingle();
   if (!ev?.company || ev.effect !== "suggested") return { ok: false };
-  const { data: jobs } = await supabase.from("jobs").select("id, posted_at, companies!inner(name)").eq("is_live", true).order("posted_at", { ascending: false }).limit(500);
-  const job = (jobs ?? []).find((j) => companyMatches(ev.company!, (j.companies as unknown as { name: string }).name));
-  if (!job) return { ok: false, message: `Placed doesn't list a live ${ev.company} role, so it can't be tracked here yet.` };
-  // Insert-if-absent: an already-tracked job keeps its status (an email never moves a card backwards or revives a rejected one).
-  await supabase.from("applications").upsert({ user_id: user.id, job_id: job.id, status: "saved" }, { onConflict: "user_id,job_id", ignoreDuplicates: true });
-  const { data: app } = await supabase.from("applications").select("id, status").eq("user_id", user.id).eq("job_id", job.id).maybeSingle();
+  let appId = ev.application_id as string | null;
+  if (!appId) {
+    const { data: jobs } = await supabase.from("jobs").select("id, posted_at, companies!inner(name)").eq("is_live", true).order("posted_at", { ascending: false }).limit(500);
+    const job = (jobs ?? []).find((j) => companyMatches(ev.company!, (j.companies as unknown as { name: string }).name));
+    if (!job) return { ok: false, message: `Placed doesn't list a live ${ev.company} role, so it can't be tracked here yet.` };
+    // Insert-if-absent: an already-tracked job keeps its status (an email never moves a card backwards or revives a rejected one).
+    await supabase.from("applications").upsert({ user_id: user.id, job_id: job.id, status: "saved" }, { onConflict: "user_id,job_id", ignoreDuplicates: true });
+    const { data: found } = await supabase.from("applications").select("id").eq("user_id", user.id).eq("job_id", job.id).maybeSingle();
+    appId = found?.id ?? null;
+  }
+  // A matched (low-confidence) suggestion already names its card: act on that one, never on another job at the company.
+  const { data: app } = appId ? await supabase.from("applications").select("id, status").eq("id", appId).eq("user_id", user.id).maybeSingle() : { data: null };
   if (!app || !isAppStatus(app.status)) return { ok: false };
   const to = targetStatus(app.status, ev.kind as InboxKind);
   const db = createAdminClient();
@@ -164,9 +171,11 @@ export async function addSuggestedApplication(eventId: string): Promise<{ ok: bo
   await updateStatus(app.id, to);
   const { data: after } = await supabase.from("applications").select("status").eq("id", app.id).eq("user_id", user.id).maybeSingle();
   const done = after?.status === to;
-  await db.from("inbox_events").update(done
+  // Only a confirmed move is logged as "moved"; otherwise the event just links the card.
+  const { error: upErr } = await db.from("inbox_events").update(done
     ? { application_id: app.id, effect: "moved", prev_status: app.status, new_status: to }
     : { application_id: app.id, effect: "none" }).eq("id", ev.id).eq("user_id", user.id);
+  if (upErr) console.error("addSuggestedApplication: updating event failed", upErr.message);
   revalidatePath("/tracker");
   return { ok: done };
 }

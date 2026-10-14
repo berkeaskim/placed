@@ -45,3 +45,8 @@ export async function planInboxEvents(d: {
   }
   return out;
 }
+
+/** What the claim row says before any move is confirmed: never "moved", so a crash can't leave a log entry without a move. */
+export function claimEffect(d: Decision): "none" | "suggested" {
+  return d.effect === "suggested" ? "suggested" : "none";
+}
