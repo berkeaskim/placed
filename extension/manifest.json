@@ -1,0 +1,22 @@
+{
+  "manifest_version": 3,
+  "name": "Placed Autopilot",
+  "version": "0.1.0",
+  "description": "Fills internship application forms from your Placed Answer Vault. Never presses Submit.",
+  "permissions": ["debugger"],
+  "host_permissions": ["http://localhost/*", "https://*.vercel.app/*", "https://job-boards.greenhouse.io/*", "https://boards.greenhouse.io/*", "https://jobs.ashbyhq.com/*", "https://jobs.lever.co/*"],
+  "background": { "service_worker": "background.js" },
+  "content_scripts": [
+    {
+      "matches": ["https://job-boards.greenhouse.io/*", "https://boards.greenhouse.io/*", "https://jobs.ashbyhq.com/*", "https://jobs.lever.co/*"],
+      "js": ["capture.js"],
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["https://job-boards.greenhouse.io/*", "https://boards.greenhouse.io/*", "https://jobs.ashbyhq.com/*", "https://jobs.lever.co/*"],
+      "js": ["config.js", "lib/guard.js", "lib/fill-plan.js", "lib/dom.js", "fillers/greenhouse.js", "fillers/ashby.js", "fillers/lever.js", "content.js"],
+      "css": ["overlay.css"],
+      "run_at": "document_idle"
+    }
+  ]
+}
