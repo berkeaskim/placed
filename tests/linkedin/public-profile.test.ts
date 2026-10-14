@@ -77,3 +77,14 @@ describe("sameName", () => {
     expect(sameName("Ayşe Yılmaz", "Ayşe Demir")).toBe(false);
   });
 });
+
+describe("fetchPublicProfile retry", () => {
+  it("retries once after a network failure, then gives up with a network error", async () => {
+    let calls = 0;
+    const flaky = (async () => { calls++; if (calls === 1) throw new Error("timeout"); return { status: 200, ok: true, url: URL_, text: async () => HTML }; }) as unknown as typeof fetch;
+    await expect(fetchPublicProfile(URL_, flaky)).resolves.toContain("top-card-layout__title");
+    expect(calls).toBe(2);
+    const dead = (async () => { throw new Error("timeout"); }) as unknown as typeof fetch;
+    await expect(fetchPublicProfile(URL_, dead).catch((e: LinkedInFetchError) => e.kind)).resolves.toBe("network");
+  });
+});

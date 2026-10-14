@@ -34,17 +34,22 @@ const UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (
 
 export async function fetchPublicProfile(url: string, fetchImpl: typeof fetch = fetch): Promise<string> {
   const canonical = normalizeProfileUrl(url);
-  let res: Response;
-  try {
-    res = await fetchImpl(canonical, {
-      headers: { "user-agent": UA, "accept-language": "en-GB,en;q=0.9", accept: "text/html" },
-      redirect: "follow",
-      signal: AbortSignal.timeout(12000),
-      cache: "no-store",
-    });
-  } catch {
-    throw new LinkedInFetchError("network", "We couldn't reach LinkedIn just now.");
+  let res: Response | null = null;
+  // One retry: the first request from a cold function sometimes stalls past the timeout (seen on production
+  // 2026-10-14: 12 s timeout, then 2 s on the next try).
+  for (let attempt = 0; attempt < 2 && !res; attempt++) {
+    try {
+      res = await fetchImpl(canonical, {
+        headers: { "user-agent": UA, "accept-language": "en-GB,en;q=0.9", accept: "text/html" },
+        redirect: "follow",
+        signal: AbortSignal.timeout(attempt === 0 ? 8000 : 12000),
+        cache: "no-store",
+      });
+    } catch (e) {
+      console.warn(`fetchPublicProfile attempt ${attempt + 1} failed`, e instanceof Error ? `${e.name}: ${e.message}` : e);
+    }
   }
+  if (!res) throw new LinkedInFetchError("network", "We couldn't reach LinkedIn just now. Try again, or upload the PDF below.");
   const finalUrl = res.url || canonical;
   if (res.status === 404) throw new LinkedInFetchError("not_found", "We couldn't find that profile. Check the link.");
   if (res.status === 999 || res.status === 429 || res.status === 403 || /\/(authwall|login|uas\/login|checkpoint)/.test(new URL(finalUrl).pathname)) {
