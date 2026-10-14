@@ -1,5 +1,5 @@
 {
- "_note": "HAND-LABELLED demo verdicts for the FICTIONAL persona (seed/demo/ayse.json), not recorded model output. Every evidence_line is an exact line of the redacted demo CV text (A1). Rules not listed are not_applicable. scripts/make-demo-cv.mts copies each sector into fixtures/ai/judgeCvRules/<textHash16>-<sector>.json.",
+ "_note": "HAND-LABELLED demo verdicts for the FICTIONAL persona (seed/demo/ayse.json), not recorded model output. Every evidence_line is an exact line of the redacted demo CV text (A1). Rules not listed are not_applicable. scripts/make-demo-cv.ts copies each sector into fixtures/ai/judgeCvRules/<textHash16>-<sector>.json.",
  "data_analytics": {
   "verdicts": [
    { "rule_id": "GEN-03", "status": "fail", "evidence_line": "Organised weekly society events", "fix": "Add a number and a result: how many people came, how often, what changed. For example: \"Organised weekly society events for [add your real number] members\"." },

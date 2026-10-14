@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { demoCredentials, demoPreflight, findUserByEmail, isAlreadyRegistered, isMissingObject } from "@/lib/demo/admin";
+import { canOverwriteExistingUser, demoCredentials, demoPreflight, findUserByEmail, hasForceFlag, isAlreadyRegistered, isMissingObject } from "@/lib/demo/admin";
 import { reliabilityStats } from "@/lib/cv-score/reliability";
 
 describe("demoCredentials", () => {
@@ -75,5 +75,24 @@ describe("reliabilityStats (T17 gate: SD ≤ 2, flips ≤ 10%)", () => {
     expect(r.flips).toEqual([{ ruleId: "GEN-03", rate: expect.closeTo(0.2, 5), counts: { pass: 1, fail: 4 } }]);
     expect(r.sd).toBeCloseTo(6.32, 1);
     expect(r.pass).toBe(false);
+  });
+});
+
+describe("canOverwriteExistingUser (never reset a real account's password)", () => {
+  it("allows an account this script created (user_metadata.demo === true)", () => {
+    expect(canOverwriteExistingUser({ id: "u", user_metadata: { demo: true } }, false)).toEqual({ ok: true });
+  });
+  it("refuses any other existing account unless --force", () => {
+    for (const meta of [undefined, {}, { demo: "true" }, { full_name: "Real Person" }]) {
+      const r = canOverwriteExistingUser({ id: "u", user_metadata: meta }, false);
+      expect(r.ok).toBe(false);
+      expect(r.ok ? "" : r.reason).toMatch(/not marked as the demo account.*--force/);
+    }
+    expect(canOverwriteExistingUser({ id: "u", user_metadata: {} }, true)).toEqual({ ok: true });
+  });
+  it("hasForceFlag only accepts the exact flag", () => {
+    expect(hasForceFlag(["node", "x.ts", "--force"])).toBe(true);
+    expect(hasForceFlag(["node", "x.ts"])).toBe(false);
+    expect(hasForceFlag(["node", "x.ts", "--forced", "force"])).toBe(false);
   });
 });

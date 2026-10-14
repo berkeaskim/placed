@@ -66,6 +66,7 @@ describe.each(BASES)("score-level fairness — base %s", (base) => {
     const ref = await scoreText(fill(template), sector);
     for (const p of Object.values(PERSONAS)) {
       const got = await scoreText(fill(template, { persona: p }), sector);
+      expect(got.hash, p.name).toBe(ref.hash);
       expect(got.total, p.name).toBe(ref.total);
     }
   });
@@ -158,13 +159,13 @@ describe.each(["data", "consulting"] as const)("phrasing fairness — base %s", 
 });
 
 describe("demo persona WITH hand-labelled judge verdicts (fixtures/ai/judgeCvRules)", () => {
-  it("T1/T2 swapping name, email, phone and GitHub handle keeps the same judge fixture and the same score (gated)", async () => {
+  it("T1/T2 swapping name, email, phone and personal link keeps the same judge fixture and the same score (gated)", async () => {
     const persona = JSON.parse(readFileSync(DEMO_PERSONA_PATH, "utf8")) as ParsedCV;
     const { text } = await uploadedRawText(new Uint8Array(readFileSync(DEMO_CV_PATH)));
     const swap = (s: string) => s
       .replace("Ayşe Demir", "Oluwaseun Adebayo").replace("ayse.demir.demo@example.com", "oluwaseun.adebayo.demo@example.com")
-      .replace("+44 7700 900123", "+44 7700 900456").replace("github.com/ayse-demo", "github.com/oadebayo-demo");
-    const other: ParsedCV = { ...persona, name: "Oluwaseun Adebayo", email: "oluwaseun.adebayo.demo@example.com", phone: "+44 7700 900456", links: ["github.com/oadebayo-demo"] };
+      .replace("+44 7700 900123", "+44 7700 900456").replace("https://example.com/ayse-demir", "https://example.com/oluwaseun-adebayo");
+    const other: ParsedCV = { ...persona, name: "Oluwaseun Adebayo", email: "oluwaseun.adebayo.demo@example.com", phone: "+44 7700 900456", links: ["https://example.com/oluwaseun-adebayo"] };
     expect(swap(text)).not.toBe(text);
     for (const sector of ["data_analytics", "consulting", "finance_banking"] as const) {
       const a = await scoreRow(persona, text, sector);

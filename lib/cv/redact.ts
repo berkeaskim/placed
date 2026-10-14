@@ -208,8 +208,11 @@ function redactProfileUrls(text: string, rec: Rec, slugs: string[]): string {
     return pre + PLACEHOLDER.portfolio;
   });
   out = out.replace(DOMAIN_RE, (m, pre: string, url: string, label: string) => {
-    const norm = label.toLowerCase().replace(/[^a-z]/g, "");
-    if (PLATFORM_HOSTS.test(label) || !slugs.some((s) => norm.includes(s))) return m;
+    // A name in the domain label (jamessmith.dev) or anywhere in the path (example.com/james-smith) is a personal link.
+    const fold = (x: string) => x.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().replace(/[^a-z]/g, "");
+    const norm = fold(label);
+    const path = fold(url.replace(/^[^/]*(?:\/\/[^/]*)?/, ""));
+    if (PLATFORM_HOSTS.test(label) || !slugs.some((s) => norm.includes(s) || (path && path.includes(s)))) return m;
     rec.push({ placeholder: PLACEHOLDER.portfolio, kind: "profile_url", original: url });
     return pre + PLACEHOLDER.portfolio;
   });

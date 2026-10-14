@@ -32,14 +32,32 @@ export function demoCredentials(env: Record<string, string | undefined>): DemoCr
 /** Supabase admin createUser error for an existing account. */
 export const isAlreadyRegistered = (message: string) => /already (been )?registered|already exists/i.test(message);
 
+export type ExistingUser = { id: string; email?: string; user_metadata?: Record<string, unknown> };
+
+/**
+ * Guard for the "already registered" path: only an account this script created (user_metadata.demo === true) may have
+ * its password and metadata overwritten. A mistyped DEMO_EMAIL that belongs to a real user is refused unless the
+ * operator passes --force explicitly.
+ */
+export function canOverwriteExistingUser(u: ExistingUser, force: boolean): { ok: true } | { ok: false; reason: string } {
+  if (u.user_metadata?.demo === true || force) return { ok: true };
+  return {
+    ok: false,
+    reason: `${u.email ?? "This account"} already exists and is not marked as the demo account (user_metadata.demo !== true). ` +
+      "Refusing to reset its password: check DEMO_EMAIL. If it really is the demo account, re-run with --force.",
+  };
+}
+
+export const hasForceFlag = (argv: string[]) => argv.slice(2).includes("--force");
+
 /** Finds an auth user by email (case-insensitive), paging through the admin list. */
-export async function findUserByEmail(db: SupabaseClient, email: string): Promise<{ id: string; email?: string } | null> {
+export async function findUserByEmail(db: SupabaseClient, email: string): Promise<ExistingUser | null> {
   const want = email.toLowerCase();
   for (let page = 1; page <= 100; page++) {
     const { data, error } = await db.auth.admin.listUsers({ page, perPage: 200 });
     if (error) throw new Error(`listing auth users failed: ${error.message}`);
     const hit = data.users.find((u) => u.email?.toLowerCase() === want);
-    if (hit) return { id: hit.id, email: hit.email };
+    if (hit) return { id: hit.id, email: hit.email, user_metadata: hit.user_metadata };
     if (data.users.length < 200) return null;
   }
   return null;

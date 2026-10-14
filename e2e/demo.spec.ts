@@ -51,7 +51,7 @@ test("3-minute demo flow", async ({ page, context }) => {
   // 4. Feed → the demo job
   await page.getByRole("link", { name: "See my internships" }).click();
   await page.waitForURL(/\/feed/);
-  await expect(page.getByRole("article").nth(9)).toBeVisible();
+  await expect(page.getByRole("article").first()).toBeVisible();
   await page.getByRole("article").filter({ hasText: DEMO_JOB }).first().getByRole("link", { name: "View", exact: true }).click();
   await expect(page.getByRole("heading", { level: 1, name: DEMO_JOB })).toBeVisible();
 

@@ -281,3 +281,16 @@ describe("redactCv: review regressions", () => {
     }
   });
 });
+
+describe("T2: a name in the PATH of a personal link on any domain (Task 25a fix round 1)", () => {
+  it("redacts example.com/<name-slug> to [PORTFOLIO], so two personas' links redact identically", () => {
+    const a = redactCv("Ayşe Demir\nLondon | https://example.com/ayse-demir\nEDUCATION", { knownName: "Ayşe Demir" }).redacted;
+    const b = redactCv("Oluwaseun Adebayo\nLondon | https://example.com/oluwaseun-adebayo\nEDUCATION", { knownName: "Oluwaseun Adebayo" }).redacted;
+    expect(a).toContain("[PORTFOLIO]");
+    expect(a).not.toMatch(/demir|ayse/i);
+    expect(b).toBe(a);
+  });
+  it("keeps a link whose path carries no name part", () => {
+    expect(redactCv("Ayşe Demir\nhttps://example.com/rent-tracker\nEDUCATION", { knownName: "Ayşe Demir" }).redacted).toContain("example.com/rent-tracker");
+  });
+});

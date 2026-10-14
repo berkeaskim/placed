@@ -3,7 +3,7 @@
  "email": "ayse.demir.demo@example.com",
  "phone": "+44 7700 900123",
  "location": "London",
- "links": ["github.com/ayse-demo"],
+ "links": ["https://example.com/ayse-demir"],
  "summary": null,
  "education": [
   {
