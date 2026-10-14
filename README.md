@@ -15,6 +15,7 @@ Tailor it to a job without inventing a single claim. Track every application.
   <img alt="Supabase" src="https://img.shields.io/badge/Supabase-Postgres%20%2B%20RLS-3FCF8E?logo=supabase&logoColor=white">
   <img alt="Claude" src="https://img.shields.io/badge/Claude-Sonnet%20%2B%20Haiku-D97757?logo=anthropic&logoColor=white">
   <img alt="Gemini" src="https://img.shields.io/badge/Gemini-supported-4285F4?logo=googlegemini&logoColor=white">
+  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-blue"></a>
   <img alt="Vitest" src="https://img.shields.io/badge/tested%20with-Vitest%20%2B%20Playwright-6E9F18?logo=vitest&logoColor=white">
 </p>
 
@@ -180,7 +181,7 @@ docs/research/       Sources behind every CV rule and Role Playbook
 
 ## License
 
-No license has been chosen yet. Until one is added, all rights are reserved. An open-source license is planned.
+Released under the [MIT License](LICENSE).
 
 ---
 
