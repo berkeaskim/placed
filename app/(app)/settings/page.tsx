@@ -1,5 +1,5 @@
 import { requireUser } from "@/lib/supabase/server";
-import { deleteMyData } from "./actions";
+import { DeleteDataForm } from "./delete-data-form";
 
 export default async function Settings() {
   await requireUser();
@@ -8,13 +8,8 @@ export default async function Settings() {
       <h1 className="text-[28px] font-extrabold tracking-tight">Settings</h1>
       <section className="card-quest flex flex-col gap-3 p-5">
         <h2 className="font-bold">Your data</h2>
-        <p className="text-sm text-muted-foreground">
-          Your CV is stored privately and only used to score and tailor it for you. Deleting removes your CVs, tailored PDFs, scores,
-          applications and XP. This can&apos;t be undone.
-        </p>
-        <form action={deleteMyData}>
-          <button type="submit" className="min-h-11 rounded-[14px] border-2 border-[#B42318] px-4 py-3 font-bold text-[#B42318]">Delete my CV &amp; data</button>
-        </form>
+        <p className="text-sm text-muted-foreground">Your CV is stored privately and only used to score and tailor it for you.</p>
+        <DeleteDataForm />
       </section>
     </div>
   );
