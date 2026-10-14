@@ -18,6 +18,9 @@ import { ExplainPanel } from "./explain-panel";
 import { ApplyButton } from "./apply-button";
 import { TailorPanel } from "./tailor-panel";
 import type { StoredTailoring } from "./actions";
+import { PeoplePanel } from "@/components/outreach/people-panel";
+import { OUTREACH_TARGETS } from "@/lib/outreach/targets";
+import type { OutreachPurpose } from "@/lib/outreach/draft";
 
 const BAND_TONE = {
   Strong: "bg-[#E3F6EE] text-[#0B6B49]", Good: "bg-[#E6EEFF] text-[#2340A8]",
@@ -36,8 +39,9 @@ function JobText({ lines }: { lines: string[] }) {
   );
 }
 
-export default async function JobPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function JobPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ target?: string; purpose?: string }> }) {
   const { id } = await params;
+  const sp = await searchParams;
   const { supabase, user } = await requireUser();
   if (!isUuid(id)) notFound();
   const [job, profile, cv, { data: app }] = await Promise.all([
@@ -119,6 +123,12 @@ export default async function JobPage({ params }: { params: Promise<{ id: string
           <section className="flex flex-col gap-2 rounded-[20px] border bg-white p-5">
             <ApplyButton jobId={job.id} url={safeHttpUrl(job.url)} company={job.company} alreadyApplied={alreadyApplied} />
           </section>
+
+          <PeoplePanel
+            company={job.company} title={job.title} jobId={job.id}
+            initialTarget={OUTREACH_TARGETS.find((t) => t === sp.target)}
+            initialPurpose={(["intro", "follow_up", "interview_prep"] as OutreachPurpose[]).find((p) => p === sp.purpose)}
+          />
         </aside>
       </div>
     </div>
