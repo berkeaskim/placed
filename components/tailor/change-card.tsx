@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { canEdit, canReject, hasPlaceholder, placeholderParts, type Decision, type TailorChangeView } from "@/lib/tailor/view";
-import { diffStats, lineDiff } from "@/lib/tailor/diff";
+import { diffStats, lineDiff, spaceBetween } from "@/lib/tailor/diff";
 import { AlertIcon, CheckIcon, PencilIcon, QuoteIcon, UndoIcon } from "./icons";
 
 const SECTION_LABEL: Record<TailorChangeView["section"], string> = {
@@ -21,8 +21,8 @@ function Line({ text }: { text: string }) {
 }
 
 /**
- * Word-level before → after: removed words red and struck through, added words green. Screen readers get
- * "removed:" / "added:" labels instead of colour alone.
+ * Word-level before → after: removed words red and struck through, added words green and underlined (never colour
+ * alone). Screen readers get "removed:" / "added:" labels.
  */
 export function DiffLine({ before, after }: { before: string; after: string }) {
   const parts = lineDiff(before, after);
@@ -32,11 +32,11 @@ export function DiffLine({ before, after }: { before: string; after: string }) {
       <p className="leading-relaxed">
         {parts.map((p, i) => (
           <span key={i}>
-            {i > 0 && " "}
+            {i > 0 && spaceBetween(parts[i - 1].text, p.text) && " "}
             {p.op === "same" ? <Line text={p.text} />
               : p.op === "del"
                 ? <del className="rounded bg-[#FDECEA] px-0.5 text-[#B42318] decoration-[#B42318] decoration-2"><span className="sr-only">removed: </span>{p.text}</del>
-                : <ins className="rounded bg-[#E3F6EE] px-0.5 font-semibold text-[#0B6B49] no-underline"><span className="sr-only">added: </span><Line text={p.text} /></ins>}
+                : <ins className="rounded bg-[#E3F6EE] px-0.5 font-semibold text-[#0B6B49] underline decoration-2 underline-offset-2"><span className="sr-only">added: </span><Line text={p.text} /></ins>}
           </span>
         ))}
       </p>
@@ -83,7 +83,7 @@ export function ChangeCard({ change: c, decision, text, onDecide, onUndo, onConf
           <label className="sr-only" htmlFor={`edit-${c.bulletId}`}>Edit this line</label>
           <textarea id={`edit-${c.bulletId}`} value={draft} onChange={(e) => setDraft(e.target.value)} rows={3} maxLength={600}
             className="w-full rounded-xl border-2 border-[#C9C9D6] p-2.5 text-sm focus:border-[#5B3DF5] focus:outline-none" />
-          {c.before && <div className="rounded-xl bg-[#F6F6FA] p-2.5" aria-live="polite"><DiffLine before={c.before} after={draft} /></div>}
+          {c.before && <div className="rounded-xl bg-[#F6F6FA] p-2.5"><DiffLine before={c.before} after={draft} /></div>}
           <p className="text-xs text-muted-foreground">Use only what you really did. Any new number or tool is checked against your CV before your PDF is made.</p>
           <div className="flex gap-2">
             <button type="button" className="btn-quest min-h-11 px-4 text-sm" disabled={!draft.trim()}

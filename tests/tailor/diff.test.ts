@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { diffStats, lineDiff, type DiffPart } from "@/lib/tailor/diff";
+import { diffStats, joinParts, lineDiff, type DiffPart } from "@/lib/tailor/diff";
 
-const side = (parts: DiffPart[], keep: "del" | "add") => parts.filter((p) => p.op === "same" || p.op === keep).map((p) => p.text).join(" ");
+const side = (parts: DiffPart[], keep: "del" | "add") => joinParts(parts.filter((p) => p.op === "same" || p.op === keep));
 const words = (s: string) => s.trim().split(/\s+/).filter(Boolean).join(" ");
 
 describe("lineDiff (word-level before → after for the tailoring screen)", () => {
@@ -31,11 +31,19 @@ describe("lineDiff (word-level before → after for the tailoring screen)", () =
     ]);
   });
 
-  it("treats punctuation attached to a word as part of it", () => {
+  it("a skill added to a comma list doesn't make the previous item look removed", () => {
     const d = lineDiff("Python, SQL", "Python, SQL, Tableau");
+    expect(d).toEqual([{ op: "same", text: "Python, SQL" }, { op: "add", text: ", Tableau" }]);
+    expect(diffStats(d)).toEqual({ removed: 0, added: 1 });
     expect(side(d, "del")).toBe("Python, SQL");
     expect(side(d, "add")).toBe("Python, SQL, Tableau");
-    expect(d).toEqual([{ op: "same", text: "Python," }, { op: "del", text: "SQL" }, { op: "add", text: "SQL, Tableau" }]);
+  });
+
+  it("sentence punctuation is its own token, but dotted names stay whole", () => {
+    expect(lineDiff("Built a tool.", "Built a tool in .NET.")).toEqual([
+      { op: "same", text: "Built a tool" }, { op: "add", text: "in .NET" }, { op: "same", text: "." },
+    ]);
+    expect(lineDiff("Used Next.js (React)", "Used Next.js (React)")).toEqual([{ op: "same", text: "Used Next.js (React)" }]);
   });
 
   it("an empty before is all added; an empty after (left out) is all deleted", () => {
@@ -54,6 +62,8 @@ describe("lineDiff (word-level before → after for the tailoring screen)", () =
       ["Helped run the society's social media", "Ran the society's Instagram and TikTok, posting weekly"],
       ["a b c d e f", "f e d c b a"],
       ["x NEEDS_NUMBER y", "x y"],
+      ["Excel, Stata (basic); SQL.", "SQL, Excel; Stata (basic)."],
+      ["A / B", "Merged line"],
     ];
     for (const [b, a] of pairs) {
       const d = lineDiff(b, a);

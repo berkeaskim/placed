@@ -57,7 +57,10 @@ export async function markApplied(jobId: string): Promise<ApplyResult> {
     }
   }
 
+  // the tracker shows it under Applied; the feed and job page re-render so the Save button shows saved too
   revalidatePath("/tracker");
+  revalidatePath("/feed");
+  revalidatePath(`/jobs/${jobId}`);
   const { job, fit } = loaded;
   try {
     // `applied` is awarded once per job (unique index), so a second "Yes" earns nothing.

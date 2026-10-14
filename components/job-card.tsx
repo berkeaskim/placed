@@ -19,7 +19,7 @@ export function JobCard({ r, today, saved, applied }: { r: Ranked; today: string
       <div className="whitespace-nowrap text-[13px] font-semibold text-[#8A4B00]">{closingLabel(r.job, today)}</div>
       <FitBadge label={r.fit.label} score={r.fit.global} />
       <span className="chip-xp">+{applyXp(r.fit.label)} XP</span>
-      <SaveButton jobId={r.job.id} initiallySaved={saved} />
+      <SaveButton key={saved ? "saved" : "unsaved"} jobId={r.job.id} initiallySaved={saved} />
       <MarkAppliedButton jobId={r.job.id} initiallyApplied={applied} title={r.job.title} />
       <Link href={`/jobs/${r.job.id}`} className="btn-quest px-4 py-2.5 no-underline">View</Link>
     </article>

@@ -30,10 +30,10 @@ const CheckIcon = () => (
 );
 
 /** "Applied" state: a link to the tracker, where the job now sits in the Applied column. */
-export function AppliedChip() {
+export function AppliedChip({ title }: { title?: string }) {
   return (
     <Link href="/tracker" className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-[#E3F6EE] px-3 text-sm font-bold text-[#0B6B49] no-underline hover:underline">
-      <CheckIcon />Applied<span className="sr-only"> (open your tracker)</span>
+      <CheckIcon />Applied<span className="sr-only">{title ? ` to ${title}` : ""} (open your tracker)</span>
     </Link>
   );
 }
@@ -41,11 +41,11 @@ export function AppliedChip() {
 /** Feed card control: records that the student applied on the company's site. Nothing is sent to the company. */
 export function MarkAppliedButton({ jobId, initiallyApplied, title }: { jobId: string; initiallyApplied: boolean; title: string }) {
   const { applied, pending, mark } = useMarkApplied(jobId, initiallyApplied);
-  if (applied) return <AppliedChip />;
+  if (applied) return <AppliedChip title={title} />;
   return (
-    <button type="button" disabled={pending} onClick={() => mark()} aria-label={`Mark ${title} as applied`}
+    <button type="button" disabled={pending} onClick={() => mark()}
       className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border-2 border-[#0E8A5F]/40 px-3 text-sm font-bold text-[#0B6B49] hover:bg-[#E3F6EE] disabled:opacity-60">
-      <CheckIcon />{pending ? "Saving…" : "Mark applied"}
+      <CheckIcon />{pending ? "Saving…" : "Mark applied"}<span className="sr-only">: {title}</span>
     </button>
   );
 }

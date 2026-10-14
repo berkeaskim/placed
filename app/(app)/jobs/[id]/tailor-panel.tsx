@@ -251,7 +251,7 @@ export function TailorPanel({ jobId, hasCv, original, initial }: {
         ) : (
           <>
             <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground" aria-live="polite">
-              <span><span className="rounded bg-[#FDECEA] px-1 text-[#B42318] line-through">red</span> = removed, <span className="rounded bg-[#E3F6EE] px-1 font-semibold text-[#0B6B49]">green</span> = added.</span>
+              <span><span className="rounded bg-[#FDECEA] px-1 text-[#B42318] line-through">struck out</span> = removed, <span className="rounded bg-[#E3F6EE] px-1 font-semibold text-[#0B6B49] underline decoration-2 underline-offset-2">underlined</span> = added.</span>
               <span className="font-semibold text-foreground">{tally.accepted} accepted · {tally.rejected} kept original · {tally.pending} to decide</span>
               {tally.pending > 0 && <span>Undecided lines use our suggestion in the PDF.</span>}
             </p>
