@@ -18,3 +18,14 @@ export function groupByStatus<T extends { status: AppStatus }>(cards: T[]): Reco
   for (const c of cards) out[c.status].push(c);
   return out;
 }
+
+/**
+ * Every "Applied" control (the "Did you apply?" dialog, the job page and feed card buttons) goes through this:
+ * no row or "saved" becomes "applied"; a later stage is never moved back (null = nothing to write).
+ */
+export function statusAfterApply(current: string | null | undefined): "applied" | null {
+  return current == null || current === "saved" ? "applied" : null;
+}
+
+/** The job has reached Applied or a later stage. */
+export const isPastSaved = (s: string | null | undefined) => isAppStatus(s) && s !== "saved";

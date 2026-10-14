@@ -10,6 +10,8 @@ import { clicheDensity } from "@/lib/cv/cliches";
 import { isUuid } from "@/lib/feed/save-result";
 import { applyXp } from "@/lib/feed/rank";
 import { safeHttpUrl } from "@/lib/text/url";
+import { CompanyMark } from "@/components/company-mark";
+import { isPastSaved } from "@/lib/tracker/status";
 import { FitBadge } from "@/components/fit-badge";
 import { SaveButton } from "@/components/save-button";
 import { ExplainPanel } from "./explain-panel";
@@ -57,7 +59,7 @@ export default async function JobPage({ params }: { params: Promise<{ id: string
     })
     : false;
   const status = (app?.status as string | undefined) ?? null;
-  const alreadyApplied = status !== null && status !== "saved";
+  const alreadyApplied = isPastSaved(status);
   const stored = (app?.tailored_json ?? null) as StoredTailoring | null;
 
   return (
@@ -65,10 +67,11 @@ export default async function JobPage({ params }: { params: Promise<{ id: string
       <Link href="/feed" className="self-start text-sm font-semibold text-[#5B3DF5] no-underline hover:underline">← Back to your feed</Link>
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_400px]">
         <article className="flex min-w-0 flex-col gap-3 rounded-[20px] border bg-white p-5 sm:p-6">
-          <p className="text-sm font-semibold text-muted-foreground">
-            {job.company || "Company not stated"} · {job.location || "Location not stated"} · <span className="text-[#8A4B00]">{closingLabel(job, today)}</span>
-          </p>
+          <CompanyMark company={job.company} url={job.url} size="lg" />
           <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">{job.title}</h1>
+          <p className="text-sm font-semibold text-muted-foreground">
+            {job.location || "Location not stated"} · <span className="text-[#8A4B00]">{closingLabel(job, today)}</span>
+          </p>
           {job.summary && <p className="rounded-xl bg-[#F6F6FA] p-3 text-[15px] text-[#4A4A57]">{job.summary}</p>}
           {job.textLines.length ? <JobText lines={job.textLines} /> : <p className="text-muted-foreground">The full description is on the company&apos;s site.</p>}
         </article>
@@ -80,7 +83,7 @@ export default async function JobPage({ params }: { params: Promise<{ id: string
                 <FitBadge label={fit.label} score={fit.global} />
                 <span className="chip-xp">+{applyXp(fit.label)} XP</span>
               </div>
-              <SaveButton jobId={job.id} initiallySaved={status !== null} />
+              <SaveButton key={status === null ? "unsaved" : "saved"} jobId={job.id} initiallySaved={status !== null} />
             </div>
             {fit.gates.filter((g) => !g.passed).map((g) => (
               <p key={g.key} className="rounded-xl bg-[#FFF1DC] px-3 py-2 text-sm font-semibold text-[#7A4100]">{g.reason}</p>

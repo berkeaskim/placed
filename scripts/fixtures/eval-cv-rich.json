@@ -1,0 +1,49 @@
+{
+  "name": "Sam Okafor", "email": null, "phone": null, "location": "London", "links": [],
+  "summary": "Second-year Mathematics and Computer Science student at King's College London looking for an internship.",
+  "education": [
+    { "id": "e0", "institution": "King's College London", "degree": "BSc Mathematics and Computer Science", "dates": "2025–2028", "grade": "First (Year 1 average 74%)",
+      "details": [ { "id": "e0-d0", "text": "Modules: Probability and Statistics, Algorithms and Data Structures, Linear Algebra, Databases" },
+                   { "id": "e0-d1", "text": "A-levels: Maths A*, Further Maths A, Physics A" } ] }
+  ],
+  "experience": [
+    { "id": "x0", "org": "Brightside Tutoring", "title": "Maths Tutor (part-time)", "dates": "2024–present", "location": "London",
+      "bullets": [
+        { "id": "x0-b0", "text": "Tutor 6 GCSE and A-level students each week in maths and further maths" },
+        { "id": "x0-b1", "text": "Made worksheets based on each student's past paper mistakes" },
+        { "id": "x0-b2", "text": "Talked to parents every month about how their child was getting on" },
+        { "id": "x0-b3", "text": "Kept a spreadsheet of student marks to see who needed more help" } ] },
+    { "id": "x1", "org": "Tesco", "title": "Customer Assistant (part-time)", "dates": "2023–2024", "location": "Croydon",
+      "bullets": [
+        { "id": "x1-b0", "text": "Worked on the tills and helped customers find products" },
+        { "id": "x1-b1", "text": "Helped with stock counts and noticed that some shelves were often empty on Mondays" },
+        { "id": "x1-b2", "text": "Covered extra shifts during the Christmas period" } ] }
+  ],
+  "projects": [
+    { "id": "p0", "org": "Personal project", "title": "TfL Delay Dashboard", "dates": "2025", "location": "",
+      "bullets": [
+        { "id": "p0-b0", "text": "Used Python and pandas to pull and clean TfL open data on tube delays" },
+        { "id": "p0-b1", "text": "Made charts in Tableau showing which lines were worst at different times of day" },
+        { "id": "p0-b2", "text": "Wrote a short blog post explaining what I found for non-technical readers" } ] },
+    { "id": "p1", "org": "KCL Hackathon (team of 4)", "title": "Study Room Booker", "dates": "2025", "location": "",
+      "bullets": [
+        { "id": "p1-b0", "text": "Helped build a web app for booking library study rooms in 24 hours" },
+        { "id": "p1-b1", "text": "Wrote the SQL queries for checking which rooms were free" },
+        { "id": "p1-b2", "text": "Presented the app to the judges at the end" } ] }
+  ],
+  "leadership": [
+    { "id": "l0", "org": "KCL Maths Society", "title": "Treasurer", "dates": "2025–present", "location": "",
+      "bullets": [
+        { "id": "l0-b0", "text": "In charge of the society's money and keeping track of spending" },
+        { "id": "l0-b1", "text": "Worked with the committee to plan events for around 150 members" },
+        { "id": "l0-b2", "text": "Asked local companies for sponsorship and got two to say yes" } ] }
+  ],
+  "skills": [
+    { "group": "Technical", "items": ["Python", "pandas", "SQL", "Excel", "Tableau", "Git"] },
+    { "group": "Languages", "items": ["English (native)", "Yoruba (conversational)"] }
+  ],
+  "interests": "Football (5-a-side), chess, cooking",
+  "sectionOrder": ["education", "experience", "projects", "leadership", "skills", "interests"],
+  "yearGuess": "2nd",
+  "archetypes": [ { "key": "data_analytics", "score": 85, "why": ["TfL data project"] } ]
+}

@@ -98,3 +98,106 @@ describe("detectEmploymentType", () => {
     expect(detectEmploymentType(title)).toBe(expected);
   });
 });
+
+describe("coverage-audit filter fixes (2026-10-14)", () => {
+  it("'replacement' is not a placement", () => {
+    expect(passesTitleFilter("Operations Specialist with Dutch - 12 months replacement - Remote")).toBe(false);
+    expect(passesTitleFilter("Industrial Placement - Data")).toBe(true);
+    expect(passesTitleFilter("Summer Placements 2027")).toBe(true);
+    expect(detectEmploymentType("Maternity Replacement Intern")).toBe("internship");
+  });
+  it("staff who run early-careers programmes are not early-careers roles", () => {
+    expect(passesTitleFilter("Early Careers Programme Coordinator")).toBe(false);
+    expect(passesTitleFilter("Emerging Talent Delivery Team Manager (Germany, Poland, UK)")).toBe(false);
+    expect(passesTitleFilter("Product Manager Intern")).toBe(true);
+  });
+  it("London, Ontario is not London", () => {
+    expect(passesLocationFilter("London, Canada; Windsor - Rhodes Drive", false, "").pass).toBe(false);
+    expect(passesLocationFilter("London, ON", false, "").pass).toBe(false);
+    expect(classifyRegion("London, Ontario, Canada", false)).toBe("other");
+    expect(classifyRegion("London, United Kingdom", false)).toBe("london");
+    expect(passesLocationFilter("London, Canada; London, United Kingdom", false, "").pass).toBe(true);
+  });
+});
+
+describe("remote roles pinned to a non-UK/EU place", () => {
+  it("a remote flag doesn't let US-located roles through", () => {
+    expect(passesLocationFilter("San Francisco, California; New York, New York", true, "").pass).toBe(false);
+    expect(passesLocationFilter("New York, NY (HQ)", true, "").pass).toBe(false);
+  });
+  it("still keeps genuinely remote and UK/EU roles", () => {
+    expect(passesLocationFilter("", true, "").pass).toBe(true);
+    expect(passesLocationFilter("Remote - International", false, "").pass).toBe(true);
+    expect(passesLocationFilter("Poland", true, "").pass).toBe(true);
+    expect(passesLocationFilter("London; New York", true, "").pass).toBe(true);
+  });
+});
+
+describe("more non-UK/EU places are blocked even when flagged remote", () => {
+  it.each(["Malaysia - Kuala Lumpur", "Indonesia - Jakarta", "Cairo - ETIC, Egypt", "Dubai, UAE", "Kingston, Jamaica"])("%s", (loc) => {
+    expect(passesLocationFilter(loc, true, "").pass).toBe(false);
+  });
+});
+
+describe("remote flag on a role pinned to a non-UK/EU country", () => {
+  it.each(["Costa Rica - Cartago - Tres Rios", "New Zealand - North Island - Auckland"])("%s fails", (loc) => {
+    expect(passesLocationFilter(loc, true, "").pass).toBe(false);
+  });
+  it("generic remote text still passes", () => {
+    expect(passesLocationFilter("Remote (EMEA)", true, "").pass).toBe(true);
+    expect(passesLocationFilter("Anywhere", false, "").pass).toBe(true);
+  });
+});
+
+describe("insurance-broking placement and experienced grades", () => {
+  it.each(["Analyst II - Placement", "Associate Placement Specialist - Placement", "Software Engineer III, Early Career"])("%s fails", (t) => {
+    expect(passesTitleFilter(t)).toBe(false);
+  });
+  it("student placements still pass", () => {
+    expect(passesTitleFilter("Communications Industrial Placement, 2027")).toBe(true);
+    expect(passesTitleFilter("Placement Year - Software Engineer")).toBe(true);
+  });
+});
+
+describe("review round 1 (2026-10-14)", () => {
+  it.each(["London, On-site", "London, Canada Square", "London, Canada Water", "London, ON (Hybrid)"])("London Ontario rule: %s", (loc) => {
+    expect(passesLocationFilter(loc, false, "").pass).toBe(loc !== "London, ON (Hybrid)");
+  });
+  it("London Ontario still caught at the end of a segment", () => {
+    expect(classifyRegion("London, Ontario, Canada", false)).toBe("other");
+    expect(classifyRegion("London, Canada Square", false)).toBe("london");
+  });
+  it.each(["Remote - US", "Remote, United States", "USA - Remote", "Remote - India", "Remote, Brazil"])("remote text pinned abroad fails: %s", (loc) => {
+    expect(passesLocationFilter(loc, true, "").pass).toBe(false);
+  });
+  it.each(["Hybrid", "Work from home", "Home Based", "Flexible", "Multiple Locations"])("remote flag with an unnamed place passes: %s", (loc) => {
+    expect(passesLocationFilter(loc, true, "").pass).toBe(true);
+  });
+  it.each(["Intern II", "Graduate Programme Phase II", "Summer Intern - Part II", "Trainee Team Manager Graduate Scheme"])("legit title passes: %s", (t) => {
+    expect(passesTitleFilter(t)).toBe(true);
+  });
+  it.each(["Sheffield", "Newcastle upon Tyne", "Luxembourg", "Prague, Czechia", "Athens, Greece", "Bucharest, Romania"])("UK/EU place passes: %s", (loc) => {
+    expect(passesLocationFilter(loc, false, "").pass).toBe(true);
+  });
+  it.each(["Newcastle, NSW, Australia", "Cambridge, MA, United States", "Birmingham, US"])("UK city namesake abroad fails: %s", (loc) => {
+    expect(passesLocationFilter(loc, false, "").pass).toBe(false);
+  });
+});
+
+describe("review round 2: per-segment regions and foreign state codes", () => {
+  it.each(["Edinburgh; New York", "Manchester; Toronto", "Leeds; Hyderabad", "Bristol or Remote (US)", "Glasgow, Scotland; Chicago"])("UK segment wins: %s", (loc) => {
+    expect(passesLocationFilter(loc, false, "").pass).toBe(true);
+    expect(classifyRegion(loc, false)).toBe("uk");
+  });
+  it.each(["Cambridge, MA", "Manchester, NH", "Birmingham, AL", "Derby, CT", "Newcastle, NSW", "Surrey, BC", "Reading, PA"])("UK city name abroad: %s", (loc) => {
+    expect(classifyRegion(loc, false)).toBe("other");
+    expect(passesLocationFilter(loc, false, "").pass).toBe(false);
+  });
+  it.each(["Derby, DE1 3NU", "Swansea, SA1", "Cambridge, United Kingdom", "Reading, UK", "London; New York"])("UK postcodes and country terms stay UK: %s", (loc) => {
+    expect(passesLocationFilter(loc, false, "").pass).toBe(true);
+  });
+  it("remote flag only matters when no segment has a place", () => {
+    expect(classifyRegion("Amsterdam; New York", true)).toBe("europe");
+    expect(classifyRegion("", true)).toBe("remote");
+  });
+});

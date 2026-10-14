@@ -1,0 +1,1393 @@
+{
+  "_meta": {
+    "compiled": "2026-10-14",
+    "notes": "Per-archetype tailoring playbooks for rewriting a student's EXISTING CV content toward a role type (UK undergraduate internships, placements, insight programmes). Every field is guidance for reordering, emphasis and equivalent-term substitution only: never add facts, numbers, tools, employers or escalate authorship (used < built < led). A reframe applies only when its onlyIf condition is met by the source line; bracketed slots must be filled from the source or dropped. Grades: A = employer guidance plus a top-tier UK careers source, or several agree; B = one top-tier UK careers publisher, Russell Group careers service or professional body, or two lesser sources; C = single practitioner/employer-blog/recruitment-agency source; D = synthesis. Quotes are verbatim (<=25 words) from pages fetched 2026-10-14, checked by script against the fetched text. Product is the thinnest evidence base (no UK careers guide specific to PM CVs found). Companion: role-playbooks-tech-product.json (R-ids) and cv-rules-tech-product.md (S-ids); several TP sources are the same pages (TP1=R2/S3, TP2=S5, TP4=R59, TP6=R7, TP7=R8, TP8=R9, TP9=R10, TP10=R11, TP11=R12, TP12=R13, TP13=R14, TP16=R21)."
+  },
+  "sources": [
+    {
+      "id": "TP1",
+      "title": "Tips for a graduate technical CV: template and advice",
+      "publisher": "targetjobs",
+      "url": "https://targetjobs.co.uk/careers-advice/information-technology/tips-graduate-technical-cv-template-and-advice",
+      "accessed": "2026-10-14"
+    },
+    {
+      "id": "TP2",
+      "title": "Technical CV example",
+      "publisher": "Prospects (Jisc)",
+      "url": "https://www.prospects.ac.uk/careers-advice/cvs-and-cover-letters/example-cvs/technical-cv-example",
+      "accessed": "2026-10-14"
+    },
+    {
+      "id": "TP3",
+      "title": "The top 3 things professional recruiters look for in a Computer Science CV (guest post, Venturi Group)",
+      "publisher": "University of Reading Careers Blog",
+      "url": "https://blogs.reading.ac.uk/careers/top-3-things-in-a-computer-science-cv/",
+      "accessed": "2026-10-14"
+    },
+    {
+      "id": "TP4",
+      "title": "A Google recruiter shares the winning 3-part formula for resumes that get noticed",
+      "publisher": "CNBC (reporting Google recruiters)",
+      "url": "https://www.cnbc.com/2018/08/16/google-recruiters-share-the-3-part-formula-for-stronger-resumes.html",
+      "accessed": "2026-10-14"
+    },
+    {
+      "id": "TP5",
+      "title": "8 things Amazon recruiters say top job candidates do",
+      "publisher": "About Amazon",
+      "url": "https://www.aboutamazon.com/news/workplace/successful-amazon-job-candidates",
+      "accessed": "2026-10-14"
+    },
+    {
+      "id": "TP6",
+      "title": "Data analyst (job profile)",
+      "publisher": "Prospects (Jisc)",
+      "url": "https://www.prospects.ac.uk/job-profiles/data-analyst",
+      "accessed": "2026-10-14"
+    },
+    {
+      "id": "TP7",
+      "title": "Data scientist (job profile)",
+      "publisher": "Prospects (Jisc)",
+      "url": "https://www.prospects.ac.uk/job-profiles/data-scientist",
+      "accessed": "2026-10-14"
+    },
+    {
+      "id": "TP8",
+      "title": "Types of job: Data Scientist",
+      "publisher": "Royal Statistical Society",
+      "url": "https://rss.org.uk/jobs-careers/career-development/types-of-job/data-scientist/",
+      "accessed": "2026-10-14"
+    },
+    {
+      "id": "TP9",
+      "title": "Product manager (job profile)",
+      "publisher": "Prospects (Jisc)",
+      "url": "https://www.prospects.ac.uk/job-profiles/product-manager",
+      "accessed": "2026-10-14"
+    },
+    {
+      "id": "TP10",
+      "title": "What it's really like working as a Graduate Product Manager at Capital One",
+      "publisher": "targetjobs (Capital One graduate profile)",
+      "url": "https://targetjobs.co.uk/organisations/capital-one/what-its-really-working-graduate-product-manager-capital-one",
+      "accessed": "2026-10-14"
+    },
+    {
+      "id": "TP11",
+      "title": "Writing a CV for graduate advertising, marketing and PR jobs",
+      "publisher": "targetjobs",
+      "url": "https://targetjobs.co.uk/careers-advice/marketing-advertising-and-pr/writing-cv-graduate-advertising-marketing-and-pr-jobs",
+      "accessed": "2026-10-14"
+    },
+    {
+      "id": "TP12",
+      "title": "Help to get your first job in marketing",
+      "publisher": "CIM Scotland (Chartered Institute of Marketing)",
+      "url": "https://regions.cim.co.uk/scotland/home/news/2023/help-to-get-your-first-job-in-marketing",
+      "accessed": "2026-10-14"
+    },
+    {
+      "id": "TP13",
+      "title": "Digital marketer (job profile)",
+      "publisher": "Prospects (Jisc)",
+      "url": "https://www.prospects.ac.uk/job-profiles/digital-marketer",
+      "accessed": "2026-10-14"
+    },
+    {
+      "id": "TP14",
+      "title": "Marketing internships",
+      "publisher": "Prospects (Jisc)",
+      "url": "https://www.prospects.ac.uk/jobs-and-work-experience/job-sectors/marketing-advertising-and-pr/marketing-internships/",
+      "accessed": "2026-10-14"
+    },
+    {
+      "id": "TP15",
+      "title": "Marketing and digital marketing (career path)",
+      "publisher": "University of Nottingham Careers and Employability Service",
+      "url": "https://www.nottingham.ac.uk/careers/students/graduatejobs/career-paths/ampr/marketing.aspx",
+      "accessed": "2026-10-14"
+    },
+    {
+      "id": "TP16",
+      "title": "CVs and cover letters for PhDs and postdocs (CV book, PDF)",
+      "publisher": "University of Cambridge Careers Service",
+      "url": "https://www.careers.cam.ac.uk/files/phdpostdoccvbook.pdf",
+      "accessed": "2026-10-14"
+    },
+    {
+      "id": "TP17",
+      "title": "How to actually apply for UROP",
+      "publisher": "Imperial College London (UROP)",
+      "url": "https://www.imperial.ac.uk/urop/how-to-get-involved/how-to-apply/",
+      "accessed": "2026-10-14"
+    },
+    {
+      "id": "TP18",
+      "title": "Things to consider before approaching a member of staff",
+      "publisher": "Imperial College London (UROP)",
+      "url": "https://www.imperial.ac.uk/urop/how-to-get-involved/things-to-consider/",
+      "accessed": "2026-10-14"
+    },
+    {
+      "id": "TP19",
+      "title": "UROP: How to Apply",
+      "publisher": "Royal Holloway, University of London, Dept of Computer Science",
+      "url": "https://urop.cs.rhul.ac.uk/how-to-apply",
+      "accessed": "2026-10-14"
+    },
+    {
+      "id": "TP20",
+      "title": "CVs and resumes",
+      "publisher": "Imperial College London Careers Service",
+      "url": "https://www.imperial.ac.uk/admin-services/careers/applications-and-interviews/cv/",
+      "accessed": "2026-10-14"
+    },
+    {
+      "id": "TP21",
+      "title": "Writing a personal statement for your CV",
+      "publisher": "Prospects (Jisc)",
+      "url": "https://www.prospects.ac.uk/careers-advice/cvs-and-cover-letters/writing-a-personal-statement-for-your-cv",
+      "accessed": "2026-10-14"
+    },
+    {
+      "id": "TP22",
+      "title": "Are personal statements a waste of space on graduate CVs?",
+      "publisher": "targetjobs",
+      "url": "https://targetjobs.co.uk/careers-advice/cvs-applications-and-tests/are-personal-statements-waste-space-graduate-cvs",
+      "accessed": "2026-10-14"
+    },
+    {
+      "id": "TP23",
+      "title": "The 6-step guide to perfecting your graduate CV",
+      "publisher": "targetjobs",
+      "url": "https://targetjobs.co.uk/careers-advice/cvs-applications-and-tests/6-step-guide-perfecting-your-graduate-cv",
+      "accessed": "2026-10-14"
+    },
+    {
+      "id": "TP24",
+      "title": "How to big up your leadership experience on your graduate management CV",
+      "publisher": "targetjobs",
+      "url": "https://targetjobs.co.uk/careers-advice/business-consulting-and-management/how-big-your-leadership-experience-your-graduate-management-cv",
+      "accessed": "2026-10-14"
+    },
+    {
+      "id": "TP25",
+      "title": "Writing tips for graduates: how to communicate with recruiters",
+      "publisher": "targetjobs",
+      "url": "https://targetjobs.co.uk/careers-advice/cvs-applications-and-tests/writing-tips-graduates-how-communicate-recruiters",
+      "accessed": "2026-10-14"
+    },
+    {
+      "id": "TP26",
+      "title": "Action verbs",
+      "publisher": "University of Nottingham Careers and Employability Service",
+      "url": "https://www.nottingham.ac.uk/careers/students/applications/cvs/action-verbs.aspx",
+      "accessed": "2026-10-14"
+    },
+    {
+      "id": "TP27",
+      "title": "Writing a CV that works: top tips for marketing yourself",
+      "publisher": "LSE Careers blog",
+      "url": "https://blogs.lse.ac.uk/careers/2020/01/27/writing-a-cv-that-works-top-tips-for-marketing-yourself/",
+      "accessed": "2026-10-14"
+    },
+    {
+      "id": "TP28",
+      "title": "How to write a student CV",
+      "publisher": "Newcastle University Careers Service",
+      "url": "https://www.ncl.ac.uk/careers/making-applications/applications/cvs/",
+      "accessed": "2026-10-14"
+    },
+    {
+      "id": "TP29",
+      "title": "Improving your CV",
+      "publisher": "University of Edinburgh Careers Service",
+      "url": "https://careers.ed.ac.uk/cvs-and-applications/improving-your-cv",
+      "accessed": "2026-10-14"
+    },
+    {
+      "id": "TP30",
+      "title": "How to write the perfect engineering CV and cover letter",
+      "publisher": "targetjobs",
+      "url": "https://targetjobs.co.uk/careers-advice/engineering/cvs-and-covering-letters-convince-engineering-recruiters-youre-perfect-their-graduate-job",
+      "accessed": "2026-10-14"
+    },
+    {
+      "id": "TP31",
+      "title": "Top 5 tips for applying for a role in digital marketing (guest post, SME Loans)",
+      "publisher": "University of Reading Careers Blog",
+      "url": "https://blogs.reading.ac.uk/careers/5-tips-for-role-in-digital-marketing/",
+      "accessed": "2026-10-14"
+    }
+  ],
+  "software_eng": {
+    "recruiterScan": [
+      "Skills block: are the advert's core languages and frameworks visible, grouped and current?",
+      "Each project or role: what did you personally build, in which stack, and did it ship or get used?",
+      "Evidence beyond the syllabus: side projects, hackathons, open source, a live GitHub or portfolio link.",
+      "A measurable outcome per entry where the CV has one (users, downloads, speed, placing).",
+      "Teamwork and communication shown inside technical work, not as adjectives."
+    ],
+    "leadWith": [
+      "The bullet already using the advert's named language, framework or tool, moved to the top of its entry.",
+      "Shipped, deployed or used artefacts (live link, users, downloads, adopted by a society).",
+      "Existing quantified results (performance, accuracy, test coverage, placing in a competition).",
+      "The component the student owned within a team project, stated as their own action.",
+      "Engineering practice the advert asks for (Git, testing, CI, code review, Agile) when the CV already shows it."
+    ],
+    "summaryFormula": "One or two lines: degree, year, university (grade if 2:1+) + two or three advert-matching languages/frameworks the bullets already evidence + the strongest shipped project or internship fact with its existing number + target role type; drop it if space is tight and a cover letter exists.",
+    "verbs": {
+      "prefer": [
+        "Built",
+        "Developed",
+        "Implemented",
+        "Designed",
+        "Deployed",
+        "Integrated",
+        "Refactored",
+        "Optimised",
+        "Debugged",
+        "Tested",
+        "Automated",
+        "Contributed"
+      ],
+      "avoid": [
+        "Spearheaded",
+        "Architected",
+        "Pioneered",
+        "Revolutionised",
+        "Leveraged",
+        "Utilised",
+        "Mastered",
+        "Expert in",
+        "Responsible for",
+        "Worked on",
+        "Helped with",
+        "Passionate coder"
+      ]
+    },
+    "reframes": [
+      {
+        "from": "made a website for the society",
+        "to": "built a responsive web front end (HTML, CSS, JavaScript) for a [n]-member society",
+        "onlyIf": "the CV names those technologies for this project; member count only if already stated"
+      },
+      {
+        "from": "put the app online",
+        "to": "deployed to [platform] (live)",
+        "onlyIf": "the CV names the hosting platform or gives a live link"
+      },
+      {
+        "from": "used GitHub with my group",
+        "to": "version control with Git, using pull requests and code review",
+        "onlyIf": "pull requests or reviewing teammates' code are described; otherwise just 'version control (Git)'"
+      },
+      {
+        "from": "wrote some tests",
+        "to": "unit testing with [pytest/Jest/JUnit]",
+        "onlyIf": "the testing framework is named in the CV"
+      },
+      {
+        "from": "worked in two-week sprints with stand-ups",
+        "to": "Agile (Scrum) delivery",
+        "onlyIf": "sprints, stand-ups or a backlog are described"
+      },
+      {
+        "from": "made the page load faster",
+        "to": "optimised page load performance",
+        "onlyIf": "a speed improvement is described; keep any number exactly and never add one"
+      },
+      {
+        "from": "code was checked automatically when we pushed",
+        "to": "CI pipeline ([GitHub Actions/GitLab CI])",
+        "onlyIf": "the CI tool is named or clearly described"
+      },
+      {
+        "from": "group project",
+        "to": "[n]-person team project; owned [component]",
+        "onlyIf": "team size and the student's component are stated"
+      }
+    ],
+    "competencyThemes": [
+      "Back-end development",
+      "Front-end development",
+      "APIs and integration",
+      "Testing and CI",
+      "Version control and code review",
+      "Cloud deployment",
+      "Data structures and algorithms",
+      "Agile delivery"
+    ],
+    "sectionOrder": [
+      "Header (incl. GitHub/portfolio, LinkedIn)",
+      "Profile (optional, 1-2 lines)",
+      "Education",
+      "Technical Skills",
+      "Projects (or Experience first if it holds a relevant tech internship)",
+      "Experience",
+      "Achievements and Hackathons",
+      "Interests"
+    ],
+    "pitfalls": [
+      "A long list of languages with no project or role that uses them.",
+      "Team-level descriptions ('we built') that hide what the student did.",
+      "Authorship inflation that an engineer will probe at interview (used to built, contributed to led).",
+      "Irrelevant or outdated tools listed above the advert's stack.",
+      "Typos: technical recruiters treat them like bugs."
+    ],
+    "evidence": [
+      {
+        "claim": "recruiterScan: short first screen, structure must surface everything at a glance",
+        "grade": "B",
+        "sourceIds": [
+          "TP1",
+          "TP28"
+        ],
+        "quote": "recruiters might only be able to look at your CV for as little as thirty seconds before making a decision"
+      },
+      {
+        "claim": "recruiterScan: skills block curated to the role and current",
+        "grade": "B",
+        "sourceIds": [
+          "TP1"
+        ],
+        "quote": "focus on the skills that the employer and the role requires and don't feel obliged to include anything that isn't relevant or might be outdated"
+      },
+      {
+        "claim": "recruiterScan/leadWith: listed skills need evidence in experience",
+        "grade": "B",
+        "sourceIds": [
+          "TP1"
+        ],
+        "quote": "recruiters will want to see evidence of how you've developed the key skills they ask for in the job description"
+      },
+      {
+        "claim": "recruiterScan/pitfalls: own actions, not the team's",
+        "grade": "B",
+        "sourceIds": [
+          "TP1",
+          "TP24"
+        ],
+        "quote": "focusing specifically on your own actions (as opposed to talking in general terms about what a team did)"
+      },
+      {
+        "claim": "recruiterScan: projects and passion for technology",
+        "grade": "A",
+        "sourceIds": [
+          "TP1",
+          "TP3"
+        ],
+        "quote": "Recruiters have told targetjobs that they really want to see practical examples of candidates' skills and demonstrations of candidates' 'passion for technology'"
+      },
+      {
+        "claim": "recruiterScan: side projects grab attention (IT recruiter)",
+        "grade": "C",
+        "sourceIds": [
+          "TP3"
+        ],
+        "quote": "When looking through graduate Software Developer CVs, candidates that have a side project always grab my attention."
+      },
+      {
+        "claim": "leadWith: quantified outcome per bullet (X-Y-Z)",
+        "grade": "B",
+        "sourceIds": [
+          "TP4",
+          "TP1"
+        ],
+        "quote": "Accomplished X, as measured by Y, by doing Z."
+      },
+      {
+        "claim": "leadWith: move advert-matching evidence to the top and echo the employer's wording",
+        "grade": "B",
+        "sourceIds": [
+          "TP1",
+          "TP23"
+        ],
+        "quote": "make sure examples of these skills are at the top of the section"
+      },
+      {
+        "claim": "verbs.avoid / pitfalls: never escalate authorship; 'assisted' is acceptable when true",
+        "grade": "B",
+        "sourceIds": [
+          "TP1"
+        ],
+        "quote": "It is fine to say that you assisted with something or that you observed or gained exposure to such and such a process"
+      },
+      {
+        "claim": "pitfalls: inflated claims are probed by technical interviewers",
+        "grade": "B",
+        "sourceIds": [
+          "TP1"
+        ],
+        "quote": "you need to be prepared to speak about anything on your CV at interview"
+      },
+      {
+        "claim": "summaryFormula: profile is optional; 1-2 lines when no cover letter",
+        "grade": "B",
+        "sourceIds": [
+          "TP1",
+          "TP20"
+        ],
+        "quote": "include a one- or two-line statement explaining why you're applying"
+      },
+      {
+        "claim": "summaryFormula: include a short evidenced profile for large firms using AI screening",
+        "grade": "B",
+        "sourceIds": [
+          "TP20"
+        ],
+        "quote": "Make this short, evidenced based and use it to highlight your most relevant experience to the opportunity."
+      },
+      {
+        "claim": "pitfalls: language list alone does not engage",
+        "grade": "C",
+        "sourceIds": [
+          "TP3"
+        ],
+        "quote": "A CV that reads like a long list of programming languages is unlikely to engage a recruiter"
+      },
+      {
+        "claim": "recruiterScan: soft skills judged equally, shown in context",
+        "grade": "B",
+        "sourceIds": [
+          "TP1",
+          "TP3"
+        ],
+        "quote": "employers view behavioural competencies and 'soft' skills with equal importance"
+      },
+      {
+        "claim": "sectionOrder: Education with relevant modules before IT skills",
+        "grade": "B",
+        "sourceIds": [
+          "TP2",
+          "TP1"
+        ],
+        "quote": "Outline your educational achievements, listing any relevant modules or subjects before moving on to highlight specific IT skills."
+      },
+      {
+        "claim": "verbs.prefer: engineering verb register",
+        "grade": "B",
+        "sourceIds": [
+          "TP30",
+          "TP2"
+        ],
+        "quote": "eg designed, developed, devised, analysed, optimised, solved, supervised, presented."
+      },
+      {
+        "claim": "reframes: echo the employer's terms only for things already present",
+        "grade": "D",
+        "sourceIds": [
+          "TP25",
+          "TP23"
+        ],
+        "quote": "but be careful not to go overboard or use them where they don't make sense"
+      },
+      {
+        "claim": "competencyThemes, verbs.avoid list beyond cited sources",
+        "grade": "D",
+        "sourceIds": [],
+        "quote": null
+      }
+    ]
+  },
+  "data_analytics": {
+    "recruiterScan": [
+      "Core tools visible and used: SQL, Python or R, and a spreadsheet or BI tool (Power BI, Tableau).",
+      "A complete analysis arc: question defined, data cleaned, method chosen, result communicated.",
+      "The 'so what': which business or real-world decision the analysis informed, and for whom.",
+      "Quantitative grounding: degree, statistics or ML modules, dissertation method.",
+      "Communication of findings to non-technical audiences."
+    ],
+    "leadWith": [
+      "The business or research question the analysis answered.",
+      "Dataset source and scale, where already stated.",
+      "Method plus evaluation metric already in the CV (and the baseline, if given).",
+      "Who used the output (dashboard used weekly by X, recommendation adopted).",
+      "Advert-named tools the bullet already uses."
+    ],
+    "summaryFormula": "Two lines: quantitative degree and year + the core tools the bullets already evidence (SQL, Python/R, BI tool) + one project or role written as question-to-result with only its existing numbers + the target (analyst vs data science) taken from the advert.",
+    "verbs": {
+      "prefer": [
+        "Analysed",
+        "Queried",
+        "Cleaned",
+        "Validated",
+        "Modelled",
+        "Visualised",
+        "Evaluated",
+        "Tested",
+        "Automated",
+        "Built",
+        "Presented",
+        "Recommended"
+      ],
+      "avoid": [
+        "Leveraged big data",
+        "Harnessed AI",
+        "Spearheaded the data strategy",
+        "Drove insights",
+        "Revolutionised reporting",
+        "Expert in machine learning",
+        "Predicted (when a model was only fitted, not evaluated)",
+        "Data-driven (as an unearned adjective)"
+      ]
+    },
+    "reframes": [
+      {
+        "from": "made charts for the weekly meeting",
+        "to": "data visualisation and weekly reporting",
+        "onlyIf": "the charts were produced for a recurring audience"
+      },
+      {
+        "from": "made a dashboard",
+        "to": "built a [Power BI/Tableau] dashboard for [audience]",
+        "onlyIf": "the tool and the users are named"
+      },
+      {
+        "from": "tidied up the spreadsheet",
+        "to": "cleaned and validated data (duplicates, missing values)",
+        "onlyIf": "those cleaning steps are described"
+      },
+      {
+        "from": "looked at the survey results",
+        "to": "analysed survey data (n = [n])",
+        "onlyIf": "the sample size is already stated"
+      },
+      {
+        "from": "compared two versions",
+        "to": "A/B test",
+        "onlyIf": "a randomised split or control group with a measured metric is described; otherwise keep 'comparison'"
+      },
+      {
+        "from": "wrote queries to get the data",
+        "to": "SQL data extraction (joins, aggregation)",
+        "onlyIf": "SQL is named"
+      },
+      {
+        "from": "explained the results to my manager and the team",
+        "to": "communicated findings to non-technical stakeholders",
+        "onlyIf": "the audience was non-specialist"
+      },
+      {
+        "from": "built a model to predict X",
+        "to": "built a [model] to predict X, evaluated with [metric]",
+        "onlyIf": "model type and metric are already present; never add a metric value"
+      }
+    ],
+    "competencyThemes": [
+      "SQL and data extraction",
+      "Data cleaning and validation",
+      "Statistical analysis",
+      "Data visualisation and dashboards",
+      "Machine learning (data science roles only)",
+      "Experimentation and A/B testing",
+      "Data storytelling",
+      "Data governance awareness"
+    ],
+    "sectionOrder": [
+      "Header (incl. GitHub/Kaggle/Tableau Public)",
+      "Profile (optional, 2 lines)",
+      "Education (modules, dissertation method)",
+      "Technical Skills",
+      "Projects and Portfolio",
+      "Experience",
+      "Achievements (datathons, competitions)",
+      "Interests"
+    ],
+    "pitfalls": [
+      "Accuracy or performance figures with no baseline or context.",
+      "Tool lists with no applied project.",
+      "'Insights' that inform no named decision or audience.",
+      "Relabelling a simple comparison as an A/B test, or a fitted model as a deployed one.",
+      "Headline projects on toy datasets with no extension."
+    ],
+    "evidence": [
+      {
+        "claim": "recruiterScan/leadWith: question, cleaning, method, communication arc",
+        "grade": "B",
+        "sourceIds": [
+          "TP6"
+        ],
+        "quote": "Show how you defined a question, cleaned the data, chose an analytical method and communicated the result."
+      },
+      {
+        "claim": "recruiterScan: business question to analysis",
+        "grade": "B",
+        "sourceIds": [
+          "TP6"
+        ],
+        "quote": "stakeholder and problem-solving skills to turn business questions into useful analysis."
+      },
+      {
+        "claim": "recruiterScan: core tools SQL then Python/R",
+        "grade": "B",
+        "sourceIds": [
+          "TP6"
+        ],
+        "quote": "programming or query skills in SQL and, for some roles, Python or R"
+      },
+      {
+        "claim": "recruiterScan/competencyThemes: BI visualisation",
+        "grade": "B",
+        "sourceIds": [
+          "TP6"
+        ],
+        "quote": "data visualisation skills using tools such as Power BI or Tableau"
+      },
+      {
+        "claim": "recruiterScan/competencyThemes: data storytelling to different audiences",
+        "grade": "A",
+        "sourceIds": [
+          "TP6",
+          "TP7"
+        ],
+        "quote": "communication and data storytelling skills to explain findings to different audiences"
+      },
+      {
+        "claim": "reframes: 'non-technical stakeholders' is the standard phrasing",
+        "grade": "B",
+        "sourceIds": [
+          "TP7"
+        ],
+        "quote": "communicate complex data insights clearly and effectively to both technical and non-technical audiences"
+      },
+      {
+        "claim": "competencyThemes: ML and statistics for data science roles",
+        "grade": "B",
+        "sourceIds": [
+          "TP7"
+        ],
+        "quote": "use machine learning and statistical techniques to solve problems"
+      },
+      {
+        "claim": "recruiterScan: quantitative background",
+        "grade": "B",
+        "sourceIds": [
+          "TP8",
+          "TP1"
+        ],
+        "quote": "Data scientists typically have a background in mathematics, statistics or other numerate subjects such as computer science or engineering"
+      },
+      {
+        "claim": "sectionOrder: relevant modules and projects inside Education",
+        "grade": "B",
+        "sourceIds": [
+          "TP2",
+          "TP1"
+        ],
+        "quote": "Outline your educational achievements, listing any relevant modules or subjects before moving on to highlight specific IT skills."
+      },
+      {
+        "claim": "leadWith: metrics and data tell the story of scale and impact",
+        "grade": "C",
+        "sourceIds": [
+          "TP5",
+          "TP29"
+        ],
+        "quote": "we are looking for resumes that are well-organized, use straightforward language, highlight measurable data, and are streamlined for maximum readability"
+      },
+      {
+        "claim": "verbs.prefer: active verbs combined with quantified outcomes",
+        "grade": "B",
+        "sourceIds": [
+          "TP29",
+          "TP26"
+        ],
+        "quote": "combine our evidence and active verbs with quantifiable outcomes and measures of success to showcase our accomplishments."
+      },
+      {
+        "claim": "reframes: A/B-test and model-evaluation guards; pitfalls on baselines",
+        "grade": "D",
+        "sourceIds": [],
+        "quote": null
+      }
+    ]
+  },
+  "product": {
+    "recruiterScan": [
+      "Do they understand users: feedback gathered, research done, a problem framed in the user's terms?",
+      "Cross-functional working: engineers, designers, marketing or other teams named.",
+      "Decisions backed by data or research, not opinion.",
+      "Ownership through positions of responsibility, ventures, competitions or things the student launched.",
+      "Clear, concise writing: the CV itself is read as a sample of product communication."
+    ],
+    "leadWith": [
+      "The user problem and who it affected.",
+      "A prioritisation or trade-off decision the source already describes.",
+      "The outcome metric already stated (sign-ups, conversion, retention, attendance).",
+      "The teams or stakeholders the student worked with.",
+      "Launch or delivery of the thing, if it happened."
+    ],
+    "summaryFormula": "Two lines: degree and year + one user-facing thing the student launched, ran or improved, with its existing outcome + the analytical or cross-functional evidence already in the CV + the target (graduate product manager, APM, product analyst); never call the student a 'product manager' unless that is their actual job title.",
+    "verbs": {
+      "prefer": [
+        "Identified",
+        "Researched",
+        "Interviewed",
+        "Prioritised",
+        "Defined",
+        "Prototyped",
+        "Launched",
+        "Iterated",
+        "Collaborated",
+        "Measured",
+        "Analysed",
+        "Presented"
+      ],
+      "avoid": [
+        "Owned the roadmap (for a course or society project)",
+        "Drove the product vision",
+        "Spearheaded",
+        "Visionary",
+        "Disrupted",
+        "Revolutionised",
+        "CEO/Founder (unless an actual registered or operating venture)",
+        "Name-dropped frameworks (RICE, JTBD, AARRR) with no application"
+      ]
+    },
+    "reframes": [
+      {
+        "from": "asked people what they thought of it",
+        "to": "gathered user feedback through [interviews/survey] (n = [n])",
+        "onlyIf": "the method is described; n only if stated"
+      },
+      {
+        "from": "decided which features to build first",
+        "to": "prioritised features against [criterion]",
+        "onlyIf": "the line shows an actual choice and its reason"
+      },
+      {
+        "from": "worked with the developers and the designer",
+        "to": "collaborated cross-functionally with engineering and design",
+        "onlyIf": "both functions are named"
+      },
+      {
+        "from": "drew the screens",
+        "to": "prototyped / wireframed in [Figma]",
+        "onlyIf": "the tool is named or the artefact is described"
+      },
+      {
+        "from": "made the sign-up page better",
+        "to": "improved sign-up conversion",
+        "onlyIf": "the source measures conversion; keep the number exactly"
+      },
+      {
+        "from": "wrote down what the app should do",
+        "to": "wrote product requirements / user stories",
+        "onlyIf": "that is what the document was"
+      },
+      {
+        "from": "changed it after people's comments",
+        "to": "iterated on user feedback",
+        "onlyIf": "specific changes after feedback are described"
+      },
+      {
+        "from": "worked with committee, sponsors and the SU",
+        "to": "stakeholder management",
+        "onlyIf": "several distinct groups with different interests are named"
+      }
+    ],
+    "competencyThemes": [
+      "User research",
+      "Prioritisation",
+      "Stakeholder management",
+      "Product analytics",
+      "Prototyping",
+      "Commercial awareness",
+      "Agile delivery",
+      "Problem solving"
+    ],
+    "sectionOrder": [
+      "Header",
+      "Profile (optional, 2 lines)",
+      "Education",
+      "Experience (incl. positions of responsibility)",
+      "Projects and Ventures",
+      "Skills and Tools (SQL, Figma, Jira, analytics)",
+      "Achievements and Competitions",
+      "Interests"
+    ],
+    "pitfalls": [
+      "Title inflation: 'product manager' or 'founder' for a solo course project.",
+      "Framework name-dropping with no decision attached.",
+      "Responsibility lists ('responsible for social media') with no outcome.",
+      "No number anywhere on the page.",
+      "Technical over-claiming: 'built' the app when engineers built it."
+    ],
+    "evidence": [
+      {
+        "claim": "recruiterScan/leadWith: user feedback drives requirements and priorities",
+        "grade": "B",
+        "sourceIds": [
+          "TP9",
+          "TP10"
+        ],
+        "quote": "collect and analyse user feedback to identify product requirements and priorities, and steer the development process"
+      },
+      {
+        "claim": "recruiterScan: customer need plus business objective",
+        "grade": "B",
+        "sourceIds": [
+          "TP10"
+        ],
+        "quote": "My job entails recognising what a customer needs and the business objectives that a product or feature will fulfil."
+      },
+      {
+        "claim": "recruiterScan: decisions supported by research and data",
+        "grade": "B",
+        "sourceIds": [
+          "TP9"
+        ],
+        "quote": "decisive, visionary, and able to support your decisions with market research and thorough data analysis"
+      },
+      {
+        "claim": "recruiterScan/competencyThemes: stakeholders across functions",
+        "grade": "A",
+        "sourceIds": [
+          "TP9",
+          "TP10"
+        ],
+        "quote": "meet regularly with stakeholders, including product designers, developers, and analysts, as well as marketing, sales, customer service, finance, and company heads"
+      },
+      {
+        "claim": "recruiterScan/leadWith: positions of responsibility and competitions as PM evidence",
+        "grade": "B",
+        "sourceIds": [
+          "TP9"
+        ],
+        "quote": "Try to gain work experience in positions of responsibility. You could lead a university society, take part in business competitions and challenges"
+      },
+      {
+        "claim": "competencyThemes: graduate PM foundations",
+        "grade": "B",
+        "sourceIds": [
+          "TP10"
+        ],
+        "quote": "Focus on building strong foundations such as teamwork, analytical thinking, communication, problem solving, adaptability and leadership skills."
+      },
+      {
+        "claim": "reframes: conversion is a standard graduate PM metric",
+        "grade": "C",
+        "sourceIds": [
+          "TP10"
+        ],
+        "quote": "optimising web journeys to help maximise our customer conversion rates"
+      },
+      {
+        "claim": "pitfalls: technical over-claiming unnecessary; tech background not required",
+        "grade": "C",
+        "sourceIds": [
+          "TP10"
+        ],
+        "quote": "a tech background is not necessary for success"
+      },
+      {
+        "claim": "caveat: UK entry-level PM is rare; frame as graduate PM/APM/analyst",
+        "grade": "B",
+        "sourceIds": [
+          "TP9"
+        ],
+        "quote": "It's extremely unusual for an employer to recruit a product manager without at least two years of relevant experience."
+      },
+      {
+        "claim": "recruiterScan: writing quality as evidence",
+        "grade": "C",
+        "sourceIds": [
+          "TP5",
+          "TP25"
+        ],
+        "quote": "we are looking for resumes that are well-organized, use straightforward language, highlight measurable data, and are streamlined for maximum readability"
+      },
+      {
+        "claim": "reframes: mirror the advert's phrasing only where the experience matches",
+        "grade": "B",
+        "sourceIds": [
+          "TP24",
+          "TP27"
+        ],
+        "quote": "if they want 'strong relationship builders' you should talk about how you 'built strong relationships' rather than 'worked in a team'."
+      },
+      {
+        "claim": "verbs, pitfalls (title inflation, frameworks), sectionOrder",
+        "grade": "D",
+        "sourceIds": [],
+        "quote": null
+      }
+    ]
+  },
+  "marketing_growth": {
+    "recruiterScan": [
+      "Experience first: campaigns, internships, society or personal channels, readable at a glance.",
+      "A measurable result with a timeframe, attributable to the student.",
+      "Visible proof: portfolio, blog, channels managed, linked only if active.",
+      "Writing accuracy: spelling and grammar are judged as job evidence.",
+      "For growth roles: data-driven measurement and named tools (GA4, ads platforms, email, CRM)."
+    ],
+    "leadWith": [
+      "The measurable result and its timeframe (reach, sign-ups, sales, open rate) already in the CV.",
+      "The channel and the audience.",
+      "Content or campaigns the student created or ran themselves.",
+      "Advert-named tools the bullet already uses.",
+      "Budget handled, where stated."
+    ],
+    "summaryFormula": "Two lines at most: degree and year + the channel(s) or campaign the student actually ran, with its existing headline metric and timeframe + tools already evidenced + the target (brand, content, performance or growth) from the advert; keep it specific because generic graduate profiles are widely disliked.",
+    "verbs": {
+      "prefer": [
+        "Launched",
+        "Ran",
+        "Created",
+        "Wrote",
+        "Designed",
+        "Targeted",
+        "Tested",
+        "Analysed",
+        "Reported",
+        "Optimised",
+        "Grew (with a number)",
+        "Increased (with a number)"
+      ],
+      "avoid": [
+        "Went viral",
+        "Exploded",
+        "Social media guru/ninja",
+        "Passionate creative",
+        "Revolutionised the brand",
+        "Growth-hacked",
+        "Leveraged",
+        "Synergised",
+        "Managed the brand (for a society account)"
+      ]
+    },
+    "reframes": [
+      {
+        "from": "ran the society Instagram",
+        "to": "managed the society's Instagram channel (social media management)",
+        "onlyIf": "the student planned and posted the content"
+      },
+      {
+        "from": "posted stuff every week",
+        "to": "content creation and scheduling",
+        "onlyIf": "the student produced the content"
+      },
+      {
+        "from": "got loads more followers",
+        "to": "grew followers from [X] to [Y] in [period]",
+        "onlyIf": "both numbers and the period are already in the CV; otherwise keep 'increased followers'"
+      },
+      {
+        "from": "sent out the newsletter",
+        "to": "email marketing ([Mailchimp])",
+        "onlyIf": "the tool is named or the student built the sends"
+      },
+      {
+        "from": "tried two different posters/subject lines",
+        "to": "A/B tested creative",
+        "onlyIf": "two variants were compared on a stated metric"
+      },
+      {
+        "from": "looked at the Instagram stats",
+        "to": "analysed engagement metrics (reach, engagement rate)",
+        "onlyIf": "the insights were used to report or change content"
+      },
+      {
+        "from": "wrote blog posts",
+        "to": "content marketing / SEO copywriting",
+        "onlyIf": "for SEO, keyword targeting or search traffic is mentioned"
+      },
+      {
+        "from": "spent money on Facebook ads",
+        "to": "managed a paid social budget (£[X])",
+        "onlyIf": "the budget and the student's control of it are stated"
+      }
+    ],
+    "competencyThemes": [
+      "Social media management",
+      "Content creation and copywriting",
+      "Campaign analytics",
+      "Paid social and search",
+      "Email marketing",
+      "SEO",
+      "Audience insight",
+      "Brand communications"
+    ],
+    "sectionOrder": [
+      "Header (incl. portfolio and active channels)",
+      "Profile (optional, 2 lines)",
+      "Experience (campaigns, internships, society marketing)",
+      "Education",
+      "Skills, Tools and Certifications (GA4, Google Ads, HubSpot, Meta)",
+      "Portfolio and Channels",
+      "Interests"
+    ],
+    "pitfalls": [
+      "Long, vague descriptions a busy recruiter cannot skim.",
+      "Follower or reach numbers with no baseline or timeframe.",
+      "'Creative' or 'social media savvy' with no campaign to back it.",
+      "Any typo or inconsistency.",
+      "Linking inactive or unprofessional personal accounts."
+    ],
+    "evidence": [
+      {
+        "claim": "sectionOrder/recruiterScan: experience before academia",
+        "grade": "B",
+        "sourceIds": [
+          "TP11"
+        ],
+        "quote": "The marketing and media sectors both tend to prioritise experience over academia when it comes to hiring."
+      },
+      {
+        "claim": "recruiterScan/pitfalls: snappy, skimmable descriptions",
+        "grade": "A",
+        "sourceIds": [
+          "TP11",
+          "TP12"
+        ],
+        "quote": "Make sure the descriptions are snappy, concise and accurate."
+      },
+      {
+        "claim": "recruiterScan: readable at a glimpse",
+        "grade": "B",
+        "sourceIds": [
+          "TP12"
+        ],
+        "quote": "Aim for something that is clear, easy to understand and concise, so it can be read at a glimpse."
+      },
+      {
+        "claim": "leadWith: measurable achievement first",
+        "grade": "B",
+        "sourceIds": [
+          "TP11"
+        ],
+        "quote": "Here the recruiter has a piece to read that immediately explains a measurable achievement."
+      },
+      {
+        "claim": "recruiterScan/pitfalls: spelling and grammar are job evidence",
+        "grade": "B",
+        "sourceIds": [
+          "TP11",
+          "TP25"
+        ],
+        "quote": "your spelling, grammar and punctuation needs to be up to scratch"
+      },
+      {
+        "claim": "recruiterScan/pitfalls: link channels only if active",
+        "grade": "B",
+        "sourceIds": [
+          "TP11",
+          "TP12"
+        ],
+        "quote": "include any social media addresses, such as a LinkedIn profile, Twitter handle or blog - as long as you use them regularly"
+      },
+      {
+        "claim": "leadWith: self-created marketing counts as experience",
+        "grade": "B",
+        "sourceIds": [
+          "TP12",
+          "TP14"
+        ],
+        "quote": "you can create your own marketing experience. This could include starting your own blog or social account for an interest"
+      },
+      {
+        "claim": "recruiterScan: visible proof of ability",
+        "grade": "B",
+        "sourceIds": [
+          "TP14"
+        ],
+        "quote": "As marketing is a practical and creative field, visible proof of your ability"
+      },
+      {
+        "claim": "recruiterScan: interns contribute to measurable goals",
+        "grade": "B",
+        "sourceIds": [
+          "TP14"
+        ],
+        "quote": "Marketing interns contribute to live campaigns and measurable business goals."
+      },
+      {
+        "claim": "recruiterScan (growth): data-driven measurement",
+        "grade": "B",
+        "sourceIds": [
+          "TP15"
+        ],
+        "quote": "Digital marketing is highly data-driven, allowing marketers to measure performance and continuously improve campaigns."
+      },
+      {
+        "claim": "competencyThemes: data-driven thinking and cross-channel coordination",
+        "grade": "B",
+        "sourceIds": [
+          "TP15"
+        ],
+        "quote": "These reflect the increasing need for data-driven thinking, cross-channel coordination, and digital storytelling within modern marketing teams."
+      },
+      {
+        "claim": "competencyThemes/reframes: standard analytics and tools",
+        "grade": "B",
+        "sourceIds": [
+          "TP13"
+        ],
+        "quote": "Google Analytics and Facebook Insights, for web analytics reporting"
+      },
+      {
+        "claim": "reframes: KPI vocabulary (CTR, engagement rate)",
+        "grade": "C",
+        "sourceIds": [
+          "TP31"
+        ],
+        "quote": "Your KPI could include analytical data for: bounce rate, click-through rate, and engagement rate."
+      },
+      {
+        "claim": "reframes: mention matching skills the advert names",
+        "grade": "B",
+        "sourceIds": [
+          "TP12",
+          "TP23"
+        ],
+        "quote": "if a job ad mentions wanting specific skills, make sure you mention any experience you have!"
+      },
+      {
+        "claim": "summaryFormula: profiles often generic; keep short and specific",
+        "grade": "B",
+        "sourceIds": [
+          "TP22",
+          "TP21"
+        ],
+        "quote": "in many cases, a personal statement on a graduate CV is a waste of space."
+      },
+      {
+        "claim": "verbs.avoid list, A/B and budget guards",
+        "grade": "D",
+        "sourceIds": [],
+        "quote": null
+      }
+    ]
+  },
+  "research": {
+    "recruiterScan": [
+      "Academic record first: grade or ranking, relevant modules, final-year or dissertation project and supervisor.",
+      "Research experience described by its focus and outcomes, not just a project title.",
+      "Methods, techniques and programming that match the group's work.",
+      "Signs of motivation and ability to work independently.",
+      "A referee who can speak to research suitability."
+    ],
+    "leadWith": [
+      "The research question or focus.",
+      "Methods, techniques, instruments or code used.",
+      "The student's specific contribution within the group.",
+      "Outputs: report, poster, talk, dataset, code, prize.",
+      "Links between the work and the target group's area."
+    ],
+    "summaryFormula": "Prefer a short 'Research interests' line over a sales pitch: degree, year and institution with grade or ranking + the research area in the student's own terms, matched to the project + the methods already evidenced + the strongest research output or project.",
+    "verbs": {
+      "prefer": [
+        "Investigated",
+        "Measured",
+        "Analysed",
+        "Simulated",
+        "Modelled",
+        "Implemented",
+        "Collected",
+        "Reviewed",
+        "Presented",
+        "Co-authored (only if an author)",
+        "Contributed",
+        "Assisted (keep when true)"
+      ],
+      "avoid": [
+        "Discovered (unless it was a genuine finding)",
+        "Pioneered",
+        "Proved",
+        "Groundbreaking",
+        "Novel (unless the supervisor's wording)",
+        "Led the research (for an assistant role)",
+        "Published (for unpublished or in-preparation work)"
+      ]
+    },
+    "reframes": [
+      {
+        "from": "did a summer project in Dr X's lab",
+        "to": "Summer research placement, [group], supervised by Dr X",
+        "onlyIf": "group and supervisor are named"
+      },
+      {
+        "from": "read lots of papers on the topic",
+        "to": "literature review",
+        "onlyIf": "the review was a defined task or written output"
+      },
+      {
+        "from": "Part II project / Year 3 project",
+        "to": "final-year research project",
+        "onlyIf": "it was the final-year project"
+      },
+      {
+        "from": "used Python for the data",
+        "to": "data analysis in Python ([NumPy/SciPy/pandas])",
+        "onlyIf": "the libraries are named"
+      },
+      {
+        "from": "made a poster",
+        "to": "poster presentation, [event, year]",
+        "onlyIf": "the poster was presented at a named event"
+      },
+      {
+        "from": "helped a PhD student",
+        "to": "research assistance: [specific task] on [project]",
+        "onlyIf": "the task is described; keep 'assisted', never upgrade to 'led'"
+      },
+      {
+        "from": "did the lab work",
+        "to": "laboratory techniques: [X, Y]",
+        "onlyIf": "the techniques are named"
+      },
+      {
+        "from": "paper we are writing",
+        "to": "manuscript in preparation",
+        "onlyIf": "always: never list it under 'Publications'"
+      }
+    ],
+    "competencyThemes": [
+      "Experimental methods",
+      "Data analysis",
+      "Scientific programming",
+      "Mathematical modelling",
+      "Literature review",
+      "Laboratory techniques",
+      "Scientific communication",
+      "Independent research"
+    ],
+    "sectionOrder": [
+      "Header",
+      "Research interests (optional, 1-2 lines)",
+      "Education (grade, modules, project, supervisor)",
+      "Research Experience",
+      "Technical and Laboratory Skills",
+      "Presentations and Outputs",
+      "Awards and Funding",
+      "Other Experience",
+      "Referees"
+    ],
+    "pitfalls": [
+      "A project title with no focus, method or outcome.",
+      "Vague 'assisted with research' with no task named.",
+      "Padded publications (blogs, coursework or in-preparation work listed as papers).",
+      "A generic sales-pitch profile instead of a research interest.",
+      "No supervisor, group or institution named."
+    ],
+    "evidence": [
+      {
+        "claim": "recruiterScan/leadWith: focus and outcomes, not the title",
+        "grade": "B",
+        "sourceIds": [
+          "TP16"
+        ],
+        "quote": "Research experience - not the title of your project, but its focus and key outcomes"
+      },
+      {
+        "claim": "recruiterScan: skim read",
+        "grade": "B",
+        "sourceIds": [
+          "TP16"
+        ],
+        "quote": "A CV has to stand up to a \"skim\" read, perhaps as quick as 60 seconds."
+      },
+      {
+        "claim": "leadWith/competencyThemes: techniques and programming, most relevant first",
+        "grade": "B",
+        "sourceIds": [
+          "TP16"
+        ],
+        "quote": "summarise the main techniques, instruments, and programming languages you use, giving prominence to those most relevant to the role."
+      },
+      {
+        "claim": "verbs: past-tense verbs, no '-ing' duty phrases",
+        "grade": "B",
+        "sourceIds": [
+          "TP16",
+          "TP26"
+        ],
+        "quote": "Avoid \" ...ing\" words. Instead put verbs in the past tense, which will focus on your quantifiable achievements."
+      },
+      {
+        "claim": "leadWith: state your role inside a research team",
+        "grade": "B",
+        "sourceIds": [
+          "TP16"
+        ],
+        "quote": "Working in a team of 3 researchers, my role was to source reagents and optimise the X technique."
+      },
+      {
+        "claim": "pitfalls/reframes: make authorship position clear",
+        "grade": "B",
+        "sourceIds": [
+          "TP16"
+        ],
+        "quote": "Publications - highlight where you are the lead author."
+      },
+      {
+        "claim": "recruiterScan: motivation and independence matter to supervisors",
+        "grade": "B",
+        "sourceIds": [
+          "TP18"
+        ],
+        "quote": "a student's innate enthusiasm for research and motivation to knuckle down and work hard"
+      },
+      {
+        "claim": "leadWith: skills you can offer the host group",
+        "grade": "B",
+        "sourceIds": [
+          "TP18"
+        ],
+        "quote": "What skills can you offer the host research group? What skills are you looking to develop?"
+      },
+      {
+        "claim": "summaryFormula: with no experience, a brief factual statement about the degree",
+        "grade": "B",
+        "sourceIds": [
+          "TP17"
+        ],
+        "quote": "If you have no previous relevant experience you are probably going to rely on a brief statement of fact regarding your degree"
+      },
+      {
+        "claim": "sectionOrder: academic referee",
+        "grade": "B",
+        "sourceIds": [
+          "TP17"
+        ],
+        "quote": "highlight at least one referee (i.e. someone who is familiar with you academically and could comment on your suitability to pursue undergraduate research)"
+      },
+      {
+        "claim": "recruiterScan: why interested and why qualified",
+        "grade": "B",
+        "sourceIds": [
+          "TP19",
+          "TP17"
+        ],
+        "quote": "explain why you are interested in the project and why you feel you are qualified"
+      },
+      {
+        "claim": "sectionOrder: use a 'Research Experience' heading; degree work counts",
+        "grade": "A",
+        "sourceIds": [
+          "TP20",
+          "TP27"
+        ],
+        "quote": "if you are applying for research opportunities, you may want to use Research Experience as a title."
+      },
+      {
+        "claim": "leadWith: parts of the degree are often the most relevant experience",
+        "grade": "B",
+        "sourceIds": [
+          "TP20"
+        ],
+        "quote": "Often, parts of your degree are the most relevant experience you have to the opportunity"
+      },
+      {
+        "claim": "verbs.avoid, reframes for in-preparation work, competencyThemes",
+        "grade": "D",
+        "sourceIds": [],
+        "quote": null
+      }
+    ]
+  }
+}

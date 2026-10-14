@@ -202,6 +202,8 @@ function buildChanges(i: GateInput, ctx: Ctx, t: TailoredCV): TailorChangeView[]
         const original = sources.map((s) => s.text).join(" / ");
         let ct: TailorChangeType = b.changeType ?? (b.sourceRefs.length > 1 ? "merged" : b.text === original ? "kept" : "rephrased");
         if ((ct === "kept" || ct === "reordered") && b.text !== original) ct = b.sourceRefs.length > 1 ? "merged" : "rephrased";
+        // the model's label alone is no change: an unchanged single-source line is kept (or reordered, below)
+        if ((ct === "rephrased" || ct === "reordered") && b.sourceRefs.length === 1 && b.text === original) ct = "kept";
         if (ct === "kept") {
           const at = srcIndex.get(b.sourceRefs[0] ?? "");
           if (at && at.entryId === e.id && at.n !== n) ct = "reordered";

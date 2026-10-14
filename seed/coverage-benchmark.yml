@@ -1,0 +1,185 @@
+# Recall benchmark: well-known UK early-careers employers (internships, placements, spring weeks, vacation schemes).
+# Hand-curated 2026-10-14 by sector from the employers UK students target most (Times Top 100 / bulge-bracket /
+# Magic Circle / MBB / Big 4 / FMCG grad schemes / big tech). It is a yardstick, not a seed list:
+# `sources` lists the seed/companies.yml boards ("ats:slug") that carry this employer's student roles; an employer
+# counts as covered when at least one of them is enabled. List old and new boards, so a before/after compare works.
+# `ats` is where the student roles actually live; `why` explains a gap or a non-obvious source.
+# ATS findings come from probing public board APIs and the employer's careers page (2026-10-14).
+# Coverage: `npm run coverage` (offline) or `npm run coverage -- --live` (fetches every board, no DB writes).
+
+# bank
+- { name: "Goldman Sachs", sector: bank, ats: custom, sources: [], why: "Custom portal (higher.gs.com), no public JSON feed; hand-curated programme rows needed" }
+- { name: "JPMorgan Chase", sector: bank, ats: oracle, sources: [], why: "Oracle Recruiting Cloud (jpmc.fa.oraclecloud.com); needs a new provider" }
+- { name: "Morgan Stanley", sector: bank, ats: workday, sources: ["workday:ms/External"], why: "Configured; no UK campus roles open on 2026-10-14" }
+- { name: "Barclays", sector: bank, ats: workday, sources: ["workday:barclays/External_Career_Site_Barclays"] }
+- { name: "HSBC", sector: bank, ats: custom, sources: [], why: "No Workday tenant found (hsbc/*: 422 on wd1-wd501); student roles via hsbc.com careers, ATS not identified" }
+- { name: "Citi", sector: bank, ats: workday, sources: ["workday:citi/2"] }
+- { name: "Deutsche Bank", sector: bank, ats: workday, sources: ["workday:db/DBWebSite"] }
+- { name: "BNP Paribas", sector: bank, ats: custom, sources: [], why: "Own careers site (group.bnpparibas); no public ATS feed found" }
+- { name: "UBS", sector: bank, ats: custom, sources: [], why: "Own job search + Beamery talent community; no public feed found" }
+- { name: "Bank of America", sector: bank, ats: oleeo, sources: [], why: "EMEA campus on Oleeo (bankcampuscareers.tal.net); HTML only" }
+- { name: "Lloyds Banking Group", sector: bank, ats: workday, sources: ["workday:lbg/LBG_Careers", "workday:lbg/undergraduate_careers", "workday:lbg/graduate_careers"], why: "Was 'not covered': the seeded site LBG_Careers has no student roles; undergraduate_careers and graduate_careers do" }
+- { name: "NatWest Group", sector: bank, ats: workday, sources: ["workday:rbs/Rbs"], why: "Tenant is 'rbs', not 'natwest'" }
+- { name: "Santander UK", sector: bank, ats: workday, sources: ["workday:santander/SantanderCareers"], why: "Group board; UK student roles thin today" }
+- { name: "Nomura", sector: bank, ats: oleeo, sources: [], why: "EMEA campus on Oleeo (nomuracampus.tal.net)" }
+- { name: "Jefferies", sector: bank, ats: oleeo, sources: [], why: "Campus on Oleeo (jefferies.tal.net)" }
+- { name: "Lazard", sector: bank, ats: oracle, sources: [], why: "Oracle Recruiting Cloud (LazardProfessionalCareers)" }
+- { name: "Rothschild & Co", sector: bank, ats: custom, sources: [], why: "ATS not identified from careers page" }
+- { name: "Evercore", sector: bank, ats: custom, sources: [], why: "ATS not identified from careers page" }
+- { name: "Mizuho", sector: bank, ats: workday, sources: ["workday:mizuho/mizuhoamericas"], why: "Americas site also carries EMEA (Greenhill) internships" }
+- { name: "MUFG", sector: bank, ats: workday, sources: ["workday:mufgub/MUFG-Careers"] }
+- { name: "Societe Generale", sector: bank, ats: taleo, sources: [], why: "Taleo (socgen.taleo.net)" }
+- { name: "RBC Capital Markets", sector: bank, ats: workday, sources: [], why: "rbc/RBCGLOBAL1 exists but had 0 UK/EU early-career roles; not added" }
+- { name: "Standard Chartered", sector: bank, ats: custom, sources: [], why: "ATS not identified (no Workday tenant 'scb'/'standardchartered')" }
+- { name: "Macquarie", sector: bank, ats: workday, sources: [], why: "Workday tenant 'mq' exists (wd3) but the site name wasn't found" }
+- { name: "Bank of England", sector: bank, ats: oleeo, sources: [], why: "Oleeo/tal.net (per ingest-coverage.md)" }
+- { name: "Houlihan Lokey", sector: bank, ats: workday, sources: ["workday:hl/Campus"] }
+- { name: "Centerview Partners", sector: bank, ats: custom, sources: [], why: "ATS not identified" }
+- { name: "PJT Partners", sector: bank, ats: workday, sources: ["workday:pjtpartners/Students"] }
+
+# trading
+- { name: "Jane Street", sector: trading, ats: custom, sources: [], why: "greenhouse/janestreet is experienced-only (229 roles, 0 early-career); internships are on janestreet.com" }
+- { name: "Citadel", sector: trading, ats: custom, sources: [], why: "Own site, blocks automated fetch (403)" }
+- { name: "Citadel Securities", sector: trading, ats: custom, sources: [], why: "Own site, blocks automated fetch (403)" }
+- { name: "Optiver", sector: trading, ats: custom, sources: [], why: "greenhouse/optiver is empty; jobs on optiver.com" }
+- { name: "IMC Trading", sector: trading, ats: greenhouse, sources: ["greenhouse:imc"] }
+- { name: "Hudson River Trading", sector: trading, ats: greenhouse, sources: ["greenhouse:wehrtyou"], why: "Board slug is 'wehrtyou'" }
+- { name: "Squarepoint Capital", sector: trading, ats: greenhouse, sources: ["greenhouse:squarepointcapital"] }
+- { name: "Millennium", sector: trading, ats: eightfold, sources: [], why: "Eightfold (mlp.eightfold.ai)" }
+- { name: "Two Sigma", sector: trading, ats: custom, sources: [], why: "ATS not identified" }
+- { name: "G-Research", sector: trading, ats: custom, sources: [], why: "Own vacancies page" }
+- { name: "Qube Research & Technologies", sector: trading, ats: greenhouse, sources: ["greenhouse:quberesearchandtechnologies"] }
+- { name: "XTX Markets", sector: trading, ats: greenhouse, sources: [], why: "greenhouse/xtxmarketstechnologies has 7 roles, none early-career; not added" }
+- { name: "Susquehanna (SIG)", sector: trading, ats: icims, sources: [], why: "iCIMS (careers.sig.com)" }
+- { name: "DRW", sector: trading, ats: greenhouse, sources: ["greenhouse:drweng"] }
+- { name: "Jump Trading", sector: trading, ats: greenhouse, sources: ["greenhouse:jumptrading"] }
+- { name: "Flow Traders", sector: trading, ats: greenhouse, sources: ["greenhouse:flowtraders"] }
+- { name: "Man Group", sector: trading, ats: greenhouse, sources: ["greenhouse:mangroup"] }
+- { name: "Point72", sector: trading, ats: greenhouse, sources: ["greenhouse:point72"] }
+- { name: "Marshall Wace", sector: trading, ats: greenhouse, sources: ["greenhouse:mwinternshipprogram"] }
+
+# asset_mgmt
+- { name: "BlackRock", sector: asset_mgmt, ats: workday, sources: ["workday:blackrock/BlackRock_Professional"] }
+- { name: "Schroders", sector: asset_mgmt, ats: oracle, sources: [], why: "Oracle Recruiting Cloud (ekbq.fa.em2, CX_2)" }
+- { name: "Fidelity International", sector: asset_mgmt, ats: oleeo, sources: [], why: "Students on Oleeo (fidelityinternational.tal.net); Workday fil/001 has no early-career titles" }
+- { name: "M&G", sector: asset_mgmt, ats: workday, sources: ["workday:mgpru/mandgprudential"] }
+- { name: "Legal & General", sector: asset_mgmt, ats: smartrecruiters, sources: ["smartrecruiters:legalandgeneral"] }
+- { name: "Aviva", sector: asset_mgmt, ats: workday, sources: ["workday:aviva/External"] }
+- { name: "Aberdeen", sector: asset_mgmt, ats: custom, sources: [], why: "Careers page unreachable (timeout); ATS not identified" }
+- { name: "PIMCO", sector: asset_mgmt, ats: workday, sources: ["workday:pimco/pimco-careers"] }
+- { name: "Brevan Howard", sector: asset_mgmt, ats: workday, sources: ["workday:brevanhoward/bh_externalcareers"] }
+- { name: "LSEG", sector: asset_mgmt, ats: workday, sources: ["workday:lseg/Graduate_Careers"] }
+
+# consulting
+- { name: "McKinsey & Company", sector: consulting, ats: custom, sources: [], why: "Own job search, no public feed" }
+- { name: "Boston Consulting Group", sector: consulting, ats: phenom, sources: [], why: "Phenom (careers.bcg.com); backing ATS not identified" }
+- { name: "Bain & Company", sector: consulting, ats: custom, sources: [], why: "Own job search, no public feed" }
+- { name: "Oliver Wyman", sector: consulting, ats: workday, sources: ["workday:mmc/Careers"], why: "Posted on the Marsh McLennan (mmc) Workday tenant" }
+- { name: "Accenture", sector: consulting, ats: workday, sources: ["workday:accenture/AccentureCareers"] }
+- { name: "Kearney", sector: consulting, ats: custom, sources: [], why: "Careers page blocks automated fetch (403)" }
+- { name: "L.E.K. Consulting", sector: consulting, ats: oleeo, sources: [], why: "Oleeo (lek.tal.net)" }
+- { name: "Roland Berger", sector: consulting, ats: smartrecruiters, sources: ["smartrecruiters:rolandberger"] }
+- { name: "Capgemini", sector: consulting, ats: custom, sources: [], why: "ATS not identified" }
+- { name: "PA Consulting", sector: consulting, ats: smartrecruiters, sources: ["smartrecruiters:paconsulting"] }
+- { name: "Newton", sector: consulting, ats: custom, sources: [], why: "Small greenhouse/lever boards named 'newton' exist but are other companies" }
+- { name: "OC&C Strategy Consultants", sector: consulting, ats: custom, sources: [], why: "ATS not identified" }
+- { name: "Simon-Kucher", sector: consulting, ats: custom, sources: [], why: "ATS not identified" }
+- { name: "FTI Consulting", sector: consulting, ats: workday, sources: ["workday:fticonsulting/FTIConsultingCareers"] }
+- { name: "Alvarez & Marsal", sector: consulting, ats: custom, sources: [], why: "Careers page blocks automated fetch (403)" }
+- { name: "IBM", sector: consulting, ats: custom, sources: [], why: "ATS not identified" }
+- { name: "Capco", sector: consulting, ats: greenhouse, sources: ["greenhouse:capco"] }
+- { name: "Marsh McLennan", sector: consulting, ats: workday, sources: ["workday:mmc/Careers"] }
+
+# big4
+- { name: "Deloitte", sector: big4, ats: avature, sources: [], why: "Avature (per ingest-coverage.md); HTML only" }
+- { name: "PwC", sector: big4, ats: workday, sources: ["workday:pwc/Global_Experienced_Careers", "workday:pwc/Global_Campus_Careers"], why: "Seeded only the experienced site; the campus site has 4x more early-career roles" }
+- { name: "EY", sector: big4, ats: custom, sources: [], why: "Own job search + Beamery; no public feed found" }
+- { name: "KPMG", sector: big4, ats: custom, sources: [], why: "kpmgcareers.co.uk, ATS not identified (lever/kpmg is empty)" }
+- { name: "BDO", sector: big4, ats: workday, sources: [], why: "bdo/Bdo Workday tenant is BDO Canada; BDO UK not found" }
+- { name: "Grant Thornton", sector: big4, ats: custom, sources: [], why: "ATS not identified" }
+- { name: "Forvis Mazars", sector: big4, ats: smartrecruiters, sources: ["smartrecruiters:mazars", "greenhouse:forvismazars"] }
+
+# law
+- { name: "Clifford Chance", sector: law, ats: smartrecruiters, sources: ["smartrecruiters:cliffordchance"] }
+- { name: "A&O Shearman", sector: law, ats: custom, sources: [], why: "ATS not identified" }
+- { name: "Linklaters", sector: law, ats: workday, sources: ["workday:linklaters/Linklaters"] }
+- { name: "Freshfields", sector: law, ats: workday, sources: ["workday:freshfields/FBD_101"] }
+- { name: "Slaughter and May", sector: law, ats: custom, sources: [], why: "ATS not identified" }
+- { name: "Herbert Smith Freehills Kramer", sector: law, ats: custom, sources: [], why: "Careers page blocks automated fetch (403)" }
+- { name: "Hogan Lovells", sector: law, ats: workday, sources: ["workday:hoganlovells/Search"] }
+- { name: "DLA Piper", sector: law, ats: workday, sources: [], why: "dlapiper/Dlapiper had 0 UK/EU early-career roles (US tenant); not added" }
+- { name: "Baker McKenzie", sector: law, ats: custom, sources: [], why: "ATS not identified" }
+- { name: "Ashurst", sector: law, ats: custom, sources: [], why: "Careers page unreachable" }
+- { name: "Norton Rose Fulbright", sector: law, ats: workday, sources: ["workday:nrf/External"] }
+- { name: "Latham & Watkins", sector: law, ats: custom, sources: [], why: "ATS not identified" }
+- { name: "Kirkland & Ellis", sector: law, ats: custom, sources: [], why: "ATS not identified" }
+- { name: "White & Case", sector: law, ats: workday, sources: ["workday:whitecase/External"] }
+- { name: "CMS", sector: law, ats: custom, sources: [], why: "Careers page blocks automated fetch (403)" }
+
+# fmcg
+- { name: "Unilever", sector: fmcg, ats: workday, sources: ["workday:unilever/Unilever_Experienced_Professionals"] }
+- { name: "Procter & Gamble", sector: fmcg, ats: workday, sources: ["workday:pg/1000"], why: "Phenom front end over Workday pg/1000" }
+- { name: "L'Oreal", sector: fmcg, ats: custom, sources: [], why: "Own ATS (careers-apply.loreal.com)" }
+- { name: "Nestle", sector: fmcg, ats: custom, sources: [], why: "Careers page blocks automated fetch (403)" }
+- { name: "Mars", sector: fmcg, ats: workday, sources: ["workday:mars/External"], why: "Phenom front end over Workday mars/External" }
+- { name: "PepsiCo", sector: fmcg, ats: icims, sources: [], why: "iCIMS" }
+- { name: "Diageo", sector: fmcg, ats: workday, sources: ["workday:diageo/Diageo_Careers"] }
+- { name: "Reckitt", sector: fmcg, ats: successfactors, sources: [], why: "SAP SuccessFactors" }
+- { name: "Kraft Heinz", sector: fmcg, ats: custom, sources: [], why: "ATS not identified" }
+- { name: "Coca-Cola Europacific Partners", sector: fmcg, ats: custom, sources: [], why: "ATS not identified" }
+- { name: "British American Tobacco", sector: fmcg, ats: successfactors, sources: [], why: "SAP SuccessFactors" }
+- { name: "Mondelez", sector: fmcg, ats: workday, sources: ["workday:mdlz/External"], why: "Tenant is 'mdlz'" }
+- { name: "Haleon", sector: fmcg, ats: eightfold, sources: [], why: "Eightfold" }
+- { name: "Heineken", sector: fmcg, ats: successfactors, sources: [], why: "SAP SuccessFactors" }
+- { name: "AB InBev", sector: fmcg, ats: greenhouse, sources: [], why: "greenhouse/abinbev is a US 'Growth Group' board with no early-career roles" }
+- { name: "Tesco", sector: fmcg, ats: custom, sources: [], why: "ATS not identified" }
+- { name: "Sainsbury's", sector: fmcg, ats: custom, sources: [], why: "ATS not identified" }
+- { name: "Aldi UK", sector: fmcg, ats: custom, sources: [], why: "Own recruitment site" }
+- { name: "Lidl GB", sector: fmcg, ats: custom, sources: [], why: "ATS not identified" }
+- { name: "Marks & Spencer", sector: fmcg, ats: oracle, sources: [], why: "Oracle Recruiting Cloud (CX_1)" }
+- { name: "ASOS", sector: fmcg, ats: smartrecruiters, sources: ["smartrecruiters:asos"] }
+
+# tech
+- { name: "Google", sector: tech, ats: custom, sources: [], why: "Own careers search, no public feed" }
+- { name: "Microsoft", sector: tech, ats: custom, sources: [], why: "Own careers search (apply.careers.microsoft.com)" }
+- { name: "Amazon", sector: tech, ats: amazon, sources: [], why: "amazon.jobs search.json (see ingest-coverage.md); needs a provider" }
+- { name: "Meta", sector: tech, ats: custom, sources: [], why: "Own careers search" }
+- { name: "Apple", sector: tech, ats: custom, sources: [], why: "Own careers search" }
+- { name: "Bloomberg", sector: tech, ats: avature, sources: [], why: "Avature (bloomberg.avature.net)" }
+- { name: "Salesforce", sector: tech, ats: workday, sources: ["workday:salesforce/External_Career_Site"] }
+- { name: "Oracle", sector: tech, ats: oracle, sources: [], why: "Oracle Recruiting Cloud" }
+- { name: "NVIDIA", sector: tech, ats: workday, sources: ["workday:nvidia/NVIDIAExternalCareerSite"] }
+- { name: "Arm", sector: tech, ats: icims, sources: [], why: "iCIMS (earlycareers-arm.icims.com)" }
+- { name: "Spotify", sector: tech, ats: lever, sources: ["lever:spotify"] }
+- { name: "Palantir", sector: tech, ats: lever, sources: ["lever:palantir"] }
+- { name: "Stripe", sector: tech, ats: greenhouse, sources: ["greenhouse:stripe"] }
+- { name: "Uber", sector: tech, ats: custom, sources: [], why: "Own careers site (smartrecruiters/uber has 1 test row)" }
+- { name: "TikTok / ByteDance", sector: tech, ats: custom, sources: [], why: "Own careers site (lifeattiktok.com)" }
+- { name: "Revolut", sector: tech, ats: custom, sources: [], why: "Own careers site, blocks automated fetch (403)" }
+- { name: "Monzo", sector: tech, ats: greenhouse, sources: ["greenhouse:monzo"] }
+- { name: "Wise", sector: tech, ats: smartrecruiters, sources: ["greenhouse:wise", "smartrecruiters:wise"], why: "greenhouse/wise is a different company (US sales agents); real board is SmartRecruiters" }
+- { name: "Ocado Group", sector: tech, ats: greenhouse, sources: ["greenhouse:ocadogroup"] }
+- { name: "Sky", sector: tech, ats: workday, sources: ["workday:sky/Sky_Careers"] }
+- { name: "BT Group", sector: tech, ats: custom, sources: [], why: "ATS not identified" }
+- { name: "Netflix", sector: tech, ats: custom, sources: [], why: "Own careers site" }
+- { name: "Adobe", sector: tech, ats: workday, sources: ["workday:adobe/external_experienced"], why: "University site (external_university) returns 403" }
+- { name: "Intel", sector: tech, ats: workday, sources: ["workday:intel/External"] }
+- { name: "Qualcomm", sector: tech, ats: eightfold, sources: [], why: "Eightfold" }
+- { name: "Databricks", sector: tech, ats: greenhouse, sources: ["greenhouse:databricks"] }
+- { name: "Datadog", sector: tech, ats: greenhouse, sources: ["greenhouse:datadog"] }
+- { name: "Snowflake", sector: tech, ats: ashby, sources: ["ashby:snowflake"] }
+- { name: "Cisco", sector: tech, ats: workday, sources: ["workday:cisco/Cisco_Careers"], why: "Phenom front end over Workday" }
+- { name: "Visa", sector: tech, ats: workday, sources: ["workday:visa/Visa_Early_Careers"] }
+- { name: "Mastercard", sector: tech, ats: workday, sources: ["workday:mastercard/Campus"], why: "Phenom front end over Workday" }
+
+# industry
+- { name: "BP", sector: industry, ats: workday, sources: ["workday:bpinternational/bpCareers"], why: "Tenant is 'bpinternational'" }
+- { name: "Shell", sector: industry, ats: workday, sources: ["workday:shell/ShellCareers"] }
+- { name: "AstraZeneca", sector: industry, ats: workday, sources: ["workday:astrazeneca/Careers"], why: "Student front end is Eightfold; postings also on Workday" }
+- { name: "GSK", sector: industry, ats: workday, sources: ["workday:gsk/GSKCareers"] }
+- { name: "Rolls-Royce", sector: industry, ats: workday, sources: ["workday:rollsroyce/professional"], why: "Only the 'professional' site found; student site name not found" }
+- { name: "BAE Systems", sector: industry, ats: custom, sources: [], why: "ATS not identified" }
+- { name: "Jaguar Land Rover", sector: industry, ats: successfactors, sources: [], why: "SAP SuccessFactors" }
+- { name: "Arup", sector: industry, ats: custom, sources: [], why: "ATS not identified" }
+- { name: "National Grid", sector: industry, ats: custom, sources: [], why: "Careers page blocks automated fetch (403)" }
+- { name: "Siemens", sector: industry, ats: custom, sources: [], why: "Own job search (jobs.siemens.com)" }

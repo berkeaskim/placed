@@ -1,9 +1,10 @@
 "use client";
 import { useState, useTransition } from "react";
+import { AgentStatus } from "@/components/agent/agent-steps";
 import { ARCHETYPES, ARCHETYPE_LABELS, type Archetype } from "@/lib/types";
 import { setTargetSector } from "./actions";
 
-export function SectorSelect({ value }: { value: Archetype }) {
+export function SectorSelect({ value, label = "Score my CV for" }: { value: Archetype; label?: string }) {
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
   // Shows the new choice while rescoring; the page remounts this (key) with the saved sector afterwards.
@@ -11,7 +12,7 @@ export function SectorSelect({ value }: { value: Archetype }) {
   return (
     <div className="flex flex-col gap-1">
       <label className="flex flex-wrap items-center gap-2 text-sm font-semibold">
-        Score my CV for
+        {label}
         <select
           value={shown}
           disabled={pending}
@@ -29,7 +30,7 @@ export function SectorSelect({ value }: { value: Archetype }) {
           {ARCHETYPES.map((a) => <option key={a} value={a}>{ARCHETYPE_LABELS[a]}</option>)}
         </select>
       </label>
-      {pending && <span role="status" aria-live="polite" className="text-sm font-semibold text-[#3A20C4]">Rescoring your CV…</span>}
+      {pending && <AgentStatus>Rescoring your CV…</AgentStatus>}
       {error && <span role="alert" className="text-sm text-destructive">{error}</span>}
     </div>
   );

@@ -13,7 +13,12 @@ const REFUSAL_FINISH = new Set(["SAFETY", "RECITATION", "BLOCKLIST", "PROHIBITED
 export const geminiAcceptsTemperature = (model: string) => !/^gemini-([3-9]|\d{2,})/.test(model);
 
 export async function geminiStructured<T>(req: StructuredRequest<T>, c?: ModelsClient): Promise<T> {
-  const api: ModelsClient = c ?? (ai ??= new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY })); // server only
+  // server only. Transient 429/5xx (Gemini Pro returns 503 under load) are retried with backoff instead of failing straight
+  // to the reorder-only fallback; the timeout stops a hung request from holding the function until the platform limit.
+  const api: ModelsClient = c ?? (ai ??= new GoogleGenAI({
+    apiKey: process.env.GEMINI_API_KEY,
+    httpOptions: { timeout: 240_000, retryOptions: { attempts: 3, initialDelay: 2, maxDelay: 8, httpStatusCodes: [429, 500, 502, 503, 504] } },
+  }));
   const parts = req.parts.map((p) =>
     p.type === "pdf" ? { inlineData: { mimeType: "application/pdf", data: p.base64 } } : { text: p.text },
   );

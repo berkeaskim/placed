@@ -22,7 +22,7 @@ function fake(opts: { rolling?: boolean; missingCode?: string; otherError?: bool
             ? { data: null, error: { code: opts.missingCode, message: "column jobs.rolling does not exist" } }
             : { data: [{ ...dbRow, ...(asksRolling ? { rolling: opts.rolling ?? false } : {}) }], error: null };
         const q = {
-          eq: () => q, or: () => q, order: () => q, limit: () => q,
+          eq: () => q, or: () => q, order: () => q, limit: () => q, range: () => q,
           maybeSingle: async () => ({ data: res.data?.[0] ?? null, error: res.error }),
           then: (ok: (v: unknown) => unknown, bad: (e: unknown) => unknown) => Promise.resolve(res).then(ok, bad),
         };
@@ -58,5 +58,33 @@ describe("job queries read `rolling` with a fallback for a DB without migration 
     const f = fake({ otherError: true });
     await expect(getLiveJobs(f.client, "2026-10-14")).rejects.toMatchObject({ code: "57014" });
     expect(f.selects).toHaveLength(1);
+  });
+});
+
+describe("getLiveJobs pages past PostgREST's row cap", () => {
+  it("reads every page until a short one", async () => {
+    const { LIVE_JOBS_PAGE } = await import("@/lib/db/queries");
+    const total = LIVE_JOBS_PAGE * 2 + 7;
+    const ranges: [number, number][] = [];
+    const client = {
+      from: () => ({
+        select: () => {
+          let r: [number, number] = [0, 0];
+          const q = {
+            eq: () => q, or: () => q, order: () => q,
+            range: (a: number, b: number) => { r = [a, b]; ranges.push(r); return q; },
+            then: (ok: (v: unknown) => unknown) => {
+              const n = Math.max(0, Math.min(r[1] + 1, total) - r[0]);
+              return Promise.resolve({ data: Array.from({ length: n }, (_, i) => ({ ...dbRow, id: `j${r[0] + i}`, rolling: false })), error: null }).then(ok);
+            },
+          };
+          return q;
+        },
+      }),
+    } as unknown as SupabaseClient;
+    const jobs = await getLiveJobs(client, "2026-10-14");
+    expect(jobs).toHaveLength(total);
+    expect(new Set(jobs.map((j) => j.id)).size).toBe(total);
+    expect(ranges).toEqual([[0, LIVE_JOBS_PAGE - 1], [LIVE_JOBS_PAGE, 2 * LIVE_JOBS_PAGE - 1], [2 * LIVE_JOBS_PAGE, 3 * LIVE_JOBS_PAGE - 1]]);
   });
 });

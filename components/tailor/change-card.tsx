@@ -1,6 +1,8 @@
 "use client";
 import { useState } from "react";
 import { canEdit, canReject, hasPlaceholder, placeholderParts, type Decision, type TailorChangeView } from "@/lib/tailor/view";
+import { diffStats, lineDiff, spaceBetween } from "@/lib/tailor/diff";
+import { AiWrittenTag } from "@/components/ai-written-tag";
 import { AlertIcon, CheckIcon, PencilIcon, QuoteIcon, UndoIcon } from "./icons";
 
 const SECTION_LABEL: Record<TailorChangeView["section"], string> = {
@@ -19,11 +21,45 @@ function Line({ text }: { text: string }) {
   );
 }
 
+/**
+ * Word-level before → after: removed words red and struck through, added words green and underlined (never colour
+ * alone). Screen readers get "removed:" / "added:" labels. `ink` (AI wording only, never the student's edit) writes the
+ * added words in one after another.
+ */
+export function DiffLine({ before, after, ink = false }: { before: string; after: string; ink?: boolean }) {
+  const parts = lineDiff(before, after);
+  const inkOrder = new Map<number, number>();
+  parts.forEach((p, i) => { if (p.op === "add") inkOrder.set(i, inkOrder.size); });
+  const { removed, added } = diffStats(parts);
+  return (
+    <div className="flex flex-col gap-1">
+      <p className="leading-relaxed">
+        {parts.map((p, i) => (
+          <span key={i}>
+            {i > 0 && spaceBetween(parts[i - 1].text, p.text) && " "}
+            {p.op === "same" ? <Line text={p.text} />
+              : p.op === "del"
+                ? <del className="rounded bg-[#FDECEA] px-0.5 text-[#B42318] decoration-[#B42318] decoration-2"><span className="sr-only">removed: </span>{p.text}</del>
+                : <ins className={`rounded px-0.5 font-semibold text-[#0B6B49] underline decoration-2 underline-offset-2 ${ink ? "agent-ink" : "bg-[#E3F6EE]"}`}
+                  style={ink ? ({ "--ink-delay": `calc(var(--ink-base, 0ms) + ${Math.min((inkOrder.get(i) ?? 0) * 90, 600)}ms)` } as React.CSSProperties) : undefined}><span className="sr-only">added: </span><Line text={p.text} /></ins>}
+          </span>
+        ))}
+      </p>
+      {(removed > 0 || added > 0) && (
+        <span className="text-[11px] font-semibold text-muted-foreground">
+          <span className="text-[#B42318]">−{removed} word{removed === 1 ? "" : "s"}</span> · <span className="text-[#0B6B49]">+{added} word{added === 1 ? "" : "s"}</span>
+        </span>
+      )}
+    </div>
+  );
+}
+
 const btn = "inline-flex min-h-11 items-center gap-1.5 rounded-xl border-2 px-3 text-sm font-bold transition-colors disabled:opacity-50";
 
 /**
- * One change (spec §8.3, B7, B8): before → after, the original CV line(s) it comes from, the posting requirement it
- * serves and why; Accept / Edit / Reject with Undo. A blocked edit is shown reverted, with the claim that blocked it.
+ * One change (spec §8.3, B7, B8): a word-level before → after diff, the original CV line(s) it comes from, the posting
+ * requirement it serves and why; Accept / Edit / Reject with Undo. Rejected shows the original line, unmarked; while
+ * editing, the diff updates as the student types. A blocked edit is shown reverted, with the claim that blocked it.
  */
 export function ChangeCard({ change: c, decision, text, onDecide, onUndo, onConfirmNumber }: {
   change: TailorChangeView; decision: Decision; text: string;
@@ -34,6 +70,8 @@ export function ChangeCard({ change: c, decision, text, onDecide, onUndo, onConf
   const k = decision.kind;
   const shown = k === "rejected" ? c.before : k === "edited" ? decision.text : c.after;
   const needsNumber = k !== "rejected" && hasPlaceholder(shown);
+  // The AI's own wording is on screen (not the student's edit or their original line).
+  const aiWords = (k === "suggested" || k === "accepted") && (c.changeType === "rephrased" || c.changeType === "merged");
   const tone = k === "rejected" ? "border-[#E6E6EF] bg-[#FAFAFC]" : k === "suggested" ? "border-[#E6E6EF] bg-white" : "border-[#BFE8D6] bg-white";
 
   return (
@@ -42,19 +80,18 @@ export function ChangeCard({ change: c, decision, text, onDecide, onUndo, onConf
         <span className="rounded-full bg-[#EEEEF2] px-2 py-0.5 text-[#3F3F4C]">{SECTION_LABEL[c.section]}</span>
         <span className="rounded-full bg-[#F4F1FF] px-2 py-0.5 text-[#3A20C4]">{TYPE_LABEL[c.changeType]}</span>
         {c.jdRequirement && <span className="rounded-full bg-[#E6EEFF] px-2 py-0.5 text-[#2340A8]">For: {c.jdRequirement}</span>}
+        {aiWords && <AiWrittenTag />}
         {k === "accepted" && <span className="ml-auto inline-flex items-center gap-1 text-[#0B6B49]"><CheckIcon size={12} />Accepted</span>}
         {k === "edited" && <span className="ml-auto inline-flex items-center gap-1 text-[#0B6B49]"><PencilIcon size={12} />Your words</span>}
         {k === "rejected" && <span className="ml-auto text-muted-foreground">Kept your original</span>}
       </div>
 
-      {c.changeType !== "reordered" && c.before && k !== "rejected" && (
-        <p className="text-muted-foreground line-through decoration-[#9A9AA8]"><span className="sr-only">Before: </span>{c.before}</p>
-      )}
       {editing ? (
         <div className="flex flex-col gap-2">
           <label className="sr-only" htmlFor={`edit-${c.bulletId}`}>Edit this line</label>
           <textarea id={`edit-${c.bulletId}`} value={draft} onChange={(e) => setDraft(e.target.value)} rows={3} maxLength={600}
             className="w-full rounded-xl border-2 border-[#C9C9D6] p-2.5 text-sm focus:border-[#5B3DF5] focus:outline-none" />
+          {c.before && <div className="rounded-xl bg-[#F6F6FA] p-2.5"><DiffLine before={c.before} after={draft} /></div>}
           <p className="text-xs text-muted-foreground">Use only what you really did. Any new number or tool is checked against your CV before your PDF is made.</p>
           <div className="flex gap-2">
             <button type="button" className="btn-quest min-h-11 px-4 text-sm" disabled={!draft.trim()}
@@ -62,11 +99,17 @@ export function ChangeCard({ change: c, decision, text, onDecide, onUndo, onConf
             <button type="button" className={`${btn} border-[#E6E6EF]`} onClick={() => setEditing(false)}>Cancel</button>
           </div>
         </div>
+      ) : k === "rejected" ? (
+        <p className="font-semibold"><span className="sr-only">Your original: </span>{c.before}</p>
+      ) : c.changeType === "dropped" ? (
+        <div className="flex flex-col gap-1">
+          <span className="text-xs font-semibold italic text-muted-foreground">Left out of this version</span>
+          <DiffLine before={c.before} after="" />
+        </div>
+      ) : c.changeType === "reordered" ? (
+        <p className="font-semibold"><span className="sr-only">Moved up, unchanged: </span><Line text={shown} /></p>
       ) : (
-        <p className={c.changeType === "dropped" && k !== "rejected" ? "italic text-muted-foreground" : "font-semibold"}>
-          <span className="sr-only">{k === "rejected" ? "Your original: " : "After: "}</span>
-          {c.changeType === "dropped" && k !== "rejected" ? "Left out of this version" : <Line text={shown} />}
-        </p>
+        <DiffLine before={c.before} after={shown} ink={aiWords} />
       )}
 
       {decision.kind === "rejected" && decision.blockedBy && (

@@ -164,6 +164,31 @@ describe("reverifyEdits (amendment item 6)", () => {
   });
 });
 
+describe("per-change decisions still go through the gate (diff screen)", () => {
+  it("an accepted honest change passes; a fabricated edit blocks; rejecting it restores the original and passes", async () => {
+    const { buildFinal } = await import("@/lib/tailor/view");
+    const honest = vi.fn(async () => {
+      const t = toTailored(cv);
+      t.experience[0].bullets[0] = { id: "x0-b0", text: "Tracked 200 tickets in Excel", sourceRefs: ["x0-b0"], changeType: "rephrased" };
+      return t;
+    });
+    const out = await runTailoring({ cv, rawText, job, confirmedFacts: [], tailor: honest as never });
+    const original = { skills: cv.skills, summary: cv.summary };
+    const gate = (t: TailoredCV) => reverifyEdits({ cv, rawText, job, confirmedFacts: [], tailored: t });
+
+    const accepted = buildFinal(out.tailored, out.changes, { "x0-b0": { kind: "accepted" } }, original);
+    expect(accepted.experience[0].bullets[0].text).toBe("Tracked 200 tickets in Excel");
+    expect(gate(accepted).renderable).toBe(true);
+
+    const fabricated = buildFinal(out.tailored, out.changes, { "x0-b0": { kind: "edited", text: "Tracked 200 tickets in Tableau for Goldman Sachs" } }, original);
+    expect(gate(fabricated).renderable).toBe(false);
+
+    const rejected = buildFinal(out.tailored, out.changes, { "x0-b0": { kind: "rejected" } }, original);
+    expect(rejected.experience[0].bullets[0].text).toBe("Used Excel to track 200 tickets");
+    expect(gate(rejected).renderable).toBe(true);
+  });
+});
+
 describe("heuristicTailor stays honest", () => {
   it("passes the gate and surfaces supported skills", () => {
     const t = heuristicTailor({ cv, allowed: ["Excel", "Stata"], supported: ["Stata"] });

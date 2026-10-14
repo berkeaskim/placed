@@ -39,7 +39,7 @@ export function isSpellingVariant(word: string): boolean {
 }
 
 /** True when the bullet has a real quantity, ignoring years, dates, quarters and tool versions. */
-function hasQuantity(text: string): boolean {
+export function hasQuantity(text: string): boolean {
   let t = text
     .replace(/\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\.?\s+(?:19|20)\d{2}\b/gi, " ")
     .replace(/\b\d{1,2}\/\d{1,2}\/\d{2,4}\b/g, " ")

@@ -301,3 +301,12 @@ describe("decisionsFromFinal (revisit keeps the saved version, fix 2)", () => {
     expect(back["x0-b1"]).toEqual(d["x0-b1"]);
   });
 });
+
+describe("decisionCounts (live tally above the change list)", () => {
+  it("counts accepted (incl. own words), kept original and still pending; pure moves aren't decisions", async () => {
+    const { decisionCounts } = await import("@/lib/tailor/view");
+    expect(decisionCounts(changes, {})).toEqual({ accepted: 0, rejected: 0, pending: 5 });
+    const d: Decisions = { "x0-b0": { kind: "edited", text: "x" }, "x0-b2": { kind: "accepted" }, skills: { kind: "rejected" } };
+    expect(decisionCounts(changes, d)).toEqual({ accepted: 2, rejected: 1, pending: 2 });
+  });
+});

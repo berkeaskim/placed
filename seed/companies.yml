@@ -1,7 +1,7 @@
 # validated 2026-10-13T15:41:27.157Z
 # Source: career-ops portals.yml via docs/research/career-ops-extraction.md §7
 - { slug: monzo, name: Monzo, ats: greenhouse, enabled: true }
-- { slug: wise, name: Wise, ats: greenhouse, enabled: true } # ?
+- { slug: wise, name: Wise, ats: greenhouse, enabled: false } # WRONG COMPANY: this board is "Wise Worksite Field Sales" (US sales agents); real Wise is smartrecruiters/wise
 - { slug: gocardless, name: GoCardless, ats: greenhouse, enabled: true } # ?
 - { slug: tide, name: Tide, ats: greenhouse, enabled: true } # ?
 - { slug: cleo, name: Cleo, ats: greenhouse, enabled: true } # ?
@@ -56,6 +56,11 @@
 - { slug: isidor, name: Isidor, ats: greenhouse, enabled: true }
 - { slug: pm, name: KKR, ats: greenhouse, enabled: false } # EMPTY board (0 postings); slug unconfirmed or board unused
 - { slug: feverup, name: Fever, ats: greenhouse, enabled: true }
+- { slug: wehrtyou, name: Hudson River Trading, ats: greenhouse, enabled: true } # board name "Hudson River Trading" (added 2026-10-14 coverage audit)
+- { slug: squarepointcapital, name: Squarepoint Capital, ats: greenhouse, enabled: true } # added 2026-10-14
+- { slug: quberesearchandtechnologies, name: Qube Research & Technologies, ats: greenhouse, enabled: true } # added 2026-10-14
+- { slug: forvismazars, name: Forvis Mazars, ats: greenhouse, enabled: true } # added 2026-10-14; Germany board, UK roles are on smartrecruiters/mazars
+- { slug: ocadogroup, name: Ocado Group, ats: greenhouse, enabled: true } # added 2026-10-14
 - { slug: deliveroo, name: Deliveroo, ats: ashby, enabled: true } # ?
 - { slug: lendable, name: Lendable, ats: ashby, enabled: true }
 - { slug: marshmallow, name: Marshmallow, ats: ashby, enabled: true } # ?
@@ -124,3 +129,46 @@
 - { slug: cw/External, name: Cushman & Wakefield, ats: workday, apiHost: cw.wd1.myworkdayjobs.com, enabled: true } # 18 / 0; 2000-posting board, ~60s
 - { slug: jll/jllcareers, name: JLL, ats: workday, apiHost: jll.wd1.myworkdayjobs.com, enabled: true } # 8 / 8; 2000-posting board, ~65s
 - { slug: fca/FCA_earlycareers, name: Financial Conduct Authority, ats: workday, apiHost: fca.wd3.myworkdayjobs.com, enabled: true } # 3 / 3
+# Added 2026-10-14 (coverage audit, docs/research/ingest-coverage-benchmark.md). Counts = UK/Europe early-career postings kept on 2026-10-14.
+- { slug: pwc/Global_Campus_Careers, name: PwC, ats: workday, apiHost: pwc.wd3.myworkdayjobs.com, enabled: true } # 83; no overlap with Global_Experienced_Careers
+- { slug: lbg/undergraduate_careers, name: Lloyds Banking Group, ats: workday, apiHost: lbg.wd3.myworkdayjobs.com, enabled: true } # 24
+- { slug: lbg/graduate_careers, name: Lloyds Banking Group, ats: workday, apiHost: lbg.wd3.myworkdayjobs.com, enabled: true } # 33
+- { slug: rbs/Rbs, name: NatWest Group, ats: workday, apiHost: rbs.wd3.myworkdayjobs.com, enabled: true } # 10
+- { slug: santander/SantanderCareers, name: Santander, ats: workday, apiHost: santander.wd3.myworkdayjobs.com, enabled: true } # 2; 1000-posting board
+- { slug: mizuho/mizuhoamericas, name: Mizuho, ats: workday, apiHost: mizuho.wd1.myworkdayjobs.com, enabled: true } # 1
+- { slug: brevanhoward/bh_externalcareers, name: Brevan Howard, ats: workday, apiHost: brevanhoward.wd3.myworkdayjobs.com, enabled: true } # 6
+- { slug: pimco/pimco-careers, name: PIMCO, ats: workday, apiHost: pimco.wd1.myworkdayjobs.com, enabled: true } # 13
+- { slug: spgi/spgi_careers, name: S&P Global, ats: workday, apiHost: spgi.wd5.myworkdayjobs.com, enabled: true } # 6
+- { slug: mgpru/mandgprudential, name: M&G, ats: workday, apiHost: mgpru.wd3.myworkdayjobs.com, enabled: true } # 1
+- { slug: aviva/External, name: Aviva, ats: workday, apiHost: aviva.wd1.myworkdayjobs.com, enabled: true } # 2
+- { slug: mastercard/Campus, name: Mastercard, ats: workday, apiHost: mastercard.wd1.myworkdayjobs.com, enabled: true } # 13; CorporateCareers repeats the same campus roles
+- { slug: visa/Visa_Early_Careers, name: Visa, ats: workday, apiHost: visa.wd5.myworkdayjobs.com, enabled: true } # 1
+- { slug: accenture/AccentureCareers, name: Accenture, ats: workday, apiHost: accenture.wd103.myworkdayjobs.com, enabled: true } # 8; 2000-posting board, ~45s
+- { slug: mmc/Careers, name: Marsh McLennan, ats: workday, apiHost: mmc.wd1.myworkdayjobs.com, enabled: true } # 26; Oliver Wyman, Mercer, NERA, Marsh
+- { slug: linklaters/Linklaters, name: Linklaters, ats: workday, apiHost: linklaters.wd3.myworkdayjobs.com, enabled: true } # 7
+- { slug: nrf/External, name: Norton Rose Fulbright, ats: workday, apiHost: nrf.wd3.myworkdayjobs.com, enabled: true } # 0 today (1 early-career title, outside UK/EU)
+- { slug: hoganlovells/Search, name: Hogan Lovells, ats: workday, apiHost: hoganlovells.wd3.myworkdayjobs.com, enabled: true } # 14
+- { slug: whitecase/External, name: White & Case, ats: workday, apiHost: whitecase.wd1.myworkdayjobs.com, enabled: true } # 2
+- { slug: unilever/Unilever_Experienced_Professionals, name: Unilever, ats: workday, apiHost: unilever.wd3.myworkdayjobs.com, enabled: true } # 12; internships are posted on this site too
+- { slug: pg/1000, name: Procter & Gamble, ats: workday, apiHost: pg.wd5.myworkdayjobs.com, enabled: true } # 78; rate-limits (429), retried
+- { slug: mars/External, name: Mars, ats: workday, apiHost: mars.wd3.myworkdayjobs.com, enabled: true } # 8
+- { slug: mdlz/External, name: Mondelez, ats: workday, apiHost: mdlz.wd3.myworkdayjobs.com, enabled: true } # 25
+- { slug: diageo/Diageo_Careers, name: Diageo, ats: workday, apiHost: diageo.wd3.myworkdayjobs.com, enabled: true } # 0 today (1 early-career title, outside UK/EU)
+- { slug: salesforce/External_Career_Site, name: Salesforce, ats: workday, apiHost: salesforce.wd12.myworkdayjobs.com, enabled: true } # 10
+- { slug: nvidia/NVIDIAExternalCareerSite, name: NVIDIA, ats: workday, apiHost: nvidia.wd5.myworkdayjobs.com, enabled: true } # 16; 2000-posting board, ~75s
+- { slug: intel/External, name: Intel, ats: workday, apiHost: intel.wd1.myworkdayjobs.com, enabled: true } # 15
+- { slug: cisco/Cisco_Careers, name: Cisco, ats: workday, apiHost: cisco.wd5.myworkdayjobs.com, enabled: true } # 9
+- { slug: adobe/external_experienced, name: Adobe, ats: workday, apiHost: adobe.wd5.myworkdayjobs.com, enabled: true } # 4
+- { slug: sky/Sky_Careers, name: Sky, ats: workday, apiHost: sky.wd3.myworkdayjobs.com, enabled: true } # 1
+- { slug: astrazeneca/Careers, name: AstraZeneca, ats: workday, apiHost: astrazeneca.wd3.myworkdayjobs.com, enabled: true } # 1
+- { slug: bpinternational/bpCareers, name: BP, ats: workday, apiHost: bpinternational.wd3.myworkdayjobs.com, enabled: true } # 0 UK/EU today (3 Asia roles, filtered out)
+- { slug: rollsroyce/professional, name: Rolls-Royce, ats: workday, apiHost: rollsroyce.wd3.myworkdayjobs.com, enabled: true } # 0 after the staff-title fix
+
+# SmartRecruiters (public Posting API, no key). Needs migration 0011_smartrecruiters before `npm run seed`.
+- { slug: wise, name: Wise, ats: smartrecruiters, enabled: true } # 0 early-career today; replaces the wrong greenhouse/wise board
+- { slug: cliffordchance, name: Clifford Chance, ats: smartrecruiters, enabled: true } # 10
+- { slug: rolandberger, name: Roland Berger, ats: smartrecruiters, enabled: true } # 19
+- { slug: paconsulting, name: PA Consulting, ats: smartrecruiters, enabled: true } # 2
+- { slug: mazars, name: Forvis Mazars, ats: smartrecruiters, enabled: true } # 0 today
+- { slug: legalandgeneral, name: Legal & General, ats: smartrecruiters, enabled: true } # 0 today
+- { slug: asos, name: ASOS, ats: smartrecruiters, enabled: true } # 0 today

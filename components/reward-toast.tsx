@@ -27,6 +27,6 @@ export function celebrate(r: AwardResult | null) {
     </div>
   ), { duration: 4000 });
   if (r.levelUp || r.newBadges.length) {
-    confetti({ particleCount: 120, spread: 70, origin: { y: 0.8 }, colors: ["#5B3DF5", "#FFC800", "#FF9600", "#0E8A5F"] });
+    confetti({ particleCount: 120, spread: 70, origin: { y: 0.8 }, disableForReducedMotion: true, colors: ["#5B3DF5", "#FFC800", "#FF9600", "#0E8A5F"] });
   }
 }

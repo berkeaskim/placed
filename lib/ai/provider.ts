@@ -4,7 +4,7 @@ import { loadFixture } from "./fixtures";
 
 export type Part = { type: "text"; text: string } | { type: "pdf"; base64: string };
 /** `temperature` is optional and currently never sent: Anthropic models reject it and Gemini 3 should stay at its default (gemini.ts). */
-/** `thinking: "low"` asks Gemini 3 for a low thinking level (latency-bound calls); Anthropic adapters ignore it. */
+/** `thinking: "low"` asks Gemini for a low thinking level (latency); adapters without the knob ignore it. */
 export type StructuredRequest<T> = { tier: "fast" | "smart"; system: string; parts: Part[]; schema: z.ZodType<T>; maxTokens?: number; temperature?: number; thinking?: "low" };
 
 export class AiError extends Error {}

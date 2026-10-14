@@ -6,6 +6,7 @@ import { applyFilters, feedHref, LOCATION_FILTERS, LOCATION_LABELS, parseFilters
 import { todayLondon } from "@/lib/scoring/dates";
 import { ARCHETYPE_LABELS, type Archetype } from "@/lib/types";
 import { JobCard } from "@/components/job-card";
+import { isPastSaved } from "@/lib/tracker/status";
 
 const chipClass = (active: boolean) =>
   `rounded-full border px-3.5 py-2 text-[13px] font-semibold no-underline ${active ? "border-foreground bg-foreground text-white" : "bg-white text-foreground"}`;
@@ -16,12 +17,13 @@ export default async function Feed({ searchParams }: { searchParams: Promise<Rec
   const today = todayLondon();
   const [profile, cv, jobs, { data: apps }] = await Promise.all([
     getProfile(supabase, user.id), getActiveCv(supabase, user.id), getLiveJobs(supabase, today),
-    supabase.from("applications").select("job_id").eq("user_id", user.id),
+    supabase.from("applications").select("job_id, status").eq("user_id", user.id),
   ]);
   const student = toStudent(profile);
   const all = rankJobs(student, cv?.parsed ?? null, jobs, today);
   const ranked = applyFilters(all, filters, today);
   const savedIds = new Set((apps ?? []).map((x) => x.job_id as string));
+  const appliedIds = new Set((apps ?? []).filter((x) => isPastSaved(x.status as string)).map((x) => x.job_id as string));
 
   const topArchetypes: Archetype[] = student.archetypes.slice(0, 3).map((x) => x.key);
   if (filters.a && !topArchetypes.includes(filters.a)) topArchetypes.push(filters.a);
@@ -46,7 +48,7 @@ export default async function Feed({ searchParams }: { searchParams: Promise<Rec
         <Link href={feedHref(filters, { soon: !filters.soon })} aria-current={filters.soon ? "true" : undefined} className={chipClass(filters.soon)}>Closing soon</Link>
       </nav>
       {ranked.length === 0 && <p className="card-quest p-6 text-center font-semibold">No live roles match these filters right now. Try clearing a filter.</p>}
-      {ranked.slice(0, 60).map((r) => <JobCard key={r.job.id} r={r} today={today} saved={savedIds.has(r.job.id)} />)}
+      {ranked.slice(0, 60).map((r) => <JobCard key={r.job.id} r={r} today={today} saved={savedIds.has(r.job.id)} applied={appliedIds.has(r.job.id)} />)}
     </div>
   );
 }

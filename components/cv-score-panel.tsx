@@ -9,14 +9,15 @@ import {
   scoreBand, sourceChip, sparklineLabel, sparklinePoints, splitFixes,
 } from "@/lib/cv-score/present";
 import { DisagreeButton } from "@/components/cv-score/disagree-button";
+import { CountUp, DrawCircle, GrowBar } from "@/components/agent/reveal";
 
 /**
  * CV Score panel (spec §6.4, amendments B11). Server component; data comes from loadCvScorePanel().
  * Order: caps (never hidden) → next best fix → ring + bars → remaining fixes → "What our AI saw".
+ * Two columns from lg up (next fix | score, then fixes | AI view) so the page does not run long.
  */
 
 const DIMS: Dimension[] = ["ats", "impact", "clarity", "relevance", "uk"];
-const RING = 327; // 2πr for r = 52
 
 const Icon = {
   alert: (
@@ -45,7 +46,7 @@ const Icon = {
     </svg>
   ),
   chevron: (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="ml-auto transition-transform group-open:rotate-180">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="shrink-0 text-[#5B5B6B] transition-transform group-open:rotate-180">
       <path d="m6 9 6 6 6-6" />
     </svg>
   ),
@@ -98,30 +99,28 @@ function OffendingLine({ line }: { line: string | null }) {
 
 function NextBestFix({ fix, cvId, sector }: { fix: Fix; cvId: string; sector: string }) {
   return (
-    <section aria-labelledby="next-fix-h" className="card-quest flex flex-col gap-3 p-5">
-      <h3 id="next-fix-h" className="flex items-center gap-2 text-base font-bold text-[#16161D]">
-        <span className="text-[#5B3DF5]">{Icon.target}</span>Next best fix
-      </h3>
+    <section aria-labelledby="next-fix-h" className="card-quest flex h-full flex-col gap-3 p-5">
+      <div className="flex items-center gap-2">
+        <h3 id="next-fix-h" className="flex items-center gap-2 text-base font-bold text-[#16161D]">
+          <span className="text-[#5B3DF5]">{Icon.target}</span>Next best fix
+        </h3>
+      </div>
       <Tags fix={fix} />
-      <div className="flex flex-col gap-1">
-        <span className="text-xs font-semibold text-[#5B5B6B]">Your line</span>
-        <OffendingLine line={fix.evidenceLine} />
-      </div>
-      <div className="flex flex-col gap-0.5">
-        <span className="text-xs font-semibold text-[#5B5B6B]">Why it matters</span>
-        <p className="text-sm leading-snug">{fix.statement}</p>
-        <SourceChip fix={fix} />
-      </div>
-      {fix.fix && (
-        <div className="flex flex-col gap-1">
-          <span className="text-xs font-semibold text-[#5B5B6B]">Try this</span>
-          <p className="rounded-xl bg-[#EFEBFF] px-3 py-2 text-sm font-medium leading-snug text-[#16161D] break-words">{fix.fix}</p>
+      <p className="text-sm font-semibold leading-snug text-[#16161D]">{fix.statement}</p>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="flex min-w-0 flex-col gap-1">
+          <span className="text-xs font-semibold text-[#5B5B6B]">Your line</span>
+          <OffendingLine line={fix.evidenceLine} />
         </div>
-      )}
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-sm font-semibold text-[#5B5B6B]">
-          Worth <span className="num-quest text-base text-[#9A6B00]">+{fix.lostPoints} pts</span>
-        </span>
+        {fix.fix && (
+          <div className="flex min-w-0 flex-col gap-1">
+            <span className="text-xs font-semibold text-[#5B5B6B]">Try this</span>
+            <p className="rounded-xl bg-[#EFEBFF] px-3 py-2 text-sm font-medium leading-snug text-[#16161D] break-words">{fix.fix}</p>
+          </div>
+        )}
+      </div>
+      <div className="mt-auto flex flex-wrap items-center justify-between gap-x-2">
+        <SourceChip fix={fix} />
         <DisagreeButton cvId={cvId} ruleId={fix.ruleId} sector={sector} />
       </div>
     </section>
@@ -130,13 +129,28 @@ function NextBestFix({ fix, cvId, sector }: { fix: Fix; cvId: string; sector: st
 
 function CompactFix({ fix, cvId, sector }: { fix: Fix; cvId: string; sector: string }) {
   return (
-    <li className="flex flex-col gap-1.5 border-t border-[#ECECF3] pt-3 first:border-t-0 first:pt-0">
-      <Tags fix={fix} />
-      {fix.evidenceLine && <p className="text-xs italic text-[#5B5B6B] break-words">“{fix.evidenceLine}”</p>}
-      <p className="text-sm leading-snug">{fix.statement}</p>
-      <SourceChip fix={fix} />
-      {fix.fix && <p className="text-sm leading-snug text-[#16161D] break-words"><span className="font-semibold">Try: </span>{fix.fix}</p>}
-      <div className="flex justify-end"><DisagreeButton cvId={cvId} ruleId={fix.ruleId} sector={sector} /></div>
+    <li className="border-t border-[#ECECF3] first:border-t-0">
+      <details className="group">
+        <summary className="flex min-h-11 cursor-pointer list-none items-center gap-3 py-2.5 [&::-webkit-details-marker]:hidden">
+          <span className="w-20 shrink-0 text-[11px] font-bold uppercase tracking-wide text-[#5B5B6B]">{DIM_LABEL[fix.dimension]}</span>
+          <span className="min-w-0 flex-1 truncate text-sm font-medium group-open:whitespace-normal">{fix.statement}</span>
+          <span className="chip-xp shrink-0 !text-xs">+{fix.lostPoints}</span>
+          {Icon.chevron}
+        </summary>
+        <div className="flex flex-col gap-1.5 pb-3 pl-0 sm:pl-23">
+          {isConvention(fix) && (
+            <span className="self-start rounded-full border border-[#DCDCE6] px-2 py-0.5 text-[11px] font-semibold text-[#5B5B6B]" title="Evidence C or D: widely given advice rather than measured">
+              Convention
+            </span>
+          )}
+          {fix.evidenceLine && <p className="text-xs italic text-[#5B5B6B] break-words">“{fix.evidenceLine}”</p>}
+          {fix.fix && <p className="text-sm leading-snug text-[#16161D] break-words"><span className="font-semibold">Try: </span>{fix.fix}</p>}
+          <div className="flex flex-wrap items-center justify-between gap-x-2">
+            <SourceChip fix={fix} />
+            <DisagreeButton cvId={cvId} ruleId={fix.ruleId} sector={sector} />
+          </div>
+        </div>
+      </details>
     </li>
   );
 }
@@ -163,14 +177,13 @@ export function CvScorePanel({ data }: { data: CvScorePanelData }) {
   const { next, rest } = splitFixes(data.fixes, 4);
   const caveat = SECTOR_CAVEATS[sector];
   const cna = couldntAssessLabel(data.couldNotAssess);
-  const dash = Math.round((Math.min(100, Math.max(0, total)) / 100) * RING);
 
   return (
-    <div className="flex w-full flex-col gap-4">
+    <div className="grid w-full grid-cols-1 gap-4 lg:grid-cols-2 [&>*]:min-w-0">
       {capBanners(data.capsApplied).map((c) => (
-        <div key={c.text} role="note" className="flex gap-2 rounded-2xl border border-[#F5D9A8] bg-[#FFF1DC] px-4 py-3 text-sm text-[#7A4100]">
+        <div key={c.text} role="note" className="flex gap-2 rounded-2xl border border-[#F5D9A8] bg-[#FFF1DC] px-4 py-3 text-sm text-[#7A4100] lg:col-span-2">
           {Icon.alert}
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-wrap items-center gap-x-3">
             <span className="font-semibold">{c.text}</span>
             {c.imageOnly && (
               <Link href="/profile/quiz" className="inline-flex min-h-11 items-center font-semibold text-[#7A4100] underline underline-offset-2">
@@ -183,32 +196,32 @@ export function CvScorePanel({ data }: { data: CvScorePanelData }) {
 
       {next && <NextBestFix fix={next} cvId={cvId} sector={sector} />}
 
-      <section aria-labelledby="cv-score-h" className="flex flex-col gap-4 rounded-[20px] border border-[#E6E6EF] bg-white p-5">
+      <section aria-labelledby="cv-score-h" className={`flex flex-col gap-4 rounded-[20px] border border-[#E6E6EF] bg-white p-5 ${next ? "" : "lg:col-span-2"}`}>
         <div className="flex items-center justify-between gap-2">
           <h2 id="cv-score-h" className="text-base font-bold">Your CV Score</h2>
           <span className="rounded-full px-2.5 py-1 text-xs font-bold" style={{ background: band.bg, color: band.fg }}>{band.label}</span>
         </div>
 
-        <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-center">
+        <div className="flex flex-col items-center gap-5 sm:flex-row sm:items-center">
           <div className="flex shrink-0 flex-col items-center gap-1">
-            <svg width="112" height="112" viewBox="0 0 120 120" role="img" aria-label={`CV score ${total} out of 100 for ${label}`}>
+            <svg width="120" height="120" viewBox="0 0 120 120" role="img" aria-label={`CV score ${total} out of 100 for ${label}`}>
               <circle cx="60" cy="60" r="52" fill="none" stroke="#ECECF3" strokeWidth="12" />
-              <circle cx="60" cy="60" r="52" fill="none" stroke="#5B3DF5" strokeWidth="12" strokeLinecap="round" strokeDasharray={`${dash} ${RING}`} transform="rotate(-90 60 60)" />
-              <text x="60" y="66" textAnchor="middle" fontSize="34" fontWeight="700" fill="#16161D" style={{ fontFamily: "var(--font-quest)" }}>{total}</text>
+              <g transform="rotate(-90 60 60)"><DrawCircle cx={60} cy={60} r={52} value={total / 100} stroke="#5B3DF5" strokeWidth={12} /></g>
+              <text x="60" y="66" textAnchor="middle" fontSize="34" fontWeight="700" fill="#16161D" style={{ fontFamily: "var(--font-quest)" }}><CountUp to={total} duration={1.1} /></text>
               <text x="60" y="84" textAnchor="middle" fontSize="12" fontWeight="600" fill="#5B5B6B">/100</text>
             </svg>
-            <p className="text-center text-sm font-semibold">
-              <span className="num-quest">{total}/100</span> for {label}
+            <p className="text-center text-xs font-semibold text-[#5B5B6B]">
+              <span className="sr-only">{total}/100 </span>for {label}
             </p>
           </div>
           <div className="flex w-full flex-1 flex-col gap-2 text-xs">
-            {DIMS.map((d) => {
+            {DIMS.map((d, i) => {
               const v = dimensions[d];
               return (
                 <div key={d} className="flex flex-col gap-0.5">
                   <div className="flex justify-between"><span>{DIM_LABEL[d]}</span><b>{v ?? "—"}</b></div>
-                  <div className="h-[5px] rounded-full bg-[#ECECF3]">
-                    {v !== null && <div className="h-[5px] rounded-full" style={{ width: `${v}%`, background: barColor(v) }} />}
+                  <div className="h-[6px] rounded-full bg-[#ECECF3]">
+                    {v !== null && <GrowBar value={v / 100} delay={0.15 + i * 0.06} className="h-[6px] rounded-full" style={{ background: barColor(v) }} />}
                   </div>
                 </div>
               );
@@ -228,27 +241,31 @@ export function CvScorePanel({ data }: { data: CvScorePanelData }) {
           <Sparkline history={data.history} />
         </div>
 
-        {caveat && (
-          <p className="flex gap-2 rounded-xl bg-[#F6F6FA] px-3 py-2 text-sm text-[#3F3F4C]">{Icon.info}<span>{caveat}</span></p>
-        )}
-
-        <p className="text-xs leading-snug text-[#5B5B6B]">{disclaimer(sector)}</p>
+        <details className="group/about mt-auto text-xs text-[#5B5B6B]">
+          <summary className="inline-flex min-h-11 cursor-pointer list-none items-center gap-1.5 font-semibold [&::-webkit-details-marker]:hidden">
+            {Icon.info}How this score works
+          </summary>
+          <div className="flex flex-col gap-2 pt-1">
+            {caveat && <p className="rounded-xl bg-[#F6F6FA] px-3 py-2 text-sm text-[#3F3F4C]">{caveat}</p>}
+            <p className="leading-snug">{disclaimer(sector)}</p>
+          </div>
+        </details>
       </section>
 
       {rest.length > 0 && (
-        <section aria-labelledby="more-fixes-h" className="flex flex-col gap-3 rounded-[20px] border border-[#E6E6EF] bg-white p-5">
-          <h3 id="more-fixes-h" className="text-sm font-bold">More fixes</h3>
-          <ol className="flex flex-col gap-3">
+        <section aria-labelledby="more-fixes-h" className={`flex flex-col gap-1 rounded-[20px] border border-[#E6E6EF] bg-white px-5 pt-4 pb-2 ${data.aiSaw ? "" : "lg:col-span-2"}`}>
+          <h3 id="more-fixes-h" className="text-sm font-bold">More fixes <span className="font-semibold text-[#5B5B6B]">· {rest.length}</span></h3>
+          <ol className="flex flex-col">
             {rest.map((f) => <CompactFix key={f.ruleId} fix={f} cvId={cvId} sector={sector} />)}
           </ol>
         </section>
       )}
 
       {data.aiSaw && (
-        <details className="group rounded-[20px] border border-[#E6E6EF] bg-white">
+        <details className={`group self-start rounded-[20px] border border-[#E6E6EF] bg-white ${rest.length > 0 ? "" : "lg:col-span-2"}`}>
           <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 px-5 py-3 text-sm font-semibold [&::-webkit-details-marker]:hidden">
             <span className="text-[#5B3DF5]">{Icon.eye}</span>What our AI saw
-            {Icon.chevron}
+            <span className="ml-auto">{Icon.chevron}</span>
           </summary>
           <div className="flex flex-col gap-2 px-5 pb-5">
             <p className="text-xs text-[#5B5B6B]">Your name, contact details and personal markers were removed before the AI read your CV.</p>

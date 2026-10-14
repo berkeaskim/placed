@@ -3,11 +3,12 @@ import { normalizeGreenhouse } from "./greenhouse";
 import { normalizeLever } from "./lever";
 import { normalizeAshby } from "./ashby";
 import { fetchWorkday, workdayBase } from "./workday";
+import { fetchSmartRecruiters, srPostingsUrl } from "./smartrecruiters";
 import { passesTitleFilter } from "../filter";
 
 export { normalizeGreenhouse, normalizeLever, normalizeAshby };
 
-export type Ats = "greenhouse" | "lever" | "ashby" | "workday";
+export type Ats = "greenhouse" | "lever" | "ashby" | "workday" | "smartrecruiters";
 export type CompanySeed = { slug: string; name: string; ats: Ats; apiHost?: string | null };
 
 export class ProviderError extends Error {}
@@ -23,6 +24,8 @@ export function endpointFor(c: CompanySeed): string {
     case "workday":
       if (!c.apiHost) throw new ProviderError(`workday/${c.slug}: apiHost ({tenant}.wdN.myworkdayjobs.com) is required`);
       return `${workdayBase(c.slug, c.apiHost)}/jobs`;
+    case "smartrecruiters":
+      return srPostingsUrl(c.slug);
   }
 }
 
@@ -34,6 +37,14 @@ export async function fetchJobs(c: CompanySeed, fetchImpl: typeof fetch = fetch)
       return (await fetchWorkday(c.slug, c.apiHost as string, passesTitleFilter, fetchImpl)).jobs;
     } catch (e) {
       throw new ProviderError(`workday/${c.slug}: ${(e as Error).message}`);
+    }
+  }
+  if (c.ats === "smartrecruiters") {
+    // The list has no descriptions; details are fetched only for titles that pass, as for Workday.
+    try {
+      return (await fetchSmartRecruiters(c.slug, passesTitleFilter, fetchImpl)).jobs;
+    } catch (e) {
+      throw new ProviderError(`smartrecruiters/${c.slug}: ${(e as Error).message}`);
     }
   }
   let res: Response;

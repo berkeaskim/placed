@@ -18,7 +18,7 @@ export function MythCard() {
   return (
     <section aria-labelledby="myth-h" className="flex flex-col gap-4 rounded-[20px] border border-[#E6E6EF] bg-white p-5">
       <h2 id="myth-h" className="text-base font-bold">Myth vs evidence</h2>
-      <ul className="flex flex-col gap-4">
+      <ul className="grid gap-5 md:grid-cols-3">
         {myths.map((m) => {
           const links = mythLinks(m.sources);
           return (

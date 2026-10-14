@@ -1,0 +1,908 @@
+{
+ "software_eng": {
+  "recruiterScan": [
+   "Skills block: are the advert's core languages and frameworks visible, grouped and current?",
+   "Each project or role: what did you personally build, in which stack, and did it ship or get used?",
+   "Evidence beyond the syllabus: side projects, hackathons, open source, a live GitHub or portfolio link.",
+   "A measurable outcome per entry where the CV has one (users, downloads, speed, placing).",
+   "Teamwork and communication shown inside technical work, not as adjectives."
+  ],
+  "leadWith": [
+   "The bullet already using the advert's named language, framework or tool, moved to the top of its entry.",
+   "Shipped, deployed or used artefacts (live link, users, downloads, adopted by a society).",
+   "Existing quantified results (performance, accuracy, test coverage, placing in a competition).",
+   "The component the student owned within a team project, stated as their own action.",
+   "Engineering practice the advert asks for (Git, testing, CI, code review, Agile) when the CV already shows it."
+  ],
+  "summaryFormula": "One or two lines: degree, year, university (grade if 2:1+) + two or three advert-matching languages/frameworks the bullets already evidence + the strongest shipped project or internship fact with its existing number + target role type; drop it if space is tight and a cover letter exists.",
+  "verbs": {
+   "prefer": [
+    "Built",
+    "Developed",
+    "Implemented",
+    "Designed",
+    "Deployed",
+    "Integrated",
+    "Refactored",
+    "Optimised",
+    "Debugged",
+    "Tested",
+    "Automated",
+    "Contributed"
+   ],
+   "avoid": [
+    "Spearheaded",
+    "Architected",
+    "Pioneered",
+    "Revolutionised",
+    "Leveraged",
+    "Utilised",
+    "Mastered",
+    "Expert in",
+    "Responsible for",
+    "Worked on",
+    "Helped with",
+    "Passionate coder"
+   ]
+  },
+  "reframes": [
+   {
+    "from": "made a website for the society",
+    "to": "built a responsive web front end (HTML, CSS, JavaScript) for a [n]-member society",
+    "onlyIf": "the CV names those technologies for this project; member count only if already stated"
+   },
+   {
+    "from": "put the app online",
+    "to": "deployed to [platform] (live)",
+    "onlyIf": "the CV names the hosting platform or gives a live link"
+   },
+   {
+    "from": "used GitHub with my group",
+    "to": "version control with Git, using pull requests and code review",
+    "onlyIf": "pull requests or reviewing teammates' code are described; otherwise just 'version control (Git)'"
+   },
+   {
+    "from": "wrote some tests",
+    "to": "unit testing with [pytest/Jest/JUnit]",
+    "onlyIf": "the testing framework is named in the CV"
+   },
+   {
+    "from": "worked in two-week sprints with stand-ups",
+    "to": "Agile (Scrum) delivery",
+    "onlyIf": "sprints, stand-ups or a backlog are described"
+   },
+   {
+    "from": "made the page load faster",
+    "to": "optimised page load performance",
+    "onlyIf": "a speed improvement is described; keep any number exactly and never add one"
+   },
+   {
+    "from": "code was checked automatically when we pushed",
+    "to": "CI pipeline ([GitHub Actions/GitLab CI])",
+    "onlyIf": "the CI tool is named or clearly described"
+   },
+   {
+    "from": "group project",
+    "to": "[n]-person team project; owned [component]",
+    "onlyIf": "team size and the student's component are stated"
+   }
+  ],
+  "competencyThemes": [
+   "Back-end development",
+   "Front-end development",
+   "APIs and integration",
+   "Testing and CI",
+   "Version control and code review",
+   "Cloud deployment",
+   "Data structures and algorithms",
+   "Agile delivery"
+  ],
+  "sectionOrder": [
+   "Header (incl. GitHub/portfolio, LinkedIn)",
+   "Profile (optional, 1-2 lines)",
+   "Education",
+   "Technical Skills",
+   "Projects (or Experience first if it holds a relevant tech internship)",
+   "Experience",
+   "Achievements and Hackathons",
+   "Interests"
+  ],
+  "pitfalls": [
+   "A long list of languages with no project or role that uses them.",
+   "Team-level descriptions ('we built') that hide what the student did.",
+   "Authorship inflation that an engineer will probe at interview (used to built, contributed to led).",
+   "Irrelevant or outdated tools listed above the advert's stack.",
+   "Typos: technical recruiters treat them like bugs."
+  ]
+ },
+ "data_analytics": {
+  "recruiterScan": [
+   "Core tools visible and used: SQL, Python or R, and a spreadsheet or BI tool (Power BI, Tableau).",
+   "A complete analysis arc: question defined, data cleaned, method chosen, result communicated.",
+   "The 'so what': which business or real-world decision the analysis informed, and for whom.",
+   "Quantitative grounding: degree, statistics or ML modules, dissertation method.",
+   "Communication of findings to non-technical audiences."
+  ],
+  "leadWith": [
+   "The business or research question the analysis answered.",
+   "Dataset source and scale, where already stated.",
+   "Method plus evaluation metric already in the CV (and the baseline, if given).",
+   "Who used the output (dashboard used weekly by X, recommendation adopted).",
+   "Advert-named tools the bullet already uses."
+  ],
+  "summaryFormula": "Two lines: quantitative degree and year + the core tools the bullets already evidence (SQL, Python/R, BI tool) + one project or role written as question-to-result with only its existing numbers + the target (analyst vs data science) taken from the advert.",
+  "verbs": {
+   "prefer": [
+    "Analysed",
+    "Queried",
+    "Cleaned",
+    "Validated",
+    "Modelled",
+    "Visualised",
+    "Evaluated",
+    "Tested",
+    "Automated",
+    "Built",
+    "Presented",
+    "Recommended"
+   ],
+   "avoid": [
+    "Leveraged big data",
+    "Harnessed AI",
+    "Spearheaded the data strategy",
+    "Drove insights",
+    "Revolutionised reporting",
+    "Expert in machine learning",
+    "Predicted (when a model was only fitted, not evaluated)",
+    "Data-driven (as an unearned adjective)"
+   ]
+  },
+  "reframes": [
+   {
+    "from": "made charts for the weekly meeting",
+    "to": "data visualisation and weekly reporting",
+    "onlyIf": "the charts were produced for a recurring audience"
+   },
+   {
+    "from": "made a dashboard",
+    "to": "built a [Power BI/Tableau] dashboard for [audience]",
+    "onlyIf": "the tool and the users are named"
+   },
+   {
+    "from": "tidied up the spreadsheet",
+    "to": "cleaned and validated data (duplicates, missing values)",
+    "onlyIf": "those cleaning steps are described"
+   },
+   {
+    "from": "looked at the survey results",
+    "to": "analysed survey data (n = [n])",
+    "onlyIf": "the sample size is already stated"
+   },
+   {
+    "from": "compared two versions",
+    "to": "A/B test",
+    "onlyIf": "a randomised split or control group with a measured metric is described; otherwise keep 'comparison'"
+   },
+   {
+    "from": "wrote queries to get the data",
+    "to": "SQL data extraction (joins, aggregation)",
+    "onlyIf": "SQL is named"
+   },
+   {
+    "from": "explained the results to my manager and the team",
+    "to": "communicated findings to non-technical stakeholders",
+    "onlyIf": "the audience was non-specialist"
+   },
+   {
+    "from": "built a model to predict X",
+    "to": "built a [model] to predict X, evaluated with [metric]",
+    "onlyIf": "model type and metric are already present; never add a metric value"
+   }
+  ],
+  "competencyThemes": [
+   "SQL and data extraction",
+   "Data cleaning and validation",
+   "Statistical analysis",
+   "Data visualisation and dashboards",
+   "Machine learning (data science roles only)",
+   "Experimentation and A/B testing",
+   "Data storytelling",
+   "Data governance awareness"
+  ],
+  "sectionOrder": [
+   "Header (incl. GitHub/Kaggle/Tableau Public)",
+   "Profile (optional, 2 lines)",
+   "Education (modules, dissertation method)",
+   "Technical Skills",
+   "Projects and Portfolio",
+   "Experience",
+   "Achievements (datathons, competitions)",
+   "Interests"
+  ],
+  "pitfalls": [
+   "Accuracy or performance figures with no baseline or context.",
+   "Tool lists with no applied project.",
+   "'Insights' that inform no named decision or audience.",
+   "Relabelling a simple comparison as an A/B test, or a fitted model as a deployed one.",
+   "Headline projects on toy datasets with no extension."
+  ]
+ },
+ "product": {
+  "recruiterScan": [
+   "Do they understand users: feedback gathered, research done, a problem framed in the user's terms?",
+   "Cross-functional working: engineers, designers, marketing or other teams named.",
+   "Decisions backed by data or research, not opinion.",
+   "Ownership through positions of responsibility, ventures, competitions or things the student launched.",
+   "Clear, concise writing: the CV itself is read as a sample of product communication."
+  ],
+  "leadWith": [
+   "The user problem and who it affected.",
+   "A prioritisation or trade-off decision the source already describes.",
+   "The outcome metric already stated (sign-ups, conversion, retention, attendance).",
+   "The teams or stakeholders the student worked with.",
+   "Launch or delivery of the thing, if it happened."
+  ],
+  "summaryFormula": "Two lines: degree and year + one user-facing thing the student launched, ran or improved, with its existing outcome + the analytical or cross-functional evidence already in the CV + the target (graduate product manager, APM, product analyst); never call the student a 'product manager' unless that is their actual job title.",
+  "verbs": {
+   "prefer": [
+    "Identified",
+    "Researched",
+    "Interviewed",
+    "Prioritised",
+    "Defined",
+    "Prototyped",
+    "Launched",
+    "Iterated",
+    "Collaborated",
+    "Measured",
+    "Analysed",
+    "Presented"
+   ],
+   "avoid": [
+    "Owned the roadmap (for a course or society project)",
+    "Drove the product vision",
+    "Spearheaded",
+    "Visionary",
+    "Disrupted",
+    "Revolutionised",
+    "CEO/Founder (unless an actual registered or operating venture)",
+    "Name-dropped frameworks (RICE, JTBD, AARRR) with no application"
+   ]
+  },
+  "reframes": [
+   {
+    "from": "asked people what they thought of it",
+    "to": "gathered user feedback through [interviews/survey] (n = [n])",
+    "onlyIf": "the method is described; n only if stated"
+   },
+   {
+    "from": "decided which features to build first",
+    "to": "prioritised features against [criterion]",
+    "onlyIf": "the line shows an actual choice and its reason"
+   },
+   {
+    "from": "worked with the developers and the designer",
+    "to": "collaborated cross-functionally with engineering and design",
+    "onlyIf": "both functions are named"
+   },
+   {
+    "from": "drew the screens",
+    "to": "prototyped / wireframed in [Figma]",
+    "onlyIf": "the tool is named or the artefact is described"
+   },
+   {
+    "from": "made the sign-up page better",
+    "to": "improved sign-up conversion",
+    "onlyIf": "the source measures conversion; keep the number exactly"
+   },
+   {
+    "from": "wrote down what the app should do",
+    "to": "wrote product requirements / user stories",
+    "onlyIf": "that is what the document was"
+   },
+   {
+    "from": "changed it after people's comments",
+    "to": "iterated on user feedback",
+    "onlyIf": "specific changes after feedback are described"
+   },
+   {
+    "from": "worked with committee, sponsors and the SU",
+    "to": "stakeholder management",
+    "onlyIf": "several distinct groups with different interests are named"
+   }
+  ],
+  "competencyThemes": [
+   "User research",
+   "Prioritisation",
+   "Stakeholder management",
+   "Product analytics",
+   "Prototyping",
+   "Commercial awareness",
+   "Agile delivery",
+   "Problem solving"
+  ],
+  "sectionOrder": [
+   "Header",
+   "Profile (optional, 2 lines)",
+   "Education",
+   "Experience (incl. positions of responsibility)",
+   "Projects and Ventures",
+   "Skills and Tools (SQL, Figma, Jira, analytics)",
+   "Achievements and Competitions",
+   "Interests"
+  ],
+  "pitfalls": [
+   "Title inflation: 'product manager' or 'founder' for a solo course project.",
+   "Framework name-dropping with no decision attached.",
+   "Responsibility lists ('responsible for social media') with no outcome.",
+   "No number anywhere on the page.",
+   "Technical over-claiming: 'built' the app when engineers built it."
+  ]
+ },
+ "marketing_growth": {
+  "recruiterScan": [
+   "Experience first: campaigns, internships, society or personal channels, readable at a glance.",
+   "A measurable result with a timeframe, attributable to the student.",
+   "Visible proof: portfolio, blog, channels managed, linked only if active.",
+   "Writing accuracy: spelling and grammar are judged as job evidence.",
+   "For growth roles: data-driven measurement and named tools (GA4, ads platforms, email, CRM)."
+  ],
+  "leadWith": [
+   "The measurable result and its timeframe (reach, sign-ups, sales, open rate) already in the CV.",
+   "The channel and the audience.",
+   "Content or campaigns the student created or ran themselves.",
+   "Advert-named tools the bullet already uses.",
+   "Budget handled, where stated."
+  ],
+  "summaryFormula": "Two lines at most: degree and year + the channel(s) or campaign the student actually ran, with its existing headline metric and timeframe + tools already evidenced + the target (brand, content, performance or growth) from the advert; keep it specific because generic graduate profiles are widely disliked.",
+  "verbs": {
+   "prefer": [
+    "Launched",
+    "Ran",
+    "Created",
+    "Wrote",
+    "Designed",
+    "Targeted",
+    "Tested",
+    "Analysed",
+    "Reported",
+    "Optimised",
+    "Grew (with a number)",
+    "Increased (with a number)"
+   ],
+   "avoid": [
+    "Went viral",
+    "Exploded",
+    "Social media guru/ninja",
+    "Passionate creative",
+    "Revolutionised the brand",
+    "Growth-hacked",
+    "Leveraged",
+    "Synergised",
+    "Managed the brand (for a society account)"
+   ]
+  },
+  "reframes": [
+   {
+    "from": "ran the society Instagram",
+    "to": "managed the society's Instagram channel (social media management)",
+    "onlyIf": "the student planned and posted the content"
+   },
+   {
+    "from": "posted stuff every week",
+    "to": "content creation and scheduling",
+    "onlyIf": "the student produced the content"
+   },
+   {
+    "from": "got loads more followers",
+    "to": "grew followers from [X] to [Y] in [period]",
+    "onlyIf": "both numbers and the period are already in the CV; otherwise keep 'increased followers'"
+   },
+   {
+    "from": "sent out the newsletter",
+    "to": "email marketing ([Mailchimp])",
+    "onlyIf": "the tool is named or the student built the sends"
+   },
+   {
+    "from": "tried two different posters/subject lines",
+    "to": "A/B tested creative",
+    "onlyIf": "two variants were compared on a stated metric"
+   },
+   {
+    "from": "looked at the Instagram stats",
+    "to": "analysed engagement metrics (reach, engagement rate)",
+    "onlyIf": "the insights were used to report or change content"
+   },
+   {
+    "from": "wrote blog posts",
+    "to": "content marketing / SEO copywriting",
+    "onlyIf": "for SEO, keyword targeting or search traffic is mentioned"
+   },
+   {
+    "from": "spent money on Facebook ads",
+    "to": "managed a paid social budget (£[X])",
+    "onlyIf": "the budget and the student's control of it are stated"
+   }
+  ],
+  "competencyThemes": [
+   "Social media management",
+   "Content creation and copywriting",
+   "Campaign analytics",
+   "Paid social and search",
+   "Email marketing",
+   "SEO",
+   "Audience insight",
+   "Brand communications"
+  ],
+  "sectionOrder": [
+   "Header (incl. portfolio and active channels)",
+   "Profile (optional, 2 lines)",
+   "Experience (campaigns, internships, society marketing)",
+   "Education",
+   "Skills, Tools and Certifications (GA4, Google Ads, HubSpot, Meta)",
+   "Portfolio and Channels",
+   "Interests"
+  ],
+  "pitfalls": [
+   "Long, vague descriptions a busy recruiter cannot skim.",
+   "Follower or reach numbers with no baseline or timeframe.",
+   "'Creative' or 'social media savvy' with no campaign to back it.",
+   "Any typo or inconsistency.",
+   "Linking inactive or unprofessional personal accounts."
+  ]
+ },
+ "research": {
+  "recruiterScan": [
+   "Academic record first: grade or ranking, relevant modules, final-year or dissertation project and supervisor.",
+   "Research experience described by its focus and outcomes, not just a project title.",
+   "Methods, techniques and programming that match the group's work.",
+   "Signs of motivation and ability to work independently.",
+   "A referee who can speak to research suitability."
+  ],
+  "leadWith": [
+   "The research question or focus.",
+   "Methods, techniques, instruments or code used.",
+   "The student's specific contribution within the group.",
+   "Outputs: report, poster, talk, dataset, code, prize.",
+   "Links between the work and the target group's area."
+  ],
+  "summaryFormula": "Prefer a short 'Research interests' line over a sales pitch: degree, year and institution with grade or ranking + the research area in the student's own terms, matched to the project + the methods already evidenced + the strongest research output or project.",
+  "verbs": {
+   "prefer": [
+    "Investigated",
+    "Measured",
+    "Analysed",
+    "Simulated",
+    "Modelled",
+    "Implemented",
+    "Collected",
+    "Reviewed",
+    "Presented",
+    "Co-authored (only if an author)",
+    "Contributed",
+    "Assisted (keep when true)"
+   ],
+   "avoid": [
+    "Discovered (unless it was a genuine finding)",
+    "Pioneered",
+    "Proved",
+    "Groundbreaking",
+    "Novel (unless the supervisor's wording)",
+    "Led the research (for an assistant role)",
+    "Published (for unpublished or in-preparation work)"
+   ]
+  },
+  "reframes": [
+   {
+    "from": "did a summer project in Dr X's lab",
+    "to": "Summer research placement, [group], supervised by Dr X",
+    "onlyIf": "group and supervisor are named"
+   },
+   {
+    "from": "read lots of papers on the topic",
+    "to": "literature review",
+    "onlyIf": "the review was a defined task or written output"
+   },
+   {
+    "from": "Part II project / Year 3 project",
+    "to": "final-year research project",
+    "onlyIf": "it was the final-year project"
+   },
+   {
+    "from": "used Python for the data",
+    "to": "data analysis in Python ([NumPy/SciPy/pandas])",
+    "onlyIf": "the libraries are named"
+   },
+   {
+    "from": "made a poster",
+    "to": "poster presentation, [event, year]",
+    "onlyIf": "the poster was presented at a named event"
+   },
+   {
+    "from": "helped a PhD student",
+    "to": "research assistance: [specific task] on [project]",
+    "onlyIf": "the task is described; keep 'assisted', never upgrade to 'led'"
+   },
+   {
+    "from": "did the lab work",
+    "to": "laboratory techniques: [X, Y]",
+    "onlyIf": "the techniques are named"
+   },
+   {
+    "from": "paper we are writing",
+    "to": "manuscript in preparation",
+    "onlyIf": "always: never list it under 'Publications'"
+   }
+  ],
+  "competencyThemes": [
+   "Experimental methods",
+   "Data analysis",
+   "Scientific programming",
+   "Mathematical modelling",
+   "Literature review",
+   "Laboratory techniques",
+   "Scientific communication",
+   "Independent research"
+  ],
+  "sectionOrder": [
+   "Header",
+   "Research interests (optional, 1-2 lines)",
+   "Education (grade, modules, project, supervisor)",
+   "Research Experience",
+   "Technical and Laboratory Skills",
+   "Presentations and Outputs",
+   "Awards and Funding",
+   "Other Experience",
+   "Referees"
+  ],
+  "pitfalls": [
+   "A project title with no focus, method or outcome.",
+   "Vague 'assisted with research' with no task named.",
+   "Padded publications (blogs, coursework or in-preparation work listed as papers).",
+   "A generic sales-pitch profile instead of a research interest.",
+   "No supervisor, group or institution named."
+  ]
+ },
+ "quant_trading": {
+  "recruiterScan": [
+   "Degree subject, grade or rank, probability/statistics/maths/CS marks",
+   "Competition results with rank or medal (olympiads, Kaggle, firm challenges)",
+   "Projects with a measurable result and a code or write-up link",
+   "Honest depth in at least one language; overclaiming sets the interview bar",
+   "Concise; interests showing competitive or strategic play"
+  ],
+  "leadWith": [
+   "Rank, medal, percentile or rating at the start of the line",
+   "The project's result metric and method before the description",
+   "Named maths content (probability, statistics, optimisation)",
+   "The deepest language and what was done in it",
+   "Tutoring or team competitions as communication evidence"
+  ],
+  "summaryFormula": "skip: quant firms want concise CVs, screen on academics, competitions, projects and tests, and no source recommends a profile; if the source has one, cut it to 1 line: degree, year, grade and the strongest quant fact already in the CV.",
+  "verbs": {
+   "prefer": [
+    "implemented",
+    "back-tested",
+    "simulated",
+    "derived",
+    "estimated",
+    "optimised",
+    "tested",
+    "benchmarked",
+    "analysed",
+    "computed",
+    "placed",
+    "solved",
+    "reproduced"
+   ],
+   "avoid": [
+    "expert in",
+    "advanced/very good (unevidenced)",
+    "alpha-generating",
+    "profitable (without honest results)",
+    "cutting-edge",
+    "AI-powered",
+    "leveraged",
+    "passionate about markets",
+    "fast-paced environment"
+   ]
+  },
+  "reframes": [
+   {
+    "from": "tested my trading idea on past prices",
+    "to": "back-tested [strategy] on historical [asset] data",
+    "onlyIf": "source describes running it on historical data"
+   },
+   {
+    "from": "wrote code to analyse data",
+    "to": "Python analysis of [dataset]",
+    "onlyIf": "language named in source; libraries only if listed"
+   },
+   {
+    "from": "did well in a maths competition",
+    "to": "UKMT [competition]: [award]",
+    "onlyIf": "competition and award already named"
+   },
+   {
+    "from": "enjoy chess",
+    "to": "Strategic games: chess (rating)",
+    "onlyIf": "rating only if in source; keep under Interests"
+   },
+   {
+    "from": "made the code faster",
+    "to": "cut runtime by N%",
+    "onlyIf": "N is in the source"
+   },
+   {
+    "from": "trading game in a society",
+    "to": "mock trading / market-making simulation",
+    "onlyIf": "involved quoting or trading against others"
+   },
+   {
+    "from": "probability module 78%",
+    "to": "Relevant modules: Probability (78%)",
+    "onlyIf": "a move up into Education; mark unchanged"
+   },
+   {
+    "from": "coursework on predicting X",
+    "to": "coursework: regression model predicting X",
+    "onlyIf": "keep 'coursework'; name the method only if the source does"
+   }
+  ],
+  "competencyThemes": [
+   "Probability and statistics",
+   "Programming depth",
+   "Problem solving under pressure",
+   "Accuracy and testing",
+   "Competitive achievement",
+   "Collaboration and communication",
+   "Curiosity and learning"
+  ],
+  "sectionOrder": [
+   "Education (grade or rank, quant modules with marks)",
+   "Competitions & Awards",
+   "Projects / Research",
+   "Experience",
+   "Technical Skills",
+   "Interests"
+  ],
+  "pitfalls": [
+   "Finance jargon with no quant evidence (finance knowledge is not required)",
+   "Inflated proficiency ('very good C++', 'expert')",
+   "Listing Word and Excel",
+   "'Improved' or 'profitable' with no metric or test period",
+   "Long descriptions instead of a concise page"
+  ]
+ },
+ "consulting": {
+  "recruiterScan": [
+   "Academics: predicted 2:1 or better, grades stated clearly",
+   "Leadership roles with scale and what changed because of the student",
+   "Impact, not duties: why the work mattered, in numbers",
+   "Problem solving and initiative: problem, analysis, proposal, adoption",
+   "Plain English, one page, no errors, the student's own part not 'we'"
+  ],
+  "leadWith": [
+   "The outcome and its number at the start of the bullet",
+   "Scope: team size, budget, members, attendees",
+   "Initiative: founded, launched, proposed-and-implemented",
+   "The analysis-to-recommendation step, where shown",
+   "Client or stakeholder contact; presenting or persuading"
+  ],
+  "summaryFormula": "skip: TARGETjobs and LSE advise students to drop profiles and generic ones read as AI-written; if the source has one, keep 2 plain-English lines leading with its strongest quantified leadership or impact fact.",
+  "verbs": {
+   "prefer": [
+    "analysed",
+    "identified",
+    "prioritised",
+    "recommended",
+    "proposed",
+    "synthesised",
+    "presented",
+    "persuaded",
+    "negotiated",
+    "coordinated",
+    "organised",
+    "launched",
+    "trained"
+   ],
+   "avoid": [
+    "did",
+    "carried out",
+    "responsible for",
+    "we (as subject)",
+    "leveraged",
+    "synergies",
+    "holistic",
+    "value-add",
+    "deep dive",
+    "MECE",
+    "stakeholder management (unqualified)",
+    "results-driven",
+    "proven track record"
+   ]
+  },
+  "reframes": [
+   {
+    "from": "suggested an idea and they used it",
+    "to": "Proposed X; implemented by management",
+    "onlyIf": "source says it was adopted"
+   },
+   {
+    "from": "found out why X was happening",
+    "to": "identified the cause of X by Y",
+    "onlyIf": "cause and method both in source"
+   },
+   {
+    "from": "ran a survey",
+    "to": "designed and analysed a survey of N respondents",
+    "onlyIf": "student designed it; N in source"
+   },
+   {
+    "from": "organised the event",
+    "to": "project-managed [event]: N attendees, £B budget",
+    "onlyIf": "student owned planning; figures in source"
+   },
+   {
+    "from": "spoke to customers",
+    "to": "client-facing",
+    "onlyIf": "direct contact with external people"
+   },
+   {
+    "from": "presented to the committee",
+    "to": "presented recommendations to [audience]",
+    "onlyIf": "the talk contained recommendations"
+   },
+   {
+    "from": "volunteer project for a charity",
+    "to": "pro bono consulting project for [organisation]",
+    "onlyIf": "scoped project with a deliverable for an outside organisation"
+   },
+   {
+    "from": "helped improve the rota",
+    "to": "contributed to a rota redesign that cut X by N%",
+    "onlyIf": "keep 'contributed'; figure in source"
+   }
+  ],
+  "competencyThemes": [
+   "Structured problem solving",
+   "Analytical thinking",
+   "Impact orientation",
+   "Leadership and initiative",
+   "Communication and persuasion",
+   "Teamwork",
+   "Commercial awareness",
+   "Attention to detail"
+  ],
+  "sectionOrder": [
+   "Education (grade, A levels)",
+   "Consulting / Relevant Experience (if any)",
+   "Experience",
+   "Leadership / Project Management",
+   "Extra-curriculars",
+   "Skills, Languages & Interests"
+  ],
+  "pitfalls": [
+   "Duty lists with no result",
+   "'We' bullets that hide the student's part; interviewers dig into it",
+   "Technical jargon a generalist cannot follow",
+   "Generic AI-sounding text (Bain London allows AI only for CV grammar and spelling)",
+   "Unevidenced soft skills in the skills line"
+  ]
+ },
+ "finance_banking": {
+  "recruiterScan": [
+   "Top third: university, degree, grade or prediction, A levels (an early filter)",
+   "Firm names, titles, dates: spring weeks, insights, internships, right division",
+   "Shown, not stated, interest in finance (society role, competition, stock pitch)",
+   "Specific, quantified bullets, honest about intern scope",
+   "One page, zero typos, consistent formatting"
+  ],
+  "leadWith": [
+   "Grade, class rank, scholarships, top relevant module marks",
+   "Named finance exposure (programme, firm, division) first in Experience",
+   "A quantified commercial result first in any non-finance job",
+   "Analysis actually done (modelling, research, data) before admin or shadowing",
+   "Responsibility (committee, treasurer, captain) before membership"
+  ],
+  "summaryFormula": "skip: UK careers services and the TARGETjobs banking template omit a student profile because the cover letter or form does that job; if the source has one, compress it to 2 factual lines (year, degree, university, grade, target division, 1-2 finance signals already in the CV) with no adjectives.",
+  "verbs": {
+   "prefer": [
+    "analysed",
+    "prepared",
+    "researched",
+    "compiled",
+    "modelled",
+    "valued",
+    "reconciled",
+    "presented",
+    "exceeded",
+    "grew",
+    "reduced",
+    "coordinated",
+    "supported"
+   ],
+   "avoid": [
+    "originated",
+    "executed (a deal)",
+    "spearheaded",
+    "successfully",
+    "dynamic",
+    "team-player",
+    "innovative",
+    "results-driven",
+    "proven track record",
+    "meticulous",
+    "delve",
+    "robust",
+    "passionate"
+   ]
+  },
+  "reframes": [
+   {
+    "from": "made a spreadsheet to forecast X",
+    "to": "Excel model forecasting X",
+    "onlyIf": "source says a spreadsheet projected numbers; 'DCF' or '3-statement' only if that method is named"
+   },
+   {
+    "from": "compared how similar companies were valued",
+    "to": "comparable company analysis",
+    "onlyIf": "source mentions peer valuation multiples"
+   },
+   {
+    "from": "researched a company and suggested buying",
+    "to": "stock pitch: buy recommendation and thesis",
+    "onlyIf": "source states the recommendation and its reasons"
+   },
+   {
+    "from": "made slides for the sponsor meeting",
+    "to": "prepared sponsorship pitch deck",
+    "onlyIf": "the deck sought money or agreement from an outside party; never 'pitchbook' unless for a deal"
+   },
+   {
+    "from": "dealt with customers",
+    "to": "client-facing: handled customer enquiries",
+    "onlyIf": "direct, repeated customer contact"
+   },
+   {
+    "from": "went to a spring week at X",
+    "to": "Spring Insight Programme, [division], X",
+    "onlyIf": "programme and division already named; keep 'shadowed'/'attended'"
+   },
+   {
+    "from": "helped with a deal",
+    "to": "supported [team] on a [deal type]: prepared X",
+    "onlyIf": "the task is in the source; never 'executed' or 'led'"
+   },
+   {
+    "from": "treasurer, looked after the money",
+    "to": "Treasurer: managed £N budget",
+    "onlyIf": "the amount is in the source"
+   }
+  ],
+  "competencyThemes": [
+   "Academic excellence",
+   "Numerical and analytical ability",
+   "Attention to detail",
+   "Interest in financial markets",
+   "Teamwork",
+   "Leadership",
+   "Judgement",
+   "Resilience"
+  ],
+  "sectionOrder": [
+   "Education (grade, top modules, A levels)",
+   "Relevant Experience (internships, spring weeks, insights)",
+   "Other Work Experience",
+   "Positions of Responsibility",
+   "Skills, Languages & Interests"
+  ],
+  "pitfalls": [
+   "Claiming to have originated, executed or led a deal as an intern",
+   "Superlatives and AI-style phrasing ('meticulous', 'robust')",
+   "Altering a team name ('Industrials' to 'Industrial Group') or the firm name",
+   "Overstated language levels",
+   "Generic profile, or school detail on a penultimate-year CV"
+  ]
+ }
+}

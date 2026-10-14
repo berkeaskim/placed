@@ -1,12 +1,25 @@
+"use client";
+import { motion, useReducedMotion } from "motion/react";
 import type { CaughtNumber, RevertedChange, VerificationState } from "@/lib/tailor/view";
-import { AlertIcon, CheckIcon, ShieldCheckIcon, UndoIcon } from "./icons";
+import { AlertIcon, CheckIcon, UndoIcon } from "./icons";
+
+/** ShieldCheckIcon whose tick draws in once, as the check result lands. */
+function ShieldCheckDraw({ size = 18, className }: { size?: number; className?: string }) {
+  const reduce = useReducedMotion();
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+      <path d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6z" />
+      <motion.path d="M8.5 12l2.5 2.5 4.5-5" initial={{ pathLength: reduce ? 1 : 0 }} animate={{ pathLength: 1 }} transition={{ duration: 0.45, ease: "easeOut", delay: 0.15 }} />
+    </svg>
+  );
+}
 
 /** Spec §8.4: the verification badge. It reads "Every claim traced" once anything unsupported has been reverted. */
 export function VerificationBadge({ state, text }: { state: VerificationState; text: string }) {
   const bad = state === "blocked";
   return (
     <p className={`flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-bold ${bad ? "bg-[#FDECEA] text-[#B42318]" : "bg-[#E3F6EE] text-[#0B6B49]"}`} role="status">
-      {bad ? <AlertIcon size={18} className="shrink-0" /> : <ShieldCheckIcon size={18} className="shrink-0" />}{text}
+      {bad ? <AlertIcon size={18} className="shrink-0" /> : <ShieldCheckDraw className="shrink-0" />}{text}
     </p>
   );
 }
