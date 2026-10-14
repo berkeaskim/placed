@@ -47,15 +47,14 @@ export function UploadCard() {
           input.files = e.dataTransfer.files;
           input.form?.requestSubmit();
         }}
-        aria-busy={pending}
-        className={`flex min-h-60 flex-col items-center justify-center gap-4 rounded-[24px] border border-dashed bg-white px-6 py-10 text-center shadow-[0_1px_2px_rgba(22,22,29,0.04),0_12px_32px_rgba(22,22,29,0.06)] transition-colors focus-within:ring-4 focus-within:ring-[#5B3DF5]/20 sm:min-h-72 ${pending ? "cursor-progress" : "cursor-pointer"} ${dragging ? "border-[#5B3DF5] bg-[#F8F7FF]" : "border-[#D4D4E0] hover:border-[#5B3DF5]"}`}
+        className={`flex min-h-60 flex-col items-center justify-center gap-4 rounded-[24px] border border-dashed px-6 py-10 text-center shadow-[0_1px_2px_rgba(22,22,29,0.04),0_12px_32px_rgba(22,22,29,0.06)] transition-colors has-[input:focus-visible]:ring-2 has-[input:focus-visible]:ring-[#5B3DF5] has-[input:focus-visible]:ring-offset-2 sm:min-h-72 ${pending ? "cursor-progress" : "cursor-pointer"} ${dragging ? "border-[#5B3DF5] bg-[#F8F7FF]" : "border-[#D4D4E0] bg-white hover:border-[#5B3DF5]"}`}
       >
         <span aria-hidden="true" className="flex h-14 w-14 items-center justify-center rounded-full bg-[#EFEBFF] text-[#5B3DF5]">
           {pending ? <LoaderCircle className="h-6 w-6 animate-spin" /> : <FileUp className="h-6 w-6" />}
         </span>
-        {pending ? (
-          <span role="status" aria-live="polite" className="text-[17px] font-semibold text-[#3A20C4]">{STEPS[step]}</span>
-        ) : (
+        {/* Always mounted so screen readers announce each step as it changes. */}
+        <span role="status" aria-live="polite" className={pending ? "text-[17px] font-semibold text-[#3A20C4]" : "sr-only"}>{pending ? STEPS[step] : ""}</span>
+        {!pending && (
           <>
             <span className="flex flex-col gap-1">
               <span className="text-[17px] font-semibold">Drop your PDF here</span>

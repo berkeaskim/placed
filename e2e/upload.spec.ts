@@ -31,12 +31,13 @@ test("fake .pdf (wrong magic bytes) shows a clear error", async ({ page }) => {
   await expect(formAlert(page)).toContainText("doesn't look like a PDF");
 });
 
-test("file over 5 MB is rejected", async ({ page }) => {
+test("file over 4 MB is rejected", async ({ page }) => {
   await page.goto("/profile/build");
-  const big = Buffer.alloc(5 * 1024 * 1024 + 10, 0x20);
+  // Over the 4 MB file cap but under the 4.5 MB server-action body limit, so the friendly message comes back.
+  const big = Buffer.alloc(Math.round(4.2 * 1024 * 1024), 0x20);
   big.write("%PDF-1.4\n");
   await cvInput(page).setInputFiles({ name: "big.pdf", mimeType: "application/pdf", buffer: big });
-  await expect(formAlert(page)).toContainText(/over 5 MB/);
+  await expect(formAlert(page)).toContainText(/over 4 MB/);
 });
 
 test("image-only PDF shows the unreadable-CV guidance", async ({ page }) => {
