@@ -2,6 +2,7 @@ import { requireUser } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isAppStatus } from "@/lib/tracker/status";
 import { nudgeFor } from "@/lib/outreach/nudges";
+import { OUTREACH_TARGETS, type OutreachTarget } from "@/lib/outreach/targets";
 import { isDemoEmail } from "@/lib/demo/is-demo";
 import { todayLondon } from "@/lib/scoring/dates";
 import { InboxBanner } from "@/components/tracker/inbox-banner";
@@ -34,13 +35,21 @@ export default async function Tracker({ searchParams }: { searchParams: Promise<
       .eq("user_id", user.id).order("updated_at", { ascending: false }),
     supabase.from("inbox_events").select("id, application_id, company, subject, received_at, kind, deadline, action_url, effect, new_status")
       .eq("user_id", user.id).order("received_at", { ascending: false }).limit(300),
-    supabase.from("outreach").select("job_id, status").eq("user_id", user.id),
+    supabase.from("outreach").select("job_id, target, status").eq("user_id", user.id),
     loadConnection(user.id),
   ]);
   if (appsErr) console.error("tracker: loading applications failed", appsErr.message);
   if (evsErr) console.error("tracker: loading inbox events failed", evsErr.message);
   if (outErr) console.error("tracker: loading outreach failed", outErr.message);
   const outreach = outErr ? [] : outreachRows ?? [];
+  // Targets already messaged per job: a nudge toward them is not repeated.
+  const sentTargets = new Map<string, Set<OutreachTarget>>();
+  for (const o of outreach) {
+    if (o.status === "drafted" || !(OUTREACH_TARGETS as readonly string[]).includes(o.target)) continue;
+    const set = sentTargets.get(o.job_id) ?? new Set<OutreachTarget>();
+    set.add(o.target as OutreachTarget);
+    sentTargets.set(o.job_id, set);
+  }
   const conn = gmail.conn;
   const events = (evsErr ? [] : evs ?? []) as Ev[];
   const cards: Card[] = (data ?? []).filter((a) => isAppStatus(a.status)).map((a) => {
@@ -52,7 +61,8 @@ export default async function Tracker({ searchParams }: { searchParams: Promise<
       id: a.id, jobId: a.job_id, status: a.status, title: j?.title ?? "Role", company: j?.companies?.name ?? "",
       updatedAt: a.updated_at, lastEventAt: a.last_event_at,
       evidence: moved ? { eventId: moved.id, subject: moved.subject, date: moved.received_at, to: moved.new_status!, canUndo: moved.new_status === a.status } : null,
-      nudge: a.jobs ? nudgeFor({ status: a.status, company: j?.companies?.name ?? "this company", lastEventAt: a.last_event_at, updatedAt: a.updated_at }, new Date()) : null,
+      nudge: a.jobs ? nudgeFor({ status: a.status, company: j?.companies?.name ?? "this company", lastEventAt: a.last_event_at, updatedAt: a.updated_at }, new Date(),
+        sentTargets.get(a.job_id)) : null,
       outreach: {
         sent: outreach.filter((o) => o.job_id === a.job_id && o.status !== "drafted").length,
         replied: outreach.filter((o) => o.job_id === a.job_id && o.status === "replied").length,
