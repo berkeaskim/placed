@@ -50,6 +50,11 @@ describe("decide", () => {
     expect(decide({ ...c("received"), company: null }, null, false)).toEqual({ effect: "none" });
     expect(decide(c("received"), app("interview"), false)).toEqual({ effect: "none" });
   });
+  it("does not suggest a low-confidence email that could not move its card anyway", () => {
+    expect(decide(c("received", 0.3), app("interview"), false)).toEqual({ effect: "none" });
+    expect(decide(c("interview", 0.3), app("rejected"), false)).toEqual({ effect: "none" });
+    expect(decide(c("interview", 0.3), app("applied"), false)).toEqual({ effect: "suggested", reason: "low_confidence" });
+  });
 });
 
 describe("canUndo", () => {

@@ -28,9 +28,10 @@ export type Decision =
 export function decide(c: Classification, app: AppRef | null, ambiguous: boolean): Decision {
   if (c.kind === "other") return { effect: "none" };
   if (!app) return c.company || ambiguous ? { effect: "suggested", reason: ambiguous ? "ambiguous" : "unmatched" } : { effect: "none" };
-  if (c.confidence < AUTO_MOVE_MIN_CONFIDENCE) return { effect: "suggested", reason: "low_confidence" };
+  // No forward move exists: nothing to review, however unsure the model was.
   const to = targetStatus(app.status, c.kind);
-  return to ? { effect: "moved", to } : { effect: "none" };
+  if (!to) return { effect: "none" };
+  return c.confidence < AUTO_MOVE_MIN_CONFIDENCE ? { effect: "suggested", reason: "low_confidence" } : { effect: "moved", to };
 }
 
 /** Undo restores prev_status only if nothing has moved the card since (spec §2.3). */

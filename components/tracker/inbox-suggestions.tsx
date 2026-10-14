@@ -1,6 +1,6 @@
 "use client";
 import { useState, useTransition } from "react";
-import { addSuggestedApplication } from "@/app/(app)/tracker/inbox-actions";
+import { addSuggestedApplication, dismissInboxSuggestion } from "@/app/(app)/tracker/inbox-actions";
 
 /** `matched` = the email already points at one of the student's cards (low confidence); `unmatched` = no card yet. */
 export type Suggestion = { eventId: string; subject: string; company: string | null; reason: "unmatched" | "matched" };
@@ -31,7 +31,14 @@ export function InboxSuggestions({ items }: { items: Suggestion[] }) {
               Not in your tracker: add it
             </button>
           ) : <span className="text-xs text-muted-foreground">This email might be about one of your applications.</span>}
-            </div>
+          <button type="button" disabled={pending} aria-label="Dismiss" className="min-h-11 rounded-full px-3 text-sm font-semibold underline"
+            onClick={() => start(async () => {
+              const r = await dismissInboxSuggestion(s.eventId);
+              if (!r.ok) setMsg((m) => ({ ...m, [s.eventId]: "Couldn't dismiss it." }));
+            })}>
+            Dismiss
+          </button>
+        </div>
       ))}
       {/* Outside the rows: revalidation removes an applied row, and its result must outlive it. */}
       <div role="status" className="text-xs font-semibold">{notes.map((n, i) => <p key={i}>{n}</p>)}</div>

@@ -145,6 +145,17 @@ export async function disconnectGmail(): Promise<void> {
   revalidatePath("/tracker");
 }
 
+/** Clears a row from "Emails to review" without touching any card. */
+export async function dismissInboxSuggestion(eventId: string): Promise<{ ok: boolean }> {
+  if (!isUuid(eventId)) return { ok: false };
+  const { user } = await requireUser();
+  const { error } = await createAdminClient().from("inbox_events").update({ effect: "none" })
+    .eq("id", eventId).eq("user_id", user.id).eq("effect", "suggested");
+  if (error) { console.error("dismissInboxSuggestion: update failed", error.message); return { ok: false }; }
+  revalidatePath("/tracker");
+  return { ok: true };
+}
+
 /** "Not in your tracker — add it?": saves the newest live role at that company, if Placed has one. */
 export async function addSuggestedApplication(eventId: string): Promise<{ ok: boolean; message?: string }> {
   if (!isUuid(eventId)) return { ok: false };
