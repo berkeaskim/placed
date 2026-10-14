@@ -65,6 +65,8 @@ export async function setAnswer(
   const { data: pack } = await db.from("autopilot_packs").select("answers, form").eq("user_id", user.id).eq("job_id", jobId).maybeSingle();
   const field = (pack?.form as NormalizedForm | null)?.fields?.find((f) => f.key === fieldKey);
   if (!pack || !field) return { ok: false };
+  // Never store an answer for diversity, consent, "yours" or file fields: those stay the student's own.
+  if (!["vault", "extra", "freeText"].includes(classify(field.label, field.type).kind)) return { ok: false };
   const answers = { ...((pack.answers ?? {}) as Answers), [fieldKey]: { value, approved: opts.approved ?? false } };
   const { error } = await db.from("autopilot_packs").update({ answers, status: "draft" }).eq("user_id", user.id).eq("job_id", jobId);
   if (error) return { ok: false };

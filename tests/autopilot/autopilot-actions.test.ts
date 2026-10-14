@@ -82,10 +82,17 @@ describe("autopilot actions", () => {
     expect(await setAnswer(JOB, "q1", "1", { remember: true })).toEqual({ ok: true });
     expect(vaultRow()!.row.extra).toEqual({ "level of german": "Yes" });
   });
-  it("never remembers EEO, judged by the stored label, whatever the client says", async () => {
-    await setAnswer(JOB, "g", "1", { remember: true, rememberLabel: "Favourite colour?" } as never);
-    expect(vaultRow()).toBeUndefined();
-    expect(packRow().answers.g).toBeDefined(); // the answer itself is still saved for this application
+  it("never stores or remembers an answer for EEO, judged by the stored label, whatever the client says", async () => {
+    expect(await setAnswer(JOB, "g", "1", { remember: true, rememberLabel: "Favourite colour?" } as never)).toEqual({ ok: false });
+    expect(h.updates).toEqual([]);
+  });
+  it("rejects answers for consent, 'yours' and file fields", async () => {
+    h.fields = [
+      field("c", "I have read the Candidate Data Privacy Notice"), field("y", "Do you require any reasonable adjustments?", { type: "textarea", options: [] }),
+      field("f", "Upload your academic transcript", { type: "file", options: [] }), field("cv", "Resume/CV", { type: "file", options: [] }),
+    ];
+    for (const k of ["c", "y", "f", "cv"]) expect(await setAnswer(JOB, k, "x")).toEqual({ ok: false });
+    expect(h.updates).toEqual([]);
   });
   it("does not remember a value that is not one of the stored options", async () => {
     await setAnswer(JOB, "q1", "not-an-option", { remember: true });

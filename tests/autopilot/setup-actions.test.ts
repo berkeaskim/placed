@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-const h = vi.hoisted(() => ({ upserts: [] as unknown[], award: vi.fn(async () => ({ xpGained: 50 })), completed: null as string | null, core: null as Record<string, unknown> | null }));
+const h = vi.hoisted(() => ({ upserts: [] as unknown[], award: vi.fn(async () => ({ xpGained: 50 })), on: true, completed: null as string | null, core: null as Record<string, unknown> | null }));
 vi.mock("@/lib/supabase/server", () => ({ requireUser: async () => ({ supabase: {}, user: { id: "u1", email: "ayse@example.com" } }) }));
+vi.mock("@/lib/env", () => ({ env: { get autopilot() { return h.on; } } }));
 vi.mock("@/lib/gamify/award", () => ({ awardXP: h.award }));
 vi.mock("next/cache", () => ({ revalidatePath: () => {} }));
 vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: () => ({
@@ -9,13 +10,13 @@ vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: () => ({
     upsert: async (row: unknown) => { h.upserts.push(row); return { error: null }; },
   }),
 }) }));
-import { saveVault } from "@/app/(app)/autopilot/setup/actions";
+import { saveVault, deleteVault } from "@/app/(app)/autopilot/setup/actions";
 import { AYSE_CORE } from "./fixtures";
 
 const fd = (o: Record<string, string>) => { const f = new FormData(); for (const [k, v] of Object.entries(o)) f.set(k, v); return f; };
 
 describe("saveVault", () => {
-  beforeEach(() => { h.upserts.length = 0; h.award.mockClear(); h.completed = null; h.core = null; });
+  beforeEach(() => { h.on = true; h.upserts.length = 0; h.award.mockClear(); h.completed = null; h.core = null; });
   it("saves partial progress and reports what's missing", async () => {
     const r = await saveVault(null, fd({ first_name: "Ayşe" }));
     expect(r).toMatchObject({ ok: true, unlocked: false });
@@ -70,5 +71,15 @@ describe("getVault completed semantics", () => {
     expect((await getVault(dbWith({ core: { ...AYSE_CORE, phone: undefined }, extra: {}, completed_at: "x" }), "u1")).completed).toBe(false);
     expect((await getVault(dbWith({ core: AYSE_CORE, extra: {}, completed_at: null }), "u1")).completed).toBe(false);
     expect((await getVault(dbWith(null), "u1")).completed).toBe(false);
+  });
+});
+
+describe("env.autopilot guard", () => {
+  it("saveVault and deleteVault refuse and touch nothing while the feature is off", async () => {
+    h.on = false; h.upserts.length = 0;
+    expect(await saveVault(null, fd(AYSE_CORE as unknown as Record<string, string>))).toMatchObject({ ok: false, unlocked: false });
+    expect(await deleteVault()).toMatchObject({ ok: false });
+    expect(h.upserts).toEqual([]);
+    expect(h.award).not.toHaveBeenCalled();
   });
 });

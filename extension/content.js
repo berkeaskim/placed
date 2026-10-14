@@ -65,10 +65,8 @@
   const plan = res.plan;
 
   // Never fill the wrong form: the pack must be for this ATS and this job.
-  const jobId = String(plan.url || "").match(/\/jobs\/(\d+)|([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i);
-  const wanted = jobId && (jobId[1] || jobId[2]).toLowerCase();
-  const here = (location.pathname + location.search).toLowerCase();
-  if (plan.ats !== ats || !wanted || !here.includes(wanted)) {
+  const wanted = globalThis.PlacedJobMatch.wantedJobId(plan.url);
+  if (plan.ats !== ats || !globalThis.PlacedJobMatch.pageMatches(wanted, location.pathname, location.search)) {
     say("This pack is for a different job. Open it from Placed again.");
     return;
   }

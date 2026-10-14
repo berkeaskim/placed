@@ -37,6 +37,7 @@
         "config.js",
         "lib/guard.js",
         "lib/fill-plan.js",
+        "lib/job-match.js",
         "lib/dom.js",
         "fillers/greenhouse.js",
         "fillers/ashby.js",

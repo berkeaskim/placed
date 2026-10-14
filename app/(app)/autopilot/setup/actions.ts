@@ -4,6 +4,7 @@ import { requireUser } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { awardXP } from "@/lib/gamify/award";
 import { CoreSchema } from "@/lib/autopilot/vault";
+import { env } from "@/lib/env";
 
 export type SaveState = {
   ok: boolean;
@@ -22,6 +23,7 @@ const KEYS = Object.keys(CoreSchema.shape) as (keyof typeof CoreSchema.shape)[];
 
 export async function saveVault(_prev: SaveState, form: FormData): Promise<SaveState> {
   const { supabase, user } = await requireUser();
+  if (!env.autopilot) return { ok: false, missing: [], invalid: [], unlocked: false };
   const db = createAdminClient();
   const { data: prior } = await db.from("autopilot_vault").select("core, completed_at").eq("user_id", user.id).maybeSingle();
   const merged: Record<string, unknown> = { ...((prior?.core ?? {}) as Record<string, unknown>) };
@@ -57,6 +59,7 @@ export async function saveVault(_prev: SaveState, form: FormData): Promise<SaveS
 
 export async function deleteVault(): Promise<DeleteResult> {
   const { user } = await requireUser();
+  if (!env.autopilot) return { ok: false, error: "Autopilot isn't switched on." };
   const db = createAdminClient();
   const packs = await db.from("autopilot_packs").delete().eq("user_id", user.id);
   if (packs.error) return { ok: false, error: "We couldn't delete your Autopilot data. Please try again." };

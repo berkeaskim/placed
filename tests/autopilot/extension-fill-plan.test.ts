@@ -3,7 +3,33 @@ import { createRequire } from "node:module";
 import { readFileSync, readdirSync } from "node:fs";
 const require = createRequire(import.meta.url);
 const { summarize } = require("../../extension/lib/fill-plan.js");
+const { wantedJobId, pageMatches } = require("../../extension/lib/job-match.js");
 const { extractToken } = require("../../extension/capture.js");
+
+describe("extension job match", () => {
+  const GH = "https://job-boards.greenhouse.io/monzo/jobs/123";
+  const UUID = "2993de0d-80fd-4dff-a708-c16fa593df41";
+  it("extracts the job id from greenhouse, ashby and lever urls", () => {
+    expect(wantedJobId(GH)).toBe("123");
+    expect(wantedJobId(`https://jobs.ashbyhq.com/org/${UUID.toUpperCase()}/application`)).toBe(UUID);
+    expect(wantedJobId(`https://jobs.lever.co/site/${UUID}/apply`)).toBe(UUID);
+    expect(wantedJobId("https://example.com/")).toBeNull();
+  });
+  it("matches whole path segments only: job 123 does not fill /jobs/12345", () => {
+    expect(pageMatches("123", "/monzo/jobs/123", "")).toBe(true);
+    expect(pageMatches("123", "/monzo/jobs/12345", "")).toBe(false);
+    expect(pageMatches("123", "/monzo/jobs/4123", "")).toBe(false);
+    expect(pageMatches("123", "/monzo/jobs/9999", "?foo=123456")).toBe(false);
+  });
+  it("accepts the id as a whole query value (embedded Greenhouse token/gh_jid)", () => {
+    expect(pageMatches("123", "/embed/job_app", "?for=monzo&token=123")).toBe(true);
+    expect(pageMatches("123", "/embed/job_app", "?token=1234")).toBe(false);
+  });
+  it("matches uuid segments case-insensitively and rejects a missing id", () => {
+    expect(pageMatches(UUID, `/org/${UUID.toUpperCase()}/application`, "")).toBe(true);
+    expect(pageMatches(null, "/anything", "")).toBe(false);
+  });
+});
 
 describe("extension", () => {
   it("summarises a plan", () => {
