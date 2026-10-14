@@ -104,3 +104,15 @@ describe("workday", () => {
     expect(jobs[0].deadline).toBe("2026-11-01");
   });
 });
+
+describe("workday remoteType", () => {
+  it("reads negated remote text as on-site", async () => {
+    const { isRemoteType } = await import("@/lib/ingest/providers/workday");
+    expect(isRemoteType("This position is not available for remote working")).toBe(false);
+    expect(isRemoteType("No remote")).toBe(false);
+    expect(isRemoteType("Non-remote")).toBe(false);
+    expect(isRemoteType("Remote")).toBe(true);
+    expect(isRemoteType("Hybrid / Remote eligible")).toBe(true);
+    expect(isRemoteType(undefined)).toBe(false);
+  });
+});

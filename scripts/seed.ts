@@ -6,9 +6,16 @@ async function main() {
   const db = scriptClient();
   const rows = (YAML.parse(readFileSync("seed/companies.yml", "utf8")) as { slug: string; name: string; ats: string; apiHost?: string; enabled?: boolean }[])
     .map((r) => ({ slug: r.slug, name: r.name, ats: r.ats, api_host: r.apiHost ?? null, enabled: r.enabled !== false }));
-  const { error } = await db.from("companies").upsert(rows, { onConflict: "ats,slug" });
-  if (error) throw error;
-  console.log(`companies: ${rows.length}`);
+  // Upsert per ATS: a new ATS whose check-constraint migration isn't applied yet (e.g. 0010 smartrecruiters)
+  // fails on its own instead of blocking every other company.
+  let seeded = 0;
+  for (const ats of [...new Set(rows.map((r) => r.ats))]) {
+    const group = rows.filter((r) => r.ats === ats);
+    const { error } = await db.from("companies").upsert(group, { onConflict: "ats,slug" });
+    if (error) console.error(`companies/${ats}: skipped ${group.length} (${error.message}); apply the migration that allows this ATS`);
+    else seeded += group.length;
+  }
+  console.log(`companies: ${seeded}/${rows.length}`);
 
   const { count } = await db.from("jobs").select("id", { count: "exact", head: true });
   if ((count ?? 0) === 0 && existsSync("seed/jobs.json")) {
