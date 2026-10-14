@@ -16,6 +16,7 @@ const PROGRAMME = new Set([
   "london", "uk", "emea", "europe", "remote", "hybrid", "the", "and", "of", "in", "for", "with", "a", "an",
   "january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december",
   "werkstudent", "werkstudentin", "working", "volunteer", "fellowship", "fellows", "coordinator", "academy",
+  "undergraduate", "experience", "apprentice", "apprenticeship", "penultimate", "degree",
 ]);
 
 /** The team/division part of a job title ("Credit Analyst Intern (June 2027)" → "Credit"), or null if none is left. */
@@ -32,8 +33,8 @@ export function searchKeywords(target: OutreachTarget, company: string, title: s
   switch (target) {
     case "alumni": return `${q(company)} UCL`;
     case "team": return div ? `${q(company)} ${div}` : q(company);
-    case "recruiter": return `${q(company)} "early careers" OR "campus recruiter" OR "graduate recruitment"`;
-    case "recent_joiner": return `${q(company)}${div ? ` ${div}` : ""} graduate OR analyst`;
+    case "recruiter": return `${q(company)} ("early careers" OR "campus recruiter" OR "graduate recruitment")`;
+    case "recent_joiner": return `${q(company)}${div ? ` ${div}` : ""} (graduate OR analyst)`;
   }
 }
 
