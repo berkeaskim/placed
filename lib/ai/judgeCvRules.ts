@@ -55,7 +55,10 @@ export function buildJudgePrompt(i: Pick<JudgeInput, "redactedText" | "structure
   );
 }
 
-function mapStatus(s: string, rule: CvRule): "pass" | "fail" | "partial" | "not_applicable" {
+/** The fields verdict mapping needs; LinkedIn rules (lib/linkedin-rules) share this shape. */
+export type JudgedRule = { id: string; check: string; allowPartial?: true };
+
+function mapStatus(s: string, rule: JudgedRule): "pass" | "fail" | "partial" | "not_applicable" {
   const t = s.trim().toLowerCase();
   if (t === "pass" || t === "fail") return t;
   if (t === "partial" && rule.allowPartial) return "partial";
@@ -71,13 +74,13 @@ function mapStatus(s: string, rule: CvRule): "pass" | "fail" | "partial" | "not_
  *   only fail may have a null evidence_line ("absent from the CV"), counted by countUnevidencedFails.
  * - A passing line that contains a placeholder number scores as fail.
  */
-export function mapVerdicts(raw: JudgeOutputT, rules: CvRule[], redactedText: string): ScoredRuleResult[] {
+export function mapVerdicts(raw: JudgeOutputT, rules: JudgedRule[], redactedText: string, judged: (r: JudgedRule) => boolean = (r) => r.check === "llm"): ScoredRuleResult[] {
   const hay = norm(redactedText);
   const got = new Map<string, JudgeOutputT["verdicts"][number]>();
   for (const v of raw.verdicts) if (!got.has(v.rule_id)) got.set(v.rule_id, v);
 
   return rules
-    .filter((r) => r.check === "llm")
+    .filter(judged)
     .map((rule): ScoredRuleResult => {
       const v = got.get(rule.id);
       if (!v) return { ruleId: rule.id, status: "not_applicable", evidenceLine: null, fix: null };
@@ -105,7 +108,7 @@ export function countUnevidencedFails(llmResults: ScoredRuleResult[]): number {
 }
 
 /** Keep only misspellings that actually occur in the text and are not UK/US variants (06 R12). */
-function cleanSpelling(words: string[], text: string): string[] {
+export function cleanSpelling(words: string[], text: string): string[] {
   const out: string[] = [];
   for (const w of words.map((x) => x.trim()).filter(Boolean)) {
     if (isSpellingVariant(w) || out.includes(w)) continue;

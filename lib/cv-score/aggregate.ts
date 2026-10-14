@@ -3,9 +3,9 @@ import type { Citation, CvRule, Dimension, Evidence, Severity } from "@/lib/cv-r
 import { DIMENSION_WEIGHTS } from "@/lib/cv-rules/profiles";
 import type { ScoredRuleResult } from "./context";
 
-const SEV: Record<Severity, number> = { critical: 3, major: 2, minor: 1 };
-const EVID: Record<Evidence, number> = { A: 1, B: 0.85, C: 0.6, D: 0.4 };
-const CREDIT = { pass: 1, partial: 0.5, fail: 0 } as const;
+export const SEV: Record<Severity, number> = { critical: 3, major: 2, minor: 1 };
+export const EVID: Record<Evidence, number> = { A: 1, B: 0.85, C: 0.6, D: 0.4 };
+export const CREDIT = { pass: 1, partial: 0.5, fail: 0 } as const;
 export const DIMS: Dimension[] = ["ats", "impact", "clarity", "relevance", "uk"];
 
 export type Fix = {
