@@ -98,46 +98,62 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
   return (
     <>
     <ProfileTabs active="/profile" />
-    <div className="grid gap-6 lg:grid-cols-[minmax(0,400px)_1fr]">
-      <aside className="flex min-w-0 flex-col gap-4" aria-label="CV Score">
+    <div className="flex flex-col gap-8">
+      {warn === "image" && (
+        <p role="note" className="rounded-2xl border border-[#F5D9A8] bg-[#FFF1DC] px-4 py-3 text-sm font-semibold text-[#7A4100]">
+          Your PDF looks like an image, so screening software can&apos;t read it. Export it as a text PDF, or{" "}
+          <Link href="/profile/quiz" className="underline underline-offset-2">take the quiz</Link> to keep going.
+        </p>
+      )}
+
+      <section className="flex flex-col gap-4" aria-label="CV Score">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h1 className="text-[28px] font-extrabold tracking-tight">Your CV, scored</h1>
+            <p className="text-sm text-[#5B5B6B]">Checked against cited recruiter guidance. Fix the top one first.</p>
+          </div>
+          {cv && <SectorSelect key={sector} value={sector} />}
+        </div>
         {cv ? (
           <Suspense key={`${cv.id}-${sector}`} fallback={<ScoreLoading sector={sector} />}>
             <ScoreSection supabase={supabase} userId={user.id} cvId={cv.id} sector={sector} year={year} failed={score === "failed"} uploadScoring={uploadScoring} />
           </Suspense>
         ) : (
-          <div className="card-quest flex flex-col gap-3 p-5">
-            <h2 className="text-base font-bold">No CV Score yet</h2>
-            <p className="text-sm text-[#5B5B6B]">Upload your CV and we&apos;ll score it against cited recruiter guidance for your sector.</p>
-            <Link href="/profile/build" className="btn-quest flex min-h-12 items-center justify-center py-3">Upload your CV</Link>
+          <div className="card-quest flex flex-wrap items-center justify-between gap-4 p-5">
+            <div className="flex flex-col gap-1">
+              <h2 className="text-base font-bold">No CV Score yet</h2>
+              <p className="text-sm text-[#5B5B6B]">Upload your CV and we&apos;ll score it against cited recruiter guidance for your sector.</p>
+            </div>
+            <Link href="/profile/build" className="btn-quest flex min-h-12 items-center justify-center px-6 py-3">Upload your CV</Link>
           </div>
         )}
-        <MythCard />
-      </aside>
+      </section>
 
-      <section className="flex min-w-0 flex-col gap-4" aria-labelledby="roles-h">
-        {warn === "image" && (
-          <p role="note" className="rounded-2xl border border-[#F5D9A8] bg-[#FFF1DC] px-4 py-3 text-sm font-semibold text-[#7A4100]">
-            Your PDF looks like an image, so screening software can&apos;t read it. Export it as a text PDF, or{" "}
-            <Link href="/profile/quiz" className="underline underline-offset-2">take the quiz</Link> to keep going.
-          </p>
-        )}
+      <section className="flex flex-col gap-4" aria-labelledby="roles-h">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h1 id="roles-h" className="text-[28px] font-extrabold tracking-tight">Roles that fit you</h1>
+            <h2 id="roles-h" className="text-xl font-extrabold tracking-tight">Roles that fit you</h2>
             {roles.length > 0 && <p className="text-sm text-[#5B5B6B]">Ranked by fit with your {cv ? "CV" : "quiz answers"}.</p>}
           </div>
-          {cv && <SectorSelect key={sector} value={sector} />}
+          <div className="flex flex-wrap gap-3">
+            {cv ? (
+              <Link href="/profile/build" className="flex min-h-12 items-center rounded-[14px] border-2 px-5 py-3 font-bold">Upload a new CV</Link>
+            ) : roles.length > 0 && (
+              <Link href="/profile/quiz" className="flex min-h-12 items-center rounded-[14px] border-2 px-5 py-3 font-bold">Retake the quiz</Link>
+            )}
+            <Link href="/feed" className="btn-quest flex min-h-12 items-center px-6 py-3">See my internships</Link>
+          </div>
         </div>
 
         {roles.length > 0 ? (
-          <ol className="flex flex-col gap-3">
-            {roles.map((r) => (
-              <li key={r.key} className="flex items-start gap-4 rounded-[18px] border border-[#E6E6EF] bg-white p-5">
+          <ol className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {roles.map((r, i) => (
+              <li key={r.key} className={`flex items-start gap-4 rounded-[18px] border bg-white p-5 ${i === 0 ? "border-[#CFC4FF] shadow-[0_2px_0_#E4DDFF]" : "border-[#E6E6EF]"}`}>
                 <span className="num-quest flex h-14 w-14 shrink-0 items-center justify-center rounded-[14px] bg-[#EFEBFF] text-lg text-[#3A20C4]" aria-hidden="true">{r.score}%</span>
                 <div className="flex min-w-0 flex-col gap-1">
-                  <h2 className="text-lg font-bold">
+                  <h3 className="text-base font-bold leading-snug">
                     {r.title}<span className="sr-only"> — {r.score}% match</span>
-                  </h2>
+                  </h3>
                   {r.why.length > 0 && (
                     <ul className="flex flex-col gap-0.5 text-sm text-[#5B5B6B]">{r.why.map((w) => <li key={w}>{w}</li>)}</ul>
                   )}
@@ -155,16 +171,9 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
             </div>
           </div>
         )}
-
-        <div className="flex flex-wrap gap-3">
-          <Link href="/feed" className="btn-quest flex min-h-12 items-center px-6 py-3">See my internships</Link>
-          {cv ? (
-            <Link href="/profile/build" className="flex min-h-12 items-center rounded-[14px] border-2 px-5 py-3 font-bold">Upload a new CV</Link>
-          ) : roles.length > 0 && (
-            <Link href="/profile/quiz" className="flex min-h-12 items-center rounded-[14px] border-2 px-5 py-3 font-bold">Retake the quiz</Link>
-          )}
-        </div>
       </section>
+
+      <MythCard />
     </div>
     </>
   );
