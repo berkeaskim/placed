@@ -148,4 +148,12 @@ describe("SKILLS vocabulary", () => {
     expect(extractSkills("Open source contributor to pandas")).toContain("Open Source");
     expect(extractSkills("EPSRC vacation bursary in the Physics department")).toContain("Research Assistant");
   });
+  it("matches the acronyms MVP, ACL and CPA only in capitals", () => {
+    expect(extractSkills("Shipped an MVP in two weeks")).toContain("MVP");
+    expect(extractSkills("Paper accepted at ACL 2026")).toContain("ACL");
+    expect(extractSkills("Cut CPA by 30% on paid social")).toContain("CPA");
+    expect(extractSkills("Shipped a Minimum Viable Product")).toContain("MVP");
+    expect(extractSkills("mvp acl cpa")).toEqual([]);
+    expect(canonicalize("mvp")).toBe("MVP");
+  });
 });
