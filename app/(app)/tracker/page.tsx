@@ -1,6 +1,7 @@
 import { requireUser } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isAppStatus } from "@/lib/tracker/status";
+import { nudgeFor } from "@/lib/outreach/nudges";
 import { isDemoEmail } from "@/lib/demo/is-demo";
 import { todayLondon } from "@/lib/scoring/dates";
 import { InboxBanner } from "@/components/tracker/inbox-banner";
@@ -28,15 +29,18 @@ async function loadConnection(userId: string): Promise<{ conn: { google_email: s
 export default async function Tracker({ searchParams }: { searchParams: Promise<{ gmail?: string }> }) {
   const { supabase, user } = await requireUser();
   const today = todayLondon();
-  const [{ data, error: appsErr }, { data: evs, error: evsErr }, gmail] = await Promise.all([
+  const [{ data, error: appsErr }, { data: evs, error: evsErr }, { data: outreachRows, error: outErr }, gmail] = await Promise.all([
     supabase.from("applications").select("id, job_id, status, next_deadline, last_event_at, updated_at, jobs(title, companies(name))")
       .eq("user_id", user.id).order("updated_at", { ascending: false }),
     supabase.from("inbox_events").select("id, application_id, company, subject, received_at, kind, deadline, action_url, effect, new_status")
       .eq("user_id", user.id).order("received_at", { ascending: false }).limit(300),
+    supabase.from("outreach").select("job_id, status").eq("user_id", user.id),
     loadConnection(user.id),
   ]);
   if (appsErr) console.error("tracker: loading applications failed", appsErr.message);
   if (evsErr) console.error("tracker: loading inbox events failed", evsErr.message);
+  if (outErr) console.error("tracker: loading outreach failed", outErr.message);
+  const outreach = outErr ? [] : outreachRows ?? [];
   const conn = gmail.conn;
   const events = (evsErr ? [] : evs ?? []) as Ev[];
   const cards: Card[] = (data ?? []).filter((a) => isAppStatus(a.status)).map((a) => {
@@ -48,6 +52,11 @@ export default async function Tracker({ searchParams }: { searchParams: Promise<
       id: a.id, jobId: a.job_id, status: a.status, title: j?.title ?? "Role", company: j?.companies?.name ?? "",
       updatedAt: a.updated_at, lastEventAt: a.last_event_at,
       evidence: moved ? { eventId: moved.id, subject: moved.subject, date: moved.received_at, to: moved.new_status!, canUndo: moved.new_status === a.status } : null,
+      nudge: a.jobs ? nudgeFor({ status: a.status, company: j?.companies?.name ?? "this company", lastEventAt: a.last_event_at, updatedAt: a.updated_at }, new Date()) : null,
+      outreach: {
+        sent: outreach.filter((o) => o.job_id === a.job_id && o.status !== "drafted").length,
+        replied: outreach.filter((o) => o.job_id === a.job_id && o.status === "replied").length,
+      },
       deadline: due ? { date: due.deadline!, label: DEADLINE_LABEL[due.kind] ?? "Deadline", url: due.action_url } : null,
     };
   });
