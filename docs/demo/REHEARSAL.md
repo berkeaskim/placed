@@ -29,12 +29,15 @@ Analyst Intern (June 2027)**, London. Everything the AI "says" in fixture mode i
 
 ## Right before presenting
 
-- [ ] `npm run demo:reset`: wipes Ayşe's data and leaves her not onboarded.
+- [ ] `npm run demo:reset`: wipes Ayşe's data and leaves her not onboarded. It then re-seeds her fictional Autopilot
+      setup (completed, no XP), so demo step 10 opens on the pack instead of "Set up Autopilot first". The Autopilot e2e
+      (`e2e/autopilot.spec.ts`) writes the same vault values, so running it before or after is harmless.
 - [ ] Keep a local server running as the backup if the Wi-Fi or an API fails:
       `AI_MODE=fixture NEXT_PUBLIC_DEMO_MODE=1 npm run dev`.
       `.env.local` has a Gemini key, so **without `AI_MODE=fixture` the app calls a live model** and the
       hand-labelled fixtures are not used.
-- [ ] Have `seed/demo/ayse-demir-cv.pdf` ready to drag in.
+- [ ] Have `seed/demo/ayse-demir-cv.pdf` ready to drag in. Step 2 **must** upload this exact file: the "Why Monzo?"
+      fixture's CV references only resolve against it, otherwise its sentences are caught as "bad source".
 - [ ] Decide the "real number" you'll type for the events bullet (e.g. 40). It is Ayşe's fictional figure. Say so.
 
 ## Demo order (3 minutes; amendments Task 25 item 4)
@@ -59,14 +62,16 @@ Analyst Intern (June 2027)**, London. Everything the AI "says" in fixture mode i
 9. **Defend this question.** Click "Save my version and download PDF". This saves the version and downloads the
    ATS-safe PDF. Back on the page, click "Show likely interview questions" to get, for example, "How many people
    came to your weekly events…?"
-10. **Autopilot (40 s).** Open Monzo, "Associate Data Scientist - Intern" (a real, unedited posting). Click "Autopilot this
+10. **Autopilot (40 s).** Say Ayşe set up Autopilot once earlier (`npm run demo:reset` re-seeds her fictional setup, so
+    no XP fires on stage; optionally show `/autopilot/setup` for a moment). Open Monzo, "Associate Data Scientist - Intern" (a real, unedited posting). Click "Autopilot this
     application". Walk the pack headings: "From your setup" (collapsed, filled for her), "Answer once", "Please confirm"
     (Right to work and sponsorship: she confirms them herself, Placed never assumes), "Your answer" ("Why Monzo?" built
     only from her CV; open "Caught it: 1 sentence removed", the AI swapped in a tool she never used; click "This is my
     answer" to approve it), "You'll fill these" (consent, diversity, pronouns: stay hers). Click "Open & fill". The real
     Monzo form fills in seconds: **15 of 20 fields filled (CV and both Right-to-work and sponsorship dropdowns included),
     5 left for her**, and the panel says "Check everything. You press Submit." (Numbers from the final e2e run.)
-    Say: "17 questions, 100 applications: 1,700 boxes. Autopilot fills the boring 90%. Placed never presses Submit."
+    Say: "About 17 questions on average across 111 real forms, so 100 applications is 1,700 boxes. Autopilot fills the
+    boring 90%. Placed never presses Submit." (The 17.2 average is from the spec, section 1.)
     Chrome shows a "Placed Autopilot started debugging this browser" bar while the dropdowns are filled. That is expected
     (it makes real clicks on dropdowns that ignore scripted ones); tell the room before they ask.
 11. **Apply (optional if time allows).** Click "Apply on company site": the posting opens in a new tab. Placed
