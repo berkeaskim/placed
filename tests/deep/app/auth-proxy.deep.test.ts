@@ -29,16 +29,18 @@ beforeEach(() => {
 const loc = (r: Response) => r.headers.get("location");
 
 describe("/auth/callback", () => {
-  it("no code → /login without calling Supabase", async () => {
+  it("no code → /login?error=link without calling Supabase", async () => {
     const r = await callback(new Request("https://placed.test/auth/callback"));
-    expect(loc(r)).toBe("https://placed.test/login");
+    expect(loc(r)).toBe("https://placed.test/login?error=link");
     expect(s.exchange).not.toHaveBeenCalled();
   });
-  it("exchange error or no user → /login", async () => {
+  it("exchange error, no user, or a thrown exchange → /login?error=link", async () => {
     s.exchange = vi.fn(async () => ({ data: { user: null }, error: { message: "bad code" } }));
-    expect(loc(await callback(new Request("https://placed.test/auth/callback?code=x")))).toBe("https://placed.test/login");
+    expect(loc(await callback(new Request("https://placed.test/auth/callback?code=x")))).toBe("https://placed.test/login?error=link");
     s.exchange = vi.fn(async () => ({ data: { user: null }, error: null }));
-    expect(loc(await callback(new Request("https://placed.test/auth/callback?code=x")))).toBe("https://placed.test/login");
+    expect(loc(await callback(new Request("https://placed.test/auth/callback?code=x")))).toBe("https://placed.test/login?error=link");
+    s.exchange = vi.fn(async () => { throw new Error("network"); });
+    expect(loc(await callback(new Request("https://placed.test/auth/callback?code=x")))).toBe("https://placed.test/login?error=link");
   });
   it("routes onboarded users to /feed, others (or missing profile) to /onboarding", async () => {
     s.onboarded = true;
@@ -80,10 +82,11 @@ describe("proxy (auth gate)", () => {
 });
 
 describe("next.config", () => {
-  it("server action body limit leaves headroom above the 5 MB CV cap (multipart overhead)", () => {
+  it("server action body limit leaves headroom above the 4 MB CV cap (multipart overhead) within Vercel's 4.5 MB", () => {
     const limit = String(nextConfig.experimental?.serverActions?.bodySizeLimit ?? "1mb");
     const m = /^(\d+(?:\.\d+)?)\s*(kb|mb)$/i.exec(limit);
     const bytes = m ? Number(m[1]) * (m[2].toLowerCase() === "mb" ? 1024 * 1024 : 1024) : Number(limit);
-    expect(bytes).toBeGreaterThan(5 * 1024 * 1024);
+    expect(bytes).toBeGreaterThan(4 * 1024 * 1024);
+    expect(bytes).toBeLessThanOrEqual(4.5 * 1024 * 1024);
   });
 });

@@ -56,10 +56,8 @@ describe("htmlToLines", () => {
     expect(out).toHaveLength(5000);
   });
 
-  // BUG: lib/text/jd.ts:37 — the catch-all tag stripper /<[^>]+>/ deletes literal text between a bare "<" and
-  // the next ">", so "Latency < 10ms, throughput > 1M req/s" loses "10ms, throughput". Should only strip
-  // things that look like tags, e.g. /<\/?[a-z!][^>]*>/gi.
-  it.fails("does not delete text between literal < and > comparison signs", () => {
+  // Fixed: htmlToLines only strips real tags (/<\/?[a-z!?][^>]*>/), so bare < and > survive.
+  it("does not delete text between literal < and > comparison signs", () => {
     expect(htmlToLines("<p>Latency < 10ms, throughput > 1M req/s</p>")).toEqual(["Latency < 10ms, throughput > 1M req/s"]);
   });
 });
@@ -120,11 +118,8 @@ describe("tagSections — spec §5.1.1 header vocabulary", () => {
       expect(tagSections([h, "- Python"])[1].section).toBe("must");
     }
   });
-  // BUG: lib/text/jd.ts:47 NICE_HEADER matches "bonus"/"plus" anywhere, so compensation headers like
-  // "## Salary and bonus" or "## Competitive pay plus benefits" are tagged NICE-TO-HAVE; every skill mentioned in
-  // the perks list (e.g. "Bloomberg terminal access", "Free Excel courses") becomes a nice-to-have requirement
-  // the student is penalised for.
-  it.fails("compensation headers mentioning 'bonus'/'plus' are not nice-to-have sections", () => {
+  // Fixed: NICE_HEADER only treats "bonus"/"plus" as nice at the start or in nice-to-have phrasings.
+  it("compensation headers mentioning 'bonus'/'plus' are not nice-to-have sections", () => {
     const t = tagSections(["## Salary and bonus", "- Free Excel training", "## Competitive pay plus benefits", "- Bloomberg terminal access"]);
     expect(t[1].section).toBe("other");
     expect(t[3].section).toBe("other");
@@ -157,13 +152,12 @@ describe("escapeRegex / EMAIL_RE / PHONE_RE", () => {
     expect("07700 900123".match(PHONE_RE)?.[0]).toBe("07700 900123");
     expect("12345678".match(PHONE_RE)).toBeNull();
   });
-  // BUG (low): lib/text/regex.ts:8 — PHONE_RE accepts a spaced year range, so a CV whose header lacks a phone
-  // number gets "2023 - 2026" (education dates) extracted as the phone in lib/ai/heuristics.ts:101.
-  it.fails("PHONE_RE does not treat a year range as a phone number", () => {
+  // Fixed: PHONE_RE requires 10+ digits, so year ranges are not phones.
+  it("PHONE_RE does not treat a year range as a phone number", () => {
     expect("BSc Economics, UCL 2023 - 2026".match(PHONE_RE)).toBeNull();
   });
-  // BUG (low): a leading "(" of a bracketed area code is dropped: "(020) 7946-0958" → "020) 7946-0958".
-  it.fails("PHONE_RE keeps the opening bracket of an area code", () => {
+  // Fixed: PHONE_RE accepts an optional leading "(".
+  it("PHONE_RE keeps the opening bracket of an area code", () => {
     expect("(020) 7946-0958".match(PHONE_RE)?.[0]).toBe("(020) 7946-0958");
   });
 });

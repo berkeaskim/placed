@@ -173,3 +173,28 @@ describe("checkers", () => {
     });
   });
 });
+
+describe("fairness fixes (Task 25a fix round 1)", () => {
+  // Body positioned so the latest role sits just inside the top third for a short header.
+  const body = (header: string) => `${header}\nEDUCATION UCL 2024–2027\nEvents Officer, Finance Society 2025\n` + "x".repeat(250);
+  const at = (name: string, header: string, email = "a@b.co") =>
+    CHECKERS.read_time(ctx({ cv: cv({ name, email }), pageTexts: [body(header)] }), rule({})).status;
+
+  it("read_time: name/email length doesn't change AU-03", () => {
+    const short = at("Al Li", "Al Li al@b.co", "al@b.co");
+    const long = at("Amara Okafor-Williams Oluwaseun", "Amara Okafor-Williams Oluwaseun amara.okafor-williams.oluwaseun@university.example.ac.uk", "amara.okafor-williams.oluwaseun@university.example.ac.uk");
+    expect(short).toBe("pass");
+    expect(long).toBe(short);
+  });
+  it("read_time: an all-caps header still finds the name (case-insensitive, Unicode)", () => {
+    expect(at("Ayşe Demir", "AYŞE DEMIR a@b.co")).toBe("pass");
+    expect(at("Ayşe Demir", "Ayşe Demir a@b.co")).toBe("pass");
+  });
+  it("skills_evidenced: the detail never carries the candidate's name", () => {
+    const c = ctx({ cv: cv({ name: "James Smith", skills: [{ group: "Skills", items: ["Kubernetes", "Thank you for reading — James Smith"] }] }) });
+    const out = CHECKERS.skills_evidenced(c, rule({}));
+    expect(out.detail).toBeDefined();
+    expect(out.detail).not.toMatch(/james|smith/i);
+    expect(out.evidenceLine ?? "").not.toMatch(/james|smith/i);
+  });
+});

@@ -1,4 +1,5 @@
 "use server";
+import { after } from "next/server";
 import { requireUser } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { extractPdf, isImageOnly } from "@/lib/cv/pdf-text";
@@ -9,10 +10,10 @@ import { contentHash } from "@/lib/ingest/fingerprint";
 import { scanCvSafety, stripFlaggedSpans, type SafetyReport } from "@/lib/cv/safety";
 import { SAFETY_WARNING_COPY } from "@/lib/cv/safety-copy";
 import { dropFlaggedContent } from "@/lib/cv/strip-parsed";
-import type { ParsedCV } from "@/lib/types";
+import { ARCHETYPES, YEARS, type Archetype, type ParsedCV, type Year } from "@/lib/types";
+import { scoreCv } from "@/lib/cv-score/run";
 import { canonicalize, extractSkills } from "@/lib/skills/extract";
-
-const MAX_BYTES = 5 * 1024 * 1024;
+import { cvSizeError } from "@/lib/cv/upload-limits";
 
 export type UploadCvResult =
   | { ok: true; award: AwardResult | null; imageOnly: boolean; cvId: string; safetyWarning: string | null }
@@ -23,7 +24,8 @@ export async function uploadCv(formData: FormData): Promise<UploadCvResult> {
   const file = formData.get("cv");
   if (!(file instanceof File) || file.size === 0) return { error: "Choose a PDF first." };
   if (file.type !== "application/pdf") return { error: "Please upload a PDF." };
-  if (file.size > MAX_BYTES) return { error: "That file is over 5 MB — export a smaller PDF." };
+  const tooBig = cvSizeError(file.size);
+  if (tooBig) return { error: tooBig };
 
   const bytes = new Uint8Array(await file.arrayBuffer());
   if (new TextDecoder().decode(bytes.subarray(0, 5)) !== "%PDF-") return { error: "That doesn't look like a PDF. Export your CV as PDF and try again." };
@@ -56,7 +58,7 @@ export async function uploadCv(formData: FormData): Promise<UploadCvResult> {
   const up = await admin.storage.from("cvs").upload(path, bytes, { contentType: "application/pdf" });
   if (up.error) return { error: "Upload failed — try again." };
 
-  // Insert inactive, then swap atomically (activate_cv, 0007): a failure or a concurrent upload never leaves
+  // Insert inactive, then swap atomically (activate_cv, 0009): a failure or a concurrent upload never leaves
   // the user without exactly one active CV.
   const { data: cvRow, error } = await supabase.from("cvs").insert({
     user_id: user.id, storage_path: path, file_size: file.size, page_count: pdf.pageCount,
@@ -82,13 +84,34 @@ export async function uploadCv(formData: FormData): Promise<UploadCvResult> {
   const { data: prof, error: profErr } = await supabase.from("profiles").select("year, target_archetype").eq("user_id", user.id).single();
   // An unreadable (image-only) or empty parse must not wipe archetypes/skills from e.g. the quiz.
   const hasSignal = !imageOnly && (skills.length > 0 || scored.length > 0);
+  const target = prof?.target_archetype ?? (hasSignal ? scored[0]?.key : null) ?? null;
+  const year = prof?.year ?? parsed.yearGuess ?? null;
   // If the profile read failed we can't tell what the user already chose: skip rather than overwrite year/target.
   if (!profErr) {
     await supabase.from("profiles").update({
       ...(hasSignal ? { archetypes: scored, skills } : {}),
-      target_archetype: prof?.target_archetype ?? (hasSignal ? scored[0]?.key : null) ?? null,
-      year: prof?.year ?? parsed.yearGuess ?? null,
+      target_archetype: target,
+      year,
     }).eq("user_id", user.id);
+  }
+
+  // CV Score for the target sector, after the response is sent (one smart-tier call, ~116 rules): the
+  // upload returns immediately and never fails because of scoring; the profile page retries a missing
+  // score (Task 19). No XP for the score itself (amendment item 5).
+  if ((ARCHETYPES as readonly string[]).includes(target ?? "")) {
+    const y: Year = (YEARS as readonly string[]).includes(year ?? "") ? (year as Year) : "2nd";
+    try {
+      after(async () => {
+        try {
+          await scoreCv(supabase, { userId: user.id, cvId, sector: target as Archetype, year: y });
+        } catch (e) {
+          console.error("scoreCv failed after CV upload; retried on the profile page", e);
+        }
+      });
+    } catch (e) {
+      // after() throws outside a request scope (e.g. direct calls in tests): scoring is skipped, never the upload.
+      console.error("couldn't schedule scoreCv after CV upload; retried on the profile page", e);
+    }
   }
 
   // The CV is saved at this point: an XP hiccup must not turn it into a failed upload.

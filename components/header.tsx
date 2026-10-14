@@ -19,6 +19,7 @@ export async function Header({ userId }: { userId: string }) {
         <Link href="/feed" className="flex min-h-11 items-center rounded-[10px] px-3.5 py-2 text-sm font-semibold hover:bg-[#EFEBFF]">Feed</Link>
         <Link href="/tracker" className="flex min-h-11 items-center rounded-[10px] px-3.5 py-2 text-sm font-medium text-[#4A4A57] hover:bg-[#EFEBFF]">Tracker</Link>
         <Link href="/profile" className="flex min-h-11 items-center rounded-[10px] px-3.5 py-2 text-sm font-medium text-[#4A4A57] hover:bg-[#EFEBFF]">Profile</Link>
+        <Link href="/settings" className="flex min-h-11 items-center rounded-[10px] px-3.5 py-2 text-sm font-medium text-[#4A4A57] hover:bg-[#EFEBFF]">Settings</Link>
         <BadgesModal earned={(b ?? []).map((x) => x.badge_key as BadgeKey)} />
       </nav>
       <div className="flex-1" />

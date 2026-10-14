@@ -52,7 +52,10 @@ export async function GET(request: Request) {
   // Vercel Cron: resume from the stored cursor, time-boxed, cursor saved after every company.
   const { data: state, error: sErr } = await db.from("ingest_state").select("cursor").eq("id", 1).single();
   if (sErr) return NextResponse.json({ error: `ingest_state: ${sErr.message}` }, { status: 500 });
-  let cursor = (state?.cursor ?? 0) % Math.max(1, list.length);
+  // Normalise into [0, n): a negative/corrupt stored cursor must not index list[-1].
+  const n = Math.max(1, list.length);
+  const stored = Math.trunc(Number(state?.cursor ?? 0)) || 0;
+  let cursor = ((stored % n) + n) % n;
   let partial = false;
   const save = () => db.from("ingest_state").update({ cursor, updated_at: new Date().toISOString() }).eq("id", 1);
   try {

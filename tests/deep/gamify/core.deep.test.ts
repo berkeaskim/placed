@@ -204,9 +204,12 @@ describe("badge unlock conditions", () => {
     expect(apply({}, { jobTitle: undefined })).not.toContain("spring_week_hunter");
   });
   // BUG: /spring|insight/ is a substring match, so non-programme roles unlock the badge.
-  it.fails("spring_week_hunter is not awarded for 'Data Insights Analyst' or 'Springer Nature' roles", () => {
+  // Fixed: matches programme phrases (spring week, insight day/programme...) on word boundaries.
+  it("spring_week_hunter is not awarded for 'Data Insights Analyst' or 'Springer Nature' roles", () => {
     expect(apply({}, { jobTitle: "Data Insights Analyst Intern" })).not.toContain("spring_week_hunter");
     expect(apply({}, { jobTitle: "Springer Nature — Software Intern" })).not.toContain("spring_week_hunter");
+    for (const jobTitle of ["Spring Insight Week 2027", "Insight Day — Markets", "Spring Programme", "Insights Week", "Spring Internship"])
+      expect(apply({}, { jobTitle })).toContain("spring_week_hunter");
   });
   it("early_bird strictly more than 7 days before the deadline", () => {
     expect(apply({}, { deadline: "2026-10-20" })).not.toContain("early_bird"); // exactly 7

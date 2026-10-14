@@ -1,9 +1,13 @@
 import { ARCHETYPES, type Archetype, type ArchetypeScore, type CvEntry, type ParsedCV, type Requirement, type Year } from "@/lib/types";
-import { EMAIL_RE, PHONE_RE } from "@/lib/text/regex";
+import { EMAIL_RE, PHONE_RE, escapeRegex } from "@/lib/text/regex";
+import type { CoverageResult, CoverageStatus } from "@/lib/scoring/coverage";
+import type { Explanation, RequirementRow } from "@/lib/scoring/requirements";
 import { tagSections } from "@/lib/text/jd";
 import { detectEmploymentType, detectSponsorship } from "@/lib/ingest/filter";
 import { extractSkills } from "@/lib/skills/extract";
 import type { TaggedJob } from "./tagJob";
+import type { TailorChange, TailoredCV, TailoredEntry } from "@/lib/types";
+import { toTailored } from "@/lib/verify/tailoring";
 
 const KEYWORDS: Record<Archetype, RegExp> = {
   software_eng: /\b(software|engineer(ing)?|developer|backend|frontend|full[- ]stack|swe|devops|mobile)\b/gi,
@@ -93,7 +97,8 @@ const SECTION_RE: [string, RegExp][] = [
   ["interests", /^(interests|hobbies|interests (&|and) hobbies)$/i],
   ["summary", /^(profile|summary|personal statement|about me)$/i],
 ];
-const BULLET = /^\s*([•▪◦·*\-–]|\d+\.)\s+/;
+// \uF0B7 is the Symbol-font bullet Word PDFs emit as a private-use char; ● is Word's default bullet.
+const BULLET = /^\s*([•●▪■◦·*\-–\uF0B7]|\d+\.)\s+/;
 
 export function heuristicParseCv(text: string): ParsedCV {
   const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
@@ -105,7 +110,7 @@ export function heuristicParseCv(text: string): ParsedCV {
   let current = "header";
   for (const line of lines) {
     const hit = SECTION_RE.find(([, re]) => re.test(line.replace(/[:\s]+$/, "")));
-    if (hit) { current = hit[0]; if (!order.includes(current)) order.push(current); sections[current] = []; continue; }
+    if (hit) { current = hit[0]; if (!order.includes(current)) order.push(current); sections[current] ??= []; continue; }
     (sections[current] ??= []).push(line);
   }
   const toEntries = (ls: string[] = []): CvEntry[] => {
@@ -143,4 +148,88 @@ export function heuristicParseCv(text: string): ParsedCV {
     yearGuess: null,
     archetypes: archetypeScores(text).filter((a) => a.score > 0).slice(0, 3),
   };
+}
+
+// ---------- explainMatch fallback (no AI, no CV-reading judgement beyond keyword coverage) ----------
+
+const COVERAGE_TO_MATCH: Record<CoverageStatus, RequirementRow["match"]> = { existing: "strong", supportedByResume: "partial", gap: "missing" };
+
+/**
+ * Deterministic requirement table: skill requirements take their keyword-coverage status; requirements with no
+ * skill (or no coverage item) stay "partial" because keywords cannot judge them. Strong rows quote a CV line
+ * that names the skill (whole word), or are downgraded to partial when no such line exists.
+ */
+export function heuristicExplain(i: { requirements: Requirement[]; coverage: CoverageResult; cvText: string; archetypeMatch: boolean }): Explanation {
+  const status = new Map(i.coverage.items.map((x) => [x.skill.toLowerCase(), x.status]));
+  const lines = i.cvText.split("\n").map((l) => l.trim()).filter(Boolean);
+  const lineFor = (skill: string) => {
+    const re = new RegExp(`(?<![\\w+#])${escapeRegex(skill)}(?![\\w+#])`, "i");
+    return lines.find((l) => re.test(l)) ?? null;
+  };
+  const statusOf = (r: Requirement): CoverageStatus | undefined => {
+    if (r.anyOf && r.anyOf.length > 1) {
+      const group = i.coverage.items.find((c) => c.anyOf && c.anyOf.some((a) => r.anyOf!.some((b) => a.toLowerCase() === b.toLowerCase())));
+      if (group) return group.status;
+    }
+    return r.skill ? status.get(r.skill.toLowerCase()) : undefined;
+  };
+  const rows: RequirementRow[] = i.requirements.map((r) => {
+    const s = statusOf(r);
+    let match: RequirementRow["match"] = s ? COVERAGE_TO_MATCH[s] : "partial";
+    const names = r.anyOf?.length ? r.anyOf : r.skill ? [r.skill] : [];
+    const evidence = match === "missing" ? null : names.map(lineFor).find(Boolean) ?? null;
+    if (match === "strong" && !evidence) match = "partial";
+    return { text: r.text, skill: r.skill, importance: r.importance, evidenceTier: r.evidenceTier, match, cvEvidence: match === "strong" ? evidence : null };
+  });
+  const matched = [...new Set(rows.filter((r) => r.match === "strong" && r.skill).map((r) => r.skill as string))];
+  const whyFit = [
+    ...(i.archetypeMatch ? ["This role matches the kind of work your profile points to."] : []),
+    ...(matched.length ? [`Your CV already shows ${matched.slice(0, 3).join(", ")}.`] : []),
+  ];
+  const gaps = rows.filter((r) => r.match !== "strong").map((r) => ({
+    requirement: r.text,
+    blocking: (r.importance === "critical" || r.importance === "high") && r.evidenceTier !== "inferred",
+    adjacentExperience: null,
+    howToClose: r.skill
+      ? `Do a small project with ${r.skill} (a weekend is enough) and add it to Projects.`
+      : "Look for a society role, module or job that shows this, and describe it on your CV in your own words.",
+  }));
+  return { rows, whyFit, gaps };
+}
+
+
+// ---------- tailorCV fallback (Task 23) ----------
+
+/**
+ * Deterministic tailoring: reorder bullets so the ones naming allowed skills come first, and list
+ * `supported` skills (already in the CV's prose) in Skills. It never rewrites a bullet, so it can't fabricate.
+ */
+export function heuristicTailor(i: { cv: ParsedCV; allowed: string[]; supported: string[] }): TailoredCV {
+  const t = toTailored(i.cv);
+  const allowed = new Set(i.allowed.map((s) => s.toLowerCase()));
+  const hits = (text: string) => extractSkills(text).filter((s) => allowed.has(s.toLowerCase()));
+  const changes: TailorChange[] = [];
+  const reorder = (es: TailoredEntry[]): TailoredEntry[] => es.map((e) => {
+    const sorted = e.bullets.map((b, n) => ({ b, n, h: hits(b.text).length })).sort((a, b) => b.h - a.h || a.n - b.n);
+    const bullets = sorted.map(({ b, n }, at) => (at === n ? b : { ...b, changeType: "reordered" as const }));
+    const top = sorted[0];
+    if (top && top.n !== 0) {
+      const named = hits(top.b.text);
+      changes.push({ bulletId: top.b.id, before: top.b.text, after: top.b.text, reason: `Moved up: it shows ${named.join(", ")}, which this role asks for`, jdRequirement: named[0] ?? null, keywordsAdded: [] });
+    }
+    return { ...e, bullets };
+  });
+  t.experience = reorder(t.experience); t.projects = reorder(t.projects); t.leadership = reorder(t.leadership);
+  const listed = new Set(t.skills.flatMap((g) => g.items.flatMap((x) => [x.toLowerCase(), ...extractSkills(x).map((s) => s.toLowerCase())])));
+  const surface = [...new Set(i.supported)].filter((s) => !listed.has(s.toLowerCase()));
+  if (surface.length) {
+    t.skills = t.skills.length ? t.skills.map((g, n) => (n === 0 ? { ...g, items: [...g.items, ...surface] } : g)) : [{ group: "Skills", items: surface }];
+    changes.push({
+      bulletId: "skills", before: "", after: surface.join(", "),
+      reason: `Listed ${surface.join(", ")} in Skills: your CV already mentions ${surface.length > 1 ? "them" : "it"} elsewhere`,
+      jdRequirement: surface[0], keywordsAdded: surface,
+    });
+  }
+  t.changes = changes;
+  return t;
 }

@@ -44,7 +44,8 @@ describe("aiProvider / aiMode matrix", () => {
 
   // BUG (low): lib/env.ts:18 compares AI_PROVIDER with === "gemini", so "Gemini"/"GEMINI"/" gemini" silently
   // select anthropic whenever both keys are set.
-  it.fails("AI_PROVIDER is case/whitespace-insensitive", () => {
+  // Fixed: aiProvider() trims and lower-cases AI_PROVIDER before comparing.
+  it("AI_PROVIDER is case/whitespace-insensitive", () => {
     setEnv({ AI_PROVIDER: "Gemini ", GEMINI_API_KEY: "g", ANTHROPIC_API_KEY: "a" });
     expect(aiProvider()).toBe("gemini");
   });

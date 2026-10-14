@@ -195,7 +195,8 @@ describe("jdRequirementSkills", () => {
 
   // GAP: lib/scoring/coverage.ts:25 — unknown tagged skills are not normalised (trim/case), so the same
   // LLM-tagged skill with different casing becomes two requirements, and padded whitespace never matches the CV.
-  it.fails("unknown tagged skills are de-duplicated case/whitespace-insensitively", () => {
+  // Fixed: requirement skills are keyed case/whitespace-insensitively, keeping the first (trimmed) spelling.
+  it("unknown tagged skills are de-duplicated case/whitespace-insensitively", () => {
     const r = jdRequirementSkills([], [req("  Kdb Insights "), req("kdb insights", "nice")]);
     expect(r).toEqual([{ skill: "Kdb Insights", section: "must" }]);
   });

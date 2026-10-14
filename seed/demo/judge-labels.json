@@ -1,0 +1,39 @@
+{
+ "_note": "HAND-LABELLED demo verdicts for the FICTIONAL persona (seed/demo/ayse.json), not recorded model output. Every evidence_line is an exact line of the redacted demo CV text (A1). Rules not listed are not_applicable. scripts/make-demo-cv.ts copies each sector into fixtures/ai/judgeCvRules/<textHash16>-<sector>.json.",
+ "data_analytics": {
+  "verdicts": [
+   { "rule_id": "GEN-03", "status": "fail", "evidence_line": "Organised weekly society events", "fix": "Add a number and a result: how many people came, how often, what changed. For example: \"Organised weekly society events for [add your real number] members\"." },
+   { "rule_id": "DAT-05", "status": "fail", "evidence_line": "Built charts in Excel comparing rents across 12 boroughs", "fix": "Say what the charts showed or who used them, for example: \"…comparing rents across 12 boroughs, showing [add your real finding]\"." },
+   { "rule_id": "G-20", "status": "pass", "evidence_line": "Trained 3 new staff on the till and opening routine", "fix": null },
+   { "rule_id": "AU-02", "status": "pass", "evidence_line": "Used Python and SQL to collect and clean 1,200 rental listings", "fix": null },
+   { "rule_id": "DAT-01", "status": "pass", "evidence_line": "Modules: Econometrics (Stata), Statistics, Microeconomics", "fix": null },
+   { "rule_id": "DAT-02", "status": "pass", "evidence_line": "Used Python and SQL to collect and clean 1,200 rental listings", "fix": null },
+   { "rule_id": "G-33", "status": "pass", "evidence_line": "A-levels: Maths A*, Economics A, History A", "fix": null },
+   { "rule_id": "G-34", "status": "pass", "evidence_line": "Managed a £2,000 events budget", "fix": null }
+  ],
+  "spelling_errors": []
+ },
+ "consulting": {
+  "verdicts": [
+   { "rule_id": "GEN-03", "status": "fail", "evidence_line": "Organised weekly society events", "fix": "Add a number and a result: how many people came, how often, what changed. For example: \"Organised weekly society events for [add your real number] members\"." },
+   { "rule_id": "G-20", "status": "pass", "evidence_line": "Trained 3 new staff on the till and opening routine", "fix": null },
+   { "rule_id": "AU-02", "status": "pass", "evidence_line": "Used Python and SQL to collect and clean 1,200 rental listings", "fix": null },
+   { "rule_id": "CON-11", "status": "pass", "evidence_line": "Technical: Python, SQL, Excel", "fix": null },
+   { "rule_id": "G-33", "status": "pass", "evidence_line": "A-levels: Maths A*, Economics A, History A", "fix": null },
+   { "rule_id": "G-34", "status": "pass", "evidence_line": "Managed a £2,000 events budget", "fix": null }
+  ],
+  "spelling_errors": []
+ },
+ "finance_banking": {
+  "verdicts": [
+   { "rule_id": "GEN-03", "status": "fail", "evidence_line": "Organised weekly society events", "fix": "Add a number and a result: how many people came, how often, what changed. For example: \"Organised weekly society events for [add your real number] members\"." },
+   { "rule_id": "FIN-05", "status": "fail", "evidence_line": "Served customers in a busy café", "fix": "Frame the café job commercially with a real number, for example: \"Served [add your real number] customers per shift\"." },
+   { "rule_id": "FIN-04", "status": "pass", "evidence_line": "Events Officer, UCL Finance Society | 2025–present", "fix": null },
+   { "rule_id": "G-20", "status": "pass", "evidence_line": "Trained 3 new staff on the till and opening routine", "fix": null },
+   { "rule_id": "AU-02", "status": "pass", "evidence_line": "Used Python and SQL to collect and clean 1,200 rental listings", "fix": null },
+   { "rule_id": "G-33", "status": "pass", "evidence_line": "A-levels: Maths A*, Economics A, History A", "fix": null },
+   { "rule_id": "G-34", "status": "pass", "evidence_line": "Managed a £2,000 events budget", "fix": null }
+  ],
+  "spelling_errors": []
+ }
+}

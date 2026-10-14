@@ -88,6 +88,7 @@ describe("defendQuestions in fixture mode", () => {
     const out = expectOnePerBullet(await defendQuestions(DEMO), DEMO);
     expect(out.questions[0].question).toMatch(/50,000/);
     expect(generateStructured).not.toHaveBeenCalled();
+    expect((await defendQuestions(DEMO)).source).toBe("ai");
   });
 
   it("follows the caller's bullet order, not the fixture's", async () => {
@@ -100,7 +101,7 @@ describe("defendQuestions in fixture mode", () => {
   });
 
   it("returns no questions for no bullets", async () => {
-    expect(await defendQuestions({ ...DEMO, bullets: [] })).toEqual({ questions: [] });
+    expect(await defendQuestions({ ...DEMO, bullets: [] })).toEqual({ questions: [], source: "heuristic" });
   });
 
   it("works with no API key and no AI_MODE set (automatic fixture mode)", async () => {
@@ -138,10 +139,33 @@ describe("defendQuestions in live mode", () => {
     expect(out.questions[1].question).toBe("Who else was in the team, and what did you own?");
   });
 
-  it("falls back to heuristic questions when the provider fails", async () => {
+  it("falls back to heuristic questions when the provider fails, and says so", async () => {
     liveMode();
     vi.mocked(generateStructured).mockRejectedValue(new Error("boom"));
-    expectOnePerBullet(await defendQuestions(GENERIC), GENERIC);
+    const out = await defendQuestions(GENERIC);
+    expectOnePerBullet(out, GENERIC);
+    expect(out.source).toBe("heuristic");
+  });
+
+  it("marks a model answer as source ai", async () => {
+    liveMode();
+    vi.mocked(generateStructured).mockResolvedValue({
+      questions: [{ bulletId: "zz-1", question: "How did you get 300 responses?", whyTheyAsk: "To check the number.", prepTip: "Know the channel you used." }],
+    });
+    expect((await defendQuestions(GENERIC)).source).toBe("ai");
+  });
+
+  it("a model answer covering no bullet is reported as heuristic", async () => {
+    liveMode();
+    vi.mocked(generateStructured).mockResolvedValue({ questions: [] });
+    expect((await defendQuestions(GENERIC)).source).toBe("heuristic");
+  });
+
+  it("budgets enough tokens for Gemini thinking: at least 2000 + 600 per bullet", async () => {
+    liveMode();
+    vi.mocked(generateStructured).mockResolvedValue({ questions: [] });
+    await defendQuestions(GENERIC);
+    expect(vi.mocked(generateStructured).mock.calls[0][0].maxTokens).toBeGreaterThanOrEqual(2000 + 600 * GENERIC.bullets.length);
   });
 });
 

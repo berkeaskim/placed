@@ -1,0 +1,141 @@
+{
+ "name": "Ayşe Demir",
+ "email": "ayse.demir.demo@example.com",
+ "phone": "+44 7700 900123",
+ "location": "London",
+ "links": [
+  "https://example.com/ayse-demir"
+ ],
+ "summary": null,
+ "education": [
+  {
+   "id": "e0",
+   "institution": "University College London",
+   "degree": "BSc Economics",
+   "dates": "2025–2028",
+   "grade": "Predicted 2:1",
+   "details": [
+    {
+     "id": "e0-d0",
+     "text": "Modules: Econometrics (Stata), Statistics, Microeconomics"
+    },
+    {
+     "id": "e0-d1",
+     "text": "A-levels: Maths A*, Economics A, History A"
+    }
+   ]
+  }
+ ],
+ "experience": [
+  {
+   "id": "x0",
+   "org": "Marlowe Café",
+   "title": "Barista (part-time)",
+   "dates": "2024–2025",
+   "location": "London",
+   "bullets": [
+    {
+     "id": "x0-b0",
+     "text": "Served customers in a busy café"
+    },
+    {
+     "id": "x0-b1",
+     "text": "Trained 3 new staff on the till and opening routine"
+    }
+   ]
+  }
+ ],
+ "projects": [
+  {
+   "id": "p0",
+   "org": "London Rent Tracker",
+   "title": "Personal project",
+   "dates": "2025",
+   "location": "",
+   "bullets": [
+    {
+     "id": "p0-b0",
+     "text": "Used Python and SQL to collect and clean 1,200 rental listings"
+    },
+    {
+     "id": "p0-b1",
+     "text": "Built charts in Excel comparing rents across 12 boroughs"
+    },
+    {
+     "id": "p0-b2",
+     "text": "Ran the collection script weekly on AWS"
+    }
+   ]
+  }
+ ],
+ "leadership": [
+  {
+   "id": "l0",
+   "org": "UCL Finance Society",
+   "title": "Events Officer",
+   "dates": "2025–present",
+   "location": "",
+   "bullets": [
+    {
+     "id": "l0-b0",
+     "text": "Organised weekly society events"
+    },
+    {
+     "id": "l0-b1",
+     "text": "Managed a £2,000 events budget"
+    }
+   ]
+  }
+ ],
+ "skills": [
+  {
+   "group": "Technical",
+   "items": [
+    "Python",
+    "SQL",
+    "Excel"
+   ]
+  },
+  {
+   "group": "Languages",
+   "items": [
+    "English (fluent)",
+    "Turkish (native)"
+   ]
+  }
+ ],
+ "interests": "Running (London 10k, 2025), chess",
+ "sectionOrder": [
+  "education",
+  "experience",
+  "projects",
+  "leadership",
+  "skills",
+  "interests"
+ ],
+ "yearGuess": "2nd",
+ "archetypes": [
+  {
+   "key": "data_analytics",
+   "score": 88,
+   "why": [
+    "Python and SQL rental-data project",
+    "Econometrics with Stata"
+   ]
+  },
+  {
+   "key": "consulting",
+   "score": 72,
+   "why": [
+    "Organised society events and managed a budget"
+   ]
+  },
+  {
+   "key": "finance_banking",
+   "score": 65,
+   "why": [
+    "Finance Society committee role"
+   ]
+  }
+ ]
+}

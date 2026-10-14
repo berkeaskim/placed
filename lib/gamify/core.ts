@@ -1,8 +1,12 @@
 import type { FitLabel } from "@/lib/types";
 import { daysUntil } from "@/lib/scoring/dates";
 
-export type XpEventType = "onboarding_complete" | "cv_uploaded" | "quiz_done" | "job_saved" | "cv_tailored" | "applied" | "interview" | "rejected" | "offer" | "playbook_done";
-export type BadgeKey = "profile_pro" | "first_shot" | "spring_week_hunter" | "early_bird" | "bounce_back" | "gap_closer";
+export type XpEventType = "onboarding_complete" | "cv_uploaded" | "quiz_done" | "job_saved" | "cv_tailored" | "applied" | "interview" | "rejected" | "offer"
+  // Task 23b: tailoring screen. Job-scoped, so xp_events_once_per_job (0002) makes each once per job.
+  | "number_confirmed" | "suggestion_edited"
+  // Task 19b: Target Role. Action-scoped via xp_events.ref (0010).
+  | "playbook_done";
+export type BadgeKey = "profile_pro" | "first_shot" | "spring_week_hunter" | "early_bird" | "bounce_back" | "made_it_yours" | "gap_closer";
 
 export const BADGES: Record<BadgeKey, { name: string; description: string }> = {
   profile_pro: { name: "Profile Pro", description: "Built your profile from a CV or the quiz" },
@@ -10,6 +14,7 @@ export const BADGES: Record<BadgeKey, { name: string; description: string }> = {
   spring_week_hunter: { name: "Spring Week Hunter", description: "Applied to a spring week or insight programme" },
   early_bird: { name: "Early Bird", description: "Applied more than 7 days before the deadline" },
   bounce_back: { name: "Bounce Back", description: "Applied again after a rejection" },
+  made_it_yours: { name: "Made it yours", description: "Edited a tailored line into your own words" },
   gap_closer: { name: "Gap Closer", description: "Closed your first skill gap from a Role Playbook" },
 };
 
@@ -25,6 +30,9 @@ export function levelFromXp(xp: number) {
   return { level, name: LEVEL_NAMES[Math.min(level - 1, LEVEL_NAMES.length - 1)], intoLevel: rem, needed: 100 * level };
 }
 
+/** Programme phrases only, on word boundaries: "Data Insights Analyst" and "Springer Nature" don't count. */
+const SPRING_PROGRAMME = /\b(spring\s+(week|insights?|internship|programme|program|scheme)|insights?\s+(day|days|week|weeks|programme|program|event|scheme))\b/i;
+
 export const APPLY_XP: Record<FitLabel, number> = { "Strong fit": 50, "Good fit": 50, Stretch: 25, "Not recommended": 10 };
 
 export const PLAYBOOK_DONE_DAILY_CAP = 3;
@@ -39,6 +47,7 @@ export function xpFor(e: GamifyEvent, s: GamifyState): number {
     case "interview": return 100;
     case "rejected": return 20;
     case "offer": return 300;
+    case "number_confirmed": case "suggestion_edited": return 10;
     case "playbook_done": return (s.playbookDoneToday ?? 0) < PLAYBOOK_DONE_DAILY_CAP ? 40 : 0;
   }
 }
@@ -57,10 +66,11 @@ export function computeAward(state: GamifyState, e: GamifyEvent, today: string) 
   if ((e.type === "cv_uploaded" || e.type === "quiz_done") && e.profileComplete) candidates.push("profile_pro");
   if (e.type === "applied") {
     if (s.appliedCount === 0) candidates.push("first_shot");
-    if (e.jobTitle && /spring|insight/i.test(e.jobTitle)) candidates.push("spring_week_hunter");
+    if (e.jobTitle && SPRING_PROGRAMME.test(e.jobTitle)) candidates.push("spring_week_hunter");
     if (e.deadline && daysUntil(e.deadline, today) > 7) candidates.push("early_bird");
     if (s.rejectedCount > 0) candidates.push("bounce_back");
   }
+  if (e.type === "suggestion_edited") candidates.push("made_it_yours");
   if (e.type === "playbook_done") candidates.push("gap_closer");
   const newBadges = candidates.filter((b) => !earned.has(b));
 

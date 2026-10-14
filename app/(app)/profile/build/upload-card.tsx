@@ -36,7 +36,7 @@ export function UploadCard() {
       router.push("/profile");
     })} className="card-quest flex flex-col gap-4 p-6">
       <h2 className="text-xl font-extrabold">Upload your CV</h2>
-      <p className="text-sm text-muted-foreground">PDF, up to 5 MB. We read it, score it against recruiter guidance, and never share it.</p>
+      <p className="text-sm text-muted-foreground">PDF, up to 4 MB. We read it, score it against recruiter guidance, and never share it.</p>
       <label
         onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
         onDragLeave={() => setDragging(false)}

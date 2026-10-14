@@ -3,7 +3,8 @@ import { aiMode, aiProvider } from "@/lib/env";
 import { loadFixture } from "./fixtures";
 
 export type Part = { type: "text"; text: string } | { type: "pdf"; base64: string };
-export type StructuredRequest<T> = { tier: "fast" | "smart"; system: string; parts: Part[]; schema: z.ZodType<T>; maxTokens?: number };
+/** `temperature` is optional and currently never sent: Anthropic models reject it and Gemini 3 should stay at its default (gemini.ts). */
+export type StructuredRequest<T> = { tier: "fast" | "smart"; system: string; parts: Part[]; schema: z.ZodType<T>; maxTokens?: number; temperature?: number };
 
 export class AiError extends Error {}
 

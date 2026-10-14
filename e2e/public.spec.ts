@@ -63,7 +63,8 @@ test.describe("public pages (logged out)", () => {
 
   // BUG: app/login/page.tsx:46 — email <Input> has only a placeholder, no <label>/aria-label;
   // and the page has no <h1> (CardTitle at app/login/page.tsx:25 renders a <div>).
-  test.fail("a11y: login", async ({ page }) => {
+  // Fixed: the email input has an aria-label and the card title renders as the page's single <h1>.
+  test("a11y: login", async ({ page }) => {
     await page.goto("/login");
     expect(await basicA11y(page)).toEqual([]);
   });

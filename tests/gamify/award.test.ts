@@ -14,12 +14,13 @@ function fake(opts: { insertError?: { code: string; message: string } }) {
     "xp_events.select": { count: 0 },
     "xp_events.insert": { error: opts.insertError ?? null },
     "profiles.update": { error: null },
-    "badges.upsert": { error: null },
+    "badges.upsert": { data: [], error: null },
   };
   const from = (table: string) => {
     let op = "";
     const b: Record<string, unknown> = {};
-    for (const m of ["select", "insert", "update", "upsert"]) b[m] = () => { op = m; calls.push(`${table}.${m}`); return b; };
+    // A trailing .select() (e.g. upsert(...).select()) only asks for the written rows back; it doesn't change the op.
+    for (const m of ["select", "insert", "update", "upsert"]) b[m] = () => { if (!op) { op = m; calls.push(`${table}.${m}`); } return b; };
     for (const m of ["eq", "gte"]) b[m] = () => b;
     b.single = () => Promise.resolve(results[`${table}.${op}`]);
     b.then = (res: (v: R) => unknown) => Promise.resolve(results[`${table}.${op}`]).then(res);

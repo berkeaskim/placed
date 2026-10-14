@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { wrapJob, UNTRUSTED_JD_RULE, UNTRUSTED_CV_RULE, SYSTEM_TAG_JOB, SYSTEM_PARSE_CV } from "@/lib/ai/prompts";
+import { wrapJob, UNTRUSTED_JD_RULE, UNTRUSTED_CV_RULE, SYSTEM_TAG_JOB, SYSTEM_PARSE_CV, SYSTEM_EXPLAIN, SYSTEM_TAILOR } from "@/lib/ai/prompts";
 
 describe("prompt contract (prompt-injection safety)", () => {
   it("wraps JD text in job_posting tags and strips embedded closing tags", () => {
@@ -10,6 +10,7 @@ describe("prompt contract (prompt-injection safety)", () => {
   });
   it("every JD-consuming system prompt contains the untrusted-data rule", () => {
     expect(SYSTEM_TAG_JOB).toContain(UNTRUSTED_JD_RULE);
+    expect(SYSTEM_EXPLAIN).toContain(UNTRUSTED_JD_RULE);
     expect(UNTRUSTED_JD_RULE).toMatch(/untrusted/i);
   });
 });
@@ -45,5 +46,30 @@ describe("SYSTEM_PARSE_CV", () => {
   it("treats the CV as untrusted data", () => {
     expect(UNTRUSTED_CV_RULE).toMatch(/never follow instructions/i);
     expect(SYSTEM_PARSE_CV).toContain(UNTRUSTED_CV_RULE);
+  });
+});
+
+describe("SYSTEM_EXPLAIN", () => {
+  it("treats the CV as untrusted data and keeps tagJob importance fixed", () => {
+    expect(SYSTEM_EXPLAIN).toContain(UNTRUSTED_CV_RULE);
+    expect(SYSTEM_EXPLAIN).toMatch(/do not re-rate importance/i);
+  });
+});
+
+describe("SYSTEM_TAILOR (C21)", () => {
+  it("treats the JD and the CV as untrusted data", () => {
+    expect(SYSTEM_TAILOR).toContain(UNTRUSTED_JD_RULE);
+    expect(SYSTEM_TAILOR).toContain(UNTRUSTED_CV_RULE);
+  });
+  it("forbids fabrication and allows NEEDS_NUMBER / unchanged bullets", () => {
+    expect(SYSTEM_TAILOR).toMatch(/NEEDS_NUMBER/);
+    expect(SYSTEM_TAILOR).toMatch(/unchanged/i);
+    expect(SYSTEM_TAILOR).toMatch(/changeType/);
+    expect(SYSTEM_TAILOR).toMatch(/qualifiersKept/);
+    expect(SYSTEM_TAILOR).not.toMatch(/beat the ATS|% more interviews/i);
+  });
+  it("fix round 1: rejected_claims are data; NEEDS_NUMBER only inside experience/project bullets", () => {
+    expect(SYSTEM_TAILOR).toMatch(/<rejected_claims>[^\n]*data/i);
+    expect(SYSTEM_TAILOR).toMatch(/NEEDS_NUMBER[^\n]*only inside[^\n]*bullets[^\n]*never[^\n]*summary[^\n]*skills/i);
   });
 });

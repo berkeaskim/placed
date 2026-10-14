@@ -96,16 +96,14 @@ describe("heuristicParseCv — messy real-world layouts", () => {
     expect(r.experience.map((e) => e.org)).toEqual(["A Co", "B Co"]);
     expect(r.skills[0].items).toEqual(["Git"]);
   });
-  // BUG: a heading that appears twice (e.g. "EXPERIENCE" repeated at the top of page 2) resets the section
-  // (`sections[current] = []`), silently discarding everything parsed under the first occurrence.
-  it.fails("a repeated section heading appends rather than discarding earlier entries", () => {
+  // Fixed: a repeated heading appends to the existing section instead of resetting it.
+  it("a repeated section heading appends rather than discarding earlier entries", () => {
     const r = heuristicParseCv("Sam\nEXPERIENCE\nA Co — Intern, 2023–2024\n• one\nEXPERIENCE\nB Co — Analyst, 2024–2025\n• two");
     expect(r.experience.map((e) => e.org)).toEqual(["A Co", "B Co"]);
   });
-  // BUG: "●" (U+25CF, Word's default bullet) and "" (Symbol-font PUA) are not in BULLET, so each bullet
-  // becomes its own entry and the role loses all its bullets.
-  it.fails("treats ● and  (common Word/Symbol-font bullets) as bullets", () => {
-    const r = heuristicParseCv("EXPERIENCE\nA Co — Intern, 2023–2024\n● Built models\n Presented");
+  // Fixed: BULLET includes ● (U+25CF) and the Symbol-font PUA bullet (U+F0B7).
+  it("treats ● and \\uF0B7 (common Word/Symbol-font bullets) as bullets", () => {
+    const r = heuristicParseCv("EXPERIENCE\nA Co — Intern, 2023–2024\n● Built models\n\uF0B7 Presented");
     expect(r.experience).toHaveLength(1);
     expect(r.experience[0].bullets.map((b) => b.text)).toEqual(["Built models", "Presented"]);
   });
@@ -115,9 +113,8 @@ describe("heuristicParseCv — messy real-world layouts", () => {
     expect(heuristicParseCv(evil)).toEqual(a);
     expect(a.name).toBe("<script>alert(1)</script>"); // raw text is data; escaping is the renderer's job
   });
-  // BUG: EMAIL_RE (/[\w.+-]+@.../ in lib/text/regex.ts) backtracks quadratically on a long run of word chars with
-  // no "@": 50k chars ≈ 1.2s, 100k ≈ 4.7s of blocked event loop per parse. A crafted PDF text layer can stall the server.
-  it.fails("parses a 100k-char unbroken token in well under a second (no quadratic email regex)", () => {
+  // Fixed: EMAIL_RE is length-bounded ({1,64} local part, dot-free labels), so matching is linear.
+  it("parses a 100k-char unbroken token in well under a second (no quadratic email regex)", () => {
     const t0 = Date.now();
     heuristicParseCv("Sam\n" + "a".repeat(100_000));
     expect(Date.now() - t0).toBeLessThan(500);

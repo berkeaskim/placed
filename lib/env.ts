@@ -15,7 +15,7 @@ function hasKey(p: AiProvider) {
 }
 
 export function aiProvider(): AiProvider | null {
-  const wanted: AiProvider = process.env.AI_PROVIDER === "gemini" ? "gemini" : "anthropic";
+  const wanted: AiProvider = (process.env.AI_PROVIDER ?? "").trim().toLowerCase() === "gemini" ? "gemini" : "anthropic";
   if (hasKey(wanted)) return wanted;
   const other: AiProvider = wanted === "anthropic" ? "gemini" : "anthropic";
   return hasKey(other) ? other : null;
