@@ -20,6 +20,7 @@ const RECIPIENT_CLAIMS: { reason: string; re: RegExp; noteFor: (m: RegExpMatchAr
   { reason: "says you have met", re: /\bwe (met|spoke|chatted|talked)\b|\bnice to meet you (?:at|during)\b/i, noteFor: (m) => new RegExp(`\\b${m[1] ?? "met"}\\b`, "gi") },
   { reason: "claims a mutual contact", re: /\bmutual (?:friend|connection|contact|acquaintance)s?\b|\bwe both know\b|\bwe(?:'re| are) both\b/i, noteFor: () => /\bmutual\b|\bboth\b/gi },
   { reason: "claims a referral", re: /\b(?:recommended|suggested|told me) (?:I|that I|to) (?:reach out|contact|get in touch|message)\b|\breferred (?:me|by)\b/i, noteFor: () => /\b(?:recommended|suggested|referred|told me)\b/gi },
+  { reason: "claims a referral", re: /\binvited me to\b|\bencouraged me to (?:apply|reach out|get in touch|contact|message|connect)\b/i, noteFor: () => /\b(?:invited|encouraged|referred|recommended|suggested)\b/gi },
   { reason: "claims a third party sent you", re: /\b[A-Z][a-z]{2,} (?:said|suggested|recommended|told me|mentioned|thought) (?:you|I|that)\b/, noteFor: () => /\b(?:said|suggested|recommended|referred|told|mentioned)\b/gi },
   { reason: "says you follow their work", re: /\b(?:been )?(?:following|followed) your (?:work|career|posts?|journey)\b/i, noteFor: () => /\bfollow/gi },
 ];
@@ -30,12 +31,13 @@ const RECIPIENT_CLAIMS: { reason: string; re: RegExp; noteFor: (m: RegExpMatchAr
  */
 const LEXICON: { reason: string; re: RegExp; stem?: boolean }[] = [
   { reason: "a title", re: /\b(?:Vice[- ]President|President|Head of|Chair(?:man|person)?|Captain|Co-?founder|Founder|Director|Lead(?:er)? of|Treasurer|Secretary)\b/gi },
+  { reason: "a title", re: /\bco-?found(?:ed|er|ing)\b|\bfounded\b|\b(?:set up|started) (?:a|the|my|our) (?:club|society|company|startup|start-up|business|charity|fund)\b|\b(?:[A-Z][\w&'’-]*\s+)*[Cc]ommittee(?: member)?\b/g },
   { reason: "a grade or honour", re: /\bfirst[- ]class\b|\ba First\b|\bpredicted (?:a )?first\b|\bDistinction\b|\bdean['’]s list\b|\bGPA\b|\bsumma\b|\bmagna\b/gi },
   { reason: "an award", re: /\b(?:prize|award|scholarship|bursary|fellowship|winner|won(?!['’]t))\b/gi },
   { reason: "work history", re: /\binterned\b|\b(?:my|our) (?:internships?|placements?)\b(?! (?:applications?|search|hunt|plans?|options|goals)\b)|\b(?:previous|prior|past) internships? (?:at|with)\b|\bdid an? internship\b/gi },
   { reason: "a credential", re: /\b(?:CFA|ACCA|ACA|CIMA|FRM|MSc|MBA|PhD)\b|\b(?:certified|certification)\b|\bMaster['’]s\b/g },
   { reason: "a membership", re: /\bmember of (?:the )?([A-Z][\w&'’-]*(?:\s+[A-Z][\w&'’-]*)*)/g },
-  { reason: "a ranking", re: /\btop of (?:my|the) (?:class|cohort|year)\b|\branked (?:first|top|\d+\w*)\b|\bbest in (?:my|the)\b/gi },
+  { reason: "a ranking", re: /\btop of (?:my|the) (?:class|cohort|year)\b|\b(?:ranked|placed|came|finished) (?:first|second|third|fourth|fifth|top|\d+(?:st|nd|rd|th)?)\b|\bbest in (?:my|the)\b/gi },
   { reason: "a school grade", re: /\bA\* in ((?:[A-Z][A-Za-z]*)(?: [A-Z][A-Za-z]*)*)|\bA\*|\bgrade [A-E]\b/g },
   { reason: "an activity", re: /\bI(?:['’]m|['’]ve| am| have)? (tutor|volunteer|mentor)(?:ed|ing|s)?\b/gi, stem: true },
 ];
@@ -51,16 +53,38 @@ const INTENT = /\b(?:hop(?:e|ing)|want(?:ed)?|wish|keen|love|like|aim|aspire|pla
 const PROGRESS = /\boffer(?:ed)?\b|\b(?:first|second|third|final) round\b|\bassessment cent(?:re|er)\b|\bsuperday\b|\bpassed\b/i;
 const INTERVIEW = /\binterview(?:ing|s|ed)?\b[^.!?]{0,30}\b(?:with|at)\b/i;
 
-/** Words that make a sentence about work at an employer. */
-const WORK_WORD = /\b(?:interned|intern|internship|worked|work(?:ing)? at|joined|rejoin(?:ed)?|my time at|offered|placement|spring week|insight week|employee|analyst at)\b/i;
-/** A sentence that also says it happened: intent is then a cover for a real past claim, so the intent exemption does not apply. */
+/** A clause that also says it happened: intent is then a cover for a real past claim, so the intent frame does not apply. */
 const PAST_MARKER = /\b(?:did so|last (?:summer|year)|in 20(?:0\d|1\d|2[0-6])|there before|again|return(?:ing)? to|rejoin(?:ed)?|come back|back to|my time at|after my (?:internship|placement)|where I|I did|was lucky enough)\b/i;
-/** Experience wording anywhere in the sentence ("intern there"), used with PAST_MARKER when the work word is far from the firm's name. */
-const EXPERIENCE = /\b(?:interned|intern there|worked|joined|work(?:ed)? there|spent)\b/i;
 /** The recipient's phrasing that still puts the student at the firm. */
 const AT_FIRM_SIGNAL = /\b(?:hosted me|took me on|had me|overlapped|spent (?:last )?(?:summer|year|[a-z]+ months?) at)\b/i;
-/** Before the company, these mean the student is applying or curious, not claiming to have worked there. */
-const APPLYING = /\b(?:appl(?:y|ying|ied|ication)|interested in|learn(?:ing)?(?: more)? about|love to|excited (?:about|by)|keen)\b/i;
+
+/**
+ * Check 5 is an allow-list: a first-person clause naming the target firm (written `QQCO` after masking) passes only in one of
+ * these frames. Anything else ("I shadowed the team at Lendable", "I'm a contractor at Lendable") is a claimed connection.
+ */
+const CO = "QQCO";
+const APPLY_FRAME = /\bappl(?:y|ying|ied|ications?)\s+(?:to|for|at|with)\b.*QQCO|\bmy application (?:to|for|at|with)\b.*QQCO/i;
+/** Interest and intent; only without a past marker in the same clause ("I'd love to work at Lendable again" is a claim). */
+const INTEREST_FRAME = /\b(?:interested in|keen (?:to|on)|hop(?:e|es|ed|ing)(?: to)?|want(?:s|ed)? to|would love|would like|['’]d (?:love|like)|aim(?:ing)? to|aspir(?:e|es|ing)|excited (?:about|by)|drawn to|appeals? to (?:me|us)|why I['’]m applying|part of why|still (?:very )?interested|follow(?:ing|ed)?|read(?:ing)? about|impressed by|inspired by|admire)\b/i;
+const LEARN_FRAME = /\b(?:learn (?:more )?about|know (?:more )?about|hear (?:about|how|what|more)|understand|curious|ask (?:you )?(?:about|a)|questions? about|what (?:it['’]s|it is) like|how you found|advice (?:on|about)|update on|timeline)\b/i;
+/** The firm as a topic or a subject: "Lendable's credit work", "lenders like Lendable", "Lendable was named …". */
+const TOPIC_FRAME = /QQCO['’]s (?:[\w-]+ ){0,2}(?:mission|work|team|approach|culture|programmes?|programs?|products?|customers|growth|roles?|internships?|scheme|process|values|business|platform|story|model|lending)\b|\b(?:a|the) (?:team|firm|company|lender|place) like QQCO|\b(?:lenders|firms|companies|fintechs|employers|banks|places) (?:like|such as) QQCO|QQCO (?:is|was|has|had|won|wins|launched|announced|raised|grew|hires|hired|recently|just|became|does|looks|seems|seemed|runs|offers)\b/i;
+/** Claims that no frame can cover: first-person work verbs, "my summer at", "worked there", "I'm on Lendable's scheme". */
+const CLAIM_VETO = [
+  AT_FIRM_SIGNAL,
+  /\b(?:I|we)(?:['’](?:m|ve|d|re)| am| are| have| had| was| were)?\s+(?:(?:[a-z]+ly|already|also|just|still|once|been)\s+){0,2}(?:interned|interning|shadowed|shadowing|worked|work|working|helped|helping|completed|passed|joined|rejoined|contracted|freelanced|consulted|temped|spent)\b/i,
+  /\b(?:my|our) (?:[\w-]+ )?(?:work|time|summer|year|stint|role|job|placement|internship|manager|colleagues?|office|desk|contract|shifts?|days?|weeks?|months?) (?:at|with|in|there)\b/i,
+  /\b(?:interned|interning|worked|working|been|time|summer|stint|spent [\w ]{0,20}?)\s+there\b|\bdid so\b|\b(?:I|we) did\s*[.!?]?\s*$/i,
+  /\b(?:did|done|completed|finished|attended|loved|enjoyed|(?:I['’]m|I am|we['’]re|we are)\s+(?:(?:[a-z]+ly|already|now|still)\s+)?(?:on|in|part of))\s+(?:[\w-]+\s+){0,2}QQCO/i,
+];
+/** Clause boundaries for check 5; the conjunction is kept so "…, where I worked" reads as about the firm. */
+const CLAUSE_SPLIT = /(\s*[,;:–—]\s*|\s+-\s+|\s+(?:and|but|while|which|where|because|whereas)\s+)/i;
+/** A later clause that points back at the firm: "and did so", "where I …", "worked there". */
+const ANAPHOR = /\b(?:intern(?:ed|ing)?|work(?:ed|ing)?|been|time|summer|stint|spent [\w ]{0,20}?)\s+there\b|\bdid so\b|\b(?:I|we) did\s*[.!?]?\s*$|\bjoined them\b/i;
+/** A bare noun phrase ("the culture at Lendable") continues the clause before it rather than making a claim. */
+const VERBISH = /\b(?:I|we|me|us|my|our|\w+ed|\w+ing|is|are|was|were|am|be|been|have|has|had|do|does|did|work|works|intern|join|joins|help|helps|run|build|got|get|spent|went|took|made)\b/i;
+/** No subject, starting with a verb: "Worked at Lendable last summer." */
+const SUBJECTLESS = /^(?:[A-Z][a-z]+ed|Spent|Been|Currently|Previously|Recently|Formerly)\b/;
 
 /** Splits on . ! ? followed by space, but not inside "£1.5m", "U.C.L." or after "Mr."/"Dr."/"St.". */
 function sentences(t: string): string[] {
@@ -200,38 +224,49 @@ export function checkOutreach(text: string, s: GuardSource): GuardIssue[] {
     }
   }
 
-  // 5. Employment claims about the target firm ("I interned at Lendable"): naming it is fine, claiming to have worked there is not.
+  // 5. The target firm in a first-person clause passes only in an allowed frame (applying, interest, questions, the firm as a
+  //    topic, the recipient's history); any other connection to it ("I shadowed the team at Lendable") is blocked.
   const firstPerson = (sen: string) => /\bI\b|\bI['’]|\bmy\b|\bme\b|\bwe\b|\bwe['’]|\bour\b|\bus\b/i.test(sen);
   // The job title names the role being applied for ("Credit Analyst Intern"); its words are not work claims.
   const titles = [...new Set([s.jobTitle, s.jobTitle.replace(/\s*\([^)]*\)/g, "").trim()])].filter(Boolean).sort((a, b) => b.length - a.length);
   const mask = (sen: string) => titles.reduce((acc, t) => acc.replace(new RegExp(esc(t), "gi"), (m) => " ".repeat(m.length)), sen);
   /** "you" is the subject and no first-person marker follows it. */
   const youOnly = (clause: string) => { const y = [...clause.matchAll(/\byou(?:r)?\b/gi)].pop(); return !!y && !/\bI\b|\bI['’]|\bwe\b/i.test(clause.slice(y.index! + y[0].length)); };
+  const byLength = [...companyNames].sort((a, b) => b.length - a.length);
+  const tokenize = (sen: string) => byLength.reduce((acc, n) => acc.replace(wholeWord(n, "gi"), CO), mask(sen));
+  const allowed = (c: string, question: boolean) => {
+    if (CLAIM_VETO.some((re) => re.test(c))) return false;
+    if (question || APPLY_FRAME.test(c) || LEARN_FRAME.test(c) || TOPIC_FRAME.test(c)) return true;
+    if (INTEREST_FRAME.test(c) && !PAST_MARKER.test(c)) return true;
+    if (s.allowInterviewClaim && /\binterview/i.test(c)) return true;
+    const at = c.indexOf(CO);
+    return youOnly(at < 0 ? c : c.slice(0, at));
+  };
   for (const sen of ss) {
-    if (!firstPerson(sen)) continue;
-    const msen = mask(sen);
-    const hasPast = PAST_MARKER.test(msen);
-    for (const name of companyNames) {
-      for (const m of msen.matchAll(wholeWord(name, "gi"))) {
-        if (AT_FIRM_SIGNAL.test(msen)) { add(sen, `says you worked at ${s.company}, which your CV doesn't`); continue; }
-        // A past marker plus experience wording, wherever it sits: "I wanted to join Lendable and was lucky enough to intern there in 2025".
-        if (hasPast && EXPERIENCE.test(msen) && !youOnly(msen.slice(0, m.index!))) { add(sen, `says you worked at ${s.company}, which your CV doesn't`); continue; }
-        const wordsBefore = msen.slice(0, m.index!).split(/\s+/).filter(Boolean);
-        const before = wordsBefore.slice(-5).join(" ");
-        const after = msen.slice(m.index! + m[0].length).split(/\s+/).filter(Boolean).slice(0, 4).join(" ");
-        const wb = before.match(WORK_WORD), wa = after.match(WORK_WORD);
-        if (!wb && !wa) continue;
-        // where the work word sits, to read the clause leading up to it
-        const wordAt = wb ? msen.lastIndexOf(wb[0], m.index!) : msen.indexOf(wa![0], m.index!);
-        const clause = clauseBefore(msen, wordAt < 0 ? m.index! : wordAt);
-        // Excluded: intent ("hoping to work at", "I'd love to"), unless the sentence also says it happened.
-        if (INTENT.test(clause) && !hasPast) continue;
-        // Excluded: the recipient's history ("I saw you joined"): "you" with no first-person subject after it.
-        if (youOnly(clause)) continue;
-        // Excluded: applying for / curious about the firm (the whole clause up to the firm).
-        if (APPLYING.test(clauseBefore(msen, m.index!)) && !hasPast &&!/\b(?:interned|worked|joined|offered)\b/i.test(`${before} ${after}`)) continue;
-        add(sen, `says you worked at ${s.company}, which your CV doesn't`);
+    if (!firstPerson(sen) && !SUBJECTLESS.test(sen)) continue;
+    const t = tokenize(sen);
+    if (!t.includes(CO)) continue;
+    const question = /\?\s*$/.test(sen);
+    const parts = t.split(CLAUSE_SPLIT); // clause, delimiter, clause, …
+    let seen = false, prev = "";
+    for (let i = 0; i < parts.length; i += 2) {
+      let c = parts[i];
+      const lead = (/^\s*(which|where)\b/i.exec(c)?.[1] ?? parts[i - 1] ?? "").trim().toLowerCase();
+      const names = c.includes(CO);
+      if (!names && seen) {
+        // "…, which is a leader in lending" reads as the firm's subject; "…, where I worked" and "and did so" are checked as claims.
+        if ((lead === "which" || lead === "where") && firstPerson(c)) c = `${CO} ${c}`;
+        else if (!ANAPHOR.test(c)) { prev = c; continue; }
       }
+      if (names || seen) {
+        const bareNoun = names && !!prev && !VERBISH.test(c.replace(CO, ""));
+        if (!allowed(c, question) && !(bareNoun && allowed(`${prev} ${c}`, question))) {
+          add(sen, `says you have a connection to ${s.company} that your CV doesn't show`);
+          break;
+        }
+      }
+      if (names) seen = true;
+      prev = c;
     }
   }
 

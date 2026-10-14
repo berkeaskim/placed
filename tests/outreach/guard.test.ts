@@ -232,3 +232,68 @@ describe("fix round 3", () => {
     "My English is fluent.",
   ])("passes: %s", (x) => expect(checkOutreach(`Hi Sam, ${x}`, src())).toEqual([]));
 });
+
+describe("fix round 4", () => {
+  const blocked = (x: string, source: GuardSource = src()) => {
+    const t = wrap(x);
+    const issues = checkOutreach(t, source);
+    expect(issues.some((i) => i.sentence === x)).toBe(true);
+    expect(removeSentences(t, issues.map((i) => i.sentence))).not.toContain(x);
+  };
+  const full = (x: string) => `Hi Sam, I'm a second-year Economics student at UCL. ${x} Could we chat?`;
+
+  it.each([
+    // R8: a first-person clause naming the target passes only in an allowed frame
+    "Last year I shadowed the credit team at Lendable for a week.", "I currently work part-time at Lendable's London office.",
+    "I work part-time at Lendable.", "I'm a contractor at Lendable.", "I've been helping Lendable's credit team with data cleaning since June.",
+    "I'm on Lendable's graduate scheme already.", "I already completed the Lendable online tests and video stage.",
+    "I was a summer analyst at Lendable in 2025.",
+    "I'm applying to Lendable, where I worked last summer.", "I applied to Monzo and worked at Lendable last summer.",
+    "I know Lendable well from my summer there.", "Worked at Lendable last summer as an analyst.",
+    // referral, founding, committee, ranking
+    "Your colleague Priya invited me to apply.", "We co-founded a fintech society at UCL.", "I sat on the UCL Economics Society committee.",
+    "I placed second in the UCL trading challenge.", "We came second in the UCL trading challenge.",
+  ])("blocks: %s", (x) => blocked(x));
+
+  it.each([
+    "Last summer I worked on my rent tracker, and now I'm applying to Lendable.",
+    "I spent last summer building my rent tracker, which is why Lendable's credit work appeals to me.",
+    "Last summer I joined the UCL Finance Society, and now I'm applying to Lendable.",
+    "I'd love to know what a typical week looks like for an intern at Lendable.",
+    "Did you join Lendable straight after UCL, or did you work somewhere else first?",
+    "I'm hoping to apply to Lendable again next cycle if this one doesn't work out.",
+    "My internship search has focused on fintech lenders like Lendable.",
+    "I'm keen to return to London after my exchange and join a team like Lendable's.",
+    "I noticed Lendable was named a top fintech employer, which is part of why I'm applying.",
+    "I'm interested in the intern role at Lendable.", "I'd love to learn more about Lendable's credit team.",
+    "What is it like working at Lendable?",
+    "I'm applying to Lendable, which is a leader in fintech lending.", "I'm applying to Lendable and would love to work there.",
+    "I'd love to learn about the team and the culture at Lendable.", "I've been following Lendable's growth for a while.",
+  ])("passes: %s", (x) => expect(checkOutreach(full(x), src())).toEqual([]));
+
+  it("blocks 'worked on credit data' only for the skill or number, never as a Lendable work claim", () => {
+    const issues = checkOutreach(full("I worked on credit data in my rent tracker and I'm applying to Lendable."), src());
+    expect(issues.filter((i) => /Lendable/.test(i.reason))).toEqual([]);
+    const y = checkOutreach(full("I worked on credit data in 2025 and I'm applying to Lendable."), src());
+    expect(y.filter((i) => /Lendable/.test(i.reason))).toEqual([]);
+  });
+
+  // Task 12 demo fixtures, filled for Lendable / Sam / the job title: they must stay clean.
+  const fill = (x: string) => x.replace(/\{name\}/g, "Sam").replace(/\{company\}/g, "Lendable").replace(/\{role\}/g, "Credit Analyst Intern (June 2027)");
+  it.each([
+    ["alumni", "Hi {name}, I'm a second-year Economics student at UCL and I'm applying for {company}'s {role}. As a UCL student I'd really value 15 minutes of your advice on the team and the process.",
+      "Hi {name}, thanks for connecting. I'm studying Economics at UCL and I'm applying to {company}. I've been working with data in my own time: I built a London rent tracker in Python and SQL that collected and cleaned 1,200 rental listings. I'd love 15 minutes of your time whenever suits you. A few things I'm curious about are below."],
+    ["recent_joiner", "Hi {name}, I'm a UCL Economics student applying for {company}'s {role}. You joined fairly recently, so I'd be grateful for 15 minutes on what the process and first months were like.",
+      "Hi {name}, thanks for accepting. I'm in my second year of Economics at UCL and I'm applying to {company}. I use Python, SQL and Excel, most recently on a project tracking rents across 12 London boroughs. Since you went through the process recently, I'd really value 15 minutes of your perspective."],
+    ["team", "Hi {name}, I'm a UCL Economics student interested in the work your team does at {company}. Could I ask you a couple of questions about the role?",
+      "Hi {name}, thanks for connecting. I'm studying Economics at UCL and I'm applying for {company}'s {role}. I enjoy working with data and built a rent tracker in Python and SQL that collected and cleaned 1,200 rental listings. I'd like to understand what the work in your team looks like day to day. Would you have 15 minutes in the next few weeks?"],
+    ["recruiter", "Hi {name}, I'm a second-year Economics student at UCL applying for {company}'s {role}. I'd be grateful to connect and ask a quick question about the process.",
+      "Hi {name}, thanks for connecting. I'm studying Economics at UCL and I'm applying for the {role} at {company}. I'd really appreciate 15 minutes, or a short reply, on a couple of questions about the process."],
+    ["follow_up", "Hi {name}, I applied for {company}'s {role} a few weeks ago and wanted to check whether there's any update on the timeline. Thank you for your time.",
+      "Hi {name}, I hope you're well. I applied for the {role} at {company} a few weeks ago and I'm still very interested. Could you let me know if there's an expected timeline for the next stage? Thank you for your help."],
+    ["interview_prep", "Hi {name}, I'm a UCL Economics student with an upcoming interview at {company} for the {role}. As a UCL student, could I ask you two quick questions about preparing?",
+      "Hi {name}, thanks for connecting. I have an interview coming up at {company} for the {role}. I'm in my second year of Economics at UCL and I've mostly worked with data in Python and SQL. I'd be very grateful for 15 minutes of advice on how to prepare."],
+  ])("Task 12 %s fixture passes", (kind, note, chat) => {
+    expect(checkOutreach(fill(`${note} ${chat}`), { ...src(), allowInterviewClaim: kind === "interview_prep" })).toEqual([]);
+  });
+});
