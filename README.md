@@ -1,6 +1,11 @@
 <div align="center">
 
-# Placed
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/readme/banner-dark.png">
+  <img alt="placed. Internships that actually fit you, and a CV that never makes anything up." src="docs/readme/banner-light.png" width="100%">
+</picture>
+
+<br><br>
 
 **The internship co-pilot for UK students: honest about your CV, and it never makes anything up.**
 
@@ -20,6 +25,14 @@ Tailor it to a job without inventing a single claim. Track every application.
 </p>
 
 <sub>Built at the UCL hackathon, October 2026 · theme: <i>"How can we make students' lives easier?"</i></sub>
+
+<p>
+  <a href="#features">Features</a> ·
+  <a href="#a-quick-tour">Tour</a> ·
+  <a href="#principles">Principles</a> ·
+  <a href="#architecture">Architecture</a> ·
+  <a href="#getting-started">Getting started</a>
+</p>
 
 </div>
 
@@ -41,19 +54,56 @@ Students hunting for internships run into the same four walls:
 ### 🎯 CV Score with citations
 Your CV is scored against **160+ rules** for Finance, Consulting, Tech, Product and Data. Each rule links to its published source and carries an evidence grade (A–D). Rules backed only by convention are labelled as convention and count for less. A *Myth vs evidence* card debunks popular CV advice that the evidence doesn't support.
 
+<p align="center"><img src="docs/readme/cv-score.png" alt="CV Score for Consulting: 96/100 with the next best fix and its cited source" width="90%"></p>
+
 ### 🔎 Live, ranked internship feed
 Jobs come straight from **Greenhouse, Lever, Ashby, SmartRecruiters and Workday** boards. No scraping of LinkedIn or login-walled portals. A rule-based fit score handles the eligibility checks that usually rule students out (year of study, graduation date, visa/right to work, location) **before** any AI is involved, so the feed ranks instantly and costs nothing per view.
+
+<p align="center"><img src="docs/readme/feed.png" alt="Internship feed ranked by fit, with sector and location filters" width="90%"></p>
 
 ### ✍️ Tailoring that never fabricates
 > *Keywords get reformulated, never fabricated.*
 
 Tailoring may reorder, rephrase and emphasise. A deterministic verifier (`lib/verify`) rejects any new skill, number, employer, title or tool that isn't in your original CV. When a line would be stronger with a figure, Placed leaves a blank (`[add your real number]`) instead of guessing. You see exactly which job requirements the CV was tailored against and which rules it now satisfies, and you download an ATS-safe PDF.
 
+<p align="center"><img src="docs/readme/job.png" alt="Job page with must-haves met, why you fit and what's missing" width="90%"></p>
+
+<table>
+  <tr>
+    <td width="40%" valign="top"><img src="docs/readme/tailor.png" alt="Tailoring panel: requirements tailored for, and two unsupported lines caught by the verifier"></td>
+    <td width="60%" valign="top">
+      <h4>What the verifier caught here</h4>
+      <p>The model suggested two lines the CV couldn't back up:</p>
+      <ul>
+        <li><b>An invented number.</b> "Reduced regressions by 20%" appears nowhere in the original. Placed removes it and asks the student to confirm the real figure.</li>
+        <li><b>A swapped tool.</b> "Ran the script on Azure" when the CV says AWS. Placed restores the student's own wording.</li>
+        <li><b>A missing requirement stays missing.</b> "Case interviews" is marked as not on the CV, with advice on how to close the gap, instead of being slipped in.</li>
+      </ul>
+      <p>Every accepted line links back to the sentence in the original CV it came from.</p>
+    </td>
+  </tr>
+</table>
+
 ### 🧭 Target Role mode
 Pick the role you want. Placed shows what the market asks for, your readiness percentage, and a **cited Role Playbook** of projects, free courses, experiences and employer signals that close the gap. Nothing goes onto your CV until you confirm it.
 
+<p align="center"><img src="docs/readme/target-role.png" alt="Target Role mode for Consulting: what internships ask for and step-by-step CV improvements" width="90%"></p>
+
 ### 🏆 Tracker and gamification
 A kanban from Saved → Applied → Interview → Offer / Rejected, with levels (*Explorer → Applicant → Contender → Shortlisted → Placed*) and badges such as **Early Bird**, **Spring Week Hunter**, **Made it yours** and **Bounce Back**. XP rewards well-matched applications, not volume.
+
+<p align="center"><img src="docs/readme/tracker.png" alt="Application tracker kanban with XP, streak and level in the header" width="90%"></p>
+
+## A quick tour
+
+The demo walks through one fictional student, **Ayşe Demir**, a 2nd-year Economics student at UCL, applying to a real, unedited posting:
+
+1. **Sign up in 20 seconds.** Pick your year, field and location with a few taps.
+2. **Drop in your CV.** Placed scores it for your target sector and shows the single most valuable fix, with its source.
+3. **Switch sector.** Rescore for Consulting and the advice changes, because each sector has its own rules.
+4. **Open a job.** See which must-haves you meet, why you fit, and what's missing.
+5. **Tailor.** Get a version of your CV for this job. Unsupported claims are caught and a blank is left where only you know the real number.
+6. **Apply on the company's site.** Log it in the tracker and unlock your first badge.
 
 ## Principles
 
