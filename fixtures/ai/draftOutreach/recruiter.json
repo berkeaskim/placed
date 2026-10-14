@@ -1,0 +1,5 @@
+{
+  "connection_note": "Hi {name}, I'm a second-year Economics student at UCL applying for {company}'s {role}. I'd be grateful to connect and ask a quick question about the process.",
+  "coffee_chat": "Hi {name}, thanks for connecting. I'm studying Economics at UCL and I'm applying for the {role} at {company}. I'd really appreciate 15 minutes, or a short reply, on a couple of questions about the process.",
+  "questions": ["What are the stages after the application, and roughly how long does each take?", "Is there anything that helps an application from a second-year student stand out?"]
+}

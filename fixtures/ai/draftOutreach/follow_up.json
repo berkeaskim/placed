@@ -1,0 +1,5 @@
+{
+  "connection_note": "Hi {name}, I applied for {company}'s {role} a few weeks ago and wanted to check whether there's any update on the timeline. Thank you for your time.",
+  "coffee_chat": "Hi {name}, I hope you're well. I applied for the {role} at {company} a few weeks ago and I'm still very interested. Could you let me know if there's an expected timeline for the next stage? Thank you for your help.",
+  "questions": ["Is there an expected date for the next stage?", "Is there anything else I should send to support my application?"]
+}
