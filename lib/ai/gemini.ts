@@ -1,4 +1,4 @@
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, ThinkingLevel } from "@google/genai";
 import { z } from "zod";
 import { AiError, AI_BAD_FORMAT, AI_REFUSAL, AI_UNAVAILABLE, type StructuredRequest } from "./provider";
 import { GEMINI_MODELS as MODELS } from "./models";
@@ -29,6 +29,7 @@ export async function geminiStructured<T>(req: StructuredRequest<T>, c?: ModelsC
           responseMimeType: "application/json",
           responseJsonSchema: jsonSchema,
           maxOutputTokens: req.maxTokens ?? 16000,
+          ...(req.thinking === "low" ? { thinkingConfig: { thinkingLevel: ThinkingLevel.LOW } } : {}),
           ...(req.temperature !== undefined && geminiAcceptsTemperature(MODELS[req.tier]) ? { temperature: req.temperature } : {}),
         },
       });

@@ -79,11 +79,11 @@ describe("migration parser sanity", () => {
   it("finds the expected tables, policies and functions", () => {
     expect(files.length).toBeGreaterThanOrEqual(2);
     expect(tables.map((t) => t.name).sort()).toEqual(
-      ["applications", "badges", "companies", "confirmed_facts", "cv_feedback", "cv_scores", "cvs", "ingest_state", "jobs", "matches", "profiles", "xp_events"]);
-    expect(userOwned.sort()).toEqual(["applications", "badges", "confirmed_facts", "cv_feedback", "cv_scores", "cvs", "matches", "profiles", "xp_events"]);
+      ["applications", "badges", "companies", "confirmed_facts", "cv_feedback", "cv_scores", "cvs", "ingest_state", "jobs", "linkedin_scores", "matches", "profiles", "xp_events"]);
+    expect(userOwned.sort()).toEqual(["applications", "badges", "confirmed_facts", "cv_feedback", "cv_scores", "cvs", "linkedin_scores", "matches", "profiles", "xp_events"]);
     // 8 user-owned tables × 4 ops + 2 public reads, minus profiles.own_insert and xp_events/badges writes (0003),
-    // plus cv_feedback select/insert (0007)
-    expect(policies.length).toBe(8 * 4 + 2 - 7 + 2);
+    // plus cv_feedback select/insert (0007), plus linkedin_scores select/insert/delete (0013, rescoring inserts a row)
+    expect(policies.length).toBe(8 * 4 + 2 - 7 + 2 + 3);
     expect(functions.map((f) => f.name).sort()).toEqual(["public.activate_cv", "public.award_xp", "public.handle_new_user"]);
   });
 });
@@ -99,7 +99,7 @@ describe("RLS coverage", () => {
     expect(sql).not.toMatch(/bypassrls/i);
   });
   // Gamify tables are written by the service role only; profiles rows come from the signup trigger.
-  const OPS: Record<string, string[]> = { xp_events: ["select"], badges: ["select"], profiles: ["select", "update", "delete"], cv_feedback: ["select", "insert"] };
+  const OPS: Record<string, string[]> = { xp_events: ["select"], badges: ["select"], profiles: ["select", "update", "delete"], cv_feedback: ["select", "insert"], linkedin_scores: ["select", "insert", "delete"] };
   it("user-owned tables have exactly the expected policies, each restricted to auth.uid() = user_id", () => {
     for (const t of userOwned) {
       const expected = OPS[t] ?? ["select", "insert", "update", "delete"];

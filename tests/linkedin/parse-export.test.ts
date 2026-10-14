@@ -1,7 +1,8 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { parseLinkedInExport } from "@/lib/linkedin/parse-export";
+import { joinWrappedContact, parseLinkedInExport } from "@/lib/linkedin/parse-export";
+import { extractLinkedInLines } from "@/lib/linkedin/extract";
 
 // Synthetic export for the FICTIONAL demo persona (seed/demo/ayse.json). Not a real LinkedIn export:
 // replace with real "Save to PDF" fixtures before trusting the parser (playbook §10).
@@ -68,5 +69,30 @@ describe("parseLinkedInExport (positioned lines)", () => {
     expect(li.location).toBe("Coventry, England, United Kingdom");
     expect(li.topSkills).toEqual(["Python"]);
     expect(li.experience[0]).toMatchObject({ company: "Optiver", title: "Insight Day Participant" });
+  });
+});
+
+describe("joinWrappedContact", () => {
+  it("rejoins wrapped emails and profile URLs but keeps separate entries apart", () => {
+    expect(joinWrappedContact(["jo@example.co", "m", "www.linkedin.com/in/jo-", "bloggs-1a2b3c (LinkedIn)", "github.com/jo (Portfolio)"])).toEqual([
+      "jo@example.com", "www.linkedin.com/in/jo-bloggs-1a2b3c (LinkedIn)", "github.com/jo (Portfolio)",
+    ]);
+  });
+});
+
+describe("extractLinkedInLines on a two-column PDF", () => {
+  // scripts/make-linkedin-fixture.mjs: synthetic layout (sidebar x≈28, main x≈220, name 26pt). Not a real export.
+  it("splits the columns, finds the name by size and rejoins the wrapped URL", async () => {
+    const bytes = new Uint8Array(readFileSync(path.join(__dirname, "fixtures", "ayse-synthetic-export.pdf")));
+    const { lines } = await extractLinkedInLines(bytes);
+    const li = parseLinkedInExport(lines);
+    expect(li.name).toBe("Ayşe Demir");
+    expect(li.headline).toBe("Student at University College London");
+    expect(li.profileUrl).toBe("www.linkedin.com/in/ayse-demir-4b7a91c2");
+    expect(li.email).toBe("ayse.demir.demo@example.com");
+    expect(li.topSkills).toEqual(["Microsoft Excel", "Teamwork", "Python"]);
+    expect(li.experience.map((e) => [e.company, e.title])).toEqual([["UCL Finance Society", "Events Officer"], ["Marlowe Café", "Barista"]]);
+    expect(li.education[0]).toMatchObject({ school: "University College London", endYear: 2028 });
+    expect(li.warnings).toEqual([]);
   });
 });

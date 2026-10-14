@@ -164,6 +164,22 @@ function parseEducation(lines: string[]): LiEducation[] {
   return out;
 }
 
+/**
+ * The sidebar is narrow, so long emails and URLs wrap ("www.linkedin.com/in/jane-" / "doe-1a2b3c (LinkedIn)").
+ * Join a space-free line with the next one unless the next starts a new entry (an email, a URL) or the current one
+ * already ended with its "(LinkedIn)"-style label.
+ */
+export function joinWrappedContact(lines: string[]): string[] {
+  const out: string[] = [];
+  for (const t of lines) {
+    const prev = out[out.length - 1];
+    const startsEntry = /@/.test(t.split(" ")[0]) || /^(?:https?:\/\/|www\.)/i.test(t) || /^[a-z0-9-]+\.(?:com|io|dev|co|org|net|me|app|uk)\b/i.test(t);
+    if (prev !== undefined && !/\s/.test(prev) && !/\)$/.test(prev) && !startsEntry) out[out.length - 1] = prev + t;
+    else out.push(t);
+  }
+  return out;
+}
+
 /** Name / headline / location block: the main-column lines before the first main heading. */
 function parseTopCard(pre: string[], all: LiLine[], knownName?: string): { name: string | null; headline: string | null; location: string | null } {
   const lines = pre.filter((t) => t);
@@ -230,7 +246,7 @@ export function parseLinkedInExport(input: LiLine[] | string, opts: { knownName?
   const top = parseTopCard(pre, lines, opts.knownName);
   const get = (h: string) => (sectionsSide.get(h) ?? body.sections.get(h) ?? []).filter(Boolean);
 
-  const contact = get("Contact");
+  const contact = joinWrappedContact(get("Contact"));
   const profileUrl = contact.map((t) => t.match(LINKEDIN_URL_RE)?.[0] ?? null).find(Boolean) ?? lines.map((l) => l.text.match(LINKEDIN_URL_RE)?.[0] ?? null).find(Boolean) ?? null;
   const email = contact.map((t) => t.match(EMAIL_RE)?.[0] ?? null).find(Boolean) ?? null;
   const links = contact.filter((t) => !LINKEDIN_URL_RE.test(t) && !EMAIL_RE.test(t) && URL_RE.test(t)).map((t) => t.replace(/\s*\([^)]*\)$/, ""));

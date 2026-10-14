@@ -4,7 +4,8 @@ import { loadFixture } from "./fixtures";
 
 export type Part = { type: "text"; text: string } | { type: "pdf"; base64: string };
 /** `temperature` is optional and currently never sent: Anthropic models reject it and Gemini 3 should stay at its default (gemini.ts). */
-export type StructuredRequest<T> = { tier: "fast" | "smart"; system: string; parts: Part[]; schema: z.ZodType<T>; maxTokens?: number; temperature?: number };
+/** `thinking: "low"` asks Gemini 3 for a low thinking level (latency-bound calls); Anthropic adapters ignore it. */
+export type StructuredRequest<T> = { tier: "fast" | "smart"; system: string; parts: Part[]; schema: z.ZodType<T>; maxTokens?: number; temperature?: number; thinking?: "low" };
 
 export class AiError extends Error {}
 
@@ -13,15 +14,20 @@ export const AI_REFUSAL = "The AI declined to process this request.";
 export const AI_BAD_FORMAT = "The AI returned an answer we couldn't read. Please try again.";
 export const AI_UNAVAILABLE = "The AI service is unavailable right now. Please try again shortly.";
 
+// One shared import promise per adapter: parallel first calls (judgeLinkedIn batches) must not race the module's
+// evaluation ("Cannot access 'ai' before initialization" under jiti).
+let anthropicMod: Promise<typeof import("./anthropic")> | null = null;
+let geminiMod: Promise<typeof import("./gemini")> | null = null;
+
 /** The only entry point business functions use to reach an LLM. Vendor SDKs load lazily, server-side. */
 export async function generateStructured<T>(req: StructuredRequest<T>): Promise<T> {
   const provider = aiProvider();
   if (!provider) throw new AiError("No AI provider configured");
   if (provider === "anthropic") {
-    const { anthropicStructured } = await import("./anthropic");
+    const { anthropicStructured } = await (anthropicMod ??= import("./anthropic"));
     return anthropicStructured(req);
   }
-  const { geminiStructured } = await import("./gemini");
+  const { geminiStructured } = await (geminiMod ??= import("./gemini"));
   return geminiStructured(req);
 }
 
