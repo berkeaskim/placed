@@ -136,4 +136,16 @@ describe("SKILLS vocabulary", () => {
     }
     expect(collisions).toEqual([]);
   });
+  it("does not credit skills for generic everyday phrases", () => {
+    expect(extractSkills("Ran the data collection script weekly on AWS")).toEqual(["AWS"]);
+    expect(extractSkills("Contributor to the student newspaper")).toEqual([]);
+    expect(extractSkills("OR for an individual contributor, they develop technical expertise")).not.toContain("Open Source");
+    expect(extractSkills("Took a vacation internship at Deloitte")).not.toContain("Research Assistant");
+  });
+  it("still finds the specific phrasings of those skills", () => {
+    expect(extractSkills("Designed a randomised controlled trial with 40 participants")).toContain("Experimental Design");
+    expect(extractSkills("Ran a controlled experiment; experimental design in R")).toContain("Experimental Design");
+    expect(extractSkills("Open source contributor to pandas")).toContain("Open Source");
+    expect(extractSkills("EPSRC vacation bursary in the Physics department")).toContain("Research Assistant");
+  });
 });
