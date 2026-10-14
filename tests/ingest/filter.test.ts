@@ -183,3 +183,21 @@ describe("review round 1 (2026-10-14)", () => {
     expect(passesLocationFilter(loc, false, "").pass).toBe(false);
   });
 });
+
+describe("review round 2: per-segment regions and foreign state codes", () => {
+  it.each(["Edinburgh; New York", "Manchester; Toronto", "Leeds; Hyderabad", "Bristol or Remote (US)", "Glasgow, Scotland; Chicago"])("UK segment wins: %s", (loc) => {
+    expect(passesLocationFilter(loc, false, "").pass).toBe(true);
+    expect(classifyRegion(loc, false)).toBe("uk");
+  });
+  it.each(["Cambridge, MA", "Manchester, NH", "Birmingham, AL", "Derby, CT", "Newcastle, NSW", "Surrey, BC", "Reading, PA"])("UK city name abroad: %s", (loc) => {
+    expect(classifyRegion(loc, false)).toBe("other");
+    expect(passesLocationFilter(loc, false, "").pass).toBe(false);
+  });
+  it.each(["Derby, DE1 3NU", "Swansea, SA1", "Cambridge, United Kingdom", "Reading, UK", "London; New York"])("UK postcodes and country terms stay UK: %s", (loc) => {
+    expect(passesLocationFilter(loc, false, "").pass).toBe(true);
+  });
+  it("remote flag only matters when no segment has a place", () => {
+    expect(classifyRegion("Amsterdam; New York", true)).toBe("europe");
+    expect(classifyRegion("", true)).toBe("remote");
+  });
+});

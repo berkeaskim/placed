@@ -578,7 +578,7 @@ describe("ordinary-word employers at sentence start (2026-10-14 seed additions: 
   const employerBlocks = (r: ReturnType<typeof runCv>) => r.issues.filter((i) => i.check === "knownEmployer").map((i) => i.claim);
   it.each([
     "Visa applications handled for 40 customers each week",
-    "Intel gathered on competitors shaped weekly pricing",
+    "Intel on competitors shaped weekly pricing",
     "Sky-high demand met during peak season",
   ])("the CV's own word, capitalised: %s", (text) => {
     expect(employerBlocks(runCv(withWords, "retail", text))).toEqual([]);
@@ -591,5 +591,22 @@ describe("ordinary-word employers at sentence start (2026-10-14 seed additions: 
   });
   it("mid-sentence capitalised name is still an employer", () => {
     expect(employerBlocks(runCv(withWords, "retail", "Handled applications for Visa and Mastercard customers"))).toContain("Visa");
+  });
+});
+
+describe("ordinary-word exemption never excuses a fabricated employer (review round 2)", () => {
+  const applePie = (c: ParsedCV) => { c.experience[1].bullets[0].text = "Sold apple pie at the weekend market"; };
+  const blocks = (r: ReturnType<typeof runCv>) => r.issues.filter((i) => i.check === "knownEmployer").map((i) => i.claim);
+  it.each([
+    "Apple: built an iOS prototype for clients",
+    "Apple (2025): built an iOS prototype for clients",
+    "Apple, 2025 - built an iOS prototype",
+    "Apple engineers mentored me on an iOS prototype",
+    "Built a prototype. Apple then adopted it for clients",
+  ])("%s", (text) => {
+    expect(blocks(runCv(applePie, "retail", text))).toEqual(["Apple"]);
+  });
+  it("the CV's own phrase is still fine", () => {
+    expect(blocks(runCv(applePie, "retail", "Apple pie sales doubled at the weekend market"))).toEqual([]);
   });
 });

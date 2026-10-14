@@ -3,7 +3,7 @@
 const RETRY_STATUS = new Set([429, 502, 503, 504]);
 export const RETRY_DELAYS_MS = [1_000, 3_000, 8_000];
 
-const TRANSIENT_CODES = new Set(["ECONNRESET", "ETIMEDOUT", "UND_ERR_SOCKET", "UND_ERR_CONNECT_TIMEOUT", "EPIPE"]);
+const TRANSIENT_CODES = new Set(["ECONNRESET", "ETIMEDOUT", "UND_ERR_SOCKET", "UND_ERR_CONNECT_TIMEOUT", "EPIPE", "EAI_AGAIN"]);
 
 /** AbortSignal.timeout fires a TimeoutError; undici reports resets as TypeError("fetch failed") with a coded cause. */
 export function isTransient(e: unknown): boolean {

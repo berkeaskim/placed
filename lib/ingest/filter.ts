@@ -61,13 +61,25 @@ const BLOCK = /\b(united states|usa|u\.s\.|new york|ny|san francisco|ca|chicago|
 const LONDON_ONTARIO = /\blondon\s*,\s*(on|ontario|canada)(?=\s*(?:[,;()]|$))/gi;
 const withoutLondonOntario = (location: string) => location.replace(LONDON_ONTARIO, "Ontario");
 
+// "Cambridge, MA", "Birmingham, AL", "Newcastle, NSW", "Surrey, BC": a UK city name followed by a US/AU/CA state code.
+const FOREIGN_STATE = /,\s*(A[LKZR]|C[AOT]|D[EC]|FL|GA|HI|I[DLNA]|K[SY]|LA|M[EDAINSOT]|N[EVHJMYCD]|O[HKR]|PA|RI|S[CD]|T[NX]|UT|V[TA]|W[AVIY]|NSW|VIC|QLD|WA|SA|TAS|ACT|BC|AB|SK|MB|QC|NS|NB|NL|PE)\b/;
+const SEGMENT = /;|\||\/|\bor\b/i;
+const RANK: Record<Region, number> = { london: 0, uk: 1, europe: 2, remote: 3, other: 4 };
+
+/** One location segment ("Edinburgh", "New York, NY"): a UK city counts only if nothing in the segment says abroad. */
+function segmentRegion(seg: string): Region {
+  if (LONDON.test(seg)) return "london";
+  if (UK.test(seg) && (UK_COUNTRY.test(seg) || (!BLOCK.test(seg) && !FOREIGN_STATE.test(seg)))) return "uk";
+  if (EUROPE.test(seg)) return "europe";
+  if (REMOTE.test(seg)) return "remote";
+  return "other";
+}
+
+/** Best region across ";"/"|"/"or"-separated segments, so "Edinburgh; New York" is still UK. */
 export function classifyRegion(rawLocation: string, remote: boolean): Region {
   const location = withoutLondonOntario(rawLocation);
-  if (LONDON.test(location)) return "london";
-  if (UK.test(location) && (UK_COUNTRY.test(location) || !BLOCK.test(location))) return "uk";
-  if (EUROPE.test(location)) return "europe";
-  if (remote || REMOTE.test(location)) return "remote";
-  return "other";
+  const best = location.split(SEGMENT).map(segmentRegion).reduce<Region>((a, b) => (RANK[b] < RANK[a] ? b : a), "other");
+  return best === "other" && remote ? "remote" : best;
 }
 
 const EXCLUSIONARY = [

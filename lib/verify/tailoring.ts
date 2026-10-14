@@ -563,13 +563,18 @@ function employerClaim(text: string, start: number, end: number, cvTool: boolean
 }
 /**
  * Case-sensitive one-word employers that are also ordinary words ("Visa", "Intel", "Sky", "Mars", "Apple", "Shell"):
- * "Visa applications…" at the start of a sentence is the CV's own "visa" capitalised, not the employer, unless the
- * context claims an affiliation (employerClaim is checked by the caller).
+ * "Visa applications…" at the start of a sentence is the CV's own "visa applications" capitalised, not the employer.
+ * Exempt only when the word AND the word after it appear together, lowercase, in the CV ("apple pie" doesn't excuse
+ * "Apple engineers…"), and never when punctuation follows the name ("Apple: built…", "Apple (2025)"). The caller has
+ * already ruled out affiliation claims ("Interned at Visa").
  */
 function ordinaryWordAtSentenceStart(text: string, index: number, match: string, emp: KnownEmployer, corpus: string): boolean {
   if (!emp.caseSensitive || /\s/.test(match) || match.toUpperCase() === match) return false; // "BP", "EY" are never ordinary words
   if (!/(?:^|[.!?:;]\s+|\n\s*|^[-•*]\s*)$/.test(text.slice(0, index))) return false;
-  return new RegExp(`(?<![A-Za-z0-9])${escapeRegex(match.toLowerCase())}(?![A-Za-z0-9])`).test(corpus);
+  const next = text.slice(index + match.length).match(/^(-[a-z]+|\s+[a-z]+)/)?.[1]; // "-high" or " applications"
+  if (!next) return false;
+  const phrase = `${match.toLowerCase()}${next.replace(/^\s+/, " ")}`;
+  return new RegExp(`(?<![A-Za-z0-9])${escapeRegex(phrase).replace(/ /g, "\\s+")}(?![A-Za-z0-9])`).test(corpus);
 }
 /** Task 22b: hyphen-like characters between letters (U+2010–U+2014, U+2212) read as "-" before tokenising. Same length, so indices hold. */
 const dashNorm = (t: string) => t.replace(/(?<=[A-Za-z])[‐‑‒–—−](?=[A-Za-z])/g, "-");

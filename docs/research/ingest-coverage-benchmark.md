@@ -20,11 +20,11 @@ Before: `feat/placed-build` at 88be367, measured with its own code and filters. 
 | Big 4 / accounting | 7 | 1 → 2 | 1 → 2 | 0 → 0 |
 | law | 15 | 1 → 6 | 1 → 5 | 1 → 2 |
 | FMCG / retail | 21 | 0 → 6 | 0 → 4 | 0 → 3 |
-| big tech | 31 | 8 → 17 | 6 → 15 | 5 → 9 |
+| big tech | 31 | 8 → 17 | 6 → 15 | 5 → 10 |
 | industry / pharma | 10 | 2 → 5 | 2 → 3 | 2 → 2 |
-| **all** | **159** | **30 → 71 (19% → 45%)** | **27 → 62 (17% → 39%)** | **21 → 39 (13% → 25%)** |
+| **all** | **159** | **30 → 71 (19% → 45%)** | **27 → 62 (17% → 39%)** | **21 → 40 (13% → 25%)** |
 
-Postings kept on the benchmark employers' boards went from 378 to 869 (UK: 179 to 312). The "before" figure is inflated by false positives that this branch removes (see Filter fixes).
+Postings kept on the benchmark employers' boards went from 378 to 869 (UK: 179 to 313). The "before" figure is inflated by false positives that this branch removes (see Filter fixes).
 
 Biggest UK gains: Lloyds (0 → 57 UK), P&G (20 UK), Oliver Wyman / Marsh McLennan (7), NatWest (5), PIMCO (7), Brevan Howard (5), Qube (6), HRT (4), Squarepoint (3), Mars (6), Mondelez (3), Cisco (3).
 
@@ -47,7 +47,7 @@ Biggest UK gains: Lloyds (0 → 57 UK), P&G (20 UK), Oliver Wyman / Marsh McLenn
   - Any remote-flagged role passed, even one in San Francisco, Costa Rica or Malaysia, and so did "Remote - US". Now a role passes if its place is in the UK or Europe. Otherwise it fails if it names a place on the (extended) non-UK/EU block list. Only then do a remote flag or remote text let it through.
   - Unnamed places ("Hybrid", "Multiple Locations") with a remote flag still pass. This drops 7 of the 190 snapshot jobs (Ashby roles in San Francisco and New York).
 - "London, Canada" / "London, ON" (BDO Canada) is no longer London. This applies only at the end of a segment, so "London, Canada Square" and "London, On-site" stay London.
-- UK city names abroad ("Newcastle, NSW", "Cambridge, MA") are no longer UK unless the location also says UK, England, etc.
+- Locations are classified per segment (split on `;`, `|`, `/`, "or"), so "Edinburgh; New York" is still UK. In a segment, a UK city name followed by a US, AU or CA state code, or next to a blocked place ("Cambridge, MA", "Newcastle, NSW", "Manchester, Toronto"), is not UK unless the segment also says UK, England, etc.
 - Recall: more UK cities (Sheffield, Newcastle, Liverpool, Nottingham, Southampton…) and EU countries (Luxembourg, Norway, Finland, Czechia, Greece, Romania, Hungary, the Baltics…) are now recognised.
 - Roles for staff who run programmes ("Early Careers Programme Coordinator", "Emerging Talent Delivery Team Manager") are now excluded.
 
@@ -55,8 +55,8 @@ Biggest UK gains: Lloyds (0 → 57 UK), P&G (20 UK), Oliver Wyman / Marsh McLenn
 
 - **Feed cap:** `getLiveJobs` returned at most 500 live jobs (newest first). With this seed list there are well over 1,000 live postings, so the oldest would never have been ranked. It now pages in 1,000-row chunks, up to 5,000.
 - **HTTP retries:** timeouts and connection resets are now retried like 429/5xx. GSK, P&G and Marsh boards were failing intermittently. Other errors (DNS, a bad host) fail immediately.
-- **SmartRecruiters partial listings:** a listing without `totalFound`, a short page, or a board over the cap now fails the board instead of returning a partial list (which `markDead` would treat as closures). Known gap: an unknown slug returns 200 with `totalFound: 0`.
-- **Tailoring verifier:** the new seed companies had to join `KNOWN_EMPLOYERS` (a test enforces it). Ordinary-word employers (Visa, Intel, Sky, also the existing Apple and Shell) at the start of a sentence no longer block the CV's own lowercase word ("visa applications" → "Visa applications…"), unless the context claims an affiliation ("Interned at Visa").
+- **SmartRecruiters partial listings:** a listing without `totalFound`, or a board over the cap, fails the board instead of returning a partial list (which `markDead` would treat as closures). If fewer unique ids come back than `totalFound`, page 0 is fetched again. The run is accepted only if the board really shrank (a posting closed mid-run). Known gap: an unknown slug returns 200 with `totalFound: 0`.
+- **Tailoring verifier:** the new seed companies had to join `KNOWN_EMPLOYERS` (a test enforces it). Ordinary-word employers (Visa, Intel, Sky, also the existing Apple and Shell) at the start of a sentence no longer block the CV's own lowercase word ("visa applications" → "Visa applications…"), only when the word plus the next word appear together in the CV and no punctuation follows the name. So "apple pie" on the CV doesn't excuse "Apple: built…" or "Apple engineers…". Affiliation claims ("Interned at Visa") always block.
 - **Seeding:** `seed.ts` upserts companies one ATS at a time. If an ATS fails the check constraint (migration not applied), only that group is skipped and the exit code is 1; any other error throws.
 
 ## What's still missing (88 employers) and why
@@ -74,7 +74,7 @@ Biggest UK gains: Lloyds (0 → 57 UK), P&G (20 UK), Oliver Wyman / Marsh McLenn
 
 Big 4 stays weak for UK roles: PwC UK, Deloitte, EY and KPMG don't put UK student roles on a board we can read. Workday `pwc/Global_Campus_Careers` is non-UK PwC firms only.
 
-Not fixed (follow-ups): jobs already live in the DB for a board that is now disabled (`greenhouse/wise`) stay live, because ingest only visits enabled companies. None of that board's titles passed the title filter in the snapshot. The same posting on two sites of one tenant becomes two rows (checked: none for PwC; not checked for Lloyds).
+Not fixed (follow-ups): a hung host can still cost about 72s per request (4 × 15s timeouts plus backoff) before the board fails. The feed now loads up to 5,000 live rows (with `text_lines`) in up to 5 round trips; if that gets slow, move ranking inputs to a slimmer select. jobs already live in the DB for a board that is now disabled (`greenhouse/wise`) stay live, because ingest only visits enabled companies. None of that board's titles passed the title filter in the snapshot. The same posting on two sites of one tenant becomes two rows (checked: none for PwC; not checked for Lloyds).
 
 Configured but 0 live UK/EU early-career roles today: Morgan Stanley (no campus roles open yet), Legal & General, NRF, Diageo, ASOS, Spotify, Wise, BP, Rolls-Royce. These are seasonal; the boards stay enabled.
 

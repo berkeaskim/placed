@@ -99,10 +99,29 @@ describe("smartrecruiters partial listings fail the board", () => {
   });
   it("a page that comes back short", async () => {
     const impl = vi.fn(async () => Response.json({ totalFound: 150, content: [{ id: "1", name: "Summer Internship" }] })) as unknown as typeof fetch;
-    await expect(fetchSmartRecruiters("acme", passesTitleFilter, impl)).rejects.toThrow(/listed 2 of 150/);
+    await expect(fetchSmartRecruiters("acme", passesTitleFilter, impl)).rejects.toThrow(/listed 1 of 150/);
   });
   it("over the page cap", async () => {
     const impl = vi.fn(async () => Response.json({ totalFound: 999_999, content: [] })) as unknown as typeof fetch;
     await expect(fetchSmartRecruiters("acme", passesTitleFilter, impl)).rejects.toThrow(/cap/);
+  });
+});
+
+describe("smartrecruiters shortfall re-check (review round 2)", () => {
+  it("accepts the run when a posting closed between pages (totalFound shrank)", async () => {
+    let call = 0;
+    const impl = vi.fn(async (url: string) => {
+      if (!new URL(url).pathname.endsWith("/postings")) return Response.json({ id: "1", name: "Summer Internship", postingUrl: "https://jobs.smartrecruiters.com/A/1", location: { city: "London", country: "gb" } });
+      call++;
+      return call === 1
+        ? Response.json({ totalFound: 2, content: [{ id: "1", name: "Summer Internship" }] }) // 2nd posting vanished before paging
+        : Response.json({ totalFound: 1, content: [{ id: "1", name: "Summer Internship" }] });
+    }) as unknown as typeof fetch;
+    expect((await fetchSmartRecruiters("acme", passesTitleFilter, impl)).jobs).toHaveLength(1);
+  });
+  it("duplicate ids don't hide a real gap", async () => {
+    const dup = { id: "1", name: "Summer Internship" };
+    const impl = vi.fn(async () => Response.json({ totalFound: 2, content: [dup, dup] })) as unknown as typeof fetch;
+    await expect(fetchSmartRecruiters("acme", passesTitleFilter, impl)).rejects.toThrow(/listed 1 of 2/);
   });
 });

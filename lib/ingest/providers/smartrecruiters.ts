@@ -71,7 +71,12 @@ export async function fetchSmartRecruiters(
   const pages = Math.min(Math.ceil(total / SR_PAGE), SR_MAX_PAGES);
   const rest = await mapLimit(Array.from({ length: Math.max(0, pages - 1) }, (_, i) => (i + 1) * SR_PAGE), SR_CONCURRENCY, page);
   const items = [first, ...rest].flatMap((p) => p.content ?? []);
-  if (items.length < total) throw new Error(`listed ${items.length} of ${total} postings`);
+  const unique = new Set(items.map((j) => j.id).filter(Boolean)).size;
+  if (unique < total) {
+    // Postings can close between page fetches; accept the run only if the board itself shrank to what we saw.
+    const again = await page(0);
+    if (typeof again.totalFound !== "number" || again.totalFound > unique) throw new Error(`listed ${unique} of ${total} postings`);
+  }
   const ids = [...new Set(items.filter((j) => j.id && j.name && keepTitle(j.name)).map((j) => j.id as string))];
   // A failed detail fails the board (as for Workday): a silently skipped posting would be marked dead.
   const details = await mapLimit(ids, SR_CONCURRENCY, async (id) =>
