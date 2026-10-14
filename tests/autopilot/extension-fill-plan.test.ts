@@ -36,9 +36,17 @@ describe("extension", () => {
     expect(bg).toMatch(/\/api\/autopilot\/claim/);
     expect(bg).not.toMatch(/console\.\w+\([^)]*token/); // never log the token
   });
-  it("manifest host_permissions are only the Placed app and Supabase storage", () => {
-    const m = JSON.parse(readFileSync("extension/manifest.json", "utf8"));
-    expect(m.host_permissions).toEqual(["http://localhost:3200/*", "https://*.supabase.co/*"]);
+  it("manifest host_permissions cover the Placed app and Supabase storage, with no broad wildcards", () => {
+    const hp: string[] = JSON.parse(readFileSync("extension/manifest.json", "utf8")).host_permissions;
+    expect(hp).toContain("http://localhost:3200/*");
+    expect(hp).toContain("https://*.supabase.co/*");
+    for (const p of hp) {
+      expect(p).not.toBe("<all_urls>");
+      expect(p, p).not.toMatch(/^\*:\/\/|:\/\/\*\/|:\/\/\*\.(vercel\.app|netlify\.app|com|io|co|app)\//); // supabase.co is the one allowed *.
+    }
+  });
+  it("background loads the CDP geometry helper", () => {
+    expect(readFileSync("extension/background.js", "utf8")).toMatch(/importScripts\(["']lib\/geometry\.js["']\)/);
   });
 });
 

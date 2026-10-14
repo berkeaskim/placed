@@ -6,6 +6,7 @@
 //     control the content script tagged with a one-shot nonce, and neither it nor its 3 nearest ancestors may be a
 //     button, link, submit-ish input, role=button, or carry submit/apply/send wording.
 importScripts("config.js");
+importScripts("lib/geometry.js");
 
 const ALLOWED = ["https://job-boards.greenhouse.io", "https://boards.greenhouse.io", "https://jobs.ashbyhq.com", "https://jobs.lever.co"];
 const IDLE_MS = 60_000;
@@ -89,7 +90,11 @@ const CHAIN_FN = `function (nonce) {
   return { inside, chain };
 }`;
 async function verifyPoint(tabId, x, y, nonce) {
-  const loc = await cdp(tabId, "DOM.getNodeForLocation", { x, y, includeUserAgentShadowDOM: false, ignorePointerEventsNone: true });
+  // (x, y) are viewport coordinates (they also drive Input.dispatchMouseEvent); getNodeForLocation wants document ones.
+  const doc = globalThis.PlacedGeometry.toDocumentPoint(x, y, await cdp(tabId, "Page.getLayoutMetrics"));
+  if (!doc) return false;
+  // ignorePointerEventsNone: false hit-tests like a real mouse (pointer-events:none layers are skipped).
+  const loc = await cdp(tabId, "DOM.getNodeForLocation", { x: doc.x, y: doc.y, includeUserAgentShadowDOM: false, ignorePointerEventsNone: false });
   if (!loc || !loc.backendNodeId) return false;
   const { node } = await cdp(tabId, "DOM.describeNode", { backendNodeId: loc.backendNodeId, depth: 1 });
   if (node && node.nodeType === 1 && badSummary(summaryFromDescribed(node))) return false; // not page-tamperable
