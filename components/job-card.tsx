@@ -4,8 +4,9 @@ import { coverageLabel } from "@/lib/scoring/coverage";
 import { closingLabel } from "@/lib/scoring/dates";
 import { FitBadge } from "./fit-badge";
 import { SaveButton } from "./save-button";
+import { MarkAppliedButton } from "./mark-applied";
 
-export function JobCard({ r, today, saved }: { r: Ranked; today: string; saved: boolean }) {
+export function JobCard({ r, today, saved, applied }: { r: Ranked; today: string; saved: boolean; applied: boolean }) {
   const gate = r.fit.gates.find((g) => !g.passed);
   const sub = gate?.reason ?? (r.coverage.readable ? `${r.coverage.must.matched}/${r.coverage.must.total} must-haves` : coverageLabel(r.coverage));
   return (
@@ -19,6 +20,7 @@ export function JobCard({ r, today, saved }: { r: Ranked; today: string; saved: 
       <FitBadge label={r.fit.label} score={r.fit.global} />
       <span className="chip-xp">+{applyXp(r.fit.label)} XP</span>
       <SaveButton jobId={r.job.id} initiallySaved={saved} />
+      <MarkAppliedButton jobId={r.job.id} initiallyApplied={applied} title={r.job.title} />
       <Link href={`/jobs/${r.job.id}`} className="btn-quest px-4 py-2.5 no-underline">View</Link>
     </article>
   );

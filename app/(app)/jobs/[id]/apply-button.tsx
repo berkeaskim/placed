@@ -1,20 +1,18 @@
 "use client";
-import { useEffect, useRef, useState, useTransition } from "react";
-import { toast } from "sonner";
+import { useEffect, useRef, useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { celebrate } from "@/components/reward-toast";
-import { markApplied } from "./actions";
+import { AppliedChip, useMarkApplied } from "@/components/mark-applied";
 
 /**
  * Placed never applies for the student: the link opens the company's own posting in a new tab.
  * When the student comes back (tab visible again / window focus) we ask "Did you apply?".
+ * Students who applied elsewhere (or before Placed) can mark it directly. Both paths share useMarkApplied.
  * `url` is already validated as http(s) on the server; null means there is no usable link.
  */
 export function ApplyButton({ jobId, url, company, alreadyApplied }: { jobId: string; url: string | null; company: string; alreadyApplied: boolean }) {
   const awaiting = useRef(false);
   const [ask, setAsk] = useState(false);
-  const [applied, setApplied] = useState(alreadyApplied);
-  const [pending, start] = useTransition();
+  const { applied, pending, mark } = useMarkApplied(jobId, alreadyApplied);
 
   useEffect(() => {
     const onReturn = () => {
@@ -30,21 +28,25 @@ export function ApplyButton({ jobId, url, company, alreadyApplied }: { jobId: st
     };
   }, []);
 
+  const markRow = applied ? (
+    <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground"><AppliedChip />It&apos;s in the Applied column of your tracker.</div>
+  ) : (
+    <button type="button" disabled={pending} onClick={() => mark()}
+      className="min-h-11 rounded-[14px] border-2 border-[#0E8A5F]/40 px-4 py-2 text-sm font-bold text-[#0B6B49] hover:bg-[#E3F6EE] disabled:opacity-60">
+      {pending ? "Saving…" : "Already applied? Mark as applied"}
+    </button>
+  );
+
   if (!url) {
-    return <p className="text-sm font-semibold text-muted-foreground">This posting has no application link. Search for the role on {company || "the company"}&apos;s careers site.</p>;
+    return (
+      <>
+        <p className="text-sm font-semibold text-muted-foreground">This posting has no application link. Search for the role on {company || "the company"}&apos;s careers site.</p>
+        {markRow}
+      </>
+    );
   }
 
-  const yes = () => start(async () => {
-    try {
-      const r = await markApplied(jobId);
-      if (!r.ok) { toast.error(r.error ?? "Couldn't record that — try again."); return; }
-      setApplied(true);
-      setAsk(false);
-      celebrate(r.award);
-    } catch {
-      toast.error("Couldn't record that — try again.");
-    }
-  });
+  const yes = () => mark(() => setAsk(false));
 
   return (
     <>
@@ -54,6 +56,7 @@ export function ApplyButton({ jobId, url, company, alreadyApplied }: { jobId: st
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M7 17L17 7M9 7h8v8" /></svg>
         <span className="sr-only">(opens in a new tab)</span>
       </a>
+      {markRow}
       <p className="text-xs text-muted-foreground">You apply on {company ? `${company}'s` : "the company's"} own site. Placed never submits anything for you.</p>
       <Dialog open={ask} onOpenChange={setAsk}>
         <DialogContent>

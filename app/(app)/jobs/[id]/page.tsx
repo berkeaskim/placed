@@ -10,6 +10,7 @@ import { clicheDensity } from "@/lib/cv/cliches";
 import { isUuid } from "@/lib/feed/save-result";
 import { applyXp } from "@/lib/feed/rank";
 import { safeHttpUrl } from "@/lib/text/url";
+import { isPastSaved } from "@/lib/tracker/status";
 import { FitBadge } from "@/components/fit-badge";
 import { SaveButton } from "@/components/save-button";
 import { ExplainPanel } from "./explain-panel";
@@ -57,7 +58,7 @@ export default async function JobPage({ params }: { params: Promise<{ id: string
     })
     : false;
   const status = (app?.status as string | undefined) ?? null;
-  const alreadyApplied = status !== null && status !== "saved";
+  const alreadyApplied = isPastSaved(status);
   const stored = (app?.tailored_json ?? null) as StoredTailoring | null;
 
   return (

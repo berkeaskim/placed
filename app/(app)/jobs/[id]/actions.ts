@@ -1,6 +1,5 @@
 "use server";
 import { requireUser } from "@/lib/supabase/server";
-import { loadJobFit } from "@/lib/db/fit";
 import { getActiveCv, getJob, getProfile, toStudent } from "@/lib/db/queries";
 import { coverageFor } from "@/lib/scoring/coverage";
 import { explainCacheKey, explainMatchWithSource, readCachedExplanation, shouldCacheExplanation, toCacheRecord } from "@/lib/ai/explainMatch";
@@ -24,10 +23,8 @@ import type { VerifyReport } from "@/lib/verify/tailoring";
  */
 export type ExplanationView = Explanation & { aiWritten: boolean; aiFailed: boolean };
 export type ExplanationResult = ExplanationView | { error: string };
-export type ApplyResult = { ok: boolean; award: AwardResult | null; error?: string };
 
 const EXPLAIN_FAILED = "We couldn't build the explanation right now. Try again in a moment.";
-const APPLY_FAILED = "Couldn't record that — try again.";
 
 /** Requirement table + why you fit + gaps for one job. Lazy (first open), cached per user/job in `matches` for the active CV. */
 export async function getExplanation(jobId: string): Promise<ExplanationResult> {
@@ -58,43 +55,6 @@ export async function getExplanation(jobId: string): Promise<ExplanationResult> 
     .upsert({ user_id: user.id, job_id: jobId, explanation_json: toCacheRecord(e, key, source), created_at: new Date().toISOString() }, { onConflict: "user_id,job_id" });
   if (error) console.error("getExplanation: cache write failed", error.message); // the explanation itself is fine
   return view;
-}
-
-/**
- * "Did you apply?" -> Yes. The student applied on the company's own site; we only record it.
- * The fit label (which sets the XP) is computed here from the DB, never taken from the client.
- */
-export async function markApplied(jobId: string): Promise<ApplyResult> {
-  if (!isUuid(jobId)) return { ok: false, award: null, error: APPLY_FAILED };
-  const { supabase, user } = await requireUser();
-  const [loaded, existing] = await Promise.all([
-    loadJobFit(supabase, user.id, jobId),
-    supabase.from("applications").select("status").eq("user_id", user.id).eq("job_id", jobId).maybeSingle(),
-  ]);
-  if (!loaded) return { ok: false, award: null, error: "This role is no longer available." };
-
-  const status = existing.data?.status as string | undefined;
-  // never move a later stage (interview / offer / rejected) back to "applied"
-  if (!status || status === "saved") {
-    const { error } = await supabase.from("applications").upsert(
-      { user_id: user.id, job_id: jobId, status: "applied", updated_at: new Date().toISOString() },
-      { onConflict: "user_id,job_id" },
-    );
-    if (error) {
-      console.error("markApplied: upsert failed", error.message);
-      return { ok: false, award: null, error: APPLY_FAILED };
-    }
-  }
-
-  const { job, fit } = loaded;
-  try {
-    // `applied` is awarded once per job (unique index), so a second "Yes" earns nothing.
-    const award = await awardXP(supabase, user.id, { type: "applied", fitLabel: fit.label, jobTitle: job.title, deadline: job.deadline }, jobId);
-    return { ok: true, award };
-  } catch (e) {
-    console.error("markApplied: award failed", e instanceof Error ? e.message : e);
-    return { ok: true, award: null }; // the application itself is recorded
-  }
 }
 
 // ---------- Task 23a: tailoring ----------
