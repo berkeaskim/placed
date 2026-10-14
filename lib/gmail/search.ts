@@ -12,6 +12,8 @@ export const SENDER_DOMAINS = [
 ] as const;
 
 const MAX_COMPANIES = 30;
+const GMAIL_TIMEOUT_MS = 15_000;
+const MAX_HTML = 200_000;
 
 export function buildGmailQuery(companies: string[]): string {
   const seen = new Set<string>();
@@ -41,7 +43,8 @@ const ENTITIES: Record<string, string> = { "&nbsp;": " ", "&amp;": "&", "&lt;": 
 
 /** HTML → text. Link targets are kept beside their text, because the assessment link is often only in an href. */
 function htmlToText(html: string): string {
-  return html
+  const capped = html.slice(0, MAX_HTML);
+  return capped
     .replace(/<(style|script)[\s\S]*?<\/\1>/gi, " ")
     .replace(/<a\s[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi, "$2 ($1)")
     .replace(/<br\s*\/?>|<\/p>|<\/div>|<\/li>/gi, "\n")
@@ -72,7 +75,7 @@ export class GmailAuthError extends Error {}
 const API = "https://gmail.googleapis.com/gmail/v1/users/me";
 
 async function gmail<T>(token: string, path: string): Promise<T> {
-  const r = await fetch(`${API}${path}`, { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" });
+  const r = await fetch(`${API}${path}`, { headers: { Authorization: `Bearer ${token}` }, cache: "no-store", signal: AbortSignal.timeout(GMAIL_TIMEOUT_MS) });
   if (r.status === 401) throw new GmailAuthError("Gmail rejected the access token");
   if (!r.ok) throw new Error(`Gmail ${path.split("?")[0]} failed: HTTP ${r.status}`);
   return r.json() as Promise<T>;
@@ -84,8 +87,20 @@ export async function fetchRecentEmails(token: string, query: string, max = 100)
   const ids = (list.messages ?? []).map((m) => m.id);
   const out: RawEmail[] = [];
   for (let i = 0; i < ids.length; i += 8) {
-    const batch = await Promise.all(ids.slice(i, i + 8).map((id) => gmail<{ id: string; internalDate?: string; payload?: GmailPayload }>(token, `/messages/${id}?format=full`)));
-    out.push(...batch.map(toRawEmail));
+    const batchIds = ids.slice(i, i + 8);
+    const results = await Promise.allSettled(batchIds.map((id) => gmail<{ id: string; internalDate?: string; payload?: GmailPayload }>(token, `/messages/${id}?format=full`)));
+    for (let j = 0; j < results.length; j++) {
+      const r = results[j];
+      if (r.status === "fulfilled") {
+        out.push(toRawEmail(r.value));
+      } else if (r.reason instanceof GmailAuthError) {
+        throw r.reason;
+      } else {
+        const id = batchIds[j];
+        const status = r.reason instanceof Error && r.reason.message.includes("HTTP") ? r.reason.message.match(/HTTP \d+/)?.[0] : "unknown";
+        console.error(`Gmail message ${id} fetch failed: ${status}`);
+      }
+    }
   }
   return out;
 }
