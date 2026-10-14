@@ -12,6 +12,10 @@ export type FillMode = "fill" | "yours" | "select-yourself";
 export type FillInstruction = { target: string; type: FormField["type"]; label: string; mode: FillMode; value: string | string[] | null; optionLabel?: string; sourceLabel: string | null };
 
 const SETUP = "from your setup";
+const normBool = (s: string): "true" | "false" | null => {
+  const t = s.trim().toLowerCase();
+  return t === "yes" || t === "true" ? "true" : t === "no" || t === "false" ? "false" : null;
+};
 const hasOptions = (f: FormField) => (f.type === "select" || f.type === "multiselect") && f.options.length > 0;
 
 export function assemblePack(form: NormalizedForm, core: Partial<Core>, extra: Record<string, string>, drafts: Record<string, DraftResult>): PackItem[] {
@@ -25,6 +29,10 @@ export function assemblePack(form: NormalizedForm, core: Partial<Core>, extra: R
       case "extra": {
         const saved = extra[normLabel(field.label)];
         if (!saved) return item(field.required ? "ask" : "yours"); // never block "Open & fill" on an optional question
+        if (field.type === "boolean" && !field.options.length) {
+          const b = normBool(saved);
+          return b ? item("vault", b, "you answered this before") : item(field.required ? "ask" : "yours");
+        }
         if (!hasOptions(field)) return item("vault", saved, "you answered this before");
         const hit = field.options.find((o) => normLabel(o.label) === normLabel(saved));
         return hit ? item("vault", field.type === "multiselect" ? [hit.value] : hit.value, "you answered this before") : item(field.required ? "ask" : "yours");
@@ -60,10 +68,24 @@ export function toFillPlan(items: PackItem[], answers: Answers): FillInstruction
     const base = { target: field.target, type: field.type, label: field.label, sourceLabel };
     const a = answers[field.key];
     if (group === "yours") return { ...base, mode: "yours", value: null };
-    if (group === "draft") return a?.approved ? { ...base, mode: "fill", value: a.value, sourceLabel: "your approved answer" } : { ...base, mode: "yours", value: null };
+    if (group === "draft") {
+      const empty = !a || (Array.isArray(a.value) ? a.value.every((x) => !x.trim()) : !a.value.trim());
+      return a?.approved && !empty ? { ...base, mode: "fill", value: a.value, sourceLabel: "your approved answer" } : { ...base, mode: "yours", value: null };
+    }
     const v = group === "vault" ? (a?.value ?? value) : a?.value ?? null;
     if (field.type === "file") return { ...base, mode: "fill", value: null };
     if (v == null) return { ...base, mode: hasOptions(field) ? "select-yourself" : "yours", value: null };
-    return { ...base, mode: "fill", value: v, optionLabel: labelFor(field, v) };
+    if (field.type === "boolean" && !field.options.length) {
+      const b = typeof v === "string" ? normBool(v) : null;
+      return b ? { ...base, mode: "fill", value: b } : { ...base, mode: "select-yourself", value: null };
+    }
+    if (field.options.length && (field.type === "select" || field.type === "multiselect" || field.type === "boolean")) {
+      const known = new Set(field.options.map((o) => o.value));
+      const vals = (Array.isArray(v) ? v : [v]).filter((x) => known.has(x));
+      if (!vals.length) return { ...base, mode: "select-yourself", value: null };
+      const out = field.type === "multiselect" ? vals : vals[0];
+      return { ...base, mode: "fill", value: out, optionLabel: labelFor(field, out) };
+    }
+    return { ...base, mode: "fill", value: v };
   });
 }
