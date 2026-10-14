@@ -8,7 +8,7 @@ import { openAndFill, preparePack, setAnswer } from "./autopilot-actions";
 
 type Phase =
   | { s: "idle" } | { s: "loading" } | { s: "locked" }
-  | { s: "error"; message: string; applyUrl: string }
+  | { s: "error"; message: string; applyUrl: string | null }
   | { s: "ready"; items: PackItem[] };
 
 type Opt = { label: string; value: string };
@@ -68,12 +68,14 @@ function Choice({ field, value, onChange, labelId }: { field: FormField; value: 
   );
 }
 
-function QuestionRow({ jobId, item, answered, mode, onSaved }: {
-  jobId: string; item: PackItem; answered: boolean; mode: "ask" | "confirm"; onSaved: (key: string, value: string | string[]) => void;
+function QuestionRow({ jobId, item, saved, mode, onSaved }: {
+  jobId: string; item: PackItem; saved: Answers[string] | undefined; mode: "ask" | "confirm"; onSaved: (key: string, value: string | string[]) => void;
 }) {
   const { field } = item;
   const labelId = useId();
-  const [value, setValue] = useState<string[]>(() => (mode === "confirm" ? asArray(item.value) : []));
+  const answered = saved !== undefined;
+  // A saved answer always wins over the suggestion, so a reload never shows a stale pre-filled value.
+  const [value, setValue] = useState<string[]>(() => (saved ? asArray(saved.value) : mode === "confirm" ? asArray(item.value) : []));
   const [pending, start] = useTransition();
   const [failed, setFailed] = useState(false);
   const multi = field.type === "multiselect";
@@ -82,12 +84,10 @@ function QuestionRow({ jobId, item, answered, mode, onSaved }: {
   const save = () => start(async () => {
     setFailed(false);
     const out: string | string[] = multi ? value : value[0];
-    const opts = optionsOf(field);
-    // Remember the chosen option's LABEL so the next form matches it by text; a multi-choice has no single label to remember.
-    const rememberText = opts ? value.map((v) => opts.find((o) => o.value === v)?.label ?? v).join(", ") : value[0];
-    const remember = mode === "ask" && (!multi || value.length === 1);
+    // The server derives the remembered label/text from the stored form; a multi-choice has no single label to remember.
+    const remember = mode === "ask" && !multi;
     try {
-      const r = await setAnswer(jobId, field.key, out, remember ? { rememberLabel: field.label, rememberText } : {});
+      const r = await setAnswer(jobId, field.key, out, remember ? { remember: true } : {});
       if (r.ok) onSaved(field.key, out); else setFailed(true);
     } catch { setFailed(true); }
   });
@@ -128,7 +128,10 @@ function DraftRow({ jobId, item, answer, onSaved }: {
     if (!approved) return;
     setApproved(false); // editing after approval always withdraws it
     start(async () => {
-      try { const r = await setAnswer(jobId, field.key, next, { approved: false }); if (r.ok) onSaved(field.key, next, false); } catch { /* the unsaved state is already shown */ }
+      try {
+        const r = await setAnswer(jobId, field.key, next, { approved: false });
+        if (r.ok) onSaved(field.key, next, false); else setFailed(true);
+      } catch { setFailed(true); }
     });
   };
   const approve = () => start(async () => {
@@ -191,7 +194,7 @@ export function AutopilotPanel({ jobId }: { jobId: string }) {
       else if ("error" in r) setPhase({ s: "error", message: r.error, applyUrl: r.applyUrl });
       else { setAnswers(r.answers); setPhase({ s: "ready", items: r.items }); }
     } catch {
-      setPhase({ s: "error", message: "Something went wrong building your pack.", applyUrl: "/feed" });
+      setPhase({ s: "error", message: "Something went wrong building your pack.", applyUrl: null });
     }
   });
 
@@ -221,9 +224,11 @@ export function AutopilotPanel({ jobId }: { jobId: string }) {
     return (
       <section className="flex flex-col gap-2 rounded-[20px] border bg-white p-5" aria-label="Autopilot">
         <p role="alert" className="rounded-xl bg-[#FFF1DC] px-3 py-2 text-sm font-semibold text-[#7A4100]">{phase.message}</p>
-        <a href={phase.applyUrl} target="_blank" rel="noopener noreferrer" className="flex min-h-12 items-center justify-center rounded-[14px] border-2 px-4 py-3 text-center font-bold no-underline">
-          Apply on company site <span className="sr-only">(opens in a new tab)</span>
-        </a>
+        {phase.applyUrl && (
+          <a href={phase.applyUrl} target="_blank" rel="noopener noreferrer" className="flex min-h-12 items-center justify-center rounded-[14px] border-2 px-4 py-3 text-center font-bold no-underline">
+            Apply on company site <span className="sr-only">(opens in a new tab)</span>
+          </a>
+        )}
       </section>
     );
   }
@@ -267,13 +272,13 @@ export function AutopilotPanel({ jobId }: { jobId: string }) {
 
       {ask.length > 0 && (
         <Group group="ask" icon="❓" title="Answer once" count={ask.length}>
-          {ask.map((i) => <QuestionRow key={i.field.key} jobId={jobId} item={i} mode="ask" answered={answers[i.field.key] !== undefined} onSaved={save} />)}
+          {ask.map((i) => <QuestionRow key={i.field.key} jobId={jobId} item={i} mode="ask" saved={answers[i.field.key]} onSaved={save} />)}
         </Group>
       )}
 
       {confirm.length > 0 && (
         <Group group="confirm" icon="☑️" title="Please confirm" count={confirm.length}>
-          {confirm.map((i) => <QuestionRow key={i.field.key} jobId={jobId} item={i} mode="confirm" answered={answers[i.field.key] !== undefined} onSaved={save} />)}
+          {confirm.map((i) => <QuestionRow key={i.field.key} jobId={jobId} item={i} mode="confirm" saved={answers[i.field.key]} onSaved={save} />)}
         </Group>
       )}
 
