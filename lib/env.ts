@@ -9,6 +9,7 @@ export const env = {
   googleClientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
   gmailTokenKey: process.env.GMAIL_TOKEN_KEY ?? "",
   demoMode: process.env.NEXT_PUBLIC_DEMO_MODE === "1",
+  autopilot: process.env.NEXT_PUBLIC_AUTOPILOT === "1",
 };
 
 export type AiProvider = "anthropic" | "gemini";

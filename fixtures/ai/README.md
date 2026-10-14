@@ -19,6 +19,7 @@ claim below.
 | `tailorCV` | `tailorCV/e001dc0b-6e0f-46a7-95ba-38a3733db2f4.json` | Lendable, Summer Intern 2027 (same JD text) | **The passed run.** An honest rephrase plus the same blank and Stata, with nothing blocked. |
 | `explainMatch` | `explainMatch/<both Lendable extIds>.json` | job extId | Python and SQL are Strong with a verified quote. The case-study requirement ("Case Interviews") is Missing, with a gap and how to close it. |
 | `defendQuestions` | `defendQuestions/<both Lendable extIds>.json` | job extId (falls back to `default.json`) | Likely interview questions for the events bullet and the rent-tracker bullet. |
+| `autopilotDraft` | `autopilotDraft/8232726-question_69481992.json` | `<jobExtId>-<fieldKey>` | Monzo Data Intern "Why Monzo?" for Ayşe: four sentences, each citing her bullet ids or Monzo `jd:` lines. **Deliberate catch:** one sentence swaps Excel for Google Sheets (bullet `p0-b1`); the gate's `siblingContamination` removes it ("tool not on your CV"), leaving three. |
 
 The demo job was chosen because it is a real London internship for 2nd/penultimate-year students whose tagged
 must-haves are Python, SQL and "Case Interviews" (from its interview process: two case studies). The persona has

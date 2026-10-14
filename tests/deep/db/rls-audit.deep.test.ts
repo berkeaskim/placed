@@ -79,12 +79,13 @@ describe("migration parser sanity", () => {
   it("finds the expected tables, policies and functions", () => {
     expect(files.length).toBeGreaterThanOrEqual(2);
     expect(tables.map((t) => t.name).sort()).toEqual(
-      ["applications", "badges", "companies", "confirmed_facts", "cv_feedback", "cv_scores", "cvs", "gmail_connections", "inbox_events", "ingest_state", "jobs", "linkedin_scores", "matches", "outreach", "playbook_progress", "profiles", "xp_events"]);
-    expect(userOwned.sort()).toEqual(["applications", "badges", "confirmed_facts", "cv_feedback", "cv_scores", "cvs", "gmail_connections", "inbox_events", "linkedin_scores", "matches", "outreach", "playbook_progress", "profiles", "xp_events"]);
+      ["applications", "autopilot_packs", "autopilot_vault", "badges", "companies", "confirmed_facts", "cv_feedback", "cv_scores", "cvs", "gmail_connections", "inbox_events", "ingest_state", "jobs", "linkedin_scores", "matches", "outreach", "playbook_progress", "profiles", "xp_events"]);
+    expect(userOwned.sort()).toEqual(["applications", "autopilot_packs", "autopilot_vault", "badges", "confirmed_facts", "cv_feedback", "cv_scores", "cvs", "gmail_connections", "inbox_events", "linkedin_scores", "matches", "outreach", "playbook_progress", "profiles", "xp_events"]);
     // 9 user-owned tables × 4 ops + 2 public reads, minus profiles.own_insert and xp_events/badges writes (0003),
-    // plus cv_feedback select/insert (0007), linkedin_scores select/insert/delete (0013, rescoring inserts a row),
+    // plus cv_feedback select/insert (0007), autopilot_vault select and autopilot_packs select (0012),
+    // linkedin_scores select/insert/delete (0013, rescoring inserts a row),
     // gmail_connections no policies (0013), inbox_events select only (0013), outreach select/insert/update (0013)
-    expect(policies.length).toBe(9 * 4 + 2 - 7 + 2 + 3 + 0 + 1 + 3);
+    expect(policies.length).toBe(9 * 4 + 2 - 7 + 2 + 1 + 1 + 3 + 0 + 1 + 3);
     expect(functions.map((f) => f.name).sort()).toEqual(["public.activate_cv", "public.award_xp", "public.handle_new_user"]);
   });
 });
@@ -102,7 +103,7 @@ describe("RLS coverage", () => {
   // Gamify tables are written by the service role only; profiles rows come from the signup trigger.
   // inbox_events/outreach/gmail_connections added in 0013: gmail_connections is service-role-only (no policies),
   // inbox_events allows authenticated select only (service role writes), outreach allows authenticated select/insert/update.
-  const OPS: Record<string, string[]> = { xp_events: ["select"], badges: ["select"], profiles: ["select", "update", "delete"], cv_feedback: ["select", "insert"], linkedin_scores: ["select", "insert", "delete"], gmail_connections: [], inbox_events: ["select"], outreach: ["select", "insert", "update"] };
+  const OPS: Record<string, string[]> = { xp_events: ["select"], badges: ["select"], profiles: ["select", "update", "delete"], cv_feedback: ["select", "insert"], autopilot_vault: ["select"], autopilot_packs: ["select"], linkedin_scores: ["select", "insert", "delete"], gmail_connections: [], inbox_events: ["select"], outreach: ["select", "insert", "update"] };
   it("user-owned tables have exactly the expected policies, each restricted to auth.uid() = user_id", () => {
     for (const t of userOwned) {
       const expected = OPS[t] ?? ["select", "insert", "update", "delete"];

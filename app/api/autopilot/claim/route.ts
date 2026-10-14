@@ -1,0 +1,20 @@
+import { claimPack } from "@/lib/autopilot/server";
+import { corsHeaders } from "@/lib/autopilot/handoff";
+
+/**
+ * Called cross-origin from the employer page by the Placed extension. Not session-authenticated: the one-time token
+ * is the credential. Only the Placed extension's chrome-extension:// origin gets CORS headers (R9: never the ATS page origins), and the response carries one form's fill plan only.
+ */
+export async function OPTIONS(req: Request) {
+  return new Response(null, { status: 204, headers: corsHeaders(req.headers.get("origin")) });
+}
+
+export async function POST(req: Request) {
+  const cors = corsHeaders(req.headers.get("origin"));
+  if (!cors["access-control-allow-origin"]) return new Response("Forbidden", { status: 403, headers: cors });
+  const body = (await req.json().catch(() => null)) as { token?: unknown } | null;
+  if (typeof body?.token !== "string" || !/^[A-Za-z0-9_-]{43}$/.test(body.token)) return new Response("Bad request", { status: 400, headers: cors });
+  const r = await claimPack(body.token);
+  if (r.status !== 200) return new Response(r.status === 410 ? "This link was already used or expired. Re-open from Placed." : "Not found", { status: r.status, headers: cors });
+  return Response.json(r.body, { headers: { ...cors, "cache-control": "no-store" } });
+}

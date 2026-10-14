@@ -15,16 +15,29 @@ Analyst Intern (June 2027)**, London. Everything the AI "says" in fixture mode i
 - [ ] In `.env.local`, set `DEMO_EMAIL` (e.g. `demo@placed.test`) and `DEMO_PASSWORD` (from `openssl rand -base64 18`),
       and `NEXT_PUBLIC_DEMO_MODE=1`.
 - [ ] `npm run demo:user`: creates or updates the demo account, then reports any missing migration or missing demo job.
+- [ ] Install the extension: `chrome://extensions` -> Developer mode -> Load unpacked -> `extension/`. It defaults to
+      `http://localhost:3200`; if the demo runs on another origin, set `PLACED_ORIGIN` in `extension/config.js` and add
+      that origin to `host_permissions` in `extension/manifest.json`, then reload the extension (see `extension/README.md`).
+- [ ] Confirm the Monzo job is still in the seed: `grep 8232726 seed/jobs.json`.
+- [ ] Optional hardening: set `PLACED_EXTENSION_ID` to the id on the extension's card in `chrome://extensions`, so only
+      your copy can claim a pack (see `extension/README.md`).
+- [ ] Set `NEXT_PUBLIC_AUTOPILOT=1` in `.env.local` (the Autopilot UI is off without it).
+- [ ] Confirm Berke has applied `supabase/migrations/0012_autopilot.sql`.
+- [ ] Autopilot dry run on the real Monzo form (nothing is submitted; every submit request is aborted):
+      `NEXT_PUBLIC_AUTOPILOT=1 AI_MODE=fixture E2E_PORT=3100 npx playwright test e2e/autopilot.spec.ts`.
 - [ ] Full dry run: `npm run demo:reset`, then `npx playwright install chromium`, then `npx playwright test e2e/demo.spec.ts`.
 
 ## Right before presenting
 
-- [ ] `npm run demo:reset`: wipes Ayşe's data and leaves her not onboarded.
+- [ ] `npm run demo:reset`: wipes Ayşe's data and leaves her not onboarded. It then re-seeds her fictional Autopilot
+      setup (completed, no XP), so demo step 10 opens on the pack instead of "Set up Autopilot first". The Autopilot e2e
+      (`e2e/autopilot.spec.ts`) writes the same vault values, so running it before or after is harmless.
 - [ ] Keep a local server running as the backup if the Wi-Fi or an API fails:
       `AI_MODE=fixture NEXT_PUBLIC_DEMO_MODE=1 npm run dev`.
       `.env.local` has a Gemini key, so **without `AI_MODE=fixture` the app calls a live model** and the
       hand-labelled fixtures are not used.
-- [ ] Have `seed/demo/ayse-demir-cv.pdf` ready to drag in.
+- [ ] Have `seed/demo/ayse-demir-cv.pdf` ready to drag in. Step 2 **must** upload this exact file: the "Why Monzo?"
+      fixture's CV references only resolve against it, otherwise its sentences are caught as "bad source".
 - [ ] Decide the "real number" you'll type for the events bullet (e.g. 40). It is Ayşe's fictional figure. Say so.
 
 ## Demo order (3 minutes; amendments Task 25 item 4)
@@ -49,7 +62,19 @@ Analyst Intern (June 2027)**, London. Everything the AI "says" in fixture mode i
 9. **Defend this question.** Click "Save my version and download PDF". This saves the version and downloads the
    ATS-safe PDF. Back on the page, click "Show likely interview questions" to get, for example, "How many people
    came to your weekly events…?"
-10. **Apply (optional if time allows).** Click "Apply on company site": the posting opens in a new tab. Placed
+10. **Autopilot (40 s).** Say Ayşe set up Autopilot once earlier (`npm run demo:reset` re-seeds her fictional setup, so
+    no XP fires on stage; optionally show `/autopilot/setup` for a moment). Open Monzo, "Associate Data Scientist - Intern" (a real, unedited posting). Click "Autopilot this
+    application". Walk the pack headings: "From your setup" (collapsed, filled for her), "Answer once", "Please confirm"
+    (Right to work and sponsorship: she confirms them herself, Placed never assumes), "Your answer" ("Why Monzo?" built
+    only from her CV; open "Caught it: 1 sentence removed", the AI swapped in a tool she never used; click "This is my
+    answer" to approve it), "You'll fill these" (consent, diversity, pronouns: stay hers). Click "Open & fill". The real
+    Monzo form fills in seconds: **15 of 20 fields filled (CV and both Right-to-work and sponsorship dropdowns included),
+    5 left for her**, and the panel says "Check everything. You press Submit." (Numbers from the final e2e run.)
+    Say: "About 17 questions on average across 111 real forms, so 100 applications is 1,700 boxes. Autopilot fills the
+    boring 90%. Placed never presses Submit." (The 17.2 average is from the spec, section 1.)
+    Chrome shows a "Placed Autopilot started debugging this browser" bar while the dropdowns are filled. That is expected
+    (it makes real clicks on dropdowns that ignore scripted ones); tell the room before they ask.
+11. **Apply (optional if time allows).** Click "Apply on company site": the posting opens in a new tab. Placed
     never applies for you. Come back, answer "Yes, I applied", and the "First Shot" badge appears.
 
 ## Pitch points
@@ -77,4 +102,5 @@ Analyst Intern (June 2027)**, London. Everything the AI "says" in fixture mode i
   only fail on the database (check migration 0007).
 - **The demo job isn't in the feed.** Open `/jobs/<id>` directly; get the id with
   `select id from jobs where ext_id = 'a2214edc-39e3-4c70-8a09-875bb991062f'`. If the job is gone, see "The evening before".
+- **Autopilot says it couldn't reach Placed, or didn't accept the extension.** `PLACED_ORIGIN` and `host_permissions` must match the origin the app runs on; reload the extension after editing them.
 - **Sign-in fails.** Re-run `npm run demo:user`. It resets the password to `DEMO_PASSWORD`.

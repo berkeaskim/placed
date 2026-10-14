@@ -1,0 +1,13 @@
+[data-placed="filled"] { outline: 2px solid #0B6B49; outline-offset: 4px; border-radius: 8px; }
+[data-placed="select"] { outline: 2px solid #E8A33D; outline-offset: 4px; border-radius: 8px; background: #FFF8EC; }
+[data-placed="yours"]  { outline: 1px dashed #9A9AA8; outline-offset: 4px; border-radius: 8px; }
+.placed-tag { display: inline-block; margin-top: 4px; font: 600 12px/1.4 system-ui, sans-serif; color: #4A4A57; background: #F1EEFF; border-radius: 999px; padding: 2px 8px; }
+[data-placed="filled"] > .placed-tag { color: #0B6B49; background: #E3F6EE; }
+[data-placed="select"] > .placed-tag { color: #7A4100; background: #FFF1DC; }
+.placed-panel { position: fixed; right: 16px; bottom: 16px; z-index: 2147483647; max-width: 320px; padding: 12px 14px; border-radius: 14px; background: #5B3DF5; color: #fff; font: 600 14px/1.4 system-ui, sans-serif; box-shadow: 0 8px 24px rgba(0,0,0,.18); }
+.placed-panel--top { bottom: auto; top: 16px; }
+.placed-panel--min > div { display: none; }
+.placed-panel--min::after { content: "Placed"; }
+.placed-panel-close { float: right; margin: -6px -6px 0 8px; padding: 0 6px; border: 0; border-radius: 8px; background: transparent; color: #fff; font: 700 18px/1 system-ui, sans-serif; cursor: pointer; }
+.placed-panel-close:hover, .placed-panel-close:focus-visible { background: rgba(255,255,255,.18); outline: none; }
+.placed-submit-hint { box-shadow: 0 0 0 4px #FFD166 !important; }

@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 /** Deleted in this order: cv_scores/cv_feedback reference cvs, so they go first. All have a user_id column. */
 export const USER_TABLES = [
-  "cv_scores", "cv_feedback", "cvs", "confirmed_facts", "matches", "inbox_events", "outreach", "gmail_connections",
+  "autopilot_packs", "autopilot_vault", "cv_scores", "cv_feedback", "cvs", "confirmed_facts", "matches", "inbox_events", "outreach", "gmail_connections",
   "applications", "xp_events", "badges", "playbook_progress", "linkedin_scores",
 ] as const;
 /** Tables from migrations that may not be applied yet (0010, 0013): a missing table holds no rows, so it isn't a failure. */

@@ -1,0 +1,8 @@
+{
+  "sentences": [
+    { "text": "Monzo's Data team turns raw data into customer stories through models, analysis and visualisations that shape the product and app design.", "about": "them", "refs": ["jd:17"] },
+    { "text": "I built charts in Excel comparing rents across 12 boroughs.", "about": "me", "refs": ["p0-b1"] },
+    { "text": "I built charts in Google Sheets comparing rents across 12 boroughs.", "about": "me", "refs": ["p0-b1"] },
+    { "text": "I used Python and SQL to collect and clean 1,200 rental listings, and I would like to do the same with real customer data.", "about": "me", "refs": ["p0-b0"] }
+  ]
+}
