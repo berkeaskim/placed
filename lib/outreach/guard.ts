@@ -70,7 +70,7 @@ const LEARN_FRAME = /\b(?:learn(?:ing)? (?:more )?about|know(?:ing)? (?:more )?a
 /** How the student found the firm: "I first heard about Lendable", "after researching Lendable", "I saw Lendable's post". */
 const DISCOVERY_FRAME = /\b(?:heard (?:about|of)|learn(?:ed|t) (?:about|of)|came across|found out about|discovered|research(?:ing|ed)?|read(?:ing)?|follow(?:ing|ed)?)\s+(?:[\w-]+\s+){0,2}?QQCO|\b(?:saw|seen|noticed|visited|checked|browsing|browsed) QQCO['’]s (?:[\w-]+ ){0,2}?(?:posts?|page|site|website|blog|advert|ad|listing|article|announcement|video|careers)\b|\b(?:use|used|using) QQCO['’]s (?:[\w-]+ )?(?:app|product|products|card|platform|service)\b/i;
 /** The firm as a topic or a subject: "Lendable's credit work", "lenders like Lendable", "Lendable was named …". */
-const TOPIC_FRAME = /QQCO['’]s (?:[\w-]+ ){0,2}(?:mission|work|team|approach|culture|programmes?|programs?|products?|customers|growth|roles?|internships?|scheme|process|values|business|platform|story|model|lending)\b|\b(?:a|the) (?:team|firm|company|lender|place) like QQCO|\b(?:like|such as) QQCO|QQCO (?:is|was|has|had|won|wins|launched|announced|raised|grew|hires|hired|recently|just|became|does|looks|seems|seemed|runs|offers|would|presented|spoke|visited|came|exhibited|hosted|posted|published|shared|stood out|stands out|appeals?|interests? me)\b/i;
+const TOPIC_FRAME = /QQCO['’]s (?:[\w-]+ ){0,2}(?:mission|work|team|approach|culture|programmes?|programs?|products?|customers|growth|roles?|internships?|scheme|process|values|business|platform|story|model|lending)\b|\b(?:a|the) (?:team|firm|company|lender|place) like QQCO|\b(?:like|such as) QQCO|QQCO (?:is|was|has|had|won|wins|launched|announced|raised|grew|hires|hired|recently|just|became|does|looks|seems|seemed|runs|offers|would|presented|spoke|visited|came|exhibited|hosted|posted|published|shared|stood out|stands out|appeals?|interests? me)\b|QQCO['’]s (?:[\w-]+ ){0,2}?(?:focus|mission|approach)\b.*\bresonates?\b/i;
 /** Claims that no frame can cover: first-person work verbs, "my summer at", "worked there", "I'm on Lendable's scheme". */
 const CLAIM_VETO = [
   AT_FIRM_SIGNAL,
@@ -78,6 +78,11 @@ const CLAIM_VETO = [
   /\b(?:my|our) (?:[\w-]+ )?(?:work|time|summer|year|stint|role|job|placement|internship|manager|colleagues?|office|desk|contract|shifts?|days?|weeks?|months?) (?:at|with|in|there)\b/i,
   /\b(?:interned|interning|worked|working|been|time|summer|stint|spent [\w ]{0,20}?)\s+there\b|\bdid so\b|\b(?:I|we) did\s*[.!?]?\s*$/i,
   /\b(?:did|done|completed|finished|attended|loved|enjoyed|(?:I['’]m|I am|we['’]re|we are)\s+(?:(?:[a-z]+ly|already|now|still)\s+)?(?:on|in|part of))\s+(?:[\w-]+\s+){0,2}QQCO/i,
+  // "build on my experience at Lendable", "what I learned at Lendable": a past stint, whatever intent wraps it.
+  /\b(?:my|our) (?:[\w-]+ )?(?:experience|time|work)\s+(?:at|with)\s+(?:[\w-]+\s+){0,2}?QQCO/i,
+  /\bwhat (?:I|we) (?:learned|learnt|did|saw)\s+(?:at|with)\s+(?:[\w-]+\s+){0,2}?QQCO/i,
+  // First-person help given to the firm: "I supported Lendable's team", "I assisted Lendable's team".
+  /\b(?:I|we)(?:['’](?:ve|d)| have| had)?\s+(?:(?:[a-z]+ly|also|already|once|been)\s+){0,2}(?:supported|assisted|work(?:ed|ing)? alongside)\s+(?:[\w-]+\s+){0,2}?QQCO/i,
 ];
 /**
  * One sentence-wide veto for any sentence naming the firm, whatever frame it is in: the student as the object of something the
@@ -86,7 +91,7 @@ const CLAIM_VETO = [
  * recipient ("could you tell me", "let me know", "give me advice") is removed first, so asks still pass.
  */
 const REQUEST_ME = /\b(?:tell|help|let|give|show|point|connect|send|introduce|put)\s+(?:me|us)\b/gi;
-const DONE_TO_ME = /\b(?:hired|employed|trained|taught|hosted|onboarded|gave|offered|took|invited|selected|accepted|mentored|supervised|paid|sponsored)\s+(?:me|us)\b/gi;
+const DONE_TO_ME = /\b(?:hired|employed|trained|taught|hosted|onboarded|gave|offered|took|invited|selected|accepted|mentored|supervised|paid|sponsored|welcomed|supported|assisted)\s+(?:me|us)\b/gi;
 const SUBJECT = /QQCO|\b(?:you|your|they|their|them|it|its|who|whose|which|I|my|we|our)\b/gi;
 const TIE_VETO = [
   /\b(?:my|our) (?:first |second |previous |last |former |old )?(?:employer|manager|boss|team|internship|placement|spring week|insight (?:day|week|programme|program)|time|summer|stint)\b(?! (?:applications?|search|hunt|plans?|options|goals|in mind)\b)/i,
@@ -94,9 +99,20 @@ const TIE_VETO = [
   /\b(?:I|we)(?:['’](?:m|re)| am| are| was| were| have been| had been)\s+(?:(?:already|also|still|once)\s+)?(?:part of|on|in|at|with)\s+(?:[\w-]+\s+){0,2}?QQCO/i,
   /\b(?:return(?:ing|ed)?|com(?:e|ing) back|go(?:ing)? back|get(?:ting)? back|(?:be|being|been) back|rejoin(?:ing|ed)?)\s+(?:to\s+|at\s+)?(?:[\w-]+\s+){0,2}?QQCO|\brejoin/i,
 ];
+/** "my first internship", "my summer": a wish, not a tie, when intent comes first in the same clause and nothing marks it past. */
+const MY_TIE = new RegExp(TIE_VETO[0].source, "gi");
+function possessiveTie(u: string): boolean {
+  const clauses = u.split(CLAUSE_SPLIT).filter((_, i) => i % 2 === 0);
+  return clauses.some((c) => [...c.matchAll(MY_TIE)].some((m) => {
+    // "I led my team at the Finance Society, and I'm applying to Lendable": "my team" is a tie only in the firm's own clause.
+    if (/\bteam$/i.test(m[0]) && !c.includes(CO)) return false;
+    if (/\b(?:first|summer)\b/i.test(m[0]) && INTENT.test(c.slice(0, m.index!)) && !PAST_MARKER.test(c)) return false;
+    return true;
+  }));
+}
 function experienceVeto(t: string): boolean {
   const u = t.replace(REQUEST_ME, (m) => " ".repeat(m.length));
-  if (TIE_VETO.some((re) => re.test(u))) return true;
+  if (possessiveTie(u) || TIE_VETO.slice(1).some((re) => re.test(u))) return true;
   for (const m of u.matchAll(DONE_TO_ME)) {
     // The nearest subject before the verb: the firm, "you" or "they" did it to the student (not "my project gave me").
     const subj = [...u.slice(0, m.index!).matchAll(SUBJECT)].pop()?.[0].toLowerCase();
@@ -266,7 +282,9 @@ export function checkOutreach(text: string, s: GuardSource): GuardIssue[] {
   const tokenize = (sen: string) => byLength.reduce((acc, n) => acc.replace(wholeWord(n, "gi"), CO), mask(sen));
   const allowed = (c: string, question: boolean) => {
     if (CLAIM_VETO.some((re) => re.test(c))) return false;
-    if (question || APPLY_FRAME.test(c) || LEARN_FRAME.test(c) || TOPIC_FRAME.test(c) || DISCOVERY_FRAME.test(c)) return true;
+    if (question || APPLY_FRAME.test(c) || LEARN_FRAME.test(c) || DISCOVERY_FRAME.test(c)) return true;
+    // "Lendable's team" is a topic, but "work alongside Lendable's team again" is a return.
+    if (TOPIC_FRAME.test(c) && !PAST_MARKER.test(c)) return true;
     if (INTEREST_FRAME.test(c) && !PAST_MARKER.test(c)) return true;
     if (s.allowInterviewClaim && /\binterview/i.test(c)) return true;
     const at = c.indexOf(CO);
@@ -341,9 +359,16 @@ export function checkOutreach(text: string, s: GuardSource): GuardIssue[] {
   return issues.filter((i) => { const k = `${i.sentence}|${i.reason}`; return seen.has(k) ? false : (seen.add(k), true); });
 }
 
+/** Drops the given sentences; the text is returned untouched when none of them is in it, and line breaks survive a drop. */
 export function removeSentences(text: string, drop: string[]): string {
-  const bad = new Set(drop.map((d) => d.trim()));
-  return sentences(text).filter((s) => !bad.has(s)).join(" ").replace(/\s+/g, " ").trim();
+  const bad = new Set(drop.map((d) => d.trim()).filter(Boolean));
+  if (!sentences(text).some((s) => bad.has(s))) return text;
+  return text
+    .split("\n")
+    .map((line) => sentences(line).filter((s) => !bad.has(s)).join(" ").replace(/[ \t]+/g, " ").trim())
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
 }
 
 /** At most `max` characters, cut at the last sentence end that fits; a single overlong sentence is cut at a word. */

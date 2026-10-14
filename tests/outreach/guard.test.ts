@@ -358,3 +358,46 @@ describe("fix round 5", () => {
     expect(performance.now() - start).toBeLessThan(300);
   });
 });
+
+describe("final review: firm-tie leaks", () => {
+  const full = (x: string) => `Hi Sam, I'm a second-year Economics student at UCL. ${x} Could we chat?`;
+
+  it.each([
+    "I'd love to build on my experience at Lendable.",
+    "Lendable's team welcomed me last summer.",
+    "I supported Lendable's team on a credit project.",
+    "I assisted Lendable's team with underwriting.",
+    "I'd love to work alongside Lendable's team again.",
+    "I want to build on what I learned at Lendable.",
+    "I hope to build on what I learned at Lendable.",
+  ])("blocks: %s", (x) => {
+    const t = full(x);
+    const issues = checkOutreach(t, src());
+    expect(issues.some((i) => i.sentence === x)).toBe(true);
+    expect(removeSentences(t, issues.map((i) => i.sentence))).not.toContain(x);
+  });
+
+  it.each([
+    "I'd love for Lendable to be my first internship.",
+    "I'd love to spend my summer interning at Lendable.",
+    "Lendable's focus on credit resonates with me.",
+  ])("passes: %s", (x) => expect(checkOutreach(full(x), src())).toEqual([]));
+
+  it("'I led my team …, and I'm now applying to Lendable' is not a Lendable tie (any issue is the Leadership skill only)", () => {
+    const issues = checkOutreach(full("I led my team at the Finance Society, and I'm now applying to Lendable."), src());
+    expect(issues.filter((i) => /Lendable/.test(i.reason))).toEqual([]);
+    for (const i of issues) expect(i.reason).toMatch(/is not on your CV/);
+  });
+});
+
+describe("removeSentences keeps structure", () => {
+  it("returns the text unchanged when there is nothing to drop", () => {
+    const t = "Hi Sam,\n\nI'm a UCL student.  Could we chat?\n";
+    expect(removeSentences(t, [])).toBe(t);
+    expect(removeSentences(t, ["Not in the text."])).toBe(t);
+  });
+  it("preserves paragraph breaks when dropping", () => {
+    const t = "Hi Sam,\n\nI'm a UCL student. Bad one. Could we chat?\n\nThanks,\nAyse";
+    expect(removeSentences(t, ["Bad one."])).toBe("Hi Sam,\n\nI'm a UCL student. Could we chat?\n\nThanks,\nAyse");
+  });
+});
