@@ -15,6 +15,7 @@ describe("vault", () => {
     expect(isEeoLabel("What is your gender identity?")).toBe(true);
     expect(isEeoLabel("Were you eligible for free school meals?")).toBe(true);
     expect(isEeoLabel("Do you consider yourself to have a disability?")).toBe(true);
+    for (const l of ["Were you the first of your family to attend university?", "Are you a first-generation student?", "What is your nationality?", "Have you served in the military?", "If you answered 'prefer to self-describe', say more", "What was the occupation of your main household earner?", "What type of school did you attend?"]) expect(isEeoLabel(l)).toBe(true);
     expect(isEeoLabel("What year does your course finish?")).toBe(false);
   });
   it("derives composite values", () => {

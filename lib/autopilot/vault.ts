@@ -31,7 +31,7 @@ export function isComplete(core: unknown): boolean {
   return CoreSchema.safeParse(core).success;
 }
 
-const EEO_RE = /\b(gender|sex\b|sexual|orientation|ethnic|race|racial|disab|neurodiver|veteran|armed forces|religio|belief|socio-?economic|free school meals|first[- ]generation|parents? (attend|went)|caring|carer|pregnan|marital|age range|date of birth|transgender|lgbt)/i;
+const EEO_RE = /\b(gender|sex\b|sexual|orientation|ethnic|race|racial|disab|neurodiver|veteran|armed forces|religio|belief|socio-?economic|free school meals|first[- ]generation|parents? (attend|went)|caring|carer|pregnan|marital|age range|date of birth|transgender|lgbt|first (of|in) (your|the|my) family|first[- ]gen|family to (attend|go)|diverse and inclusive|diversity|equal opportunit|self-describe|household earner|type of school|military|nationality|choose to share)/i;
 export const isEeoLabel = (label: string) => EEO_RE.test(label);
 export const isEeoKey = (key: string) => EEO_RE.test(key.replace(/_/g, " "));
 

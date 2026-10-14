@@ -44,13 +44,23 @@ describe("classify", () => {
     ["Alternate Email", "text", { kind: "extra" }],
     ["Which university do you currently attend?", "select", { kind: "vault", key: "university" }],
     ["Terms & Conditions", "select", { kind: "consent" }],
+    ["Will you now or in the future require an employer to sponsor you for a visa to work in the UK?", "textarea", { kind: "vault", key: "needs_sponsorship" }],
+    ["Do you now, or will you in the future, need sponsorship from an employer in order to obtain, extend or renew your right to work in the UK?", "textarea", { kind: "vault", key: "needs_sponsorship" }],
+    ["🛂 Do you have the right to work in the UK without restrictions for the full 12-week internship?", "textarea", { kind: "vault", key: "rtw_uk" }],
+    ["Will you now or in the future require DRW to sponsor you in the Netherlands for a work visa, please give details?", "textarea", { kind: "yours" }],
+    ["When do you expect to complete your current degree, and will you start a master’s degree afterward?", "text", { kind: "extra" }],
+    ["If current year of studies is not listed, please specify.", "text", { kind: "yours" }],
+    ["If latest field of study is not listed, please specify.", "text", { kind: "yours" }],
+    ["Please list your SAT or ACT score or international equivalent.", "text", { kind: "extra" }],
+    ["Please indicate the maximum possible score/GPA at your institution, if applicable.", "text", { kind: "extra" }],
+    ["Let us know how you would like to be contacted", "text", { kind: "extra" }],
   ] as const)("regression: %s", (label, type, expected) => {
     expect(classify(label, type)).toEqual(expected);
   });
 
-  it("never maps an EEO or consent label from the real corpus to vault or extra", () => {
-    const leaks = (labels as string[]).filter((l) => /gender|ethnic|disab|sexual|religio|free school|privacy notice/i.test(l))
-      .filter((l) => ["vault", "extra", "freeText"].includes(classify(l, "select").kind));
+  it.each(["select", "textarea", "text"] as const)("never maps an EEO or consent label from the real corpus to vault or extra (%s)", (type) => {
+    const leaks = (labels as string[]).filter((l) => /gender|ethnic|disab|sexual|religio|free school|privacy notice|veteran|caring|first.gen|race|nationality/i.test(l))
+      .filter((l) => ["vault", "extra", "freeText"].includes(classify(l, type).kind));
     expect(leaks).toEqual([]);
   });
 
