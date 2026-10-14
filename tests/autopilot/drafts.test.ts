@@ -1,5 +1,5 @@
 // tests/autopilot/drafts.test.ts
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import { draftAnswer, gateDraft, cvBulletIndex, type DraftInput, type DraftSentence } from "@/lib/autopilot/drafts";
 import type { ParsedCV } from "@/lib/types";
 
@@ -12,6 +12,8 @@ const cv = {
 } as unknown as ParsedCV;
 const base: DraftInput = { question: "Why Monzo? (100 word limit)", wordLimit: 100, company: "Monzo", jobExtId: "8232726", fieldKey: "question_69481992",
   jdLines: ["Monzo has over 13 million customers", "You'll work with our Data team on pricing"], cv, facts: [{ id: "f1", claim: "Organised weekly society events for 40 members" }] };
+
+afterEach(() => vi.unstubAllEnvs());
 
 describe("gateDraft", () => {
   it("keeps sourced sentences and counts words", () => {
@@ -64,10 +66,58 @@ describe("demo fixture: Monzo 'Why Monzo?' for Ayşe", () => {
     const ayse = JSON.parse(readFileSync("seed/demo/ayse.json", "utf8")) as ParsedCV;
     const jobs = JSON.parse(readFileSync("seed/jobs.json", "utf8")) as { ext_id: string | number; text_lines: string[] }[];
     const monzo = jobs.find((j) => String(j.ext_id) === "8232726")!;
-    process.env.AI_MODE = "fixture";
+    vi.stubEnv("AI_MODE", "fixture");
     const r = await draftAnswer({ ...base, cv: ayse, jdLines: monzo.text_lines, facts: [], wordLimit: 250 });
     expect(r.source).toBe("fixture");
     expect(r.caught).toHaveLength(1);
     expect(r.sentences).toHaveLength(3);
+  });
+});
+
+describe("gateDraft: invented facts in first-person sentences", () => {
+  const me = (text: string, refs = ["x1b1"]): DraftSentence => ({ text, about: "me", refs });
+  const why = (s: DraftSentence, i: DraftInput = base) => { const r = gateDraft([s], i); return r.caught.map((c) => c.reason); };
+  it.each([
+    ["employer", "During my internship at Goldman Sachs I organised weekly events using Excel to track attendance."],
+    ["employer 2", "I organised weekly society events using Excel to track attendance for the Bank of England."],
+    ["title", "As President of the society I organised weekly events using Excel to track attendance."],
+    ["institution", "I hold a first-class degree from Oxford."],
+    ["tool Python", "I organised weekly society events using Python to track attendance."],
+    ["tool SQL", "I organised weekly society events using SQL to track attendance."],
+    ["intensifier", "I single-handedly organised weekly society events using Excel to track attendance."],
+  ])("catches an invented %s", (_n, text) => {
+    expect(why(me(text))).toHaveLength(1);
+  });
+  it("catches Revolut on Ayşe's real CV and keeps the honest version", async () => {
+    const { readFileSync } = await import("node:fs");
+    const ayse = JSON.parse(readFileSync("seed/demo/ayse.json", "utf8")) as ParsedCV;
+    const ab = { ...base, cv: ayse, facts: [] };
+    expect(why(me("At Revolut I used Python and SQL to clean 1,200 rental listings.", ["p0-b0"]), ab)).toHaveLength(1);
+    expect(why(me("I used Python and SQL to collect and clean 1,200 rental listings.", ["p0-b0"]), ab)).toEqual([]);
+  });
+  it("catches a sentence with an unresolvable ref instead of dropping the ref", () => {
+    expect(why(me("I organised weekly society events using Excel to track attendance.", ["x1b1", "bogus"]))).toEqual(["bad source"]);
+  });
+});
+
+describe("gateDraft: sentences about the employer", () => {
+  const them = (text: string, refs = ["jd:0"]): DraftSentence => ({ text, about: "them", refs });
+  const why = (s: DraftSentence) => gateDraft([s], base).caught.map((c) => c.reason);
+  it("matches whole tokens and number units", () => {
+    expect(why(them("Monzo has 1 million customers."))).toEqual(["not in the job post"]);
+    expect(why(them("Monzo has 10 million customers."))).toEqual(["not in the job post"]);
+    expect(why(them("Monzo has over 13 million customers and operates in the US."))).toEqual(["not in the job post"]);
+    expect(why(them("Monzo has over 13 million customers."))).toEqual([]);
+  });
+  it("checks the first word too", () => {
+    expect(why(them("Revolut acquired Monzo."))).toEqual(["not in the job post"]);
+    expect(why(them("The company has over 13 million customers."))).toEqual([]);
+  });
+  it("catches lowercase superlatives and claims not in the cited line", () => {
+    expect(why(them("Monzo is the largest bank in the UK."))).toEqual(["not in the job post"]);
+    expect(why(them("Monzo is profitable."))).toEqual(["not in the job post"]);
+  });
+  it("judges claims about the student inside an employer sentence", () => {
+    expect(why(them("Monzo has over 13 million customers, and I have three years of banking experience."))).toHaveLength(1);
   });
 });
