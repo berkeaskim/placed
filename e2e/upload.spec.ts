@@ -5,26 +5,30 @@ test.use({ storageState: AUTH_FILE });
 test.skip(!hasDemoCreds, "DEMO_EMAIL/DEMO_PASSWORD not set");
 
 const cvInput = (page: import("@playwright/test").Page) => page.locator("input[name=cv]");
+// Scoped to the form: Next's route announcer is also role="alert".
+const formAlert = (page: import("@playwright/test").Page) => page.locator("form").getByRole("alert");
 
-test("profile/build renders upload + quiz cards", async ({ page }) => {
+test("profile/build leads with the upload: dropzone above the fold, quiz as a quiet link", async ({ page }) => {
   const errors = trackConsole(page);
   await page.goto("/profile/build");
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Let's find your roles");
-  await expect(page.getByRole("heading", { name: "Upload your CV" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Upload your CV");
   await expect(cvInput(page)).toHaveAttribute("accept", "application/pdf");
+  const drop = page.locator("label").filter({ has: cvInput(page) });
+  await expect(drop).toBeInViewport({ ratio: 1 });
+  await expect(page.getByRole("link", { name: "Take the 1-minute quiz" })).toBeVisible();
   expect(errors).toEqual([]);
 });
 
 test("non-PDF file shows a clear error", async ({ page }) => {
   await page.goto("/profile/build");
   await cvInput(page).setInputFiles(GEN("not-a-pdf.txt"));
-  await expect(page.getByRole("alert")).toHaveText("Please upload a PDF.");
+  await expect(formAlert(page)).toHaveText("Please upload a PDF.");
 });
 
 test("fake .pdf (wrong magic bytes) shows a clear error", async ({ page }) => {
   await page.goto("/profile/build");
   await cvInput(page).setInputFiles({ name: "cv.pdf", mimeType: "application/pdf", buffer: Buffer.from("Hello, I am definitely a PDF.\n") });
-  await expect(page.getByRole("alert")).toContainText("doesn't look like a PDF");
+  await expect(formAlert(page)).toContainText("doesn't look like a PDF");
 });
 
 test("file over 5 MB is rejected", async ({ page }) => {
@@ -32,7 +36,7 @@ test("file over 5 MB is rejected", async ({ page }) => {
   const big = Buffer.alloc(5 * 1024 * 1024 + 10, 0x20);
   big.write("%PDF-1.4\n");
   await cvInput(page).setInputFiles({ name: "big.pdf", mimeType: "application/pdf", buffer: big });
-  await expect(page.getByRole("alert")).toContainText(/over 5 MB/);
+  await expect(formAlert(page)).toContainText(/over 5 MB/);
 });
 
 test("image-only PDF shows the unreadable-CV guidance", async ({ page }) => {

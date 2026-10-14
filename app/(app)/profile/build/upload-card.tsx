@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
+import { FileUp, LoaderCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { celebrate } from "@/components/reward-toast";
 import { uploadCv } from "./actions";
@@ -34,9 +35,7 @@ export function UploadCard() {
       if (r.imageOnly) { setUnreadable(true); return; }
       if (r.safetyWarning) { setSafetyWarning(r.safetyWarning); return; }
       router.push("/profile");
-    })} className="card-quest flex flex-col gap-4 p-6">
-      <h2 className="text-xl font-extrabold">Upload your CV</h2>
-      <p className="text-sm text-muted-foreground">PDF, up to 4 MB. We read it, score it against recruiter guidance, and never share it.</p>
+    })} className="flex flex-col gap-4">
       <label
         onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
         onDragLeave={() => setDragging(false)}
@@ -48,13 +47,27 @@ export function UploadCard() {
           input.files = e.dataTransfer.files;
           input.form?.requestSubmit();
         }}
-        className={`flex min-h-36 cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed p-6 text-center transition-colors ${dragging ? "border-[#5B3DF5] bg-[#EEEBFF]" : "border-[#C9C2FF] bg-[#F8F7FF]"}`}
+        aria-busy={pending}
+        className={`flex min-h-60 flex-col items-center justify-center gap-4 rounded-[24px] border border-dashed bg-white px-6 py-10 text-center shadow-[0_1px_2px_rgba(22,22,29,0.04),0_12px_32px_rgba(22,22,29,0.06)] transition-colors focus-within:ring-4 focus-within:ring-[#5B3DF5]/20 sm:min-h-72 ${pending ? "cursor-progress" : "cursor-pointer"} ${dragging ? "border-[#5B3DF5] bg-[#F8F7FF]" : "border-[#D4D4E0] hover:border-[#5B3DF5]"}`}
       >
-        <span className="font-bold">Drop your PDF here or click to choose</span>
+        <span aria-hidden="true" className="flex h-14 w-14 items-center justify-center rounded-full bg-[#EFEBFF] text-[#5B3DF5]">
+          {pending ? <LoaderCircle className="h-6 w-6 animate-spin" /> : <FileUp className="h-6 w-6" />}
+        </span>
+        {pending ? (
+          <span role="status" aria-live="polite" className="text-[17px] font-semibold text-[#3A20C4]">{STEPS[step]}</span>
+        ) : (
+          <>
+            <span className="flex flex-col gap-1">
+              <span className="text-[17px] font-semibold">Drop your PDF here</span>
+              <span className="text-sm text-muted-foreground">or</span>
+            </span>
+            <span className="inline-flex min-h-11 items-center rounded-full bg-[#5B3DF5] px-6 text-[15px] font-semibold text-white">Choose a file</span>
+          </>
+        )}
+        <span className="text-[13px] text-muted-foreground">PDF, up to 4 MB · Private, never shared</span>
         <input ref={inputRef} type="file" name="cv" accept="application/pdf" required disabled={pending} className="sr-only" onChange={(e) => e.currentTarget.form?.requestSubmit()} />
       </label>
-      {pending && <p role="status" aria-live="polite" className="font-semibold text-[#3A20C4]">{STEPS[step]}</p>}
-      {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+      {error && <p role="alert" className="text-center text-sm text-destructive">{error}</p>}
       {safetyWarning && (
         <div role="alert" className="flex flex-col gap-2 rounded-2xl bg-[#FFF4E5] p-4 text-sm">
           <p className="font-bold">{safetyWarning}</p>
