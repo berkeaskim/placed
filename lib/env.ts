@@ -6,6 +6,7 @@ export const env = {
   geminiKey: process.env.GEMINI_API_KEY ?? "",
   cronSecret: process.env.CRON_SECRET ?? "",
   demoMode: process.env.NEXT_PUBLIC_DEMO_MODE === "1",
+  autopilot: process.env.NEXT_PUBLIC_AUTOPILOT === "1",
 };
 
 export type AiProvider = "anthropic" | "gemini";

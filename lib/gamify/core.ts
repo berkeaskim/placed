@@ -3,7 +3,9 @@ import { daysUntil } from "@/lib/scoring/dates";
 
 export type XpEventType = "onboarding_complete" | "cv_uploaded" | "quiz_done" | "job_saved" | "cv_tailored" | "applied" | "interview" | "rejected" | "offer"
   // Task 23b: tailoring screen. Job-scoped, so xp_events_once_per_job (0002) makes each once per job.
-  | "number_confirmed" | "suggestion_edited";
+  | "number_confirmed" | "suggestion_edited"
+  // Autopilot: Answer Vault completed. Awarded once (the setup action checks completed_at).
+  | "autopilot_ready";
 export type BadgeKey = "profile_pro" | "first_shot" | "spring_week_hunter" | "early_bird" | "bounce_back" | "made_it_yours";
 
 export const BADGES: Record<BadgeKey, { name: string; description: string }> = {
@@ -43,6 +45,7 @@ export function xpFor(e: GamifyEvent, s: GamifyState): number {
     case "rejected": return 20;
     case "offer": return 300;
     case "number_confirmed": case "suggestion_edited": return 10;
+    case "autopilot_ready": return 50;
   }
 }
 

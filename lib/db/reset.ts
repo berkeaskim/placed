@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 /** Deleted in this order: cv_scores/cv_feedback reference cvs, so they go first. All have a user_id column. */
-export const USER_TABLES = ["cv_scores", "cv_feedback", "cvs", "confirmed_facts", "matches", "applications", "xp_events", "badges"] as const;
+export const USER_TABLES = ["autopilot_packs", "autopilot_vault", "cv_scores", "cv_feedback", "cvs", "confirmed_facts", "matches", "applications", "xp_events", "badges"] as const;
 export const USER_BUCKETS = ["cvs", "tailored"] as const;
 
 const PAGE = 100;
