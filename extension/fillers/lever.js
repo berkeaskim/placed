@@ -58,7 +58,7 @@
       if (!city) return "missing";
       const results = el.parentElement && el.parentElement.querySelector(".dropdown-results");
       const selected = document.getElementById("selected-location");
-      if ((await D().trustedClickOn(el)) && (await D().trustedType(city))) {
+      if ((await D().trustedClickOn(el)) && (await D().trustedType(city, el, el.parentElement))) {
         const opt = await D().waitFor(() => results && [...results.children].find((c) => norm(c.textContent).startsWith(norm(city))), 25, 150);
         if (opt && !G().isSubmitControl(opt)) {
           G().safeClick(opt);

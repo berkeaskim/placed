@@ -29,7 +29,7 @@
   async function fillBoolean(container, field) {
     const want = field.value === "true" || field.optionLabel === "Yes" ? "yes" : field.value === "false" || field.optionLabel === "No" ? "no" : null;
     if (!want) return "select-yourself";
-    const cb = container.querySelector(`input[type=checkbox][name="${D().attrEsc(field.target)}"]`) || container.querySelector("input[type=checkbox]");
+    const cb = container.querySelector(`input[type=checkbox][name="${D().attrEsc(field.target)}"]`); // only this field's own box
     if (!cb || !container.querySelector("[data-option]")) return "select-yourself";
     for (let i = 0; i < 2 && !pressed(container, want); i++) {
       // checked -> Yes. For No: an unchecked box goes true then false; a checked one goes straight to false.
@@ -40,22 +40,25 @@
   }
 
   async function fillCombobox(container, input, label, ctx, { prefix } = {}) {
+    const hasValue = () => Boolean(String(input.value || "").trim());
+    const listbox = () => document.getElementById(input.getAttribute("aria-controls") || input.getAttribute("aria-owns") || "");
     const arm = () => {
-      D().armAutoPick({ input, scope: container, optionSelector: "[role=option]", label, prefix, sourceLabel: ctx.sourceLabel });
-      ctx.armed = true;
+      ctx.armed = D().armAutoPick({ input, scope: container, optionSelector: "[role=option]", label, prefix, sourceLabel: ctx.sourceLabel, hasValue });
       return "select-yourself";
     };
+    if (hasValue()) return "select-yourself";
     if (!(await D().trustedClickOn(input))) return arm();
-    if (!(await D().trustedType(label))) return arm();
-    const where = () => document.getElementById(input.getAttribute("aria-controls") || "") || document;
+    if (!(await D().trustedType(label, input, container))) return arm();
+    // The field's own listbox, else its entry; the whole document only while this combobox is the expanded one.
+    const where = () => listbox() || (container.querySelector("[role=option]") ? container : input.getAttribute("aria-expanded") === "true" ? document : null);
     const opt = await D().waitFor(() => D().findOption(where(), "[role=option]", label, prefix), 25, 150);
-    if (!opt || G().isSubmitControl(opt)) return arm();
+    if (!opt || G().isSubmitControl(opt)) return "select-yourself";
     G().safeClick(opt);
     await D().sleep(150);
     if (prefix || D().norm(input.value) === D().norm(label)) return "filled";
     // Some listboxes select on a real click only.
     if (opt.isConnected && (await D().trustedClickOn(opt))) await D().sleep(150);
-    return D().norm(input.value) === D().norm(label) ? "filled" : arm();
+    return D().norm(input.value) === D().norm(label) ? "filled" : "select-yourself";
   }
 
   async function ashby(field, ctx) {

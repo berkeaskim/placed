@@ -1,10 +1,12 @@
 // Shared DOM helpers for the fillers. Every click goes through PlacedGuard.safeClick; every trusted (CDP) click is
-// checked against the guard at the exact point it will land.
+// checked against the guard here and re-verified by the service worker at the exact point it will land.
 (function (root) {
   const Guard = () => root.PlacedGuard;
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const norm = (s) => String(s == null ? "" : s).replace(/\s+/g, " ").trim().toLowerCase();
   const attrEsc = (s) => String(s).replace(/["\\]/g, "\\$&");
+  const CONTROL_CHARS = /[\u0000-\u001F\u007F]/g;
+  let trustedReady = false; // set once the debugger is attached and the infobar has settled
 
   function setNative(el, v) {
     const proto = el.tagName === "TEXTAREA" ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
@@ -25,7 +27,6 @@
   }
 
   function point(el) {
-    el.scrollIntoView({ block: "center", inline: "nearest" });
     const r = el.getBoundingClientRect();
     return { x: Math.round(r.left + Math.min(20, r.width / 2)), y: Math.round(r.top + r.height / 2) };
   }
@@ -40,22 +41,46 @@
     });
   }
 
-  /** A real (trusted) mouse click via chrome.debugger, only after checking what is actually under the pointer. */
+  /** Attach chrome.debugger once, before anything is measured, and wait for the infobar to resize the page. */
+  async function prepareTrusted() {
+    const r = await send({ kind: "attach" });
+    if (r && r.ok) await sleep(300);
+    trustedReady = Boolean(r && r.ok);
+    return trustedReady;
+  }
+
+  function nonce() {
+    const b = new Uint8Array(16);
+    crypto.getRandomValues(b);
+    return [...b].map((x) => x.toString(16).padStart(2, "0")).join("");
+  }
+
+  /** A real (trusted) mouse click, only after checking what is actually under the pointer. */
   async function trustedClickOn(el) {
-    if (!el || Guard().isSubmitControl(el)) return false;
-    const { x, y } = point(el);
-    await sleep(120); // let scrolling settle before measuring again
+    if (!trustedReady || !el || Guard().isSubmitControl(el)) return false;
+    el.scrollIntoView({ block: "center", inline: "nearest" });
+    await sleep(150); // let scrolling settle before measuring
     const p = point(el);
     const hit = document.elementFromPoint(p.x, p.y);
     if (!hit || !(hit === el || el.contains(hit))) return false; // something else (overlay, banner, button) is on top
     if (Guard().isSubmitControl(hit)) return false;
-    if (Math.abs(p.x - x) > 2 || Math.abs(p.y - y) > 2) await sleep(100);
-    const r = await send({ kind: "trustedClick", x: p.x, y: p.y });
-    return Boolean(r && r.ok);
+    const n = nonce();
+    el.setAttribute("data-placed-target", n); // the service worker refuses any point not inside this element
+    try {
+      const r = await send({ kind: "trustedClick", x: p.x, y: p.y, nonce: n });
+      return Boolean(r && r.ok);
+    } finally {
+      el.removeAttribute("data-placed-target");
+    }
   }
 
-  async function trustedType(text) {
-    const r = await send({ kind: "trustedType", text: String(text).slice(0, 200) });
+  /** Trusted typing, only into the intended input (or inside its widget shell) and never with control characters. */
+  async function trustedType(text, intended, shell) {
+    const a = document.activeElement;
+    if (!trustedReady || !intended || !a || !(a === intended || (shell && shell.contains(a)))) return false;
+    const clean = String(text == null ? "" : text).replace(CONTROL_CHARS, "").slice(0, 200);
+    if (!clean) return false;
+    const r = await send({ kind: "trustedType", text: clean });
     return Boolean(r && r.ok);
   }
 
@@ -69,8 +94,9 @@
   }
 
   function findOption(scope, selector, label, prefix) {
+    if (!scope) return null;
     const want = norm(label);
-    const opts = [...(scope || document).querySelectorAll(selector)];
+    const opts = [...scope.querySelectorAll(selector)];
     return opts.find((o) => norm(o.textContent) === want) || (prefix ? opts.find((o) => norm(o.textContent).startsWith(want)) : null) || null;
   }
 
@@ -84,30 +110,40 @@
   }
 
   /**
-   * Fallback when a trusted click is not possible: the field stays amber and, as soon as the student opens this
-   * dropdown themselves, we pick the right option for them. Only reacts while this field's combobox is expanded.
+   * Fallback when a trusted click/type is not possible: the field stays amber and, once the student opens THIS
+   * dropdown, we pick the saved option. Options are searched only inside the field's own listbox (aria-controls /
+   * aria-owns) or its shell. Not armed if the field already has a value; disarmed after the first pick, or as soon
+   * as the field gets a value we did not set (the student chose something else).
+   * Returns true when armed.
    */
-  function armAutoPick({ input, scope, optionSelector, label, prefix, sourceLabel }) {
-    if (!input || !label) return;
+  function armAutoPick({ input, scope, optionSelector, label, prefix, sourceLabel, hasValue }) {
+    if (!input || !scope || !label) return false;
+    if (hasValue && hasValue()) return false;
+    const owned = () => {
+      const id = input.getAttribute("aria-controls") || input.getAttribute("aria-owns");
+      return id ? document.getElementById(id) : null;
+    };
     let done = false;
-    const isOpen = () => input.getAttribute("aria-expanded") === "true" || (scope && scope.querySelector(optionSelector));
+    const stop = () => { done = true; obs.disconnect(); clearTimeout(timer); };
     const tryPick = () => {
-      if (done || !isOpen()) return;
-      const owned = input.getAttribute("aria-controls") || input.getAttribute("aria-owns");
-      const where = (owned && document.getElementById(owned)) || (scope && scope.querySelector(optionSelector) ? scope : document);
+      if (done) return;
+      if (hasValue && hasValue()) return stop(); // the student picked something themselves
+      const list = owned();
+      const where = list || scope;
+      if (input.getAttribute("aria-expanded") !== "true" && !where.querySelector(optionSelector)) return;
       const opt = findOption(where, optionSelector, label, prefix);
       if (!opt || Guard().isSubmitControl(opt)) return;
-      done = true;
-      obs.disconnect();
+      stop();
       Guard().safeClick(opt);
       markPicked(input, sourceLabel);
     };
     const obs = new MutationObserver(tryPick);
     obs.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["aria-expanded"] });
-    setTimeout(() => obs.disconnect(), 15 * 60_000);
+    const timer = setTimeout(stop, 15 * 60_000);
+    return true;
   }
 
-  const api = { sleep, norm, attrEsc, setNative, uploadFile, send, trustedClickOn, trustedType, waitFor, findOption, markPicked, armAutoPick };
+  const api = { sleep, norm, attrEsc, setNative, uploadFile, send, prepareTrusted, trustedClickOn, trustedType, waitFor, findOption, markPicked, armAutoPick };
   root.PlacedDom = api;
   if (typeof module !== "undefined") module.exports = api;
 })(globalThis);

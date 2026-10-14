@@ -6,8 +6,10 @@ export function mintToken() {
   const token = randomBytes(32).toString("base64url");
   return { token, hash: hashToken(token), expiresAt: new Date(Date.now() + 10 * 60_000).toISOString() };
 }
+/** R8: the Placed extension's service worker claims the pack, so its origin is chrome-extension://<32 a-p chars>. The one-time token stays the credential. */
+const EXTENSION_ORIGIN = /^chrome-extension:\/\/[a-p]{32}$/;
 export function corsHeaders(origin: string | null): Record<string, string> {
-  if (!origin || !(ALLOWED_ORIGINS as readonly string[]).includes(origin)) return { vary: "Origin" };
+  if (!origin || !((ALLOWED_ORIGINS as readonly string[]).includes(origin) || EXTENSION_ORIGIN.test(origin))) return { vary: "Origin" };
   return { "access-control-allow-origin": origin, "access-control-allow-methods": "POST, OPTIONS", "access-control-allow-headers": "content-type", vary: "Origin" };
 }
 /** Filename-safe name part: NFC, letters/marks/apostrophe/hyphen only, others collapsed to "-". */

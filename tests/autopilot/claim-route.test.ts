@@ -14,6 +14,13 @@ describe("claim route", () => {
     expect(r.status).toBe(200);
     expect(r.headers.get("access-control-allow-origin")).toBe("https://job-boards.greenhouse.io");
   });
+  it("accepts the Placed extension's service-worker origin (R8)", async () => {
+    const ext = "chrome-extension://" + "a".repeat(32);
+    claim.impl.mockResolvedValueOnce({ status: 200, body: { ats: "ashby", url: "u", fields: [], cv: null } });
+    const r = await POST(req({ token: "t".repeat(43) }, ext));
+    expect(r.status).toBe(200);
+    expect(r.headers.get("access-control-allow-origin")).toBe(ext);
+  });
   it("passes through 410 and 404", async () => {
     claim.impl.mockResolvedValueOnce({ status: 410 });
     expect((await POST(req({ token: "t".repeat(43) }))).status).toBe(410);

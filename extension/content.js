@@ -8,35 +8,52 @@
   const host = location.host;
   const ats = host.includes("greenhouse") ? "greenhouse" : host.includes("ashbyhq") ? "ashby" : host.includes("lever.co") ? "lever" : null;
   if (!ats) return;
+  const Dom = globalThis.PlacedDom;
 
+  // ---------- panel (the student's close button; Autopilot never clicks it) ----------
   const panel = document.createElement("div");
   panel.className = "placed-panel";
   panel.setAttribute("role", "status");
-  panel.textContent = "Placed Autopilot is reading your pack…";
+  const body = document.createElement("div");
+  const close = document.createElement("button");
+  close.type = "button";
+  close.className = "placed-panel-close";
+  close.setAttribute("aria-label", "Close the Placed panel");
+  close.textContent = "×";
+  close.addEventListener("click", () => panel.remove());
+  panel.append(close, body);
   document.body.appendChild(panel);
   const say = (...parts) => {
-    panel.textContent = "";
-    parts.forEach((p, i) => { if (i) panel.appendChild(document.createElement("br")); panel.append(p); });
+    body.textContent = "";
+    parts.forEach((p, i) => { if (i) body.appendChild(document.createElement("br")); body.append(p); });
   };
+  say("Placed Autopilot is waiting for the form…");
 
-  // The claim runs here, from the employer page's origin, which the Placed CORS allowlist accepts.
-  let res;
-  try {
-    res = await fetch(`${globalThis.PLACED_ORIGIN}/api/autopilot/claim`, {
-      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ token }), credentials: "omit", cache: "no-store",
-    });
-  } catch {
-    say("Couldn't reach Placed. Is the app running?");
+  // ---------- form readiness: the token is single-use, so never claim before the form exists ----------
+  const READY = {
+    greenhouse: () => document.querySelector("#application-form, form.application--form") || document.querySelector("form #first_name"),
+    ashby: () => /\/application\/?$/.test(location.pathname) && document.querySelector(".ashby-application-form-field-entry"),
+    lever: () => document.querySelector('form [name="email"]'),
+  };
+  if (!(await Dom.waitFor(READY[ats], 50, 200))) {
+    say("Open the application form first, then click Open & fill again in Placed.");
     return;
   }
-  if (!res.ok) {
-    say(res.status === 410 ? "This link was already used or expired. Re-open from Placed."
-      : res.status === 403 ? "Placed can't fill forms on this site."
-      : "Placed couldn't find this pack.");
+
+  // ---------- claim (R8: done by the service worker) ----------
+  say("Placed Autopilot is reading your pack…");
+  const res = await Dom.send({ kind: "claim", token });
+  const status = res && typeof res.status === "number" ? res.status : -1;
+  if (status !== 200) {
+    say(status === 410 ? "This link was already used or expired. Re-open from Placed."
+      : status === 404 ? "Placed couldn't find this pack. Re-open from Placed."
+      : status === 403 ? "Placed didn't accept the extension. Check PLACED_ORIGIN in the extension's config.js."
+      : status === 400 ? "This link is broken. Re-open from Placed."
+      : status === 0 ? "Couldn't reach Placed. Is the app running?"
+      : "Something went wrong at Placed. Re-open from Placed and try again.");
     return;
   }
-  const plan = await res.json().catch(() => null);
-  if (!plan || !Array.isArray(plan.fields)) { say("Placed sent an unreadable pack. Re-open from Placed."); return; }
+  const plan = res.plan;
 
   // Never fill the wrong form: the pack must be for this ATS and this job.
   const jobId = String(plan.url || "").match(/\/jobs\/(\d+)|([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i);
@@ -48,11 +65,13 @@
   }
 
   let cvFile = null;
-  if (plan.cv && plan.cv.url) {
+  if (res.cv && typeof res.cv.base64 === "string") {
     try {
-      const r = await fetch(plan.cv.url, { credentials: "omit", cache: "no-store" });
-      if (r.ok) cvFile = new File([await r.blob()], plan.cv.filename || "CV.pdf", { type: "application/pdf" });
-    } catch { /* the CV field is left for the student */ }
+      const bin = atob(res.cv.base64);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      cvFile = new File([bytes], res.cv.name || "CV.pdf", { type: res.cv.type || "application/pdf" });
+    } catch { cvFile = null; }
   }
 
   const fill = globalThis.PlacedFillers[ats];
@@ -62,33 +81,55 @@
   let done = 0, mine = 0, n = 0;
   say(`Placed Autopilot filling… 0/${fields.length}`, `${s.fill} from your pack · ${s.yours + s.select} for you`);
 
-  for (const f of fields) {
-    const ctx = { cvFile, sourceLabel: f.sourceLabel, armed: false };
-    let out;
-    try { out = await fill(f, ctx); } catch { out = "select-yourself"; }
-    if (f.type === "file" && out === "filled" && ats === "lever") await new Promise((r) => setTimeout(r, 1500));
-    let box = null;
-    try { box = fill.box(f); } catch { box = null; }
-    if (box && out !== "missing") {
-      box.dataset.placed = out === "filled" ? "filled" : out === "yours" ? "yours" : "select";
-      const tag = document.createElement("span");
-      tag.className = "placed-tag";
-      tag.textContent = out === "filled" ? `Placed · ${f.sourceLabel || "from your setup"}`
-        : out === "yours" ? "Your call"
-        : ctx.armed ? "Click this box, Autopilot will pick" : "Please select this yourself";
-      box.appendChild(tag);
+  const needsTrusted = fields.some((f) => f.mode === "fill" && (f.type === "select" || f.type === "location"));
+  try {
+    // Attach once, before anything is measured, so the debugger infobar cannot shift the page under a click.
+    if (needsTrusted) await Dom.prepareTrusted();
+    for (const f of fields) {
+      const ctx = { cvFile, sourceLabel: f.sourceLabel, armed: false };
+      let out;
+      try { out = await fill(f, ctx); } catch { out = "select-yourself"; }
+      if (f.type === "file" && out === "filled" && ats === "lever") await Dom.sleep(1500);
+      let box = null;
+      try { box = fill.box(f); } catch { box = null; }
+      if (box && out !== "missing") {
+        box.dataset.placed = out === "filled" ? "filled" : out === "yours" ? "yours" : "select";
+        const tag = document.createElement("span");
+        tag.className = "placed-tag";
+        tag.textContent = out === "filled" ? `Placed · ${f.sourceLabel || "from your setup"}`
+          : out === "yours" ? "Your call"
+          : ctx.armed ? "Click this box, Autopilot will pick" : "Please select this yourself";
+        box.appendChild(tag);
+      }
+      if (out === "filled") done++; else mine++;
+      n++;
+      say(`Placed Autopilot filling… ${n}/${fields.length}`);
     }
-    if (out === "filled") done++; else mine++;
-    n++;
-    say(`Placed Autopilot filling… ${n}/${fields.length}`);
+  } finally {
+    Dom.send({ kind: "detach" });
   }
 
-  globalThis.PlacedDom.send({ kind: "detach" });
   say(`✅ ${done}/${fields.length} filled · ${mine} for you`, "Check everything. You press Submit.");
-  const submit = document.querySelector("button[type=submit], input[type=submit], #btn-submit, .ashby-application-form-submit-button");
-  const real = [...document.querySelectorAll("button, input[type=submit]")].find((b) => /submit/i.test(b.textContent || b.value || "")) || submit;
-  if (real) {
-    real.classList.add("placed-submit-hint");
-    real.scrollIntoView({ block: "center" });
+  const submit = [...document.querySelectorAll("button, input[type=submit]")].find((b) => b !== close && /submit/i.test(b.textContent || b.value || ""))
+    || document.querySelector("button[type=submit], input[type=submit], #btn-submit, .ashby-application-form-submit-button");
+  if (submit) {
+    submit.classList.add("placed-submit-hint");
+    submit.scrollIntoView({ block: "center" });
   }
+
+  // Never cover the submit button: move the panel to the top, and collapse it if it still overlaps.
+  const overlaps = (a, b) => a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
+  let queued = false;
+  const place = () => {
+    queued = false;
+    if (!submit || !panel.isConnected) return;
+    panel.classList.remove("placed-panel--top", "placed-panel--min");
+    if (!overlaps(panel.getBoundingClientRect(), submit.getBoundingClientRect())) return;
+    panel.classList.add("placed-panel--top");
+    if (overlaps(panel.getBoundingClientRect(), submit.getBoundingClientRect())) panel.classList.add("placed-panel--min");
+  };
+  const schedule = () => { if (!queued) { queued = true; requestAnimationFrame(place); } };
+  window.addEventListener("scroll", schedule, { passive: true });
+  window.addEventListener("resize", schedule, { passive: true });
+  setTimeout(place, 400);
 })();

@@ -25,13 +25,13 @@
     const shell = input.closest(".select-shell") || input.closest(".select__container") || input.parentElement;
     const control = input.closest(".select__control");
     if (!control || G().isSubmitControl(control)) return "select-yourself";
+    const hasValue = () => Boolean(shell.querySelector(".select__single-value, .select__multi-value"));
     const arm = () => {
-      D().armAutoPick({ input, scope: shell, optionSelector: ".select__option", label, prefix, sourceLabel: ctx.sourceLabel });
-      ctx.armed = true;
+      ctx.armed = D().armAutoPick({ input, scope: shell, optionSelector: ".select__option", label, prefix, sourceLabel: ctx.sourceLabel, hasValue });
       return "select-yourself";
     };
     if (!(await D().trustedClickOn(control))) return arm();
-    if (type && !(await D().trustedType(type))) return arm();
+    if (type && !(await D().trustedType(type, input, shell))) return arm();
     const opt = await D().waitFor(() => D().findOption(shell, ".select__option", label, prefix), type ? 25 : 12, 150);
     if (!opt || G().isSubmitControl(opt)) return arm();
     G().safeClick(opt);
