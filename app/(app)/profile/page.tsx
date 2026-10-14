@@ -5,6 +5,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { requireUser } from "@/lib/supabase/server";
 import { getProfile } from "@/lib/db/queries";
 import { scoreCv } from "@/lib/cv-score/run";
+import { uploadScoringInFlight } from "@/lib/cv-score/defer";
 import { loadCvScorePanel, type CvScorePanelData } from "@/lib/cv-score/panel-data";
 import { roleCards } from "@/lib/quiz/view";
 import { ARCHETYPES, YEARS, type Archetype, type Year } from "@/lib/types";
@@ -16,13 +17,38 @@ import { scoreMyCv } from "./actions";
 
 export const metadata: Metadata = { title: "Your profile · Placed" };
 
+function RetryScoreForm({ sector }: { sector: Archetype }) {
+  return (
+    <form action={scoreMyCv}>
+      <input type="hidden" name="sector" value={sector} />
+      <ScoreNowButton />
+    </form>
+  );
+}
+
 /**
  * /profile (spec §9 step 4): three role cards plus the CV Score panel. When the active CV has no score
  * for the selected sector yet, it is scored here (ruling C4); if that fails, a "Score my CV" button retries.
+ * Within a minute of an upload the upload's own background scoring is still running for the target sector, so
+ * the page waits for it instead of making a second live judge call (lib/cv-score/defer.ts).
  */
-async function ScoreSection(p: { supabase: SupabaseClient; userId: string; cvId: string; sector: Archetype; year: Year; failed: boolean }) {
+async function ScoreSection(p: {
+  supabase: SupabaseClient; userId: string; cvId: string; sector: Archetype; year: Year; failed: boolean; uploadScoring: boolean;
+}) {
   const base = { userId: p.userId, cvId: p.cvId, sector: p.sector, year: p.year };
   let data: CvScorePanelData | null = await loadCvScorePanel(p.supabase, base);
+  if (!data && p.uploadScoring && !p.failed) {
+    return (
+      <div role="status" aria-live="polite" className="flex flex-col gap-3 rounded-[20px] border border-[#E6E6EF] bg-white p-5">
+        <h2 className="text-base font-bold">Your CV Score</h2>
+        <p className="text-sm font-semibold text-[#3A20C4]">Scoring your CV…</p>
+        <p className="text-sm text-[#5B5B6B]">
+          This takes up to a minute after an upload.{" "}
+          <Link href="/profile" className="font-semibold underline underline-offset-2">Refresh</Link> to see your score.
+        </p>
+      </div>
+    );
+  }
   if (!data && !p.failed) {
     try {
       const score = await scoreCv(p.supabase, base);
@@ -31,17 +57,21 @@ async function ScoreSection(p: { supabase: SupabaseClient; userId: string; cvId:
       console.error("profile: scoreCv failed", e);
     }
   }
-  if (data) return <CvScorePanel data={data} />;
+  if (data) {
+    return (
+      <>
+        <CvScorePanel data={data} />
+        {data.aiUnavailable && <RetryScoreForm sector={p.sector} />}
+      </>
+    );
+  }
   return (
     <div className="flex flex-col gap-3 rounded-[20px] border border-[#E6E6EF] bg-white p-5">
       <h2 className="text-base font-bold">Your CV Score</h2>
       <p className="text-sm text-[#5B5B6B]">
         {p.failed ? "Scoring didn't finish that time. Give it another go in a moment." : "We couldn't score your CV just now."}
       </p>
-      <form action={scoreMyCv}>
-        <input type="hidden" name="sector" value={p.sector} />
-        <ScoreNowButton />
-      </form>
+      <RetryScoreForm sector={p.sector} />
     </div>
   );
 }
@@ -61,20 +91,21 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
   const { supabase, user } = await requireUser();
   const [p, cvRes] = await Promise.all([
     getProfile(supabase, user.id),
-    supabase.from("cvs").select("id").eq("user_id", user.id).eq("is_active", true).maybeSingle<{ id: string }>(),
+    supabase.from("cvs").select("id, uploaded_at").eq("user_id", user.id).eq("is_active", true).maybeSingle<{ id: string; uploaded_at: string | null }>(),
   ]);
   const cv = cvRes.data;
   const roles = roleCards(p.archetypes);
   const target = p.target_archetype && (ARCHETYPES as readonly string[]).includes(p.target_archetype) ? p.target_archetype : null;
   const sector: Archetype = target ?? roles[0]?.key ?? "consulting";
   const year: Year = p.year && (YEARS as readonly string[]).includes(p.year) ? p.year : "2nd";
+  const uploadScoring = cv ? uploadScoringInFlight({ uploadedAt: cv.uploaded_at, sector, target }) : false;
 
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,400px)_1fr]">
       <aside className="flex min-w-0 flex-col gap-4" aria-label="CV Score">
         {cv ? (
           <Suspense key={`${cv.id}-${sector}`} fallback={<ScoreLoading />}>
-            <ScoreSection supabase={supabase} userId={user.id} cvId={cv.id} sector={sector} year={year} failed={score === "failed"} />
+            <ScoreSection supabase={supabase} userId={user.id} cvId={cv.id} sector={sector} year={year} failed={score === "failed"} uploadScoring={uploadScoring} />
           </Suspense>
         ) : (
           <div className="card-quest flex flex-col gap-3 p-5">

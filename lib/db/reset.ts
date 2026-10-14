@@ -12,24 +12,15 @@ const fail = (what: string, e: { message: string }): never => {
 };
 
 /**
- * Removes everything the user stored (storage objects under `{userId}/` in both private buckets, then their rows)
- * and resets the profile's onboarding + gamification fields. The auth account itself is kept.
+ * Removes everything the user stored (their rows and the profile's onboarding + gamification fields first, then the
+ * storage objects under `{userId}/` in both private buckets). Rows go first so a DB failure never leaves rows
+ * pointing at already-deleted files; a storage failure afterwards only leaves orphaned files, and a retry removes them.
+ * The auth account itself is kept.
  * `db` must be a service-role client (RLS makes gamify state read-only for users); the caller verifies the session
  * user and passes only that user's id. No server-only import: the demo-reset script reuses this.
  */
 export async function resetUserData(db: SupabaseClient, userId: string): Promise<void> {
   if (!userId) throw new Error("resetUserData: userId required");
-
-  for (const bucket of USER_BUCKETS) {
-    for (let page = 0; page < MAX_PAGES; page++) {
-      // Always list from the start: each pass removes what it listed, so the next pass sees the remainder.
-      const { data, error } = await db.storage.from(bucket).list(userId, { limit: PAGE, offset: 0 });
-      if (error) fail(`listing ${bucket}`, error);
-      if (!data?.length) break;
-      const { error: rmErr } = await db.storage.from(bucket).remove(data.map((f) => `${userId}/${f.name}`));
-      if (rmErr) fail(`removing from ${bucket}`, rmErr);
-    }
-  }
 
   for (const table of USER_TABLES) {
     const { error } = await db.from(table).delete().eq("user_id", userId);
@@ -41,4 +32,15 @@ export async function resetUserData(db: SupabaseClient, userId: string): Promise
     onboarded: false, xp: 0, level: 1, streak_days: 0, last_active_date: null,
   }).eq("user_id", userId);
   if (error) fail("resetting profile", error);
+
+  for (const bucket of USER_BUCKETS) {
+    for (let page = 0; page < MAX_PAGES; page++) {
+      // Always list from the start: each pass removes what it listed, so the next pass sees the remainder.
+      const { data, error } = await db.storage.from(bucket).list(userId, { limit: PAGE, offset: 0 });
+      if (error) fail(`listing ${bucket}`, error);
+      if (!data?.length) break;
+      const { error: rmErr } = await db.storage.from(bucket).remove(data.map((f) => `${userId}/${f.name}`));
+      if (rmErr) fail(`removing from ${bucket}`, rmErr);
+    }
+  }
 }

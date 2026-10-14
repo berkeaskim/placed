@@ -13,8 +13,7 @@ import { dropFlaggedContent } from "@/lib/cv/strip-parsed";
 import { ARCHETYPES, YEARS, type Archetype, type ParsedCV, type Year } from "@/lib/types";
 import { scoreCv } from "@/lib/cv-score/run";
 import { canonicalize, extractSkills } from "@/lib/skills/extract";
-
-const MAX_BYTES = 5 * 1024 * 1024;
+import { cvSizeError } from "@/lib/cv/upload-limits";
 
 export type UploadCvResult =
   | { ok: true; award: AwardResult | null; imageOnly: boolean; cvId: string; safetyWarning: string | null }
@@ -25,7 +24,8 @@ export async function uploadCv(formData: FormData): Promise<UploadCvResult> {
   const file = formData.get("cv");
   if (!(file instanceof File) || file.size === 0) return { error: "Choose a PDF first." };
   if (file.type !== "application/pdf") return { error: "Please upload a PDF." };
-  if (file.size > MAX_BYTES) return { error: "That file is over 5 MB — export a smaller PDF." };
+  const tooBig = cvSizeError(file.size);
+  if (tooBig) return { error: tooBig };
 
   const bytes = new Uint8Array(await file.arrayBuffer());
   if (new TextDecoder().decode(bytes.subarray(0, 5)) !== "%PDF-") return { error: "That doesn't look like a PDF. Export your CV as PDF and try again." };

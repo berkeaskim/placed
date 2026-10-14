@@ -183,19 +183,19 @@ describe("uploadCv — input validation", () => {
       expect(await uploadCv(form(textPdf, "cv.pdf", t))).toEqual({ error: "Please upload a PDF." });
     }
   });
-  it("rejects files over 5 MB before reading or parsing them", async () => {
+  it("rejects files over 4 MB before reading or parsing them", async () => {
     const db = makeEnv();
-    const big = new Uint8Array(5 * 1024 * 1024 + 1); big.set(new TextEncoder().encode("%PDF-1.4"));
-    expect(await uploadCv(form(big))).toEqual({ error: "That file is over 5 MB — export a smaller PDF." });
+    const big = new Uint8Array(4 * 1024 * 1024 + 1); big.set(new TextEncoder().encode("%PDF-1.4"));
+    expect(await uploadCv(form(big))).toEqual({ error: "That file is over 4 MB — export a smaller PDF." });
     expect(state.parseCV).not.toHaveBeenCalled();
     expect(db.uploads).toEqual([]);
   });
-  it("exactly 5 MB passes the size gate (then fails as an unopenable PDF, not as too big)", async () => {
+  it("exactly 4 MB passes the size gate (then fails as an unopenable PDF, not as too big)", async () => {
     makeEnv();
-    const five = new Uint8Array(5 * 1024 * 1024); five.set(new TextEncoder().encode("%PDF-1.4\n"));
-    const r = await uploadCv(form(five));
+    const four = new Uint8Array(4 * 1024 * 1024); four.set(new TextEncoder().encode("%PDF-1.4\n"));
+    const r = await uploadCv(form(four));
     expect(r).toHaveProperty("error");
-    expect((r as { error: string }).error).not.toMatch(/over 5 MB/);
+    expect((r as { error: string }).error).not.toMatch(/over 4 MB/);
   }, 30_000);
   it("rejects a spoofed MIME (application/pdf with non-PDF magic bytes)", async () => {
     const db = makeEnv();
