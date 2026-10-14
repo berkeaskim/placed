@@ -20,6 +20,7 @@ export async function awardXP(
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user || auth.user.id !== userId) throw new Error("awardXP: userId does not match the session user");
   if (JOB_EVENTS.has(e.type) && !jobId) throw new Error(`awardXP: ${e.type} requires a jobId`);
+  if (e.type === "playbook_done" && !e.ref) throw new Error("awardXP: playbook_done requires a ref (action id)");
   const admin = writer ?? createAdminClient();
 
   const today = todayLondon();
@@ -28,16 +29,18 @@ export async function awardXP(
     if (since) q = q.gte("created_at", since);
     return q;
   };
-  const [p, badges, applied, rejected, saves] = await Promise.all([
+  const [p, badges, applied, rejected, saves, playbookDone] = await Promise.all([
     supabase.from("profiles").select("xp, streak_days, last_active_date").eq("user_id", userId).single(),
     supabase.from("badges").select("badge_key").eq("user_id", userId),
     count("applied"), count("rejected"), count("job_saved", londonDayStart(today)),
+    count("playbook_done", londonDayStart(today)),
   ]);
   if (p.error) fail("reading profile", p.error);
   if (badges.error) fail("reading badges", badges.error);
   if (applied.error) fail("counting applications", applied.error);
   if (rejected.error) fail("counting rejections", rejected.error);
   if (saves.error) fail("counting saves", saves.error);
+  if (playbookDone.error) fail("counting playbook actions", playbookDone.error);
 
   // An image-only CV builds no profile: don't burn the once-per-user cv_uploaded event, so a later
   // readable CV can still earn the XP and profile_pro.
@@ -47,10 +50,11 @@ export async function awardXP(
     xp: p.data?.xp ?? 0, streakDays: p.data?.streak_days ?? 0, lastActiveDate: p.data?.last_active_date ?? null,
     badges: (badges.data ?? []).map((b) => b.badge_key as BadgeKey),
     savesToday: saves.count ?? 0, appliedCount: applied.count ?? 0, rejectedCount: rejected.count ?? 0,
+    playbookDoneToday: playbookDone.count ?? 0,
   }, e, today);
 
-  // Event row first: unique indexes make this the idempotency gate.
-  const ins = await admin.from("xp_events").insert({ user_id: userId, type: e.type, xp: result.xpGained, job_id: jobId ?? null });
+  // Event row first: unique indexes make this the idempotency gate (ref: one award per playbook action, 0010).
+  const ins = await admin.from("xp_events").insert({ user_id: userId, type: e.type, xp: result.xpGained, job_id: jobId ?? null, ...(e.ref ? { ref: e.ref } : {}) });
   if (ins.error) {
     if (ins.error.code === "23505") return noAward(p.data?.xp ?? 0, p.data?.streak_days ?? 0);
     fail("recording event", ins.error);

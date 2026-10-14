@@ -32,6 +32,7 @@ export async function setTargetSector(sector: Archetype): Promise<{ error: strin
     failed = true;
   }
   revalidatePath("/profile");
+  revalidatePath("/profile/target");
   return failed ? { error: "Sector switched, but scoring didn't finish. Use “Score my CV” to try again.", switched: true } : { ok: true };
 }
 

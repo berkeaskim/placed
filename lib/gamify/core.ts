@@ -3,8 +3,10 @@ import { daysUntil } from "@/lib/scoring/dates";
 
 export type XpEventType = "onboarding_complete" | "cv_uploaded" | "quiz_done" | "job_saved" | "cv_tailored" | "applied" | "interview" | "rejected" | "offer"
   // Task 23b: tailoring screen. Job-scoped, so xp_events_once_per_job (0002) makes each once per job.
-  | "number_confirmed" | "suggestion_edited";
-export type BadgeKey = "profile_pro" | "first_shot" | "spring_week_hunter" | "early_bird" | "bounce_back" | "made_it_yours";
+  | "number_confirmed" | "suggestion_edited"
+  // Task 19b: Target Role. Action-scoped via xp_events.ref (0010).
+  | "playbook_done";
+export type BadgeKey = "profile_pro" | "first_shot" | "spring_week_hunter" | "early_bird" | "bounce_back" | "made_it_yours" | "gap_closer";
 
 export const BADGES: Record<BadgeKey, { name: string; description: string }> = {
   profile_pro: { name: "Profile Pro", description: "Built your profile from a CV or the quiz" },
@@ -13,12 +15,13 @@ export const BADGES: Record<BadgeKey, { name: string; description: string }> = {
   early_bird: { name: "Early Bird", description: "Applied more than 7 days before the deadline" },
   bounce_back: { name: "Bounce Back", description: "Applied again after a rejection" },
   made_it_yours: { name: "Made it yours", description: "Edited a tailored line into your own words" },
+  gap_closer: { name: "Gap Closer", description: "Closed your first skill gap from a Role Playbook" },
 };
 
 export const LEVEL_NAMES = ["Explorer", "Applicant", "Contender", "Shortlisted", "Placed"] as const;
 
-export type GamifyState = { xp: number; streakDays: number; lastActiveDate: string | null; badges: BadgeKey[]; savesToday: number; appliedCount: number; rejectedCount: number };
-export type GamifyEvent = { type: XpEventType; fitLabel?: FitLabel; jobTitle?: string; deadline?: string | null; profileComplete?: boolean };
+export type GamifyState = { xp: number; streakDays: number; lastActiveDate: string | null; badges: BadgeKey[]; savesToday: number; appliedCount: number; rejectedCount: number; playbookDoneToday?: number };
+export type GamifyEvent = { type: XpEventType; fitLabel?: FitLabel; jobTitle?: string; deadline?: string | null; profileComplete?: boolean; ref?: string };
 export type AwardResult = { xpGained: number; newXp: number; level: number; levelName: string; levelUp: boolean; streakDays: number; newBadges: BadgeKey[] };
 
 export function levelFromXp(xp: number) {
@@ -32,6 +35,8 @@ const SPRING_PROGRAMME = /\b(spring\s+(week|insights?|internship|programme|progr
 
 export const APPLY_XP: Record<FitLabel, number> = { "Strong fit": 50, "Good fit": 50, Stretch: 25, "Not recommended": 10 };
 
+export const PLAYBOOK_DONE_DAILY_CAP = 3;
+
 export function xpFor(e: GamifyEvent, s: GamifyState): number {
   switch (e.type) {
     case "onboarding_complete": return 50;
@@ -43,11 +48,13 @@ export function xpFor(e: GamifyEvent, s: GamifyState): number {
     case "rejected": return 20;
     case "offer": return 300;
     case "number_confirmed": case "suggestion_edited": return 10;
+    case "playbook_done": return (s.playbookDoneToday ?? 0) < PLAYBOOK_DONE_DAILY_CAP ? 40 : 0;
   }
 }
 
 export function computeAward(state: GamifyState, e: GamifyEvent, today: string) {
-  const s = { ...state, savesToday: state.lastActiveDate === today ? state.savesToday : 0 };
+  const sameDay = state.lastActiveDate === today;
+  const s = { ...state, savesToday: sameDay ? state.savesToday : 0, playbookDoneToday: sameDay ? state.playbookDoneToday ?? 0 : 0 };
   const xpGained = xpFor(e, s);
   const before = levelFromXp(s.xp);
   const after = levelFromXp(s.xp + xpGained);
@@ -64,6 +71,7 @@ export function computeAward(state: GamifyState, e: GamifyEvent, today: string) 
     if (s.rejectedCount > 0) candidates.push("bounce_back");
   }
   if (e.type === "suggestion_edited") candidates.push("made_it_yours");
+  if (e.type === "playbook_done") candidates.push("gap_closer");
   const newBadges = candidates.filter((b) => !earned.has(b));
 
   const next: GamifyState = {
@@ -71,6 +79,7 @@ export function computeAward(state: GamifyState, e: GamifyEvent, today: string) 
     savesToday: s.savesToday + (e.type === "job_saved" ? 1 : 0),
     appliedCount: s.appliedCount + (e.type === "applied" ? 1 : 0),
     rejectedCount: s.rejectedCount + (e.type === "rejected" ? 1 : 0),
+    playbookDoneToday: s.playbookDoneToday + (e.type === "playbook_done" ? 1 : 0),
   };
   const result: AwardResult = {
     xpGained, newXp: next.xp, level: after.level, levelName: after.name, levelUp: after.level > before.level, streakDays, newBadges,

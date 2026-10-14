@@ -1,7 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 /** Deleted in this order: cv_scores/cv_feedback reference cvs, so they go first. All have a user_id column. */
-export const USER_TABLES = ["cv_scores", "cv_feedback", "cvs", "confirmed_facts", "matches", "applications", "xp_events", "badges"] as const;
+export const USER_TABLES = ["cv_scores", "cv_feedback", "cvs", "confirmed_facts", "matches", "applications", "xp_events", "badges", "playbook_progress"] as const;
+/** Tables from migrations that may not be applied yet (0010): a missing table holds no rows, so it isn't a failure. */
+const OPTIONAL_TABLES = new Set<string>(["playbook_progress"]);
+/** "relation does not exist": Postgres 42P01 or PostgREST PGRST205 (schema cache). */
+const isMissingTable = (e: { code?: string }) => e.code === "42P01" || e.code === "PGRST205";
 export const USER_BUCKETS = ["cvs", "tailored"] as const;
 
 const PAGE = 100;
@@ -24,7 +28,7 @@ export async function resetUserData(db: SupabaseClient, userId: string): Promise
 
   for (const table of USER_TABLES) {
     const { error } = await db.from(table).delete().eq("user_id", userId);
-    if (error) fail(`deleting ${table}`, error);
+    if (error && !(OPTIONAL_TABLES.has(table) && isMissingTable(error))) fail(`deleting ${table}`, error);
   }
 
   const { error } = await db.from("profiles").update({

@@ -2,14 +2,14 @@ import { describe, expect, it } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { resetUserData, USER_TABLES, USER_BUCKETS } from "@/lib/db/reset";
 
-function fake(opts: { files?: Record<string, string[]>; failTable?: string } = {}) {
+function fake(opts: { files?: Record<string, string[]>; failTable?: string; failCode?: string } = {}) {
   const calls: { deletes: { table: string; col: string; val: string }[]; updates: { table: string; patch: Record<string, unknown>; col: string; val: string }[]; lists: { bucket: string; prefix: string; offset: number }[]; removes: { bucket: string; paths: string[] }[] } =
     { deletes: [], updates: [], lists: [], removes: [] };
   const order: string[] = []; // every call, in order: "row:<table>", "update:<table>", "list:<bucket>", "remove:<bucket>"
   const store = structuredClone(opts.files ?? {});
   const client = {
     from: (table: string) => ({
-      delete: () => ({ eq: async (col: string, val: string) => { calls.deletes.push({ table, col, val }); order.push(`row:${table}`); return { error: table === opts.failTable ? { message: "boom" } : null }; } }),
+      delete: () => ({ eq: async (col: string, val: string) => { calls.deletes.push({ table, col, val }); order.push(`row:${table}`); return { error: table === opts.failTable ? { message: "boom", code: opts.failCode } : null }; } }),
       update: (patch: Record<string, unknown>) => ({ eq: async (col: string, val: string) => { calls.updates.push({ table, patch, col, val }); order.push(`update:${table}`); return { error: null }; } }),
     }),
     storage: {
@@ -36,10 +36,16 @@ describe("resetUserData", () => {
     const { client, calls } = fake();
     await resetUserData(client, "u1");
     expect(calls.deletes.map((d) => d.table).sort()).toEqual([...USER_TABLES].sort());
-    for (const t of ["cv_scores", "cvs", "confirmed_facts", "matches", "applications", "xp_events", "badges", "cv_feedback"]) expect(USER_TABLES).toContain(t);
+    for (const t of ["cv_scores", "cvs", "confirmed_facts", "matches", "applications", "xp_events", "badges", "cv_feedback", "playbook_progress"]) expect(USER_TABLES).toContain(t);
     expect(calls.deletes.every((d) => d.col === "user_id" && d.val === "u1")).toBe(true);
     // cv_scores must go before cvs
     expect(calls.deletes.findIndex((d) => d.table === "cv_scores")).toBeLessThan(calls.deletes.findIndex((d) => d.table === "cvs"));
+  });
+
+  it("tolerates playbook_progress missing (migration 0010 not applied) but no other missing table", async () => {
+    await expect(resetUserData(fake({ failTable: "playbook_progress", failCode: "PGRST205" }).client, "u1")).resolves.toBeUndefined();
+    await expect(resetUserData(fake({ failTable: "playbook_progress", failCode: "42501" }).client, "u1")).rejects.toThrow(/playbook_progress/);
+    await expect(resetUserData(fake({ failTable: "badges", failCode: "PGRST205" }).client, "u1")).rejects.toThrow(/badges/);
   });
 
   it("resets profile gamification fields for that user only", async () => {

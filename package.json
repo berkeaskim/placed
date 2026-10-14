@@ -15,6 +15,7 @@
     "seed": "tsx --env-file=.env.local scripts/seed.ts",
     "validate-slugs": "tsx scripts/validate-slugs.ts",
     "e2e": "playwright test",
+    "build-playbooks": "tsx scripts/build-playbooks.ts",
     "demo:cv": "node scripts/run-ts.mjs scripts/make-demo-cv.ts",
     "demo:user": "tsx --env-file=.env.local scripts/create-demo-user.ts",
     "demo:reset": "tsx --env-file=.env.local scripts/reset-demo.ts",
