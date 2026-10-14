@@ -4,7 +4,7 @@ import { undoInboxEvent } from "@/app/(app)/tracker/inbox-actions";
 import { COLUMNS } from "@/lib/tracker/status";
 import type { AppStatus } from "@/lib/types";
 
-const fmt = (iso: string) => new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+const fmt = (iso: string) => new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "Europe/London" });
 
 export function CardEvidence({ e }: { e: { eventId: string; subject: string; date: string; to: AppStatus; canUndo: boolean } }) {
   const [pending, start] = useTransition();

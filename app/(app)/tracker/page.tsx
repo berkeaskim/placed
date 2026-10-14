@@ -13,17 +13,32 @@ type Ev = { id: string; application_id: string | null; company: string | null; s
 
 const DEADLINE_LABEL: Record<string, string> = { assessment: "Assessment", interview: "Interview" };
 
+/** The admin client throws when the service key is missing; the board must still render without the Gmail banner state. */
+async function loadConnection(userId: string): Promise<{ conn: { google_email: string | null; last_synced_at: string | null } | null; failed: boolean }> {
+  try {
+    const { data, error } = await createAdminClient().from("gmail_connections").select("google_email, last_synced_at").eq("user_id", userId).maybeSingle();
+    if (error) { console.error("tracker: loading Gmail connection failed", error.message); return { conn: null, failed: true }; }
+    return { conn: data, failed: false };
+  } catch (e) {
+    console.error("tracker: loading Gmail connection failed", e instanceof Error ? e.message : "unknown");
+    return { conn: null, failed: true };
+  }
+}
+
 export default async function Tracker({ searchParams }: { searchParams: Promise<{ gmail?: string }> }) {
   const { supabase, user } = await requireUser();
   const today = todayLondon();
-  const [{ data }, { data: evs }, { data: conn }] = await Promise.all([
+  const [{ data, error: appsErr }, { data: evs, error: evsErr }, gmail] = await Promise.all([
     supabase.from("applications").select("id, job_id, status, next_deadline, last_event_at, updated_at, jobs(title, companies(name))")
       .eq("user_id", user.id).order("updated_at", { ascending: false }),
     supabase.from("inbox_events").select("id, application_id, company, subject, received_at, kind, deadline, action_url, effect, new_status")
       .eq("user_id", user.id).order("received_at", { ascending: false }).limit(300),
-    createAdminClient().from("gmail_connections").select("google_email, last_synced_at").eq("user_id", user.id).maybeSingle(),
+    loadConnection(user.id),
   ]);
-  const events = (evs ?? []) as Ev[];
+  if (appsErr) console.error("tracker: loading applications failed", appsErr.message);
+  if (evsErr) console.error("tracker: loading inbox events failed", evsErr.message);
+  const conn = gmail.conn;
+  const events = (evsErr ? [] : evs ?? []) as Ev[];
   const cards: Card[] = (data ?? []).filter((a) => isAppStatus(a.status)).map((a) => {
     const j = a.jobs as unknown as { title: string; companies: { name: string } | null } | null;
     const mine = events.filter((e) => e.application_id === a.id);
@@ -43,9 +58,11 @@ export default async function Tracker({ searchParams }: { searchParams: Promise<
   return (
     <div className="flex flex-col gap-4">
       <h1 className="text-[28px] font-extrabold tracking-tight">Your applications</h1>
-      <InboxBanner connected={!!conn} googleEmail={conn?.google_email ?? null} lastSynced={conn?.last_synced_at ?? null} demo={isDemoEmail(user.email)} flash={flash} />
+      <InboxBanner connected={!!conn} googleEmail={conn?.google_email ?? null} lastSynced={conn?.last_synced_at ?? null} demo={isDemoEmail(user.email)} flash={flash} degraded={gmail.failed} />
       <InboxSuggestions items={suggestions} />
-      {cards.length === 0
+      {appsErr
+        ? <p role="alert" className="card-quest p-6 font-semibold">Could not load your applications. Refresh to try again.</p>
+        : cards.length === 0
         ? <p className="card-quest p-6 font-semibold">Save a role from your feed to start tracking.</p>
         : <Board cards={cards} today={today} />}
     </div>

@@ -147,9 +147,10 @@ export async function addSuggestedApplication(eventId: string): Promise<{ ok: bo
   if (!isUuid(eventId)) return { ok: false };
   const { supabase, user } = await requireUser();
   const { data: ev } = await supabase.from("inbox_events").select("id, company, kind, effect, application_id").eq("id", eventId).eq("user_id", user.id).maybeSingle();
-  if (!ev?.company || ev.effect !== "suggested") return { ok: false };
+  if (!ev || ev.effect !== "suggested") return { ok: false };
   let appId = ev.application_id as string | null;
   if (!appId) {
+    if (!ev.company) return { ok: false };
     const { data: jobs } = await supabase.from("jobs").select("id, posted_at, companies!inner(name)").eq("is_live", true).order("posted_at", { ascending: false }).limit(500);
     const job = (jobs ?? []).find((j) => companyMatches(ev.company!, (j.companies as unknown as { name: string }).name));
     if (!job) return { ok: false, message: `Placed doesn't list a live ${ev.company} role, so it can't be tracked here yet.` };

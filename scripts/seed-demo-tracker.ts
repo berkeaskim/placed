@@ -30,9 +30,13 @@ async function main() {
     if (!job) { console.warn(`skip ${p.slug}: no live job`); continue; }
     rows.push({ job_id: job.id, status: p.status, label: `${(job.companies as unknown as { name: string }).name}: ${job.title}` });
   }
-  await db.from("inbox_events").delete().eq("user_id", user.id);
+  // Wipe the demo user's whole tracker (not just the plan's rows) so a rehearsal's "add it" doesn't leave Celonis behind.
+  for (const table of ["inbox_events", "outreach", "applications"] as const) {
+    const { error: delErr } = await db.from(table).delete().eq("user_id", user.id);
+    if (delErr) throw new Error(`clearing ${table}: ${delErr.message}`);
+  }
   for (const r of rows) {
-    const { error: e } = await db.from("applications").upsert({ user_id: user.id, job_id: r.job_id, status: r.status, next_deadline: null, last_event_at: null }, { onConflict: "user_id,job_id" });
+    const { error: e } = await db.from("applications").insert({ user_id: user.id, job_id: r.job_id, status: r.status });
     if (e) throw e;
     console.log(`${r.status.padEnd(9)} ${r.label}`);
   }

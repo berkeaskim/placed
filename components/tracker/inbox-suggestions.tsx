@@ -8,7 +8,8 @@ export type Suggestion = { eventId: string; subject: string; company: string | n
 export function InboxSuggestions({ items }: { items: Suggestion[] }) {
   const [pending, start] = useTransition();
   const [msg, setMsg] = useState<Record<string, string>>({});
-  if (!items.length) return null;
+  const notes = Object.values(msg);
+  if (!items.length && !notes.length) return null;
   const run = (id: string, ok: string, fail: string) => start(async () => {
     const r = await addSuggestedApplication(id);
     setMsg((m) => ({ ...m, [id]: r.ok ? r.message ?? ok : r.message ?? fail }));
@@ -30,9 +31,10 @@ export function InboxSuggestions({ items }: { items: Suggestion[] }) {
               Not in your tracker: add it
             </button>
           ) : <span className="text-xs text-muted-foreground">This email might be about one of your applications.</span>}
-          {msg[s.eventId] && <span role="status" className="w-full text-xs">{msg[s.eventId]}</span>}
-        </div>
+            </div>
       ))}
+      {/* Outside the rows: revalidation removes an applied row, and its result must outlive it. */}
+      <div role="status" className="text-xs font-semibold">{notes.map((n, i) => <p key={i}>{n}</p>)}</div>
     </section>
   );
 }
