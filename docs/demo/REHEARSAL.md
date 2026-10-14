@@ -19,6 +19,8 @@ Analyst Intern (June 2027)**, London. Everything the AI "says" in fixture mode i
       `http://localhost:3200`; if the demo runs on another origin, set `PLACED_ORIGIN` in `extension/config.js` and add
       that origin to `host_permissions` in `extension/manifest.json`, then reload the extension (see `extension/README.md`).
 - [ ] Confirm the Monzo job is still in the seed: `grep 8232726 seed/jobs.json`.
+- [ ] Optional hardening: set `PLACED_EXTENSION_ID` to the id on the extension's card in `chrome://extensions`, so only
+      your copy can claim a pack (see `extension/README.md`).
 - [ ] Set `NEXT_PUBLIC_AUTOPILOT=1` in `.env.local` (the Autopilot UI is off without it).
 - [ ] Confirm Berke has applied `supabase/migrations/0012_autopilot.sql`.
 - [ ] Autopilot dry run on the real Monzo form (nothing is submitted; every submit request is aborted):

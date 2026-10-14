@@ -3,7 +3,7 @@ import { corsHeaders } from "@/lib/autopilot/handoff";
 
 /**
  * Called cross-origin from the employer page by the Placed extension. Not session-authenticated: the one-time token
- * is the credential. Only allow-listed ATS origins get CORS headers, and the response carries one form's fill plan only.
+ * is the credential. Only the Placed extension's chrome-extension:// origin gets CORS headers (R9: never the ATS page origins), and the response carries one form's fill plan only.
  */
 export async function OPTIONS(req: Request) {
   return new Response(null, { status: 204, headers: corsHeaders(req.headers.get("origin")) });

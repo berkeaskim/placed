@@ -16,7 +16,17 @@ By default the extension talks to `http://localhost:3200`. For a deployed app, e
 1. In `config.js` set `globalThis.PLACED_ORIGIN = "https://placed-demo.vercel.app";` (no trailing slash).
 2. In `manifest.json` add the same origin to `host_permissions`, e.g.
    `"host_permissions": ["http://localhost:3200/*", "https://placed-demo.vercel.app/*", "https://*.supabase.co/*"]`.
-3. Reload the extension. The claim route already accepts any `chrome-extension://` origin; the token is the credential.
+3. Reload the extension. The claim route only accepts `chrome-extension://` origins (never the employer page's own
+   origin, so a page script cannot claim a leftover link); the token is the credential.
+
+### Optional hardening: pin the extension id
+
+By default the claim route accepts any well-formed `chrome-extension://<32 letters a-p>` origin. To accept only your
+copy of the extension, set `PLACED_EXTENSION_ID` in the app's environment (`.env.local` or Vercel):
+
+1. Open `chrome://extensions`, switch on **Developer mode**, and find the Placed Autopilot card.
+2. Copy the 32-letter **ID** shown on the card (for an unpacked extension it is stable as long as you load the same folder path).
+3. Set `PLACED_EXTENSION_ID=<that id>` and restart the app.
 
 ## Use
 

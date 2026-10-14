@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, afterEach } from "vitest";
 import { mintToken, hashToken, corsHeaders, safeNamePart } from "@/lib/autopilot/handoff";
 
 describe("handoff", () => {
@@ -10,9 +10,24 @@ describe("handoff", () => {
     const mins = (Date.parse(a.expiresAt) - Date.now()) / 60000;
     expect(mins).toBeGreaterThan(9.9); expect(mins).toBeLessThanOrEqual(10);
   });
-  it("allows only ATS origins", () => {
-    expect(corsHeaders("https://job-boards.greenhouse.io")["access-control-allow-origin"]).toBe("https://job-boards.greenhouse.io");
-    expect(corsHeaders("https://evil.example")["access-control-allow-origin"]).toBeUndefined();
+  it("does NOT allow ATS page origins (R9: page scripts must not be able to claim a leftover #placed token)", () => {
+    for (const o of ["https://job-boards.greenhouse.io", "https://boards.greenhouse.io", "https://jobs.ashbyhq.com", "https://jobs.lever.co", "https://evil.example"])
+      expect(corsHeaders(o)["access-control-allow-origin"]).toBeUndefined();
+  });
+  describe("PLACED_EXTENSION_ID", () => {
+    const prev = process.env.PLACED_EXTENSION_ID;
+    afterEach(() => { if (prev === undefined) delete process.env.PLACED_EXTENSION_ID; else process.env.PLACED_EXTENSION_ID = prev; });
+    it("pins the exact extension id when set", () => {
+      const id = "abcdefghijklmnopabcdefghijklmnop", other = "ponmlkjihgfedcbaponmlkjihgfedcba";
+      process.env.PLACED_EXTENSION_ID = id;
+      expect(corsHeaders(`chrome-extension://${id}`)["access-control-allow-origin"]).toBe(`chrome-extension://${id}`);
+      expect(corsHeaders(`chrome-extension://${other}`)["access-control-allow-origin"]).toBeUndefined();
+      expect(corsHeaders("https://jobs.lever.co")["access-control-allow-origin"]).toBeUndefined();
+    });
+    it("accepts any well-formed extension id when unset", () => {
+      delete process.env.PLACED_EXTENSION_ID;
+      expect(corsHeaders("chrome-extension://" + "p".repeat(32))["access-control-allow-origin"]).toBeDefined();
+    });
   });
   it("allows Chrome extension origins (R8: the extension service worker claims), nothing look-alike", () => {
     const ext = "chrome-extension://" + "abcdefghijklmnopabcdefghijklmnop";
