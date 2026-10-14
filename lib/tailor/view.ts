@@ -274,3 +274,16 @@ export function defendBullets(changes: TailorChangeView[], d: Decisions, final: 
 }
 
 export const pct = (x: number | null) => (x === null ? "–" : `${Math.round(x * 100)}%`);
+
+/** Live tally for the change list. A pure move (reordered) has nothing to accept or reject, so it isn't counted. */
+export function decisionCounts(changes: TailorChangeView[], d: Decisions): { accepted: number; rejected: number; pending: number } {
+  const out = { accepted: 0, rejected: 0, pending: 0 };
+  for (const c of changes) {
+    if (c.changeType === "reordered") continue;
+    const k = kindOf(d, c.bulletId);
+    if (k === "accepted" || k === "edited") out.accepted++;
+    else if (k === "rejected") out.rejected++;
+    else out.pending++;
+  }
+  return out;
+}

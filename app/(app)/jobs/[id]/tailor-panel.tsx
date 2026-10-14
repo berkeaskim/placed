@@ -13,7 +13,7 @@ import { DefendList } from "@/components/tailor/defend-list";
 import { DownloadIcon, InfoIcon, UndoIcon } from "@/components/tailor/icons";
 import {
   applyGateBlocks, blockedByBullet, buildFinal, caughtNumbers, defendBullets, fallbackNotice, fillPlaceholder, hasPlaceholder,
-  anyConfirmed, caughtStatus, decisionsFromFinal, isDirty, keywordCounts, stripPlaceholder, verificationCopy, verificationState,
+  anyConfirmed, caughtStatus, decisionCounts, decisionsFromFinal, isDirty, keywordCounts, stripPlaceholder, verificationCopy, verificationState,
   type DefendQuestion, type DefendSource, type Decision, type Decisions, type OriginalParts, type TailorOutcome,
 } from "@/lib/tailor/view";
 import type { TailoredCV } from "@/lib/types";
@@ -202,6 +202,7 @@ export function TailorPanel({ jobId, hasCv, original, initial }: {
   const checking = preview?.key !== key && !previewFailed;
   const saved = savedKey === key;
   const suggestedLeft = outcome.changes.some((c) => (decisions[c.bulletId]?.kind ?? "suggested") === "suggested");
+  const tally = decisionCounts(outcome.changes, decisions);
 
   const loadDefend = () => {
     const hit = defendCache.get(defendKey);
@@ -249,6 +250,11 @@ export function TailorPanel({ jobId, hasCv, original, initial }: {
           <p className="text-sm text-muted-foreground">Your CV already covers this role well, so nothing needed changing.</p>
         ) : (
           <>
+            <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground" aria-live="polite">
+              <span><span className="rounded bg-[#FDECEA] px-1 text-[#B42318] line-through">struck out</span> = removed, <span className="rounded bg-[#E3F6EE] px-1 font-semibold text-[#0B6B49] underline decoration-2 underline-offset-2">underlined</span> = added.</span>
+              <span className="font-semibold text-foreground">{tally.accepted} accepted · {tally.rejected} kept original · {tally.pending} to decide</span>
+              {tally.pending > 0 && <span>Undecided lines use our suggestion in the PDF.</span>}
+            </p>
             <ul className="flex flex-col gap-3">
               {outcome.changes.map((c) => {
                 const d = decisions[c.bulletId] ?? { kind: "suggested" as const };
