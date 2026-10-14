@@ -12,8 +12,11 @@ async function main() {
   for (const ats of [...new Set(rows.map((r) => r.ats))]) {
     const group = rows.filter((r) => r.ats === ats);
     const { error } = await db.from("companies").upsert(group, { onConflict: "ats,slug" });
-    if (error) console.error(`companies/${ats}: skipped ${group.length} (${error.message}); apply the migration that allows this ATS`);
-    else seeded += group.length;
+    if (!error) { seeded += group.length; continue; }
+    // 23514 = check_violation: companies_ats_check doesn't allow this ATS yet. Anything else is a real failure.
+    if (error.code !== "23514") throw error;
+    console.error(`companies/${ats}: skipped ${group.length}; apply the migration that allows this ATS (e.g. 0010_smartrecruiters)`);
+    process.exitCode = 1;
   }
   console.log(`companies: ${seeded}/${rows.length}`);
 

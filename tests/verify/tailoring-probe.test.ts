@@ -572,3 +572,24 @@ describe("task 22c ruling 2: capitalised multi-word sector titles are not names"
     "Aspiring Prudential Analyst; Economics student at UCL", "Prudential Investment Banking Analyst; Economics student at UCL",
   ])("'%s' blocks", (text) => { expect(runCv(same, "summary", text).verdict).toBe("block"); });
 });
+
+describe("ordinary-word employers at sentence start (2026-10-14 seed additions: Visa, Intel, Sky)", () => {
+  const withWords = (c: ParsedCV) => { c.experience[1].bullets[0].text = "Handled visa applications, gathered intel on competitors and met sky-high demand"; };
+  const employerBlocks = (r: ReturnType<typeof runCv>) => r.issues.filter((i) => i.check === "knownEmployer").map((i) => i.claim);
+  it.each([
+    "Visa applications handled for 40 customers each week",
+    "Intel gathered on competitors shaped weekly pricing",
+    "Sky-high demand met during peak season",
+  ])("the CV's own word, capitalised: %s", (text) => {
+    expect(employerBlocks(runCv(withWords, "retail", text))).toEqual([]);
+  });
+  it("still blocks when the CV never had the word", () => {
+    expect(employerBlocks(runCv(same, "retail", "Visa applications handled for 40 customers each week"))).toEqual(["Visa"]);
+  });
+  it("still blocks an affiliation claim", () => {
+    expect(employerBlocks(runCv(withWords, "retail", "Handled customers. Interned at Visa in 2025"))).toEqual(["Visa"]);
+  });
+  it("mid-sentence capitalised name is still an employer", () => {
+    expect(employerBlocks(runCv(withWords, "retail", "Handled applications for Visa and Mastercard customers"))).toContain("Visa");
+  });
+});

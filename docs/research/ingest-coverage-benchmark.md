@@ -20,11 +20,11 @@ Before: `feat/placed-build` at 88be367, measured with its own code and filters. 
 | Big 4 / accounting | 7 | 1 → 2 | 1 → 2 | 0 → 0 |
 | law | 15 | 1 → 6 | 1 → 5 | 1 → 2 |
 | FMCG / retail | 21 | 0 → 6 | 0 → 4 | 0 → 3 |
-| big tech | 31 | 8 → 17 | 6 → 15 | 5 → 10 |
+| big tech | 31 | 8 → 17 | 6 → 15 | 5 → 9 |
 | industry / pharma | 10 | 2 → 5 | 2 → 3 | 2 → 2 |
-| **all** | **159** | **30 → 71 (19% → 45%)** | **27 → 62 (17% → 39%)** | **21 → 40 (13% → 25%)** |
+| **all** | **159** | **30 → 71 (19% → 45%)** | **27 → 62 (17% → 39%)** | **21 → 39 (13% → 25%)** |
 
-Postings kept on the benchmark employers' boards went from 378 to 832 (UK: 179 to 313). The "before" figure is inflated by false positives that this branch removes (see Filter fixes).
+Postings kept on the benchmark employers' boards went from 378 to 869 (UK: 179 to 312). The "before" figure is inflated by false positives that this branch removes (see Filter fixes).
 
 Biggest UK gains: Lloyds (0 → 57 UK), P&G (20 UK), Oliver Wyman / Marsh McLennan (7), NatWest (5), PIMCO (7), Brevan Howard (5), Qube (6), HRT (4), Squarepoint (3), Mars (6), Mondelez (3), Cisco (3).
 
@@ -39,14 +39,25 @@ Biggest UK gains: Lloyds (0 → 57 UK), P&G (20 UK), Oliver Wyman / Marsh McLenn
 | **Wrong company** | `greenhouse/wise` is "Wise Worksite Field Sales" (US sales agents), not Wise the fintech | Disabled; the real Wise board is SmartRecruiters |
 | ATS not supported | Clifford Chance, Roland Berger, PA Consulting, Legal & General, Forvis Mazars, ASOS, Wise (all on SmartRecruiters) | New `smartrecruiters` provider using the public Posting API. Needs migration `0010_smartrecruiters.sql` (written, **not applied**) |
 
-## Filter fixes (precision; found while auditing the new boards)
+## Filter fixes (precision; found while auditing the new boards, then corrected after review)
 
-- `"Placement"` was a substring match, so "12 months **replacement**" counted as a placement. It now needs a word start.
-- Remote flag leak 1: Workday's `remoteType` "This position is **not** available for remote working" was read as remote. Fixed with `isRemoteType`.
-- Remote flag leak 2: any remote-flagged role passed the location filter, including ones in San Francisco, Costa Rica or Malaysia. A remote flag now only helps when the location is generic ("Remote - International", "Anywhere") or in the UK or Europe. This drops 7 of the 190 snapshot jobs (Ashby roles in San Francisco and New York). The block list also gained Asia, LatAm, Middle East and Africa.
-- "London, Canada" / "London, ON" (BDO Canada) is no longer classified as London.
-- Roles for staff who run programmes ("Early Careers Programme Coordinator", "Emerging Talent Delivery Team Manager") are now excluded. So are experienced grades ("Analyst II") and insurance-broking "Placement Specialist".
-- Shared HTTP helper: timeouts and connection resets are now retried like 429/5xx. GSK, P&G and Marsh boards were failing intermittently, and a failed board marks nothing dead but also refreshes nothing.
+- `"Placement"` was a substring match, so "12 months **replacement**" counted as a placement. It now needs a word start. Insurance-broking titles ("Placement Specialist") and experienced grades ("Analyst II", "Software Engineer III") are excluded. A bare numeral ("Intern II", "Phase II") is still fine.
+- Remote flag leaks:
+  - Workday's `remoteType` "This position is **not** available for remote working" was read as remote (`isRemoteType`).
+  - Any remote-flagged role passed, even one in San Francisco, Costa Rica or Malaysia, and so did "Remote - US". Now a role passes if its place is in the UK or Europe. Otherwise it fails if it names a place on the (extended) non-UK/EU block list. Only then do a remote flag or remote text let it through.
+  - Unnamed places ("Hybrid", "Multiple Locations") with a remote flag still pass. This drops 7 of the 190 snapshot jobs (Ashby roles in San Francisco and New York).
+- "London, Canada" / "London, ON" (BDO Canada) is no longer London. This applies only at the end of a segment, so "London, Canada Square" and "London, On-site" stay London.
+- UK city names abroad ("Newcastle, NSW", "Cambridge, MA") are no longer UK unless the location also says UK, England, etc.
+- Recall: more UK cities (Sheffield, Newcastle, Liverpool, Nottingham, Southampton…) and EU countries (Luxembourg, Norway, Finland, Czechia, Greece, Romania, Hungary, the Baltics…) are now recognised.
+- Roles for staff who run programmes ("Early Careers Programme Coordinator", "Emerging Talent Delivery Team Manager") are now excluded.
+
+## Other fixes
+
+- **Feed cap:** `getLiveJobs` returned at most 500 live jobs (newest first). With this seed list there are well over 1,000 live postings, so the oldest would never have been ranked. It now pages in 1,000-row chunks, up to 5,000.
+- **HTTP retries:** timeouts and connection resets are now retried like 429/5xx. GSK, P&G and Marsh boards were failing intermittently. Other errors (DNS, a bad host) fail immediately.
+- **SmartRecruiters partial listings:** a listing without `totalFound`, a short page, or a board over the cap now fails the board instead of returning a partial list (which `markDead` would treat as closures). Known gap: an unknown slug returns 200 with `totalFound: 0`.
+- **Tailoring verifier:** the new seed companies had to join `KNOWN_EMPLOYERS` (a test enforces it). Ordinary-word employers (Visa, Intel, Sky, also the existing Apple and Shell) at the start of a sentence no longer block the CV's own lowercase word ("visa applications" → "Visa applications…"), unless the context claims an affiliation ("Interned at Visa").
+- **Seeding:** `seed.ts` upserts companies one ATS at a time. If an ATS fails the check constraint (migration not applied), only that group is skipped and the exit code is 1; any other error throws.
 
 ## What's still missing (88 employers) and why
 
@@ -62,6 +73,8 @@ Biggest UK gains: Lloyds (0 → 57 UK), P&G (20 UK), Oliver Wyman / Marsh McLenn
 | amazon.jobs JSON | 1 | Amazon | Low to medium: one provider |
 
 Big 4 stays weak for UK roles: PwC UK, Deloitte, EY and KPMG don't put UK student roles on a board we can read. Workday `pwc/Global_Campus_Careers` is non-UK PwC firms only.
+
+Not fixed (follow-ups): jobs already live in the DB for a board that is now disabled (`greenhouse/wise`) stay live, because ingest only visits enabled companies. None of that board's titles passed the title filter in the snapshot. The same posting on two sites of one tenant becomes two rows (checked: none for PwC; not checked for Lloyds).
 
 Configured but 0 live UK/EU early-career roles today: Morgan Stanley (no campus roles open yet), Legal & General, NRF, Diageo, ASOS, Spotify, Wise, BP, Rolls-Royce. These are seasonal; the boards stay enabled.
 

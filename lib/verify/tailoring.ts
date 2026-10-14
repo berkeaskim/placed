@@ -561,6 +561,16 @@ function employerClaim(text: string, start: number, end: number, cvTool: boolean
   return ROLE_AFTER.test(after) ||
     /^(?:-| - |\s+)(?:sponsored|funded|backed|mentored|commissioned|trained|hosted|employed|certified|accredited|endorsed|led|run|owned|hired|placed|partnered|approved)\b/i.test(after);
 }
+/**
+ * Case-sensitive one-word employers that are also ordinary words ("Visa", "Intel", "Sky", "Mars", "Apple", "Shell"):
+ * "Visa applications…" at the start of a sentence is the CV's own "visa" capitalised, not the employer, unless the
+ * context claims an affiliation (employerClaim is checked by the caller).
+ */
+function ordinaryWordAtSentenceStart(text: string, index: number, match: string, emp: KnownEmployer, corpus: string): boolean {
+  if (!emp.caseSensitive || /\s/.test(match) || match.toUpperCase() === match) return false; // "BP", "EY" are never ordinary words
+  if (!/(?:^|[.!?:;]\s+|\n\s*|^[-•*]\s*)$/.test(text.slice(0, index))) return false;
+  return new RegExp(`(?<![A-Za-z0-9])${escapeRegex(match.toLowerCase())}(?![A-Za-z0-9])`).test(corpus);
+}
 /** Task 22b: hyphen-like characters between letters (U+2010–U+2014, U+2212) read as "-" before tokenising. Same length, so indices hold. */
 const dashNorm = (t: string) => t.replace(/(?<=[A-Za-z])[‐‑‒–—−](?=[A-Za-z])/g, "-");
 /** Task 22b: vendor names allowed only directly before a tool the CV already has ("Microsoft Excel"). */
@@ -913,7 +923,8 @@ export function verifyTailoring(i: VerifyInput): VerifyReport {
         const claim = employerClaim(dText, m.index!, m.index! + m[0].length, cvTool(emp));
         if (isTool && !claim) continue; // skillInjection owns tool usage of companies that are also tools
         const known = employerInCv(claim ? nameCorpus : corpus, emp)
-          || (!claim && VENDOR_PREFIX.has(m[0].toLowerCase()) && vendorOk(u.text, m.index! + m[0].length));
+          || (!claim && VENDOR_PREFIX.has(m[0].toLowerCase()) && vendorOk(u.text, m.index! + m[0].length))
+          || (!claim && ordinaryWordAtSentenceStart(u.text, m.index!, m[0], emp, corpus));
         employerSpans.push([m.index!, m.index! + m[0].length]);
         if (known || issues.some((x) => key(x) === k && x.claim.toLowerCase() === m[0].toLowerCase())) continue;
         issues.push({ type: "unsupportedFacts", severity: "block", ...where(u), claim: m[0], check: "knownEmployer",

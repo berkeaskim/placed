@@ -13,10 +13,15 @@ describe("getJson", () => {
     expect(await getJson("https://x", impl, undefined, noSleep)).toEqual({ ok: 1 });
     expect(impl).toHaveBeenCalledTimes(2);
   });
-  it("gives up after the retry budget on persistent network errors", async () => {
-    const impl = vi.fn(async () => { throw new Error("ECONNRESET"); }) as unknown as typeof fetch;
-    await expect(getJson("https://x", impl, undefined, noSleep)).rejects.toThrow(/ECONNRESET/);
+  it("gives up after the retry budget on persistent resets", async () => {
+    const impl = vi.fn(async () => { throw Object.assign(new TypeError("fetch failed"), { cause: { code: "ECONNRESET" } }); }) as unknown as typeof fetch;
+    await expect(getJson("https://x", impl, undefined, noSleep)).rejects.toThrow(/fetch failed/);
     expect(impl).toHaveBeenCalledTimes(RETRY_DELAYS_MS.length + 1);
+  });
+  it("fails at once on non-transient errors (DNS, bad host)", async () => {
+    const impl = vi.fn(async () => { throw Object.assign(new TypeError("fetch failed"), { cause: { code: "ENOTFOUND" } }); }) as unknown as typeof fetch;
+    await expect(getJson("https://x", impl, undefined, noSleep)).rejects.toThrow();
+    expect(impl).toHaveBeenCalledTimes(1);
   });
   it("does not retry a 404", async () => {
     const impl = vi.fn(async () => new Response("no", { status: 404 })) as unknown as typeof fetch;

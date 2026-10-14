@@ -3,6 +3,8 @@ import { defaultSleep, getJson, mapLimit } from "./http";
 
 // SmartRecruiters' public Posting API (no key; built for customer career sites).
 // Company seed: slug = the company identifier in jobs.smartrecruiters.com/{identifier}, case-insensitive.
+// Caveat: an unknown or renamed identifier returns 200 {totalFound: 0}, indistinguishable from an empty board;
+// `npm run validate-slugs` and `npm run coverage -- --live` are how a dead slug gets noticed.
 
 export const SR_PAGE = 100; // API maximum
 export const SR_MAX_PAGES = 50;
@@ -58,17 +60,21 @@ export function normalizeSmartRecruitersDetail(json: unknown): RawJob | null {
 export async function fetchSmartRecruiters(
   slug: string, keepTitle: (t: string) => boolean, fetchImpl: typeof fetch = fetch,
   sleep: (ms: number) => Promise<void> = defaultSleep,
-): Promise<{ jobs: RawJob[]; listed: number; truncated: boolean }> {
+): Promise<{ jobs: RawJob[]; listed: number }> {
   const base = srPostingsUrl(slug);
   const page = (offset: number) => getJson(`${base}?limit=${SR_PAGE}&offset=${offset}`, fetchImpl, { method: "GET" }, sleep) as Promise<SrList>;
   const first = await page(0);
-  const total = typeof first.totalFound === "number" ? first.totalFound : 0;
+  // A malformed or truncated listing must fail the board: returning a partial list would let markDead close the rest.
+  if (typeof first.totalFound !== "number") throw new Error("listing has no totalFound");
+  const total = first.totalFound;
+  if (total > SR_MAX_PAGES * SR_PAGE) throw new Error(`board has ${total} postings, over the ${SR_MAX_PAGES * SR_PAGE} cap`);
   const pages = Math.min(Math.ceil(total / SR_PAGE), SR_MAX_PAGES);
   const rest = await mapLimit(Array.from({ length: Math.max(0, pages - 1) }, (_, i) => (i + 1) * SR_PAGE), SR_CONCURRENCY, page);
   const items = [first, ...rest].flatMap((p) => p.content ?? []);
+  if (items.length < total) throw new Error(`listed ${items.length} of ${total} postings`);
   const ids = [...new Set(items.filter((j) => j.id && j.name && keepTitle(j.name)).map((j) => j.id as string))];
   // A failed detail fails the board (as for Workday): a silently skipped posting would be marked dead.
   const details = await mapLimit(ids, SR_CONCURRENCY, async (id) =>
     normalizeSmartRecruitersDetail(await getJson(`${base}/${encodeURIComponent(id)}`, fetchImpl, { method: "GET" }, sleep)));
-  return { jobs: details.filter((j): j is RawJob => j !== null), listed: items.length, truncated: total > SR_MAX_PAGES * SR_PAGE };
+  return { jobs: details.filter((j): j is RawJob => j !== null), listed: items.length };
 }

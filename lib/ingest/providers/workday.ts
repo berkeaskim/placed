@@ -33,7 +33,7 @@ const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
 
 /** remoteType is free text per tenant: "Remote", "Hybrid", but also "This position is not available for remote working". */
 export const isRemoteType = (t: string | undefined): boolean =>
-  /remote/i.test(t ?? "") && !/\b(not|no|non)\b[- ]?(available for )?remote|\bnon-remote\b/i.test(t ?? "");
+  /remote/i.test(t ?? "") && !/\b(not|no|non)\b[- ](?:(?:available|eligible) for )?remote|\bremote\s+(?:is\s+)?not\b|\bnot\s+(?:available|eligible)\b/i.test(t ?? "");
 
 export function normalizeWorkdayDetail(json: unknown): RawJob | null {
   const i = (json as WdDetail | null)?.jobPostingInfo;

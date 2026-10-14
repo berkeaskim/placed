@@ -3,6 +3,16 @@
 const RETRY_STATUS = new Set([429, 502, 503, 504]);
 export const RETRY_DELAYS_MS = [1_000, 3_000, 8_000];
 
+const TRANSIENT_CODES = new Set(["ECONNRESET", "ETIMEDOUT", "UND_ERR_SOCKET", "UND_ERR_CONNECT_TIMEOUT", "EPIPE"]);
+
+/** AbortSignal.timeout fires a TimeoutError; undici reports resets as TypeError("fetch failed") with a coded cause. */
+export function isTransient(e: unknown): boolean {
+  const err = e as { name?: string; code?: string; cause?: { code?: string } } | null;
+  if (!err) return false;
+  if (err.name === "TimeoutError" || err.name === "AbortError") return true;
+  return TRANSIENT_CODES.has(err.code ?? "") || TRANSIENT_CODES.has(err.cause?.code ?? "");
+}
+
 export const defaultSleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
 /** GET/POST JSON; backs off on 429/5xx (shared ATS hosts rate-limit) instead of failing the board. */
@@ -19,7 +29,8 @@ export async function getJson(
       });
     } catch (e) {
       // Timeouts and resets on big boards (GSK, P&G, Marsh) are transient; one failed page would fail the whole board.
-      if (attempt < RETRY_DELAYS_MS.length) { await sleep(RETRY_DELAYS_MS[attempt]); continue; }
+      // Anything else (DNS, refused, bad apiHost) fails at once instead of burning the ingest time budget.
+      if (isTransient(e) && attempt < RETRY_DELAYS_MS.length) { await sleep(RETRY_DELAYS_MS[attempt]); continue; }
       throw e;
     }
     if (res.ok) return res.json();

@@ -111,6 +111,8 @@ describe("workday remoteType", () => {
     expect(isRemoteType("This position is not available for remote working")).toBe(false);
     expect(isRemoteType("No remote")).toBe(false);
     expect(isRemoteType("Non-remote")).toBe(false);
+    expect(isRemoteType("Not eligible for remote")).toBe(false);
+    expect(isRemoteType("Remote not available")).toBe(false);
     expect(isRemoteType("Remote")).toBe(true);
     expect(isRemoteType("Hybrid / Remote eligible")).toBe(true);
     expect(isRemoteType(undefined)).toBe(false);

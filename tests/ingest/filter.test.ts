@@ -158,3 +158,28 @@ describe("insurance-broking placement and experienced grades", () => {
     expect(passesTitleFilter("Placement Year - Software Engineer")).toBe(true);
   });
 });
+
+describe("review round 1 (2026-10-14)", () => {
+  it.each(["London, On-site", "London, Canada Square", "London, Canada Water", "London, ON (Hybrid)"])("London Ontario rule: %s", (loc) => {
+    expect(passesLocationFilter(loc, false, "").pass).toBe(loc !== "London, ON (Hybrid)");
+  });
+  it("London Ontario still caught at the end of a segment", () => {
+    expect(classifyRegion("London, Ontario, Canada", false)).toBe("other");
+    expect(classifyRegion("London, Canada Square", false)).toBe("london");
+  });
+  it.each(["Remote - US", "Remote, United States", "USA - Remote", "Remote - India", "Remote, Brazil"])("remote text pinned abroad fails: %s", (loc) => {
+    expect(passesLocationFilter(loc, true, "").pass).toBe(false);
+  });
+  it.each(["Hybrid", "Work from home", "Home Based", "Flexible", "Multiple Locations"])("remote flag with an unnamed place passes: %s", (loc) => {
+    expect(passesLocationFilter(loc, true, "").pass).toBe(true);
+  });
+  it.each(["Intern II", "Graduate Programme Phase II", "Summer Intern - Part II", "Trainee Team Manager Graduate Scheme"])("legit title passes: %s", (t) => {
+    expect(passesTitleFilter(t)).toBe(true);
+  });
+  it.each(["Sheffield", "Newcastle upon Tyne", "Luxembourg", "Prague, Czechia", "Athens, Greece", "Bucharest, Romania"])("UK/EU place passes: %s", (loc) => {
+    expect(passesLocationFilter(loc, false, "").pass).toBe(true);
+  });
+  it.each(["Newcastle, NSW, Australia", "Cambridge, MA, United States", "Birmingham, US"])("UK city namesake abroad fails: %s", (loc) => {
+    expect(passesLocationFilter(loc, false, "").pass).toBe(false);
+  });
+});

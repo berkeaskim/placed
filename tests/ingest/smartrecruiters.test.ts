@@ -75,7 +75,6 @@ describe("smartrecruiters", () => {
     expect(r.listed).toBe(250);
     expect(r.jobs).toHaveLength(125);
     expect(r.jobs[0].location).toBe("London, United Kingdom");
-    expect(r.truncated).toBe(false);
   });
 
   it("fails the board when a detail fails (a skipped posting would be marked dead)", async () => {
@@ -90,5 +89,20 @@ describe("smartrecruiters", () => {
     await expect(fetchJobs({ slug: "acme", name: "Acme", ats: "smartrecruiters" }, bad)).rejects.toBeInstanceOf(ProviderError);
     expect(endpointFor({ slug: "CliffordChance", name: "CC", ats: "smartrecruiters" }))
       .toBe("https://api.smartrecruiters.com/v1/companies/CliffordChance/postings");
+  });
+});
+
+describe("smartrecruiters partial listings fail the board", () => {
+  it("missing totalFound", async () => {
+    const impl = vi.fn(async () => Response.json({ content: [{ id: "1", name: "Summer Internship" }] })) as unknown as typeof fetch;
+    await expect(fetchSmartRecruiters("acme", passesTitleFilter, impl)).rejects.toThrow(/totalFound/);
+  });
+  it("a page that comes back short", async () => {
+    const impl = vi.fn(async () => Response.json({ totalFound: 150, content: [{ id: "1", name: "Summer Internship" }] })) as unknown as typeof fetch;
+    await expect(fetchSmartRecruiters("acme", passesTitleFilter, impl)).rejects.toThrow(/listed 2 of 150/);
+  });
+  it("over the page cap", async () => {
+    const impl = vi.fn(async () => Response.json({ totalFound: 999_999, content: [] })) as unknown as typeof fetch;
+    await expect(fetchSmartRecruiters("acme", passesTitleFilter, impl)).rejects.toThrow(/cap/);
   });
 });

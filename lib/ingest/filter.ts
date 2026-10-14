@@ -21,9 +21,9 @@ export const TITLE_NEGATIVE = [
   "Training Contract", "Talent Acquisition", "Nurse", "Teacher", "Driver", "Warehouse", "Customer Care",
   "Customer Support", "Call Center", "Call Centre",
   // Staff who run early-careers programmes, not the programmes themselves.
-  "Programme Coordinator", "Program Coordinator", "Talent Delivery", "Team Manager",
-  // Experienced grades and insurance-broking "placement" (placing policies), not student placements.
-  "word:ii", "word:iii", "Placement Specialist", "Placement Broker", "Courtier",
+  "Programme Coordinator", "Program Coordinator", "Talent Delivery",
+  // Insurance-broking "placement" (placing policies), not student placements.
+  "Placement Specialist", "Placement Broker", "Courtier",
 ];
 
 const COHORT_CLASH = [/winter 20\d\d/i, /\(winter/i];
@@ -36,9 +36,12 @@ export function matchKeyword(title: string, kw: string): boolean {
   return t.includes(kw.toLowerCase());
 }
 
+/** Experienced grades ("Analyst II", "Software Engineer III"); a bare numeral ("Intern II", "Phase II") is fine. */
+const EXPERIENCED_GRADE = /\b(analyst|associate|engineer|developer|scientist|consultant|specialist|accountant|manager|designer|researcher)\s+(ii|iii|iv)\b/i;
+
 export function passesTitleFilter(title: string): boolean {
   const pos = TITLE_POSITIVE.some((k) => matchKeyword(title, k));
-  const neg = TITLE_NEGATIVE.some((k) => matchKeyword(title, k));
+  const neg = TITLE_NEGATIVE.some((k) => matchKeyword(title, k)) || EXPERIENCED_GRADE.test(title);
   return pos && !neg;
 }
 
@@ -47,19 +50,21 @@ export function detectCohortClash(title: string): boolean {
 }
 
 const LONDON = /\blondon\b/i;
-const UK = /\b(united kingdom|uk|england|gbr|great britain|scotland|wales|northern ireland|manchester|birmingham|edinburgh|glasgow|bristol|leeds|cambridge|oxford|belfast|cardiff|reading|milton keynes)\b/i;
-const EUROPE = /\b(europe|emea|eu|amsterdam|dublin|ireland|paris|france|berlin|munich|frankfurt|hamburg|germany|zurich|geneva|switzerland|madrid|barcelona|spain|milan|italy|stockholm|sweden|copenhagen|denmark|warsaw|poland|lisbon|portugal|brussels|belgium|netherlands|vienna|austria|oslo|helsinki|prague|istanbul|t[uü]rkiye|turkey)\b/i;
+const UK = /\b(united kingdom|uk|england|gbr|great britain|scotland|wales|northern ireland|manchester|birmingham|edinburgh|glasgow|bristol|leeds|cambridge|oxford|belfast|cardiff|reading|milton keynes|sheffield|newcastle|liverpool|nottingham|southampton|coventry|leicester|bath|exeter|aberdeen|dundee|swansea|warwick|guildford|hatfield|stevenage|slough|swindon|derby|northampton|knutsford|hertfordshire|surrey|berkshire)\b/i;
+// Country-level UK terms: unlike a city name ("Cambridge, MA", "Newcastle, NSW"), these never need a BLOCK check.
+const UK_COUNTRY = /\b(united kingdom|uk|england|gbr|great britain|scotland|wales|northern ireland)\b/i;
+const EUROPE = /\b(europe|emea|eu|amsterdam|dublin|ireland|paris|france|berlin|munich|frankfurt|hamburg|germany|zurich|geneva|switzerland|madrid|barcelona|spain|milan|italy|stockholm|sweden|copenhagen|denmark|warsaw|poland|lisbon|portugal|brussels|belgium|netherlands|vienna|austria|oslo|helsinki|prague|istanbul|t[uü]rkiye|turkey|luxembourg|norway|finland|czechia|czech republic|greece|athens|romania|bucharest|hungary|budapest|estonia|tallinn|latvia|riga|lithuania|vilnius|croatia|zagreb|slovakia|bratislava|slovenia|bulgaria|sofia|serbia|belgrade|cyprus|malta|iceland)\b/i;
 const REMOTE = /\b(remote|anywhere|distributed)\b/i;
-const BLOCK = /\b(united states|usa|u\.s\.|new york|ny|san francisco|ca|chicago|boston|seattle|austin|los angeles|denver|miami|toronto|canada|vancouver|india|bangalore|bengaluru|hyderabad|mumbai|singapore|hong kong|sydney|melbourne|tokyo|shanghai|beijing|s[aã]o paulo|mexico|australia|japan|china|korea|seoul|taiwan|taipei|indonesia|jakarta|malaysia|kuala lumpur|philippines|manila|vietnam|thailand|bangkok|pakistan|brazil|argentina|chile|colombia|south africa|johannesburg|nigeria|kenya|egypt|cairo|uae|dubai|abu dhabi|saudi|riyadh|qatar|doha|israel|tel aviv|jamaica)\b/i;
+const BLOCK = /\b(united states|usa|u\.s\.|new york|ny|san francisco|ca|chicago|boston|seattle|austin|los angeles|denver|miami|toronto|canada|vancouver|india|bangalore|bengaluru|hyderabad|mumbai|singapore|hong kong|sydney|melbourne|tokyo|shanghai|beijing|s[aã]o paulo|mexico|australia|japan|china|korea|seoul|taiwan|taipei|indonesia|jakarta|malaysia|kuala lumpur|philippines|manila|vietnam|thailand|bangkok|pakistan|brazil|argentina|chile|colombia|south africa|johannesburg|nigeria|kenya|egypt|cairo|uae|dubai|abu dhabi|saudi|riyadh|qatar|doha|israel|tel aviv|jamaica|us|costa rica|new zealand|auckland|peru|lima|uruguay|guatemala|panama|puerto rico|nepal|sri lanka|bangladesh|morocco|tunisia|ghana)\b/i;
 
 // London, Ontario (e.g. BDO Canada, "London, Canada") is not London.
-const LONDON_ONTARIO = /\blondon\s*,\s*(on|ontario|canada)\b/gi;
-const withoutLondonOntario = (location: string) => location.replace(LONDON_ONTARIO, "Ontario, Canada");
+const LONDON_ONTARIO = /\blondon\s*,\s*(on|ontario|canada)(?=\s*(?:[,;()]|$))/gi;
+const withoutLondonOntario = (location: string) => location.replace(LONDON_ONTARIO, "Ontario");
 
 export function classifyRegion(rawLocation: string, remote: boolean): Region {
   const location = withoutLondonOntario(rawLocation);
   if (LONDON.test(location)) return "london";
-  if (UK.test(location)) return "uk";
+  if (UK.test(location) && (UK_COUNTRY.test(location) || !BLOCK.test(location))) return "uk";
   if (EUROPE.test(location)) return "europe";
   if (remote || REMOTE.test(location)) return "remote";
   return "other";
@@ -79,11 +84,11 @@ export function passesLocationFilter(rawLocation: string, remote: boolean, jdTex
   if (LONDON.test(location) || /united kingdom/i.test(location)) return { pass: true };
   if (usOnly) return { pass: false, reason: "US work authorisation required" };
   const placeRegion = classifyRegion(location, false);
-  if (placeRegion !== "other") return { pass: true };
+  if (placeRegion === "london" || placeRegion === "uk" || placeRegion === "europe") return { pass: true };
+  // A remote flag (or "Remote - US") on a role pinned to a place outside UK/Europe means remote within that country,
+  // not open to UK students. Unnamed places ("Hybrid", "Multiple Locations", "Remote - International") still pass.
   if (BLOCK.test(location)) return { pass: false, reason: `Location outside UK/Europe: ${location}` };
-  // A remote flag on a role pinned to a named place outside UK/Europe ("Costa Rica - Cartago", "San Francisco") means
-  // remote within that country, not open to UK students. Only generic remote locations ("Remote - International") pass.
-  if (REMOTE.test(location)) return { pass: true };
+  if (remote || REMOTE.test(location)) return { pass: true };
   return { pass: false, reason: `Location not in UK/Europe/remote: ${location}` };
 }
 
