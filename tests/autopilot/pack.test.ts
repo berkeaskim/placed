@@ -99,3 +99,29 @@ describe("toFillPlan hardening", () => {
     expect(d([])).toMatchObject({ mode: "yours", value: null });
   });
 });
+
+describe("file uploads and inverted sponsorship in the pack", () => {
+  it("only a CV upload gets the CV; other uploads stay the student's", () => {
+    const { it, plan } = planOf([
+      F({ key: "resume", label: "Resume/CV", type: "file", required: true }),
+      F({ key: "tr", label: "Upload your academic transcript", type: "file" }),
+      F({ key: "ws", label: "Please provide a writing sample", type: "file" }),
+      F({ key: "pr", label: "Proof of right to work", type: "file" }),
+    ]);
+    expect(it.map((i) => i.group)).toEqual(["vault", "yours", "yours", "yours"]);
+    expect(plan.map((p) => p.mode)).toEqual(["fill", "yours", "yours", "yours"]);
+  });
+  it("inverted sponsorship wording is never preselected", () => {
+    const f = F({ key: "s", label: "Are you able to work in the UK without needing visa sponsorship?", type: "boolean", required: true });
+    expect(planOf([f]).it[0]).toMatchObject({ group: "confirm", value: null });
+    const sel = F({ key: "s2", label: "Please confirm you do not require sponsorship", type: "select", required: true, options: [{ label: "Yes", value: "y" }, { label: "No", value: "n" }] });
+    expect(planOf([sel]).it[0]).toMatchObject({ group: "confirm", value: null });
+  });
+  it("multiselects carry the label of every resolved value; singles keep optionLabel only", () => {
+    const ms = F({ key: "m", label: "Pick some", type: "multiselect", required: true, options: [{ label: "A", value: "a" }, { label: "B", value: "b" }, { label: "C", value: "c" }] });
+    const p = planOf([ms], { m: { value: ["a", "c", "zzz"] } }).plan[0];
+    expect(p).toMatchObject({ value: ["a", "c"], optionLabels: ["A", "C"] });
+    expect(planOf([NOTICE], { n: { value: "b" } }).plan[0]).toMatchObject({ optionLabel: "2 months" });
+    expect(planOf([NOTICE], { n: { value: "b" } }).plan[0]).not.toHaveProperty("optionLabels");
+  });
+});

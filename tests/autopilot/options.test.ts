@@ -12,10 +12,10 @@ const ASHBY_RTW = opt("BNO Visa", "British Birth Certificate", "British/Irish Pa
 let ashbyFullOptions: FieldOption[] = [];
 beforeAll(() => {
   const fixtureData = JSON.parse(fs.readFileSync(path.join(__dirname, "../fixtures/autopilot/ashby-multiverse.json"), "utf8"));
-  const rtwField = fixtureData.data.jobPosting.applicationForm.sections[1].fieldEntries.find((e: any) =>
+  const rtwField = fixtureData.data.jobPosting.applicationForm.sections[1].fieldEntries.find((e: { field: { title: string } }) =>
     e.field.title.includes("right to work")
   );
-  ashbyFullOptions = rtwField.field.selectableValues.map((v: any) => ({ label: v.label, value: v.value }));
+  ashbyFullOptions = rtwField.field.selectableValues.map((v: { label: string; value: string }) => ({ label: v.label, value: v.value }));
 });
 
 describe("matchOption apostrophes", () => {
@@ -80,5 +80,24 @@ describe("matchOption", () => {
     expect(matchOption("grad_year", { grad_year: "2028" }, opt("2027", "2028", "2029", "2030"))).toMatchObject({ value: "1" });
     expect(matchOption("grad_year", { grad_year: "2028" }, opt("20280101", "2028X", "2028"))).toMatchObject({ value: "2" });
     expect(matchOption("grad_year", { grad_year: "2028" }, opt("20285", "2028Q1"))).toMatchObject({ ambiguous: true });
+  });
+});
+
+
+describe("matchOption inverted sponsorship phrasing", () => {
+  const YN = opt("Yes", "No");
+  it.each([
+    "Are you able to work in the UK without needing visa sponsorship?",
+    "Are you able to work in the UK without requiring sponsorship?",
+    "Please confirm you do not require sponsorship",
+    "Please confirm you don\u2019t require visa sponsorship",
+  ])("does not preselect for %s", (label) => {
+    expect(matchOption("needs_sponsorship", { needs_sponsorship: "no" }, YN, label)).toMatchObject({ ambiguous: true });
+    expect(matchOption("needs_sponsorship", { needs_sponsorship: "yes" }, YN, label)).toMatchObject({ ambiguous: true });
+  });
+  it("still maps the normal phrasing", () => {
+    const label = "Will you now or in the future require sponsorship to work within the UK?";
+    expect(matchOption("needs_sponsorship", { needs_sponsorship: "no" }, YN, label)).toMatchObject({ value: "1" });
+    expect(matchOption("needs_sponsorship", { needs_sponsorship: "yes" }, YN, label)).toMatchObject({ value: "0" });
   });
 });

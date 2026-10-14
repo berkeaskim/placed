@@ -17,9 +17,14 @@ function one(options: FieldOption[], pred: (t: string) => boolean): OptionMatch 
   return hits.length === 1 ? { value: hits[0].value, label: hits[0].label } : { ambiguous: true, candidates: options };
 }
 
-export function matchOption(key: VaultKey, core: Partial<Core>, options: FieldOption[]): OptionMatch {
+// "Are you able to work in the UK WITHOUT needing visa sponsorship?" inverts Yes/No relative to "Do you need sponsorship?": never preselect for those.
+const INVERTED_SPONSOR = /\b(without|not\s+(need|require)\w*|no\s+(need|requirement)|don'?t\s+(need|require)\w*|do\s+not\s+(need|require)\w*)\b(\W+\w+){0,5}?\W+(sponsor|visa)/i;
+export const isInvertedSponsorship = (label: string) => INVERTED_SPONSOR.test(norm(label));
+
+export function matchOption(key: VaultKey, core: Partial<Core>, options: FieldOption[], label?: string): OptionMatch {
   if (key === "rtw_uk" && core.rtw_uk) return one(options, RTW_RULES[core.rtw_uk]);
   if (key === "needs_sponsorship" && core.needs_sponsorship) {
+    if (label && isInvertedSponsorship(label)) return { ambiguous: true, candidates: options };
     const want = core.needs_sponsorship === "yes" ? /^yes\b/ : /^no\b/;
     return one(options, (t) => want.test(t));
   }

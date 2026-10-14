@@ -68,3 +68,17 @@ describe("classify", () => {
     for (const l of labels as string[]) expect(() => classify(l, "text")).not.toThrow();
   });
 });
+
+describe("classify file uploads", () => {
+  it.each([
+    ["Resume/CV", "file", { kind: "file", which: "cv" }],
+    ["CV", "file", { kind: "file", which: "cv" }],
+    ["Curriculum Vitae", "file", { kind: "file", which: "cv" }],
+    ["Upload your academic transcript", "file", { kind: "yours" }],
+    ["Please provide a writing sample", "file", { kind: "yours" }],
+    ["Proof of right to work", "file", { kind: "yours" }],
+    ["Portfolio (PDF)", "file", { kind: "yours" }],
+  ])("%s", (label, type, want) => {
+    expect(classify(label, type as never)).toEqual(want);
+  });
+});

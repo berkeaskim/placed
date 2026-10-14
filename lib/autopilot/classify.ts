@@ -44,7 +44,11 @@ export function classify(label: string, type: FieldType): Classified {
   const l = label.trim();
   if (isEeoLabel(l)) return { kind: "eeo" };
   if (CONSENT.test(l)) return { kind: "consent" };
-  if (type === "file") return /cover/i.test(l) ? { kind: "file", which: "cover" } : { kind: "file", which: "cv" };
+  if (type === "file") {
+    // Only a CV/resume upload gets the student's CV; transcripts, writing samples, proof of right to work etc. stay hers.
+    if (/cover/i.test(l)) return { kind: "file", which: "cover" };
+    return /resume|\bcv\b|curriculum/i.test(l) ? { kind: "file", which: "cv" } : { kind: "yours" };
+  }
   if (YOURS.test(l)) return { kind: "yours" };
   if (type === "location") return { kind: "vault", key: "location" };
   // RTW / sponsorship / visa questions are never drafted: the answer comes only from the student's own Vault (or from them directly), whatever the length or type.

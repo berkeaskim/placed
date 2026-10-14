@@ -11,7 +11,7 @@
   const G = () => root.PlacedGuard;
 
   function anchor(field) {
-    if (field.type === "file") return document.getElementById(field.target) || document.getElementById("resume");
+    if (field.type === "file") return document.getElementById(field.target); // no #resume fallback: only the field the pack named gets the CV
     if (field.type === "location") return document.getElementById("candidate-location") || document.getElementById(field.target);
     if (field.type === "multiselect") return document.querySelector(`[id^="${D().attrEsc(field.target)}_"]`) || document.getElementById(field.target);
     return document.getElementById(field.target);

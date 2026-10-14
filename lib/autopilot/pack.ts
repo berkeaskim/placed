@@ -9,7 +9,7 @@ export type PackItem = { field: FormField; group: PackGroup; value: string | str
 export type Answer = { value: string | string[]; approved?: boolean };
 export type Answers = Record<string, Answer>;
 export type FillMode = "fill" | "yours" | "select-yourself";
-export type FillInstruction = { target: string; type: FormField["type"]; label: string; mode: FillMode; value: string | string[] | null; optionLabel?: string; sourceLabel: string | null };
+export type FillInstruction = { target: string; type: FormField["type"]; label: string; mode: FillMode; value: string | string[] | null; optionLabel?: string; optionLabels?: string[]; sourceLabel: string | null };
 
 const SETUP = "from your setup";
 const normBool = (s: string): "true" | "false" | null => {
@@ -40,7 +40,7 @@ export function assemblePack(form: NormalizedForm, core: Partial<Core>, extra: R
       case "vault": {
         if (hasOptions(field) || field.type === "boolean") {
           const opts = field.type === "boolean" && !field.options.length ? [{ label: "Yes", value: "true" }, { label: "No", value: "false" }] : field.options;
-          const m = matchOption(c.key, core, opts);
+          const m = matchOption(c.key, core, opts, field.label);
           if ("ambiguous" in m) return item(vaultValue(core, c.key) ? "confirm" : field.required ? "ask" : "yours");
           const value = field.type === "multiselect" ? [m.value] : m.value;
           return item(CONFIRM_KEYS.has(c.key) ? "confirm" : "vault", value, SETUP);
@@ -55,6 +55,10 @@ export function assemblePack(form: NormalizedForm, core: Partial<Core>, extra: R
 
 export function canOpen(items: PackItem[], answers: Answers): boolean {
   return items.every((i) => (i.group !== "ask" && i.group !== "confirm") || answers[i.field.key] !== undefined);
+}
+
+function labelsFor(f: FormField, v: string[]): string[] {
+  return v.map((x) => f.options.find((o) => o.value === x)?.label).filter((l): l is string => Boolean(l));
 }
 
 function labelFor(f: FormField, v: string | string[] | null): string | undefined {
@@ -84,7 +88,9 @@ export function toFillPlan(items: PackItem[], answers: Answers): FillInstruction
       const vals = (Array.isArray(v) ? v : [v]).filter((x) => known.has(x));
       if (!vals.length) return { ...base, mode: "select-yourself", value: null };
       const out = field.type === "multiselect" ? vals : vals[0];
-      return { ...base, mode: "fill", value: out, optionLabel: labelFor(field, out) };
+      return Array.isArray(out)
+        ? { ...base, mode: "fill", value: out, optionLabel: labelFor(field, out), optionLabels: labelsFor(field, out) }
+        : { ...base, mode: "fill", value: out, optionLabel: labelFor(field, out) };
     }
     return { ...base, mode: "fill", value: v };
   });

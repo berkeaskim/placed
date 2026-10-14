@@ -90,7 +90,7 @@
 
     if (field.type === "multiselect") {
       const values = (Array.isArray(field.value) ? field.value : [field.value]).map(String);
-      const wanted = new Set([...values, field.optionLabel].filter(Boolean).map(D().norm));
+      const wanted = new Set([...values, ...(field.optionLabels || [field.optionLabel])].filter(Boolean).map(D().norm));
       let found = 0;
       for (const cb of container.querySelectorAll("input[type=checkbox]")) {
         const lab = cb.id ? container.querySelector(`label[for="${D().attrEsc(cb.id)}"]`) : null;

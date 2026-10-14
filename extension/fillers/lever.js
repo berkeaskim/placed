@@ -28,7 +28,8 @@
     }
     if (!els.length) return "missing";
     const values = (Array.isArray(field.value) ? field.value : [field.value]).filter((v) => v != null).map(String);
-    if (field.optionLabel) values.push(field.optionLabel);
+    if (field.optionLabels) values.push(...field.optionLabels);
+    else if (field.optionLabel) values.push(field.optionLabel);
     const wanted = new Set(values.map(norm));
     if (field.type === "boolean") { if (field.value === "true") wanted.add("yes"); if (field.value === "false") wanted.add("no"); }
 
