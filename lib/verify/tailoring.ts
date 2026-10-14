@@ -619,6 +619,13 @@ export const KNOWN_EMPLOYERS: KnownEmployer[] = [
   E("Unilever"), E("Mercer"), E("Linklaters"), E("Boeing"), E("Schroders"), E("Gartner"), E("Experian"), E("Ocado"), E("Slaughter and May", [], true),
   // fix round 4: tool companies that also employ graduates
   E("Tableau"), E("Salesforce"),
+  // seed/companies.yml additions (2026-10-14 coverage audit)
+  E("Squarepoint Capital"), E("Qube Research & Technologies"), E("Forvis Mazars", ["Mazars"]), E("Ocado Group"), E("NatWest Group"),
+  E("Brevan Howard"), E("PIMCO"), E("S&P Global"), E("M&G"), E("Aviva"), E("Mastercard"), E("Visa", [], true),
+  E("Marsh McLennan", ["Marsh & McLennan"]), E("Norton Rose Fulbright"), E("Hogan Lovells"), E("White & Case", [], true),
+  E("Procter & Gamble", ["P&G"]), E("Mars", [], true), E("Mondelez", ["Mondelez International"]), E("Diageo"), E("NVIDIA"),
+  E("Intel", [], true), E("Cisco"), E("Adobe", [], true), E("Sky", [], true), E("AstraZeneca"), E("BP", [], true), E("Rolls-Royce"),
+  E("Clifford Chance"), E("PA Consulting", [], true), E("Legal & General"), E("ASOS"),
 ];
 /** Single-word employer names/aliases, lowercased: never an ordinary affiliation head (fix round 1, ruling 3). */
 const EMPLOYER_WORDS = new Set(KNOWN_EMPLOYERS.flatMap((k) => [k.name, ...(k.aliases ?? [])]).filter((n) => /^[A-Za-z0-9.]+$/.test(n)).map((n) => n.toLowerCase()));
