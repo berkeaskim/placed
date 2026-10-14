@@ -135,3 +135,46 @@
   .card-quest { @apply rounded-[20px] border-2 border-b-[5px] border-[#E6E6EF] bg-white; }
   .num-quest { @apply font-[family-name:var(--font-quest)] font-bold; }
 }
+
+/*
+ * Agent motion: shared keyframes for "the AI is working" and "the AI just wrote this" moments.
+ * Kept quiet on purpose (one accent colour, short loops, no bounce). Components in components/agent/ use these.
+ */
+@keyframes agent-shimmer { from { background-position: 150% 0; } to { background-position: -50% 0; } }
+@keyframes agent-scan { 0% { transform: translateY(-100%); opacity: 0; } 15% { opacity: 1; } 85% { opacity: 1; } 100% { transform: translateY(100%); opacity: 0; } }
+@keyframes agent-ping { 0% { transform: scale(1); opacity: 0.55; } 100% { transform: scale(2.4); opacity: 0; } }
+@keyframes agent-ink { from { background-size: 0% 100%; } to { background-size: 100% 100%; } }
+@keyframes agent-glint { 0%, 70% { background-position: 150% 0; } 100% { background-position: -50% 0; } }
+
+@layer components {
+  /* Text that is being "thought about": a soft purple sheen sweeps across it. */
+  .agent-shimmer {
+    background: linear-gradient(90deg, #3A20C4 0%, #3A20C4 40%, #A996FF 50%, #3A20C4 60%, #3A20C4 100%);
+    background-size: 250% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: agent-shimmer 2.2s linear infinite;
+  }
+  /* AI-written insertions are inked in left to right, once. */
+  .agent-ink {
+    background-image: linear-gradient(#DDF3E8, #DDF3E8);
+    background-repeat: no-repeat;
+    background-size: 100% 100%;
+    animation: agent-ink 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation-delay: var(--ink-delay, 0ms);
+  }
+  /* A single glint over an AI badge when it first appears. */
+  .agent-glint {
+    background-image: linear-gradient(110deg, transparent 35%, rgba(255, 255, 255, 0.9) 50%, transparent 65%);
+    background-size: 250% 100%;
+    background-repeat: no-repeat;
+    animation: agent-glint 1.6s ease-out 0.2s 1 both;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .agent-shimmer { animation: none; color: #3A20C4; background: none; }
+  .agent-ink, .agent-glint { animation: none; }
+  .agent-motion-scan, .agent-motion-ping { display: none; }
+}

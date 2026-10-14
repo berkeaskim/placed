@@ -1,6 +1,8 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
-import { Skeleton } from "@/components/ui/skeleton";
+import { motion, useReducedMotion, type Variants } from "motion/react";
+import { AgentSteps, useAgentSteps } from "@/components/agent/agent-steps";
+import { CountUp, Stagger, StaggerItem } from "@/components/agent/reveal";
 import { AiWrittenTag } from "@/components/ai-written-tag";
 import { mustHavesLabel, mustHavesMet, type RequirementRow } from "@/lib/scoring/requirements";
 import { getExplanation, type ExplanationView } from "./actions";
@@ -15,26 +17,23 @@ const IMPORTANCE_LABEL: Record<RequirementRow["importance"], string> = {
   critical: "Critical", high: "High", meaningful: "Meaningful", preferred: "Preferred", low_signal: "Low signal",
 };
 
+// Pops in just after its row arrives, so the verdicts land one by one down the table.
+const pop: Variants = { hidden: { scale: 0.6, opacity: 0 }, show: { scale: 1, opacity: 1, transition: { type: "spring", bounce: 0, duration: 0.35, delay: 0.12 } } };
+const popReduced: Variants = { hidden: { opacity: 0 }, show: { opacity: 1 } };
+
 function MatchIcon({ match }: { match: RequirementRow["match"] }) {
+  const reduce = useReducedMotion();
   const d = match === "strong" ? "M5 12.5l4.5 4.5L19 7.5" : match === "partial" ? "M6 12h12" : "M7 7l10 10M17 7L7 17";
   return (
-    <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${MATCH_TONE[match]}`} aria-hidden="true">
+    <motion.span variants={reduce ? popReduced : pop} className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${MATCH_TONE[match]}`} aria-hidden="true">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d={d} /></svg>
-    </span>
+    </motion.span>
   );
 }
 
-function LoadingState() {
-  return (
-    <div className="flex flex-col gap-2.5" role="status" aria-label="Loading how you match this role">
-      <Skeleton className="h-7 w-1/2" />
-      <Skeleton className="h-5 w-full" />
-      <Skeleton className="h-5 w-5/6" />
-      <Skeleton className="h-5 w-4/6" />
-      <span className="text-xs text-muted-foreground">Reading the requirements against your CV…</span>
-    </div>
-  );
-}
+// Real stages of getExplanation: load the posting's requirements (or reuse a cached explanation), match them against
+// the CV (keyword coverage + one AI call), and write why-you-fit / gaps in that same call.
+const STEPS = ["Reading the posting's requirements", "Matching each one against your CV", "Writing why you fit and how to close gaps"] as const;
 
 /**
  * Right-hand panel: "Must-haves met: X/Y" headline (B10), then `children` (the server-rendered Findability line),
@@ -60,7 +59,11 @@ export function ExplainPanel({ jobId, children }: { jobId: string; children?: Re
     return () => { live = false; };
   }, [jobId]);
 
-  if (state.status === "loading") return <><LoadingState />{children}</>;
+  const { index, finishing } = useAgentSteps(STEPS.length, state.status === "loading", { stepMs: 2200 });
+  // Only a real result fast-forwards the checklist; an error replaces it straight away.
+  if (state.status === "loading" || (finishing && state.status === "ready")) {
+    return <><AgentSteps steps={STEPS} index={index} label="Fit agent" />{children}</>;
+  }
   if (state.status === "error") {
     return (
       <>
@@ -79,16 +82,20 @@ export function ExplainPanel({ jobId, children }: { jobId: string; children?: Re
   const { e } = state;
   const must = mustHavesMet(e.rows);
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-1">
-        <h2 className="text-xl font-extrabold tracking-tight">{mustHavesLabel(must)}</h2>
+    <Stagger className="flex flex-col gap-4">
+      <StaggerItem className="flex flex-col gap-1">
+        <h2 className="text-xl font-extrabold tracking-tight">
+          {must.total === 0 ? mustHavesLabel(must) : (
+            <><span className="sr-only">{mustHavesLabel(must)}</span><span aria-hidden="true">Must-haves met: <CountUp to={must.met} duration={0.8} />/{must.total}</span></>
+          )}
+        </h2>
         {must.total > 0 && (
           <p className="text-xs text-muted-foreground">
             Counts the posting&apos;s critical and high requirements your CV clearly shows.
             {must.partial > 0 && ` ${must.partial} more ${must.partial === 1 ? "is" : "are"} a partial match, which doesn't count as met.`}
           </p>
         )}
-      </div>
+      </StaggerItem>
       {children}
 
       {e.aiFailed && (
@@ -103,7 +110,7 @@ export function ExplainPanel({ jobId, children }: { jobId: string; children?: Re
           <h3 id="req-table" className="mb-2 font-bold">Requirements</h3>
           <ul className="flex flex-col gap-2.5 text-sm">
             {e.rows.map((r, i) => (
-              <li key={`${i}-${r.text}`} className="flex gap-2.5">
+              <StaggerItem as="li" key={`${i}-${r.text}`} className="flex gap-2.5">
                 <MatchIcon match={r.match} />
                 <div className="flex min-w-0 flex-1 flex-col">
                   <span>
@@ -114,17 +121,19 @@ export function ExplainPanel({ jobId, children }: { jobId: string; children?: Re
                   </span>
                   {r.cvEvidence && <span className="mt-0.5 text-xs italic text-[#4A4A57]">From your CV: &ldquo;{r.cvEvidence}&rdquo;</span>}
                 </div>
-              </li>
+              </StaggerItem>
             ))}
           </ul>
         </section>
       )}
 
       {e.whyFit.length > 0 && (
-        <section aria-labelledby="why-fit">
-          <h3 id="why-fit" className="mb-1 flex items-center gap-2 font-bold">Why you fit{e.aiWritten && <AiWrittenTag />}</h3>
-          <ul className="list-disc pl-5 text-sm">{e.whyFit.map((w, i) => <li key={i}>{w}</li>)}</ul>
-        </section>
+        <StaggerItem>
+          <section aria-labelledby="why-fit">
+            <h3 id="why-fit" className="mb-1 flex items-center gap-2 font-bold">Why you fit{e.aiWritten && <AiWrittenTag />}</h3>
+            <ul className="list-disc pl-5 text-sm">{e.whyFit.map((w, i) => <li key={i}>{w}</li>)}</ul>
+          </section>
+        </StaggerItem>
       )}
 
       {e.gaps.length > 0 && (
@@ -132,18 +141,18 @@ export function ExplainPanel({ jobId, children }: { jobId: string; children?: Re
           <h3 id="gaps" className="mb-2 flex flex-wrap items-center gap-2 font-bold">What&apos;s missing, and how to close it{e.aiWritten && <AiWrittenTag />}</h3>
           <ul className="flex flex-col gap-2 text-sm">
             {e.gaps.map((g, i) => (
-              <li key={`${i}-${g.requirement}`} className="flex flex-col gap-0.5 rounded-xl bg-[#F6F6FA] p-3">
+              <StaggerItem as="li" key={`${i}-${g.requirement}`} className="flex flex-col gap-0.5 rounded-xl bg-[#F6F6FA] p-3">
                 <span className="font-bold">
                   {g.requirement}
                   {g.blocking && <span className="ml-1.5 text-xs font-bold text-[#B42318]">· must-have</span>}
                 </span>
                 {g.adjacentExperience && <span className="text-muted-foreground">Closest you have: {g.adjacentExperience}</span>}
                 <span>{g.howToClose}</span>
-              </li>
+              </StaggerItem>
             ))}
           </ul>
         </section>
       )}
-    </div>
+    </Stagger>
   );
 }

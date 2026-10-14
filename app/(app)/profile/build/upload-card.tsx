@@ -1,12 +1,15 @@
 "use client";
 import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
-import { FileUp, LoaderCircle } from "lucide-react";
+import { FileText, FileUp } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { celebrate } from "@/components/reward-toast";
+import { AgentSteps, useAgentSteps } from "@/components/agent/agent-steps";
+import { ScanLine } from "@/components/agent/reveal";
 import { uploadCv } from "./actions";
 
-const STEPS = ["Reading your CV…", "Spotting your skills…", "Finding your roles…", "Scoring against recruiter rules…"];
+// The stages uploadCv really runs, in order. CV scoring happens after the response (after()), so it isn't listed.
+const STEPS = ["Extracting the text from your PDF", "Checking for hidden text", "Reading your roles and skills", "Saving your profile"] as const;
 
 export function UploadCard() {
   const router = useRouter();
@@ -16,25 +19,27 @@ export function UploadCard() {
   const [unreadable, setUnreadable] = useState(false);
   const [safetyWarning, setSafetyWarning] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
-  const [step, setStep] = useState(0);
+  const [saved, setSaved] = useState(false);
+  const { index, finishing } = useAgentSteps(STEPS.length, pending);
+  // Only a clean success ticks the remaining steps off; the checklist stays up until we've left for the profile.
+  const showSteps = pending || saved;
   useEffect(() => {
-    if (!pending) return;
-    const t = setInterval(() => setStep((s) => Math.min(s + 1, STEPS.length - 1)), 1800);
-    return () => { clearInterval(t); setStep(0); };
-  }, [pending]);
+    if (saved && !pending && !finishing) router.push("/profile");
+  }, [saved, pending, finishing, router]);
 
   return (
     <form action={(fd) => start(async () => {
       setError(null);
       setUnreadable(false);
       setSafetyWarning(null);
+      setSaved(false);
       const r = await uploadCv(fd);
       if (inputRef.current) inputRef.current.value = ""; // allow re-picking the same file
       if ("error" in r) { setError(r.error); return; }
       celebrate(r.award);
       if (r.imageOnly) { setUnreadable(true); return; }
       if (r.safetyWarning) { setSafetyWarning(r.safetyWarning); return; }
-      router.push("/profile");
+      setSaved(true);
     })} className="flex flex-col gap-4">
       <label
         onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
@@ -43,18 +48,19 @@ export function UploadCard() {
           e.preventDefault();
           setDragging(false);
           const input = inputRef.current;
-          if (!input || pending || !e.dataTransfer.files.length) return;
+          if (!input || pending || saved || !e.dataTransfer.files.length) return;
           input.files = e.dataTransfer.files;
           input.form?.requestSubmit();
         }}
-        className={`flex min-h-60 flex-col items-center justify-center gap-4 rounded-[24px] border border-dashed px-6 py-10 text-center shadow-[0_1px_2px_rgba(22,22,29,0.04),0_12px_32px_rgba(22,22,29,0.06)] transition-colors has-[input:focus-visible]:ring-2 has-[input:focus-visible]:ring-[#5B3DF5] has-[input:focus-visible]:ring-offset-2 sm:min-h-72 ${pending ? "cursor-progress" : "cursor-pointer"} ${dragging ? "border-[#5B3DF5] bg-[#F8F7FF]" : "border-[#D4D4E0] bg-white hover:border-[#5B3DF5]"}`}
+        className={`flex min-h-60 flex-col items-center justify-center gap-4 rounded-[24px] border border-dashed px-6 py-10 text-center shadow-[0_1px_2px_rgba(22,22,29,0.04),0_12px_32px_rgba(22,22,29,0.06)] transition-colors has-[input:focus-visible]:ring-2 has-[input:focus-visible]:ring-[#5B3DF5] has-[input:focus-visible]:ring-offset-2 sm:min-h-72 ${showSteps ? "cursor-progress" : "cursor-pointer"} ${dragging ? "border-[#5B3DF5] bg-[#F8F7FF]" : "border-[#D4D4E0] bg-white hover:border-[#5B3DF5]"}`}
       >
-        <span aria-hidden="true" className="flex h-14 w-14 items-center justify-center rounded-full bg-[#EFEBFF] text-[#5B3DF5]">
-          {pending ? <LoaderCircle className="h-6 w-6 animate-spin" /> : <FileUp className="h-6 w-6" />}
+        <span aria-hidden="true" className="relative flex h-14 w-14 items-center justify-center overflow-hidden rounded-full bg-[#EFEBFF] text-[#5B3DF5]">
+          {showSteps ? <><FileText className="h-6 w-6" /><ScanLine /></> : <FileUp className="h-6 w-6" />}
         </span>
-        {/* Always mounted so screen readers announce each step as it changes. */}
-        <span role="status" aria-live="polite" className={pending ? "text-[17px] font-semibold text-[#3A20C4]" : "sr-only"}>{pending ? STEPS[step] : ""}</span>
-        {!pending && (
+        {/* Always mounted so screen readers announce each step; the visual checklist below is hidden from them. */}
+        <span role="status" aria-live="polite" className="sr-only">{showSteps ? STEPS[Math.min(index, STEPS.length - 1)] : ""}</span>
+        {showSteps && <div aria-hidden="true" className="w-full max-w-sm text-left"><AgentSteps steps={STEPS} index={index} label="CV agent" /></div>}
+        {!showSteps && (
           <>
             <span className="flex flex-col gap-1">
               <span className="text-[17px] font-semibold">Drop your PDF here</span>
@@ -64,7 +70,7 @@ export function UploadCard() {
           </>
         )}
         <span className="text-[13px] text-muted-foreground">PDF, up to 4 MB · Private, never shared</span>
-        <input ref={inputRef} type="file" name="cv" accept="application/pdf" required disabled={pending} className="sr-only" onChange={(e) => e.currentTarget.form?.requestSubmit()} />
+        <input ref={inputRef} type="file" name="cv" accept="application/pdf" required disabled={pending || saved} className="sr-only" onChange={(e) => e.currentTarget.form?.requestSubmit()} />
       </label>
       {error && <p role="alert" className="text-center text-sm text-destructive">{error}</p>}
       {safetyWarning && (

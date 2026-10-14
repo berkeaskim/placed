@@ -5,6 +5,8 @@ import { Progress } from "@/components/ui/progress";
 import { QUESTIONS } from "@/lib/quiz/questions";
 import type { RoleCard } from "@/lib/quiz/view";
 import { celebrate } from "@/components/reward-toast";
+import { AgentStatus } from "@/components/agent/agent-steps";
+import { CountUp, Stagger, StaggerItem } from "@/components/agent/reveal";
 import { submitQuiz } from "./actions";
 
 /** One stroke icon per question card (spec §9 step 3: "6 visual cards"). */
@@ -68,17 +70,19 @@ export function QuizFlow() {
             Your profile still uses the roles from your CV. Upload a new CV to change them.
           </p>
         )}
-        <ol className="flex flex-col gap-3">
+        <Stagger as="ol" className="flex flex-col gap-3">
           {done.roles.map((r) => (
-            <li key={r.key} className="card-quest flex items-start gap-4 p-5">
-              <span className="num-quest flex h-14 w-14 shrink-0 items-center justify-center rounded-[14px] bg-[#EFEBFF] text-lg text-[#3A20C4]">{r.score}%</span>
+            <StaggerItem as="li" key={r.key} className="card-quest flex items-start gap-4 p-5">
+              <span className="num-quest flex h-14 w-14 shrink-0 items-center justify-center rounded-[14px] bg-[#EFEBFF] text-lg text-[#3A20C4]">
+                <span className="sr-only">{r.score}%</span><span aria-hidden="true"><CountUp to={r.score} />%</span>
+              </span>
               <div className="flex flex-col gap-1">
                 <h2 className="text-lg font-bold">{r.title}</h2>
                 <ul className="flex flex-col gap-0.5 text-sm text-[#5B5B6B]">{r.why.map((w) => <li key={w}>{w}</li>)}</ul>
               </div>
-            </li>
+            </StaggerItem>
           ))}
-        </ol>
+        </Stagger>
         {done.skills.length > 0 && (
           <section aria-labelledby="starter-h" className="flex flex-col gap-2">
             <h2 id="starter-h" className="text-sm font-bold">Skills worth learning first</h2>
@@ -122,7 +126,7 @@ export function QuizFlow() {
         {last && answers[q.id] && error && !pending && (
           <button type="button" onClick={() => submit(answers)} className="btn-quest min-h-12 px-5 py-3">Try again</button>
         )}
-        {pending && <p role="status" aria-live="polite" className="font-semibold text-[#3A20C4]">Finding your roles…</p>}
+        {pending && <AgentStatus>Finding your roles…</AgentStatus>}
       </div>
       {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
     </div>

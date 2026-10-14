@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { canEdit, canReject, hasPlaceholder, placeholderParts, type Decision, type TailorChangeView } from "@/lib/tailor/view";
 import { diffStats, lineDiff, spaceBetween } from "@/lib/tailor/diff";
+import { AiWrittenTag } from "@/components/ai-written-tag";
 import { AlertIcon, CheckIcon, PencilIcon, QuoteIcon, UndoIcon } from "./icons";
 
 const SECTION_LABEL: Record<TailorChangeView["section"], string> = {
@@ -22,10 +23,13 @@ function Line({ text }: { text: string }) {
 
 /**
  * Word-level before → after: removed words red and struck through, added words green and underlined (never colour
- * alone). Screen readers get "removed:" / "added:" labels.
+ * alone). Screen readers get "removed:" / "added:" labels. `ink` (AI wording only, never the student's edit) writes the
+ * added words in one after another.
  */
-export function DiffLine({ before, after }: { before: string; after: string }) {
+export function DiffLine({ before, after, ink = false }: { before: string; after: string; ink?: boolean }) {
   const parts = lineDiff(before, after);
+  const inkOrder = new Map<number, number>();
+  parts.forEach((p, i) => { if (p.op === "add") inkOrder.set(i, inkOrder.size); });
   const { removed, added } = diffStats(parts);
   return (
     <div className="flex flex-col gap-1">
@@ -36,7 +40,8 @@ export function DiffLine({ before, after }: { before: string; after: string }) {
             {p.op === "same" ? <Line text={p.text} />
               : p.op === "del"
                 ? <del className="rounded bg-[#FDECEA] px-0.5 text-[#B42318] decoration-[#B42318] decoration-2"><span className="sr-only">removed: </span>{p.text}</del>
-                : <ins className="rounded bg-[#E3F6EE] px-0.5 font-semibold text-[#0B6B49] underline decoration-2 underline-offset-2"><span className="sr-only">added: </span><Line text={p.text} /></ins>}
+                : <ins className={`rounded px-0.5 font-semibold text-[#0B6B49] underline decoration-2 underline-offset-2 ${ink ? "agent-ink" : "bg-[#E3F6EE]"}`}
+                  style={ink ? ({ "--ink-delay": `calc(var(--ink-base, 0ms) + ${Math.min((inkOrder.get(i) ?? 0) * 90, 600)}ms)` } as React.CSSProperties) : undefined}><span className="sr-only">added: </span><Line text={p.text} /></ins>}
           </span>
         ))}
       </p>
@@ -65,6 +70,8 @@ export function ChangeCard({ change: c, decision, text, onDecide, onUndo, onConf
   const k = decision.kind;
   const shown = k === "rejected" ? c.before : k === "edited" ? decision.text : c.after;
   const needsNumber = k !== "rejected" && hasPlaceholder(shown);
+  // The AI's own wording is on screen (not the student's edit or their original line).
+  const aiWords = (k === "suggested" || k === "accepted") && (c.changeType === "rephrased" || c.changeType === "merged");
   const tone = k === "rejected" ? "border-[#E6E6EF] bg-[#FAFAFC]" : k === "suggested" ? "border-[#E6E6EF] bg-white" : "border-[#BFE8D6] bg-white";
 
   return (
@@ -73,6 +80,7 @@ export function ChangeCard({ change: c, decision, text, onDecide, onUndo, onConf
         <span className="rounded-full bg-[#EEEEF2] px-2 py-0.5 text-[#3F3F4C]">{SECTION_LABEL[c.section]}</span>
         <span className="rounded-full bg-[#F4F1FF] px-2 py-0.5 text-[#3A20C4]">{TYPE_LABEL[c.changeType]}</span>
         {c.jdRequirement && <span className="rounded-full bg-[#E6EEFF] px-2 py-0.5 text-[#2340A8]">For: {c.jdRequirement}</span>}
+        {aiWords && <AiWrittenTag />}
         {k === "accepted" && <span className="ml-auto inline-flex items-center gap-1 text-[#0B6B49]"><CheckIcon size={12} />Accepted</span>}
         {k === "edited" && <span className="ml-auto inline-flex items-center gap-1 text-[#0B6B49]"><PencilIcon size={12} />Your words</span>}
         {k === "rejected" && <span className="ml-auto text-muted-foreground">Kept your original</span>}
@@ -101,7 +109,7 @@ export function ChangeCard({ change: c, decision, text, onDecide, onUndo, onConf
       ) : c.changeType === "reordered" ? (
         <p className="font-semibold"><span className="sr-only">Moved up, unchanged: </span><Line text={shown} /></p>
       ) : (
-        <DiffLine before={c.before} after={shown} />
+        <DiffLine before={c.before} after={shown} ink={aiWords} />
       )}
 
       {decision.kind === "rejected" && decision.blockedBy && (
