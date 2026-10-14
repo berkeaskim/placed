@@ -6,7 +6,7 @@ import type { Ats, NormalizedForm } from "./forms/types";
 import { classify } from "./classify";
 import { draftAnswer, type DraftResult } from "./drafts";
 import { assemblePack, toFillPlan, type Answers, type FillInstruction, type PackItem } from "./pack";
-import { hashToken } from "./handoff";
+import { hashToken, safeNamePart } from "./handoff";
 import type { Core } from "./vault";
 import type { ParsedCV } from "@/lib/types";
 
@@ -55,12 +55,13 @@ export async function buildPack(userId: string, jobId: string, opts: { withDraft
 
 export async function claimPack(token: string): Promise<{ status: 200; body: ClaimBody } | { status: 404 | 410 }> {
   const db = createAdminClient();
-  const { data: pack } = await db.from("autopilot_packs").select("id, user_id, job_id, form, answers, token_expires_at, token_used_at").eq("token_hash", hashToken(token)).maybeSingle();
+  const hash = hashToken(token);
+  const { data: pack } = await db.from("autopilot_packs").select("id, user_id, job_id, form, answers, token_expires_at, token_used_at").eq("token_hash", hash).maybeSingle();
   if (!pack) return { status: 404 };
   if (pack.token_used_at || !pack.token_expires_at || Date.parse(pack.token_expires_at) < Date.now()) return { status: 410 };
-  // Atomic single use: only one concurrent caller can flip token_used_at from null.
+  // Atomic single use: bound to this exact token hash (a re-mint invalidates it), unexpired, and unused.
   const { data: used } = await db.from("autopilot_packs").update({ token_used_at: new Date().toISOString(), status: "claimed" })
-    .eq("id", pack.id).is("token_used_at", null).select("id");
+    .eq("id", pack.id).eq("token_hash", hash).is("token_used_at", null).gt("token_expires_at", new Date().toISOString()).select("id");
   if (!used?.length) return { status: 410 };
   const { core, extra } = await getVault(db, pack.user_id);
   const form = pack.form as NormalizedForm;
@@ -75,8 +76,8 @@ export async function claimPack(token: string): Promise<{ status: 200; body: Cla
   let cv: ClaimBody["cv"] = null;
   if (own(path)) {
     const { data: signed } = await db.storage.from(bucket).createSignedUrl(path, 60);
-    const first = (core.first_name ?? "my").replace(/[^\p{L}]/gu, "");
-    if (signed) cv = { url: signed.signedUrl, filename: `${first}-${core.last_name ?? "cv"}-CV.pdf`.replace(/\s+/g, "-") };
+    if (signed?.signedUrl) cv = { url: signed.signedUrl, filename: `${safeNamePart(core.first_name, "My")}-${safeNamePart(core.last_name, "CV")}-CV.pdf` };
+    else console.error("autopilot claim: could not sign CV url");
   }
   return { status: 200, body: { ats: form.ats, url: form.url, fields, cv } };
 }

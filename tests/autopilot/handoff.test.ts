@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { mintToken, hashToken, corsHeaders } from "@/lib/autopilot/handoff";
+import { mintToken, hashToken, corsHeaders, safeNamePart } from "@/lib/autopilot/handoff";
 
 describe("handoff", () => {
   it("mints url-safe single tokens with a matching hash and 10-minute expiry", () => {
@@ -13,5 +13,17 @@ describe("handoff", () => {
   it("allows only ATS origins", () => {
     expect(corsHeaders("https://job-boards.greenhouse.io")["access-control-allow-origin"]).toBe("https://job-boards.greenhouse.io");
     expect(corsHeaders("https://evil.example")["access-control-allow-origin"]).toBeUndefined();
+  });
+  it("always varies on Origin", () => {
+    expect(corsHeaders("https://evil.example").vary).toBe("Origin");
+    expect(corsHeaders(null).vary).toBe("Origin");
+  });
+  it("sanitises name parts", () => {
+    expect(safeNamePart("Ayşe", "x")).toBe("Ayşe");
+    expect(safeNamePart("Jean-Luc", "x")).toBe("Jean-Luc");
+    expect(safeNamePart("O'Brien", "x")).toBe("O'Brien");
+    expect(safeNamePart("van  der/Berg", "x")).toBe("van-der-Berg");
+    expect(safeNamePart("../..", "CV")).toBe("CV");
+    expect(safeNamePart(undefined, "My")).toBe("My");
   });
 });

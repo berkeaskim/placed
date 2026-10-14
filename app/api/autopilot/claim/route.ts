@@ -11,7 +11,7 @@ export async function OPTIONS(req: Request) {
 
 export async function POST(req: Request) {
   const cors = corsHeaders(req.headers.get("origin"));
-  if (!cors["access-control-allow-origin"]) return new Response("Forbidden", { status: 403 });
+  if (!cors["access-control-allow-origin"]) return new Response("Forbidden", { status: 403, headers: cors });
   const body = (await req.json().catch(() => null)) as { token?: unknown } | null;
   if (typeof body?.token !== "string" || !/^[A-Za-z0-9_-]{43}$/.test(body.token)) return new Response("Bad request", { status: 400, headers: cors });
   const r = await claimPack(body.token);

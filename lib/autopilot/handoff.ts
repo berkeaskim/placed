@@ -7,6 +7,11 @@ export function mintToken() {
   return { token, hash: hashToken(token), expiresAt: new Date(Date.now() + 10 * 60_000).toISOString() };
 }
 export function corsHeaders(origin: string | null): Record<string, string> {
-  if (!origin || !(ALLOWED_ORIGINS as readonly string[]).includes(origin)) return {};
-  return { "access-control-allow-origin": origin, "access-control-allow-methods": "POST, OPTIONS", "access-control-allow-headers": "content-type", vary: "origin" };
+  if (!origin || !(ALLOWED_ORIGINS as readonly string[]).includes(origin)) return { vary: "Origin" };
+  return { "access-control-allow-origin": origin, "access-control-allow-methods": "POST, OPTIONS", "access-control-allow-headers": "content-type", vary: "Origin" };
+}
+/** Filename-safe name part: NFC, letters/marks/apostrophe/hyphen only, others collapsed to "-". */
+export function safeNamePart(s: string | undefined | null, fallback: string): string {
+  const out = (s ?? "").normalize("NFC").replace(/[^\p{L}\p{M}'-]+/gu, "-").replace(/-{2,}/g, "-").replace(/^-+|-+$/g, "");
+  return out || fallback;
 }
