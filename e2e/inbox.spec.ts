@@ -38,4 +38,8 @@ test("demo inbox sync moves cards with evidence, the nudge opens the drafter, un
 
   await page.getByRole("region", { name: "Inbox" }).getByRole("button", { name: "Sync inbox" }).click();
   await expect(page.getByRole("region", { name: "Inbox" }).getByRole("status")).toContainText("0 cards moved");
+
+  // a review row can be dismissed without touching any card
+  await page.getByRole("region", { name: "Emails to review" }).getByRole("button", { name: "Dismiss" }).first().click();
+  await expect(page.getByText("Celonis")).toHaveCount(0);
 });
