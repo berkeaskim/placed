@@ -150,10 +150,20 @@ describe("SKILLS vocabulary", () => {
   });
   it("matches the acronyms MVP, ACL and CPA only in capitals", () => {
     expect(extractSkills("Shipped an MVP in two weeks")).toContain("MVP");
-    expect(extractSkills("Paper accepted at ACL 2026")).toContain("ACL");
-    expect(extractSkills("Cut CPA by 30% on paid social")).toContain("CPA");
     expect(extractSkills("Shipped a Minimum Viable Product")).toContain("MVP");
     expect(extractSkills("mvp acl cpa")).toEqual([]);
     expect(canonicalize("mvp")).toBe("MVP");
+  });
+  it("counts ACL only as the NLP conference", () => {
+    for (const t of ["Paper accepted at ACL 2026", "First-author paper at ACL", "Published in Findings of ACL", "Reviewer for ACL and EMNLP", "Submitted to the ACL workshop on NLP for education"])
+      expect(extractSkills(t), t).toContain("ACL");
+    for (const t of ["Recovered from an ACL injury and returned to rugby", "ACL reconstruction rehab", "Configured ACL rules on the firewall", "Rugby captain\nACL tear"])
+      expect(extractSkills(t), t).not.toContain("ACL");
+  });
+  it("counts CPA only as cost per acquisition", () => {
+    for (const t of ["Cut CPA by 30% on paid social", "Lowered CPA from £12 to £8", "Tracked CTR, CPA and ROAS weekly", "Optimised CPA across Google Ads campaigns", "Reduced CPA through bid tests"])
+      expect(extractSkills(t), t).toContain("CPA");
+    for (const t of ["Qualified CPA", "CPA candidate, passed all four exams", "Studying for the CPA exam", "Interned at a CPA firm"])
+      expect(extractSkills(t), t).not.toContain("CPA");
   });
 });
