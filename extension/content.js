@@ -11,6 +11,9 @@
   const Dom = globalThis.PlacedDom;
 
   // ---------- panel (the student's close button; Autopilot never clicks it) ----------
+  // The panel is mounted lazily, AFTER the page has hydrated: Greenhouse's React app re-renders the whole body when it finds
+  // a node it did not render during hydration (React #418/#425), which silently deleted an early panel. say() also
+  // re-attaches the panel if the page ever removes it.
   const panel = document.createElement("div");
   panel.className = "placed-panel";
   panel.setAttribute("role", "status");
@@ -20,14 +23,18 @@
   close.className = "placed-panel-close";
   close.setAttribute("aria-label", "Close the Placed panel");
   close.textContent = "×";
-  close.addEventListener("click", () => panel.remove());
+  let dismissed = false;
+  close.addEventListener("click", () => { dismissed = true; panel.remove(); });
   panel.append(close, body);
-  document.body.appendChild(panel);
   const say = (...parts) => {
     body.textContent = "";
     parts.forEach((p, i) => { if (i) body.appendChild(document.createElement("br")); body.append(p); });
+    if (!dismissed && !panel.isConnected) (document.body || document.documentElement).appendChild(panel);
   };
-  say("Placed Autopilot is waiting for the form…");
+  const settled = async () => {
+    if (document.readyState !== "complete") await new Promise((r) => window.addEventListener("load", r, { once: true }));
+    await Dom.sleep(1500);
+  };
 
   // ---------- form readiness: the token is single-use, so never claim before the form exists ----------
   const READY = {
@@ -35,7 +42,9 @@
     ashby: () => /\/application\/?$/.test(location.pathname) && document.querySelector(".ashby-application-form-field-entry"),
     lever: () => document.querySelector('form [name="email"]'),
   };
-  if (!(await Dom.waitFor(READY[ats], 50, 200))) {
+  const formReady = await Dom.waitFor(READY[ats], 50, 200);
+  if (formReady) await settled();
+  if (!formReady) {
     say("Open the application form first, then click Open & fill again in Placed.");
     return;
   }

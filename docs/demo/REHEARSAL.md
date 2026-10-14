@@ -15,6 +15,14 @@ Analyst Intern (June 2027)**, London. Everything the AI "says" in fixture mode i
 - [ ] In `.env.local`, set `DEMO_EMAIL` (e.g. `demo@placed.test`) and `DEMO_PASSWORD` (from `openssl rand -base64 18`),
       and `NEXT_PUBLIC_DEMO_MODE=1`.
 - [ ] `npm run demo:user`: creates or updates the demo account, then reports any missing migration or missing demo job.
+- [ ] Install the extension: `chrome://extensions` -> Developer mode -> Load unpacked -> `extension/`. It defaults to
+      `http://localhost:3200`; if the demo runs on another origin, set `PLACED_ORIGIN` in `extension/config.js` and add
+      that origin to `host_permissions` in `extension/manifest.json`, then reload the extension (see `extension/README.md`).
+- [ ] Confirm the Monzo job is still in the seed: `grep 8232726 seed/jobs.json`.
+- [ ] Set `NEXT_PUBLIC_AUTOPILOT=1` in `.env.local` (the Autopilot UI is off without it).
+- [ ] Confirm Berke has applied `supabase/migrations/0012_autopilot.sql`.
+- [ ] Autopilot dry run on the real Monzo form (nothing is submitted; every submit request is aborted):
+      `NEXT_PUBLIC_AUTOPILOT=1 AI_MODE=fixture E2E_PORT=3100 npx playwright test e2e/autopilot.spec.ts`.
 - [ ] Full dry run: `npm run demo:reset`, then `npx playwright install chromium`, then `npx playwright test e2e/demo.spec.ts`.
 
 ## Right before presenting
@@ -49,7 +57,14 @@ Analyst Intern (June 2027)**, London. Everything the AI "says" in fixture mode i
 9. **Defend this question.** Click "Save my version and download PDF". This saves the version and downloads the
    ATS-safe PDF. Back on the page, click "Show likely interview questions" to get, for example, "How many people
    came to your weekly events…?"
-10. **Apply (optional if time allows).** Click "Apply on company site": the posting opens in a new tab. Placed
+10. **Autopilot (40 s).** Open Monzo, "Associate Data Scientist - Intern" (a real, unedited posting). Click "Autopilot this
+    application". Point at the groups: ✅ filled from setup, ☑️ Right to Work she confirms herself, 🚫 consent stays hers,
+    ✍️ "Why Monzo?" built only from her CV, "Caught it: 1 sentence removed" (the AI swapped in a tool she never used).
+    Approve, click "Open & fill". The real Monzo form fills in seconds; the panel says "Check everything. You press Submit."
+    Say: "17 questions, 100 applications: 1,700 boxes. Autopilot fills the boring 90%. Placed never presses Submit."
+    Chrome shows a "Placed Autopilot started debugging this browser" bar while the dropdowns are filled. That is expected
+    (it makes real clicks on dropdowns that ignore scripted ones); tell the room before they ask.
+11. **Apply (optional if time allows).** Click "Apply on company site": the posting opens in a new tab. Placed
     never applies for you. Come back, answer "Yes, I applied", and the "First Shot" badge appears.
 
 ## Pitch points
@@ -77,4 +92,5 @@ Analyst Intern (June 2027)**, London. Everything the AI "says" in fixture mode i
   only fail on the database (check migration 0007).
 - **The demo job isn't in the feed.** Open `/jobs/<id>` directly; get the id with
   `select id from jobs where ext_id = 'a2214edc-39e3-4c70-8a09-875bb991062f'`. If the job is gone, see "The evening before".
+- **Autopilot says it couldn't reach Placed, or didn't accept the extension.** `PLACED_ORIGIN` and `host_permissions` must match the origin the app runs on; reload the extension after editing them.
 - **Sign-in fails.** Re-run `npm run demo:user`. It resets the password to `DEMO_PASSWORD`.
