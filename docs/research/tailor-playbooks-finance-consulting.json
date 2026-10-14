@@ -1,0 +1,1212 @@
+{
+  "_meta": {
+    "compiled": "2026-10-14",
+    "notes": "Per-archetype tailoring guidance for Placed's 'tailor my CV to this role' rewrite (UK undergraduate spring weeks, insight programmes, summer internships). Hard constraint above everything here: rewrite only what the source CV already says. No new facts, numbers, skills, employers or tools. No authorship escalation: a 'prefer' verb may replace a source verb only at the same or a lower level of the ladder familiar < used/assisted/supported/contributed < built/developed/implemented < led/managed/founded, and qualifiers ('helped', 'as part of a team of 4', 'coursework') must survive. A reframe applies only when its onlyIf condition is visibly met by the original line. Grades: A = employer's own guidance or several top UK careers services agree; B = one top-tier UK source (TARGETjobs, Prospects, a Russell Group careers service); C = practitioner or trade press (eFinancialCareers and consultants it quotes); D = our synthesis. Quotes are verbatim from pages fetched on 2026-10-14 (curly quotes and dashes normalised for matching), each 25 words or fewer. TF18, TF24 and TF29 were read via web.archive.org 2026 snapshots because the live sites blocked automated fetches; TF35 was not re-fetched and is carried over from docs/research/market-2026/02-recruiter-screening-evidence.md F16. Mapping to cv-rules-finance-consulting.md tags: TF1=S1, TF2=S2, TF3=S3, TF8=S8, TF14=S5, TF15=S6, TF18=S12, TF19=S15, TF20=S16, TF21=S14, TF22=S13, TF23=S17, TF24=S19, TF25=S22, TF26=S25, TF27=S26, TF28=S24, TF29=S23, TF30=S11-LSE brochure, TF32=S10. Caveat: Bain London asks candidates to use AI only to check CV grammar and spelling (TF29), so the product should tell users to check each target firm's AI policy."
+  },
+  "sources": [
+    {
+      "id": "TF1",
+      "title": "Banking & Financial Markets: Short Guide to Recruitment 2025-2026 (PDF)",
+      "publisher": "University of Cambridge Careers Service",
+      "url": "https://www.careers.cam.ac.uk/sites/default/files/Banking%20and%20Financial%20Markets%20Short%20Guide%20to%20Recruitment%202025%20-%202026.pdf",
+      "accessed": "2026-10-14"
+    },
+    {
+      "id": "TF2",
+      "title": "Management & Strategy Consulting: Quick Guide to Recruitment 2024 (PDF)",
+      "publisher": "University of Cambridge Careers Service",
+      "url": "https://www.careers.cam.ac.uk/files/management_strategy_consulting_-_quick_guide_to_recruitment_2024.pdf",
+      "accessed": "2026-10-14"
+    },
+    {
+      "id": "TF3",
+      "title": "Resume Advice: recruiter video transcript (PDF)",
+      "publisher": "Goldman Sachs",
+      "url": "https://www.goldmansachs.com/careers/materials/Resume-Advice-Transcript.pdf",
+      "accessed": "2026-10-14"
+    },
+    {
+      "id": "TF4",
+      "title": "Are personal statements a waste of space on graduate CVs?",
+      "publisher": "TARGETjobs",
+      "url": "https://targetjobs.co.uk/careers-advice/cvs-applications-and-tests/are-personal-statements-waste-space-graduate-cvs",
+      "accessed": "2026-10-14"
+    },
+    {
+      "id": "TF5",
+      "title": "Graduate investment banking CV template (PDF)",
+      "publisher": "TARGETjobs",
+      "url": "https://targetjobs.co.uk/static/4af3322cc30d737ffda3e04aba50bd41/Graduate%20investment%20banking%20CV%20template.pdf",
+      "accessed": "2026-10-14"
+    },
+    {
+      "id": "TF6",
+      "title": "Morgan Stanley cover letter and CV advice: telling your story",
+      "publisher": "TARGETjobs",
+      "url": "https://targetjobs.co.uk/careers-advice/cvs-applications-and-tests/morgan-stanley-cover-letter-and-cv-advice-telling-your-story",
+      "accessed": "2026-10-14"
+    },
+    {
+      "id": "TF7",
+      "title": "Do A levels matter for jobs?",
+      "publisher": "TARGETjobs",
+      "url": "https://targetjobs.co.uk/careers-advice/accountancy-banking-and-finance/graduate-jobs-investment-banking-and-investment-management-do-levels-matter",
+      "accessed": "2026-10-14"
+    },
+    {
+      "id": "TF8",
+      "title": "How to write a banking CV (2026 update; quotes V. McLean, R. Cohen, M. Craven)",
+      "publisher": "eFinancialCareers",
+      "url": "https://www.efinancialcareers.com/news/the-absolutely-perfect-investment-banking-cv",
+      "accessed": "2026-10-14"
+    },
+    {
+      "id": "TF9",
+      "title": "What NOT to include in your banking CV (Nov 2022)",
+      "publisher": "eFinancialCareers",
+      "url": "https://www.efinancialcareers.com/news/2022/11/what-not-to-put-banking-cv",
+      "accessed": "2026-10-14"
+    },
+    {
+      "id": "TF10",
+      "title": "How to do your CV for banking. And how to do your CV for consulting (Jan 2018)",
+      "publisher": "eFinancialCareers",
+      "url": "https://www.efinancialcareers.com/news/2018/01/banking-vs-consulting-cvs",
+      "accessed": "2026-10-14"
+    },
+    {
+      "id": "TF11",
+      "title": "Goldman Sachs & hedge funds will not hire you with these words on your CV",
+      "publisher": "eFinancialCareers",
+      "url": "https://www.efinancialcareers.co.uk/news/chat-gpt-write-cv-finance",
+      "accessed": "2026-10-14"
+    },
+    {
+      "id": "TF12",
+      "title": "CV cliches you must avoid in investment banking, technology, risk, trading and operations (Dec 2015)",
+      "publisher": "eFinancialCareers",
+      "url": "https://www.efinancialcareers.co.uk/news/2015/12/cv-advice-banking",
+      "accessed": "2026-10-14"
+    },
+    {
+      "id": "TF13",
+      "title": "Keywords to include in your banking resume and cover letter",
+      "publisher": "eFinancialCareers",
+      "url": "https://www.efinancialcareers.co.uk/news/finance/keywords-banking-resume-and-cover-letter",
+      "accessed": "2026-10-14"
+    },
+    {
+      "id": "TF14",
+      "title": "Hints and tips",
+      "publisher": "Barclays",
+      "url": "https://search.jobs.barclays/hints-and-tips",
+      "accessed": "2026-10-14"
+    },
+    {
+      "id": "TF15",
+      "title": "How we hire",
+      "publisher": "JPMorganChase",
+      "url": "https://www.jpmorganchase.com/careers/how-we-hire",
+      "accessed": "2026-10-14"
+    },
+    {
+      "id": "TF16",
+      "title": "Financial trader: job profile",
+      "publisher": "Prospects (Jisc)",
+      "url": "https://www.prospects.ac.uk/job-profiles/financial-trader",
+      "accessed": "2026-10-14"
+    },
+    {
+      "id": "TF17",
+      "title": "Management consultant: job profile",
+      "publisher": "Prospects (Jisc)",
+      "url": "https://www.prospects.ac.uk/job-profiles/management-consultant",
+      "accessed": "2026-10-14"
+    },
+    {
+      "id": "TF18",
+      "title": "Quantitative finance (sector guide)",
+      "publisher": "University of Oxford Careers Service",
+      "url": "https://www.ox.ac.uk/careers/careers-guidance/explore-careers/sectors-and-occupations/quantitative-finance",
+      "accessed": "2026-10-14"
+    },
+    {
+      "id": "TF19",
+      "title": "Recruitment process: resume tips",
+      "publisher": "IMC Trading",
+      "url": "https://www.imc.com/ap/careers/recruitment-process",
+      "accessed": "2026-10-14"
+    },
+    {
+      "id": "TF20",
+      "title": "How to prepare for an interview at IMC (campus recruiter Q&A)",
+      "publisher": "IMC Trading",
+      "url": "https://www.imc.com/ap/articles/how-to-prepare-for-an-interview-at-imc",
+      "accessed": "2026-10-14"
+    },
+    {
+      "id": "TF21",
+      "title": "Quantitative Trader Internship, London (posting)",
+      "publisher": "Jane Street",
+      "url": "https://www.janestreet.com/join-jane-street/position/8474407002/",
+      "accessed": "2026-10-14"
+    },
+    {
+      "id": "TF22",
+      "title": "Interviewing",
+      "publisher": "Jane Street",
+      "url": "https://www.janestreet.com/join-jane-street/interviewing/",
+      "accessed": "2026-10-14"
+    },
+    {
+      "id": "TF23",
+      "title": "Quantitative Trading Internship (2027 Start), Amsterdam (posting)",
+      "publisher": "Optiver",
+      "url": "https://www.optiver.com/join-us/jobs/trading/amsterdam/quantitative-trading-internship-2027-start/",
+      "accessed": "2026-10-14"
+    },
+    {
+      "id": "TF24",
+      "title": "Our Campus Quantitative Research Interview Process",
+      "publisher": "Citadel Securities",
+      "url": "https://www.citadelsecurities.com/careers/career-perspectives/our-quantitative-research-interview-process/",
+      "accessed": "2026-10-14"
+    },
+    {
+      "id": "TF25",
+      "title": "Applying to McKinsey & Company: CVs, cover letters and interviews",
+      "publisher": "TARGETjobs",
+      "url": "https://targetjobs.co.uk/careers-advice/business-consulting-and-management/applying-mckinsey-company-cvs-cover-letters-and-interviews",
+      "accessed": "2026-10-14"
+    },
+    {
+      "id": "TF26",
+      "title": "How to big up your leadership experience on your graduate management CV",
+      "publisher": "TARGETjobs",
+      "url": "https://targetjobs.co.uk/careers-advice/business-consulting-and-management/how-big-your-leadership-experience-your-graduate-management-cv",
+      "accessed": "2026-10-14"
+    },
+    {
+      "id": "TF27",
+      "title": "The skills graduate management consultants need",
+      "publisher": "TARGETjobs",
+      "url": "https://targetjobs.co.uk/careers-advice/business-consulting-and-management/top-consulting-skills",
+      "accessed": "2026-10-14"
+    },
+    {
+      "id": "TF28",
+      "title": "Associate jobs: United Kingdom",
+      "publisher": "Boston Consulting Group",
+      "url": "https://careers.bcg.com/global/en/locations/united-kingdom/associate-jobs",
+      "accessed": "2026-10-14"
+    },
+    {
+      "id": "TF29",
+      "title": "Bain London University Hiring (FAQ incl. AI policy)",
+      "publisher": "Bain & Company",
+      "url": "https://www.bain.com/careers/recruiting/london-recruiting/",
+      "accessed": "2026-10-14"
+    },
+    {
+      "id": "TF30",
+      "title": "A guide to CVs, cover letters and application forms (PDF)",
+      "publisher": "LSE Careers",
+      "url": "https://info.lse.ac.uk/current-students/careers/Assets/Documents/application-and-cv-brochure.pdf",
+      "accessed": "2026-10-14"
+    },
+    {
+      "id": "TF31",
+      "title": "CVs and resumes",
+      "publisher": "Imperial College London Careers Service",
+      "url": "https://www.imperial.ac.uk/admin-services/careers/applications-and-interviews/cv/",
+      "accessed": "2026-10-14"
+    },
+    {
+      "id": "TF32",
+      "title": "CVs",
+      "publisher": "University of Warwick Student Opportunity (Careers)",
+      "url": "https://warwick.ac.uk/services/careers/applications/cvs/",
+      "accessed": "2026-10-14"
+    },
+    {
+      "id": "TF33",
+      "title": "Use of AI in Job Applications and Assessments",
+      "publisher": "University of Oxford Careers Service",
+      "url": "https://www.careers.ox.ac.uk/node/4589371",
+      "accessed": "2026-10-14"
+    },
+    {
+      "id": "TF34",
+      "title": "How the highest paid interns in financial services write their CVs (Aug 2023)",
+      "publisher": "eFinancialCareers",
+      "url": "https://www.efinancialcareers.co.uk/news/2023/08/jane-street-intern-cv-advice",
+      "accessed": "2026-10-14"
+    },
+    {
+      "id": "TF35",
+      "title": "Osanami Torngren et al., eye-tracking of finance and retail recruiters reading CVs, Frontiers in Sociology (2024) [via repo doc market-2026/02 F16; not re-fetched]",
+      "publisher": "Frontiers",
+      "url": "https://www.frontiersin.org/journals/sociology/articles/10.3389/fsoc.2024.1222850/full",
+      "accessed": "2026-10-14"
+    }
+  ],
+  "finance_banking": {
+    "recruiterScan": [
+      "Top third: university, degree, grade or prediction, A levels (an early filter)",
+      "Firm names, titles, dates: spring weeks, insights, internships, right division",
+      "Shown, not stated, interest in finance (society role, competition, stock pitch)",
+      "Specific, quantified bullets, honest about intern scope",
+      "One page, zero typos, consistent formatting"
+    ],
+    "leadWith": [
+      "Grade, class rank, scholarships, top relevant module marks",
+      "Named finance exposure (programme, firm, division) first in Experience",
+      "A quantified commercial result first in any non-finance job",
+      "Analysis actually done (modelling, research, data) before admin or shadowing",
+      "Responsibility (committee, treasurer, captain) before membership"
+    ],
+    "summaryFormula": "skip: UK careers services and the TARGETjobs banking template omit a student profile because the cover letter or form does that job; if the source has one, compress it to 2 factual lines (year, degree, university, grade, target division, 1-2 finance signals already in the CV) with no adjectives.",
+    "verbs": {
+      "prefer": [
+        "analysed",
+        "prepared",
+        "researched",
+        "compiled",
+        "modelled",
+        "valued",
+        "reconciled",
+        "presented",
+        "exceeded",
+        "grew",
+        "reduced",
+        "coordinated",
+        "supported"
+      ],
+      "avoid": [
+        "originated",
+        "executed (a deal)",
+        "spearheaded",
+        "successfully",
+        "dynamic",
+        "team-player",
+        "innovative",
+        "results-driven",
+        "proven track record",
+        "meticulous",
+        "delve",
+        "robust",
+        "passionate"
+      ]
+    },
+    "reframes": [
+      {
+        "from": "made a spreadsheet to forecast X",
+        "to": "Excel model forecasting X",
+        "onlyIf": "source says a spreadsheet projected numbers; 'DCF' or '3-statement' only if that method is named"
+      },
+      {
+        "from": "compared how similar companies were valued",
+        "to": "comparable company analysis",
+        "onlyIf": "source mentions peer valuation multiples"
+      },
+      {
+        "from": "researched a company and suggested buying",
+        "to": "stock pitch: buy recommendation and thesis",
+        "onlyIf": "source states the recommendation and its reasons"
+      },
+      {
+        "from": "made slides for the sponsor meeting",
+        "to": "prepared sponsorship pitch deck",
+        "onlyIf": "the deck sought money or agreement from an outside party; never 'pitchbook' unless for a deal"
+      },
+      {
+        "from": "dealt with customers",
+        "to": "client-facing: handled customer enquiries",
+        "onlyIf": "direct, repeated customer contact"
+      },
+      {
+        "from": "went to a spring week at X",
+        "to": "Spring Insight Programme, [division], X",
+        "onlyIf": "programme and division already named; keep 'shadowed'/'attended'"
+      },
+      {
+        "from": "helped with a deal",
+        "to": "supported [team] on a [deal type]: prepared X",
+        "onlyIf": "the task is in the source; never 'executed' or 'led'"
+      },
+      {
+        "from": "treasurer, looked after the money",
+        "to": "Treasurer: managed £N budget",
+        "onlyIf": "the amount is in the source"
+      }
+    ],
+    "competencyThemes": [
+      "Academic excellence",
+      "Numerical and analytical ability",
+      "Attention to detail",
+      "Interest in financial markets",
+      "Teamwork",
+      "Leadership",
+      "Judgement",
+      "Resilience"
+    ],
+    "sectionOrder": [
+      "Education (grade, top modules, A levels)",
+      "Relevant Experience (internships, spring weeks, insights)",
+      "Other Work Experience",
+      "Positions of Responsibility",
+      "Skills, Languages & Interests"
+    ],
+    "pitfalls": [
+      "Claiming to have originated, executed or led a deal as an intern",
+      "Superlatives and AI-style phrasing ('meticulous', 'robust')",
+      "Altering a team name ('Industrials' to 'Industrial Group') or the firm name",
+      "Overstated language levels",
+      "Generic profile, or school detail on a penultimate-year CV"
+    ],
+    "evidence": [
+      {
+        "claim": "recruiterScan[0] grades as early screen",
+        "grade": "A",
+        "sourceIds": [
+          "TF1",
+          "TF8"
+        ],
+        "quote": "reviewed by a human or an applicant tracking system (ATS), looking for key criteria (grades, skills)"
+      },
+      {
+        "claim": "recruiterScan[0] grades as early screen",
+        "grade": "C",
+        "sourceIds": [
+          "TF8"
+        ],
+        "quote": "Qualifications are one of the first filters banks use to assess your fit"
+      },
+      {
+        "claim": "recruiterScan[0] A levels",
+        "grade": "B",
+        "sourceIds": [
+          "TF7"
+        ],
+        "quote": "use A-level grades as an initial screening tool"
+      },
+      {
+        "claim": "recruiterScan[1]/sectionOrder education first, then experience",
+        "grade": "A",
+        "sourceIds": [
+          "TF3",
+          "TF8"
+        ],
+        "quote": "Leading with your education and any key details around your studies, followed by any relevant experiences via internships"
+      },
+      {
+        "claim": "recruiterScan[1] first screen reads titles/organisations/dates/education (~30s)",
+        "grade": "A",
+        "sourceIds": [
+          "TF35"
+        ],
+        "quote": null
+      },
+      {
+        "claim": "recruiterScan[4] one page, no errors",
+        "grade": "A",
+        "sourceIds": [
+          "TF1",
+          "TF32",
+          "TF3"
+        ],
+        "quote": "Some sectors such as finance (particularly banking) and consulting often like to see a concise 1 page CV"
+      },
+      {
+        "claim": "leadWith[0] class standing and module grades",
+        "grade": "A",
+        "sourceIds": [
+          "TF1"
+        ],
+        "quote": "specify your class standing and high module grades"
+      },
+      {
+        "claim": "leadWith[2] any job counts if quantified",
+        "grade": "A",
+        "sourceIds": [
+          "TF3"
+        ],
+        "quote": "you can leverage those experiences and quantify them to make them impactful"
+      },
+      {
+        "claim": "leadWith (general) reorder for the role",
+        "grade": "C",
+        "sourceIds": [
+          "TF8"
+        ],
+        "quote": "bringing certain achievements higher up the page, highlighting different areas of expertise, aligning your language more closely with the role"
+      },
+      {
+        "claim": "leadWith (general) mirror JD key words",
+        "grade": "A",
+        "sourceIds": [
+          "TF14",
+          "TF6"
+        ],
+        "quote": "Study the job description and pull-out key words, then ensure these are highlighted throughout your CV/Resume."
+      },
+      {
+        "claim": "competencyThemes judgement/teamwork/commitment/leadership",
+        "grade": "A",
+        "sourceIds": [
+          "TF14"
+        ],
+        "quote": "Illustrate your answers with clear examples of how you've shown good judgment, innovation, teamwork, commitment and leadership. Avoid clichés or claims you can't prove."
+      },
+      {
+        "claim": "competencyThemes markets interest, numeracy, resilience",
+        "grade": "B",
+        "sourceIds": [
+          "TF16"
+        ],
+        "quote": "teamwork and a strong interest in financial markets."
+      },
+      {
+        "claim": "competencyThemes banking = quant, modelling, Excel, detail",
+        "grade": "C",
+        "sourceIds": [
+          "TF10"
+        ],
+        "quote": "Banks, on the other hand, often need strong quant skills, a good knowledge of financial modelling, number crunching and advanced Excel skills."
+      },
+      {
+        "claim": "summaryFormula skip profile",
+        "grade": "B",
+        "sourceIds": [
+          "TF4"
+        ],
+        "quote": "in many cases, a personal statement on a graduate CV is a waste of space."
+      },
+      {
+        "claim": "summaryFormula skip profile",
+        "grade": "A",
+        "sourceIds": [
+          "TF30"
+        ],
+        "quote": "For new graduates or postgraduates, career profiles are not necessary as this content is addressed in your cover letter."
+      },
+      {
+        "claim": "summaryFormula skip (objectives -> cover letter)",
+        "grade": "C",
+        "sourceIds": [
+          "TF13"
+        ],
+        "quote": "Some recruiters suggest removing any “objectives” section from the top of your resume as that should be communicated through your cover letter anyway."
+      },
+      {
+        "claim": "summaryFormula counter-evidence: keep short profile",
+        "grade": "C",
+        "sourceIds": [
+          "TF8"
+        ],
+        "quote": "If you're a student, the executive summary is important."
+      },
+      {
+        "claim": "summaryFormula counter-evidence: profile for ATS at large firms",
+        "grade": "B",
+        "sourceIds": [
+          "TF31"
+        ],
+        "quote": "Personal profile – optional but should be included if you are applying for larger firms that may use AI in their recruitment processes."
+      },
+      {
+        "claim": "summaryFormula / sectionOrder: TARGETjobs IB template has no profile; sections Education > finance experience > other work > positions of responsibility > skills/interests",
+        "grade": "B",
+        "sourceIds": [
+          "TF5"
+        ],
+        "quote": null
+      },
+      {
+        "claim": "verbs.avoid deal-ownership verbs; pitfalls[0]",
+        "grade": "C",
+        "sourceIds": [
+          "TF9"
+        ],
+        "quote": "You didn't originate or execute the deal, so don't feel that you need to claim that you did"
+      },
+      {
+        "claim": "reframes 'helped with a deal' (honest intern scope)",
+        "grade": "B",
+        "sourceIds": [
+          "TF5"
+        ],
+        "quote": "Assisted more senior team members with the execution of deals, including an M&A deal worth £500 million."
+      },
+      {
+        "claim": "reframes client-facing",
+        "grade": "B",
+        "sourceIds": [
+          "TF5"
+        ],
+        "quote": "Dealt with customer enquiries in person, via email and over the phone, strengthening client-facing skills, commercial awareness and product knowledge."
+      },
+      {
+        "claim": "verbs.avoid superlatives",
+        "grade": "C",
+        "sourceIds": [
+          "TF9"
+        ],
+        "quote": "The banks can see through superlatives and adjectives."
+      },
+      {
+        "claim": "verbs.avoid LLM vocabulary; pitfalls[1]",
+        "grade": "C",
+        "sourceIds": [
+          "TF11"
+        ],
+        "quote": "Are you meticulous?"
+      },
+      {
+        "claim": "pitfalls[2] preserve exact group names",
+        "grade": "C",
+        "sourceIds": [
+          "TF11"
+        ],
+        "quote": "candidates who spent time on the “Industrials” group of an investment bank instead claim to have been on the “Industrial Group”"
+      },
+      {
+        "claim": "pitfalls[3] language levels",
+        "grade": "C",
+        "sourceIds": [
+          "TF9"
+        ],
+        "quote": "If it’s not good enough for you to hold a client meeting in, it’s not good enough to go on the CV."
+      },
+      {
+        "claim": "verbs.prefer outcome verbs; specificity over cliché",
+        "grade": "C",
+        "sourceIds": [
+          "TF12"
+        ],
+        "quote": "The key is to be specific about any deal experience on your CV, showing your contribution."
+      },
+      {
+        "claim": "pitfalls[1] AI sameness: substance over polish",
+        "grade": "C",
+        "sourceIds": [
+          "TF8"
+        ],
+        "quote": "Recruiters are looking for differentiated evidence, context and results, not just well-written ‘polished’ statements."
+      },
+      {
+        "claim": "recruiterScan[3] measurable data",
+        "grade": "A",
+        "sourceIds": [
+          "TF15"
+        ],
+        "quote": "what you’ve accomplished, using measurable data when applicable."
+      },
+      {
+        "claim": "reframes use the sector's own term",
+        "grade": "C",
+        "sourceIds": [
+          "TF13"
+        ],
+        "quote": "Every sector of every industry has its own lingo, and you have to sound fluent by using it in the right way"
+      },
+      {
+        "claim": "verbs.prefer list (selection from careers-service verb lists; level-preserving use is our rule)",
+        "grade": "D",
+        "sourceIds": [
+          "TF30"
+        ],
+        "quote": null
+      }
+    ]
+  },
+  "quant_trading": {
+    "recruiterScan": [
+      "Degree subject, grade or rank, probability/statistics/maths/CS marks",
+      "Competition results with rank or medal (olympiads, Kaggle, firm challenges)",
+      "Projects with a measurable result and a code or write-up link",
+      "Honest depth in at least one language; overclaiming sets the interview bar",
+      "Concise; interests showing competitive or strategic play"
+    ],
+    "leadWith": [
+      "Rank, medal, percentile or rating at the start of the line",
+      "The project's result metric and method before the description",
+      "Named maths content (probability, statistics, optimisation)",
+      "The deepest language and what was done in it",
+      "Tutoring or team competitions as communication evidence"
+    ],
+    "summaryFormula": "skip: quant firms want concise CVs, screen on academics, competitions, projects and tests, and no source recommends a profile; if the source has one, cut it to 1 line: degree, year, grade and the strongest quant fact already in the CV.",
+    "verbs": {
+      "prefer": [
+        "implemented",
+        "back-tested",
+        "simulated",
+        "derived",
+        "estimated",
+        "optimised",
+        "tested",
+        "benchmarked",
+        "analysed",
+        "computed",
+        "placed",
+        "solved",
+        "reproduced"
+      ],
+      "avoid": [
+        "expert in",
+        "advanced/very good (unevidenced)",
+        "alpha-generating",
+        "profitable (without honest results)",
+        "cutting-edge",
+        "AI-powered",
+        "leveraged",
+        "passionate about markets",
+        "fast-paced environment"
+      ]
+    },
+    "reframes": [
+      {
+        "from": "tested my trading idea on past prices",
+        "to": "back-tested [strategy] on historical [asset] data",
+        "onlyIf": "source describes running it on historical data"
+      },
+      {
+        "from": "wrote code to analyse data",
+        "to": "Python analysis of [dataset]",
+        "onlyIf": "language named in source; libraries only if listed"
+      },
+      {
+        "from": "did well in a maths competition",
+        "to": "UKMT [competition]: [award]",
+        "onlyIf": "competition and award already named"
+      },
+      {
+        "from": "enjoy chess",
+        "to": "Strategic games: chess (rating)",
+        "onlyIf": "rating only if in source; keep under Interests"
+      },
+      {
+        "from": "made the code faster",
+        "to": "cut runtime by N%",
+        "onlyIf": "N is in the source"
+      },
+      {
+        "from": "trading game in a society",
+        "to": "mock trading / market-making simulation",
+        "onlyIf": "involved quoting or trading against others"
+      },
+      {
+        "from": "probability module 78%",
+        "to": "Relevant modules: Probability (78%)",
+        "onlyIf": "a move up into Education; mark unchanged"
+      },
+      {
+        "from": "coursework on predicting X",
+        "to": "coursework: regression model predicting X",
+        "onlyIf": "keep 'coursework'; name the method only if the source does"
+      }
+    ],
+    "competencyThemes": [
+      "Probability and statistics",
+      "Programming depth",
+      "Problem solving under pressure",
+      "Accuracy and testing",
+      "Competitive achievement",
+      "Collaboration and communication",
+      "Curiosity and learning"
+    ],
+    "sectionOrder": [
+      "Education (grade or rank, quant modules with marks)",
+      "Competitions & Awards",
+      "Projects / Research",
+      "Experience",
+      "Technical Skills",
+      "Interests"
+    ],
+    "pitfalls": [
+      "Finance jargon with no quant evidence (finance knowledge is not required)",
+      "Inflated proficiency ('very good C++', 'expert')",
+      "Listing Word and Excel",
+      "'Improved' or 'profitable' with no metric or test period",
+      "Long descriptions instead of a concise page"
+    ],
+    "evidence": [
+      {
+        "claim": "recruiterScan[0] STEM/academics; leadWith[2] maths named",
+        "grade": "A",
+        "sourceIds": [
+          "TF18",
+          "TF23"
+        ],
+        "quote": "Fluency in probability, statistics, linear algebra, optimisation and stochastic processes is essential."
+      },
+      {
+        "claim": "recruiterScan[0] degree not a gate",
+        "grade": "A",
+        "sourceIds": [
+          "TF21",
+          "TF22"
+        ],
+        "quote": "A strong quantitative thinker (no specific degree or major is required)"
+      },
+      {
+        "claim": "recruiterScan[0] grade floor at some firms",
+        "grade": "B",
+        "sourceIds": [
+          "TF20"
+        ],
+        "quote": "All candidates need a minimum of a Distinction average."
+      },
+      {
+        "claim": "recruiterScan[1] competitions",
+        "grade": "A",
+        "sourceIds": [
+          "TF18",
+          "TF23"
+        ],
+        "quote": "Interested in strategic games and/or competitive activities"
+      },
+      {
+        "claim": "recruiterScan[2] projects with results; reframes back-test",
+        "grade": "A",
+        "sourceIds": [
+          "TF18"
+        ],
+        "quote": "Reproducing academic papers, building back-tests, running event studies or optimising execution algorithms all give you material to discuss"
+      },
+      {
+        "claim": "recruiterScan[2] projects discussed at interview",
+        "grade": "A",
+        "sourceIds": [
+          "TF24"
+        ],
+        "quote": "The interviewer will also ask about your technical interests, past internship experience, school projects and your reasons for exploring opportunities"
+      },
+      {
+        "claim": "recruiterScan[3]/leadWith[3] depth in one language",
+        "grade": "A",
+        "sourceIds": [
+          "TF18"
+        ],
+        "quote": "Employers don’t expect you to know them all, but you should be able to show depth in at least one"
+      },
+      {
+        "claim": "verbs.avoid inflated proficiency; pitfalls[1]",
+        "grade": "A",
+        "sourceIds": [
+          "TF19"
+        ],
+        "quote": "If we read “very good” in C++, you’ll be setting a high bar for yourself."
+      },
+      {
+        "claim": "pitfalls[2] no Word/Excel",
+        "grade": "A",
+        "sourceIds": [
+          "TF19"
+        ],
+        "quote": "We assume everyone can work with Microsoft Office so don’t include your Word and Excel skills on your resume."
+      },
+      {
+        "claim": "pitfalls[4]; summaryFormula skip; concise",
+        "grade": "A",
+        "sourceIds": [
+          "TF19"
+        ],
+        "quote": "We like clear, concise resumes."
+      },
+      {
+        "claim": "pitfalls[0] finance knowledge not required",
+        "grade": "A",
+        "sourceIds": [
+          "TF22",
+          "TF20"
+        ],
+        "quote": "We won’t test you on knowledge of finance or economics."
+      },
+      {
+        "claim": "reframes link technical work to markets (only if source does)",
+        "grade": "A",
+        "sourceIds": [
+          "TF18"
+        ],
+        "quote": "you should be able to link your technical work to trading and investment decisions."
+      },
+      {
+        "claim": "reframes unit tests / Git; competencyThemes accuracy",
+        "grade": "A",
+        "sourceIds": [
+          "TF18"
+        ],
+        "quote": "Firms value habits like unit testing, version control and clear documentation."
+      },
+      {
+        "claim": "competencyThemes curiosity/learning",
+        "grade": "A",
+        "sourceIds": [
+          "TF21",
+          "TF20"
+        ],
+        "quote": "We're more interested in how you think and learn than what you currently know."
+      },
+      {
+        "claim": "competencyThemes collaboration; interests matter",
+        "grade": "B",
+        "sourceIds": [
+          "TF20"
+        ],
+        "quote": "Candidates who stand out are not only passionate about the industry and the role, but also have keen interests outside of their work and studies."
+      },
+      {
+        "claim": "verbs.avoid trader clichés",
+        "grade": "C",
+        "sourceIds": [
+          "TF12"
+        ],
+        "quote": "Able to work well in a high-pressured, fast-paced environment."
+      },
+      {
+        "claim": "pitfalls[4] no hot air",
+        "grade": "C",
+        "sourceIds": [
+          "TF34"
+        ],
+        "quote": "It's proof that you don't need to pump your CV up with hot air to look impressive."
+      },
+      {
+        "claim": "sectionOrder (competitions and projects above experience)",
+        "grade": "D",
+        "sourceIds": [
+          "TF18"
+        ],
+        "quote": null
+      },
+      {
+        "claim": "summaryFormula skip (no source recommends a quant profile)",
+        "grade": "D",
+        "sourceIds": [],
+        "quote": null
+      }
+    ]
+  },
+  "consulting": {
+    "recruiterScan": [
+      "Academics: predicted 2:1 or better, grades stated clearly",
+      "Leadership roles with scale and what changed because of the student",
+      "Impact, not duties: why the work mattered, in numbers",
+      "Problem solving and initiative: problem, analysis, proposal, adoption",
+      "Plain English, one page, no errors, the student's own part not 'we'"
+    ],
+    "leadWith": [
+      "The outcome and its number at the start of the bullet",
+      "Scope: team size, budget, members, attendees",
+      "Initiative: founded, launched, proposed-and-implemented",
+      "The analysis-to-recommendation step, where shown",
+      "Client or stakeholder contact; presenting or persuading"
+    ],
+    "summaryFormula": "skip: TARGETjobs and LSE advise students to drop profiles and generic ones read as AI-written; if the source has one, keep 2 plain-English lines leading with its strongest quantified leadership or impact fact.",
+    "verbs": {
+      "prefer": [
+        "analysed",
+        "identified",
+        "prioritised",
+        "recommended",
+        "proposed",
+        "synthesised",
+        "presented",
+        "persuaded",
+        "negotiated",
+        "coordinated",
+        "organised",
+        "launched",
+        "trained"
+      ],
+      "avoid": [
+        "did",
+        "carried out",
+        "responsible for",
+        "we (as subject)",
+        "leveraged",
+        "synergies",
+        "holistic",
+        "value-add",
+        "deep dive",
+        "MECE",
+        "stakeholder management (unqualified)",
+        "results-driven",
+        "proven track record"
+      ]
+    },
+    "reframes": [
+      {
+        "from": "suggested an idea and they used it",
+        "to": "Proposed X; implemented by management",
+        "onlyIf": "source says it was adopted"
+      },
+      {
+        "from": "found out why X was happening",
+        "to": "identified the cause of X by Y",
+        "onlyIf": "cause and method both in source"
+      },
+      {
+        "from": "ran a survey",
+        "to": "designed and analysed a survey of N respondents",
+        "onlyIf": "student designed it; N in source"
+      },
+      {
+        "from": "organised the event",
+        "to": "project-managed [event]: N attendees, £B budget",
+        "onlyIf": "student owned planning; figures in source"
+      },
+      {
+        "from": "spoke to customers",
+        "to": "client-facing",
+        "onlyIf": "direct contact with external people"
+      },
+      {
+        "from": "presented to the committee",
+        "to": "presented recommendations to [audience]",
+        "onlyIf": "the talk contained recommendations"
+      },
+      {
+        "from": "volunteer project for a charity",
+        "to": "pro bono consulting project for [organisation]",
+        "onlyIf": "scoped project with a deliverable for an outside organisation"
+      },
+      {
+        "from": "helped improve the rota",
+        "to": "contributed to a rota redesign that cut X by N%",
+        "onlyIf": "keep 'contributed'; figure in source"
+      }
+    ],
+    "competencyThemes": [
+      "Structured problem solving",
+      "Analytical thinking",
+      "Impact orientation",
+      "Leadership and initiative",
+      "Communication and persuasion",
+      "Teamwork",
+      "Commercial awareness",
+      "Attention to detail"
+    ],
+    "sectionOrder": [
+      "Education (grade, A levels)",
+      "Consulting / Relevant Experience (if any)",
+      "Experience",
+      "Leadership / Project Management",
+      "Extra-curriculars",
+      "Skills, Languages & Interests"
+    ],
+    "pitfalls": [
+      "Duty lists with no result",
+      "'We' bullets that hide the student's part; interviewers dig into it",
+      "Technical jargon a generalist cannot follow",
+      "Generic AI-sounding text (Bain London allows AI only for CV grammar and spelling)",
+      "Unevidenced soft skills in the skills line"
+    ],
+    "evidence": [
+      {
+        "claim": "recruiterScan[0] 2:1 and outside-academic excellence",
+        "grade": "A",
+        "sourceIds": [
+          "TF28"
+        ],
+        "quote": "strong academic background (predicted at least a 2:1 degree or equivalent), as well as evidence of excellence in areas outside of academics"
+      },
+      {
+        "claim": "recruiterScan[0]/[1] academics + initiative, leadership, teamwork",
+        "grade": "A",
+        "sourceIds": [
+          "TF29"
+        ],
+        "quote": "Successful candidates bring strong academics, analytical and communication skills, and a record of initiative, leadership, and teamwork."
+      },
+      {
+        "claim": "recruiterScan[2] why your work mattered",
+        "grade": "B",
+        "sourceIds": [
+          "TF25"
+        ],
+        "quote": "McKinsey is interested in ‘why your work mattered’ and the changes you brought about."
+      },
+      {
+        "claim": "competencyThemes impact/leadership/problem solving",
+        "grade": "B",
+        "sourceIds": [
+          "TF25"
+        ],
+        "quote": "evidence of impact, leadership, entrepreneurship, problem solving and an overall orientation towards achievement"
+      },
+      {
+        "claim": "recruiterScan[4] plain English",
+        "grade": "B",
+        "sourceIds": [
+          "TF25"
+        ],
+        "quote": "try to limit any specialist descriptions and technical jargon."
+      },
+      {
+        "claim": "recruiterScan[4]/pitfalls[1] personal responsibility + quantify",
+        "grade": "A",
+        "sourceIds": [
+          "TF2"
+        ],
+        "quote": "mention your exact personal responsibility for that task or project and the outcomes from it – quantify your outcomes"
+      },
+      {
+        "claim": "pitfalls[1] interviewers dig into the student's part",
+        "grade": "A",
+        "sourceIds": [
+          "TF2"
+        ],
+        "quote": "They want to know exactly what your part in the activity or achievement was."
+      },
+      {
+        "claim": "sectionOrder consulting headings",
+        "grade": "A",
+        "sourceIds": [
+          "TF2"
+        ],
+        "quote": "For consultancy, headings such as ‘Leadership/Project Management’ ‘Research’ ‘Employment’ ‘Extra-curriculars’ are clear and concise."
+      },
+      {
+        "claim": "sectionOrder relevant block first",
+        "grade": "A",
+        "sourceIds": [
+          "TF30"
+        ],
+        "quote": "create a section called “Consultancy work” for your first page"
+      },
+      {
+        "claim": "verbs.avoid did/carried out; pitfalls[1] no 'we'",
+        "grade": "B",
+        "sourceIds": [
+          "TF26"
+        ],
+        "quote": "Avoid verbs such as ‘did’ and ‘carried out’ and use ‘managed’, ‘facilitated’ or ‘achieved’ instead."
+      },
+      {
+        "claim": "pitfalls[1] no 'we'",
+        "grade": "B",
+        "sourceIds": [
+          "TF26"
+        ],
+        "quote": "Don’t talk about ‘we’ or ‘us’ – make sure you highlight what you achieved in each case."
+      },
+      {
+        "claim": "leadWith (space by result, not title)",
+        "grade": "B",
+        "sourceIds": [
+          "TF26"
+        ],
+        "quote": "devote more space to those activities where you had the strongest results or made the largest difference."
+      },
+      {
+        "claim": "reframes mirror employer language (only when evidenced)",
+        "grade": "B",
+        "sourceIds": [
+          "TF26"
+        ],
+        "quote": "you should talk about how you ‘built strong relationships’ rather than ‘worked in a team’"
+      },
+      {
+        "claim": "reframes proposed-and-implemented",
+        "grade": "B",
+        "sourceIds": [
+          "TF5"
+        ],
+        "quote": "Proposed the introduction of a mentoring scheme for new starters and some revisions to the standard sales script. Both ideas were implemented."
+      },
+      {
+        "claim": "leadWith[3]; competencyThemes problem solving",
+        "grade": "B",
+        "sourceIds": [
+          "TF27"
+        ],
+        "quote": "When you outline the problem and how you solved it, remember to focus on your contribution, not that of others."
+      },
+      {
+        "claim": "competencyThemes communication",
+        "grade": "B",
+        "sourceIds": [
+          "TF27",
+          "TF17"
+        ],
+        "quote": "translate your work into clear, simple insights that can quickly be understood by non-specialists."
+      },
+      {
+        "claim": "competencyThemes communication/persuasion (consulting > banking)",
+        "grade": "C",
+        "sourceIds": [
+          "TF10"
+        ],
+        "quote": "there is more emphasis on critical thinking and the ability to present, influence and persuade in consulting than in banking."
+      },
+      {
+        "claim": "competencyThemes analytical + detail",
+        "grade": "A",
+        "sourceIds": [
+          "TF28"
+        ],
+        "quote": "Strong analytical skills for quantitative problem-solving, paired with high attention to detail"
+      },
+      {
+        "claim": "summaryFormula skip",
+        "grade": "B",
+        "sourceIds": [
+          "TF4",
+          "TF30"
+        ],
+        "quote": "Graduates’ personal statements usually sound bland – and one is very much like another’s."
+      },
+      {
+        "claim": "pitfalls[3] Bain AI policy",
+        "grade": "A",
+        "sourceIds": [
+          "TF29"
+        ],
+        "quote": "We'd ask that you only use AI, such as Chat GPT, to check grammar and spelling in your CV."
+      },
+      {
+        "claim": "pitfalls[3] employers wary of AI-written applications",
+        "grade": "B",
+        "sourceIds": [
+          "TF33"
+        ],
+        "quote": "Only 15% answered “Yes”: half of employers replied “No”, they do not want you to use AI in your applications."
+      },
+      {
+        "claim": "pitfalls[4] soft skills need evidence",
+        "grade": "B",
+        "sourceIds": [
+          "TF31"
+        ],
+        "quote": "Transferable skills such as communication, teamworking and organisation shouldn’t be listed here as they need evidence attached to them"
+      },
+      {
+        "claim": "reframes keep honest scope (no misrepresentation)",
+        "grade": "A",
+        "sourceIds": [
+          "TF30"
+        ],
+        "quote": "Remember not to misrepresent any information – employers can revoke an interview or offer if you do."
+      },
+      {
+        "claim": "competencyThemes structuring (case criteria)",
+        "grade": "A",
+        "sourceIds": [
+          "TF2"
+        ],
+        "quote": "structuring, numeracy, judgements and insights, creativity, synthesis and case leadership."
+      },
+      {
+        "claim": "verbs.prefer list (selection from careers-service verb lists; level-preserving use is our rule)",
+        "grade": "D",
+        "sourceIds": [
+          "TF30",
+          "TF26"
+        ],
+        "quote": null
+      }
+    ]
+  }
+}
