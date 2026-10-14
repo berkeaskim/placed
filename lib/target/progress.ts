@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { awardXP } from "@/lib/gamify/award";
 import { PLAYBOOKS, type Action } from "@/lib/playbooks";
 import { ARCHETYPES } from "@/lib/types";
+import { canonicalize } from "@/lib/skills/extract";
 
 const MIN_NOTE = 10;
 const MAX_NOTE = 500;
@@ -53,4 +54,23 @@ export async function completeAction(supabase: SupabaseClient, userId: string, i
   if (fact.error) return { error: "Saved, but we couldn't add it to your facts — try again." };
   const award = await awardXP(supabase, userId, { type: "playbook_done", ref: id });
   return { award };
+}
+
+/**
+ * "Have you really used {skill}?" → yes, with where/how in the student's own words. Stored as a confirmed fact so
+ * verifyTailoring accepts the skill from now on; the CV itself is never changed. No XP: a claim isn't an action.
+ */
+export async function confirmSkill(supabase: SupabaseClient, userId: string, skill: string, note: string, url: string | undefined) {
+  const canon = canonicalize(skill.trim());
+  if (!canon) return { error: "Unknown skill." };
+  const v = validateCompletion(note, url);
+  if ("error" in v) return { error: v.error.replace("what you did", `where you used ${canon}`) };
+  const prefix = `${canon}: `;
+  const { data: prev, error: readErr } = await supabase.from("confirmed_facts").select("id")
+    .eq("user_id", userId).like("claim", `${prefix.replace(/[%_\\]/g, "\\$&")}%`).limit(1).maybeSingle();
+  if (readErr) return { error: "Couldn't save that — try again." };
+  if (prev) return { ok: true as const, stored: null };
+  const claim = `${prefix}${v.note}${v.url ? ` (${v.url})` : ""}`;
+  const { error } = await supabase.from("confirmed_facts").insert({ user_id: userId, claim, source: "user-stated" });
+  return error ? { error: "Couldn't save that — try again." } : { ok: true as const, stored: claim };
 }

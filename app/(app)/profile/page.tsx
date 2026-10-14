@@ -12,6 +12,7 @@ import { ARCHETYPES, YEARS, type Archetype, type Year } from "@/lib/types";
 import { CvScorePanel } from "@/components/cv-score-panel";
 import { MythCard } from "@/components/myth-card";
 import { SectorSelect } from "./sector-select";
+import { ProfileTabs } from "./tabs";
 import { ScoreNowButton } from "./score-now-button";
 import { scoreMyCv } from "./actions";
 
@@ -101,6 +102,8 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
   const uploadScoring = cv ? uploadScoringInFlight({ uploadedAt: cv.uploaded_at, sector, target }) : false;
 
   return (
+    <>
+    <ProfileTabs active="/profile" />
     <div className="grid gap-6 lg:grid-cols-[minmax(0,400px)_1fr]">
       <aside className="flex min-w-0 flex-col gap-4" aria-label="CV Score">
         {cv ? (
@@ -169,5 +172,6 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
         </div>
       </section>
     </div>
+    </>
   );
 }

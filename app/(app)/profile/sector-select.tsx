@@ -3,7 +3,7 @@ import { useState, useTransition } from "react";
 import { ARCHETYPES, ARCHETYPE_LABELS, type Archetype } from "@/lib/types";
 import { setTargetSector } from "./actions";
 
-export function SectorSelect({ value }: { value: Archetype }) {
+export function SectorSelect({ value, label = "Score my CV for" }: { value: Archetype; label?: string }) {
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
   // Shows the new choice while rescoring; the page remounts this (key) with the saved sector afterwards.
@@ -11,7 +11,7 @@ export function SectorSelect({ value }: { value: Archetype }) {
   return (
     <div className="flex flex-col gap-1">
       <label className="flex flex-wrap items-center gap-2 text-sm font-semibold">
-        Score my CV for
+        {label}
         <select
           value={shown}
           disabled={pending}
