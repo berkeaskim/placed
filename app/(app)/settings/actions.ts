@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { resetUserData } from "@/lib/db/reset";
+import { dropConnection } from "@/lib/gmail/connection";
 import { isDeleteConfirmed } from "@/lib/settings/confirm";
 
 export type DeleteState = { error: string } | null;
@@ -16,7 +17,9 @@ export async function deleteMyData(_prev: DeleteState, formData: FormData): Prom
   const { user } = await requireUser(); // session user only: the id is never taken from the client
   if (!isDeleteConfirmed(formData.get("confirm"))) return { error: "Type DELETE to confirm." };
   try {
-    await resetUserData(createAdminClient(), user.id);
+    const db = createAdminClient();
+    await dropConnection(db, user.id, true); // revoke the Google grant; resetUserData then deletes the rows
+    await resetUserData(db, user.id);
   } catch (err) {
     console.error("deleteMyData failed", err);
     return { error: "We couldn't delete everything — please try again." };

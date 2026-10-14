@@ -5,6 +5,9 @@ export const env = {
   anthropicKey: process.env.ANTHROPIC_API_KEY ?? "",
   geminiKey: process.env.GEMINI_API_KEY ?? "",
   cronSecret: process.env.CRON_SECRET ?? "",
+  googleClientId: process.env.GOOGLE_CLIENT_ID ?? "",
+  googleClientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
+  gmailTokenKey: process.env.GMAIL_TOKEN_KEY ?? "",
   demoMode: process.env.NEXT_PUBLIC_DEMO_MODE === "1",
 };
 

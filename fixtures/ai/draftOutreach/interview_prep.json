@@ -1,0 +1,5 @@
+{
+  "connection_note": "Hi {name}, I'm a UCL Economics student with an upcoming interview at {company} for the {role}. As a UCL student, could I ask you two quick questions about preparing?",
+  "coffee_chat": "Hi {name}, thanks for connecting. I have an interview coming up at {company} for the {role}. I'm in my second year of Economics at UCL and I've mostly worked with data in Python and SQL. I'd be very grateful for 15 minutes of advice on how to prepare.",
+  "questions": ["What did the interviewers care about most when you went through it?", "Is there anything about {company}'s culture I should understand before the interview?", "How technical should I expect the questions to be for this role?"]
+}

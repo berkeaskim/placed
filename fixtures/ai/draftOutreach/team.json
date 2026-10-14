@@ -1,0 +1,5 @@
+{
+  "connection_note": "Hi {name}, I'm a UCL Economics student interested in the work your team does at {company}. Could I ask you a couple of questions about the role?",
+  "coffee_chat": "Hi {name}, thanks for connecting. I'm studying Economics at UCL and I'm applying for {company}'s {role}. I enjoy working with data and built a rent tracker in Python and SQL that collected and cleaned 1,200 rental listings. I'd like to understand what the work in your team looks like day to day. Would you have 15 minutes in the next few weeks?",
+  "questions": ["What kinds of problems does the team spend most of its time on?", "Which tools does an intern use most in the first weeks?", "What does good work from an intern look like to your team?"]
+}

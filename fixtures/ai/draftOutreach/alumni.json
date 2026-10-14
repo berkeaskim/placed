@@ -1,0 +1,5 @@
+{
+  "connection_note": "Hi {name}, I'm a second-year Economics student at UCL and I'm applying for {company}'s {role}. As a UCL student I'd really value 15 minutes of your advice on the team and the process.",
+  "coffee_chat": "Hi {name}, thanks for connecting. I'm studying Economics at UCL and I'm applying to {company}. I've been working with data in my own time: I built a London rent tracker in Python and SQL that collected and cleaned 1,200 rental listings. I'd love 15 minutes of your time whenever suits you. A few things I'm curious about are below.",
+  "questions": ["What does a typical week look like for an intern in your team at {company}?", "What did you wish you had known before your first month there?", "Which parts of the interview process did students from UCL find hardest?"]
+}

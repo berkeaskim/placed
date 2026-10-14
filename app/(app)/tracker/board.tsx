@@ -4,11 +4,19 @@ import Link from "next/link";
 import type { AppStatus } from "@/lib/types";
 import { celebrate } from "@/components/reward-toast";
 import { COLUMNS, groupByStatus, isAppStatus } from "@/lib/tracker/status";
+import { CardEvidence } from "@/components/tracker/card-evidence";
+import { DeadlineChip } from "@/components/tracker/deadline-chip";
+import type { Nudge } from "@/lib/outreach/nudges";
 import { updateStatus } from "./actions";
 
-export type Card = { id: string; jobId: string; title: string; company: string; status: AppStatus };
+export type Card = {
+  id: string; jobId: string; title: string; company: string; status: AppStatus; updatedAt: string; lastEventAt: string | null;
+  evidence: { eventId: string; subject: string; date: string; to: AppStatus; canUndo: boolean } | null;
+  deadline: { date: string; label: string; url: string | null } | null;
+  nudge: Nudge | null; outreach: { sent: number; replied: number };
+};
 
-export function Board({ cards }: { cards: Card[] }) {
+export function Board({ cards, today }: { cards: Card[]; today: string }) {
   const [, start] = useTransition();
   const [over, setOver] = useState<AppStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -47,6 +55,16 @@ export function Board({ cards }: { cards: Card[] }) {
               <article key={c.id} draggable onDragStart={(e) => e.dataTransfer.setData("text/plain", c.id)} className="flex cursor-grab flex-col gap-2 rounded-xl border bg-white p-3">
                 <Link href={`/jobs/${c.jobId}`} className="text-sm font-bold text-foreground no-underline">{c.title}</Link>
                 <span className="text-xs text-muted-foreground">{c.company}</span>
+                {c.deadline && <DeadlineChip label={c.deadline.label} date={c.deadline.date} today={today} url={c.deadline.url} />}
+                {c.evidence && c.evidence.to === c.status && <CardEvidence e={c.evidence} />}
+                {c.nudge && (
+                  <Link href={`/jobs/${c.jobId}?target=${c.nudge.target}&purpose=${c.nudge.purpose}#people`} className="text-xs font-semibold">
+                    {c.nudge.text} →
+                  </Link>
+                )}
+                {c.outreach.sent > 0 && (
+                  <span className="text-xs text-muted-foreground">Reached {c.outreach.sent} {c.outreach.sent === 1 ? "person" : "people"}, {c.outreach.replied} repl{c.outreach.replied === 1 ? "y" : "ies"}</span>
+                )}
                 <label className="sr-only" htmlFor={`s-${c.id}`}>Status for {c.title}</label>
                 <select
                   id={`s-${c.id}`} value={c.status} onChange={(e) => isAppStatus(e.target.value) && change(c.id, e.target.value)}
