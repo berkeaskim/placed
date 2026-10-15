@@ -151,8 +151,78 @@ async function claim(token) {
   return { status: 200, plan, cv };
 }
 
+// ---------- LinkedIn Score: read the student's own profile in their logged-in tab ----------
+// The Placed page hands over a signed ticket (liArm). The next tab that opens the student's OWN profile
+// (?isSelfProfile=true, checked by linkedin.js) binds to it (liClaim), reads the profile (liStash), reads the full
+// skills list on /details/skills/, and posts everything to the Placed origin that issued the ticket (liSubmit).
+// Nothing is read on LinkedIn unless a ticket is waiting. State lives in storage.session: the worker may sleep.
+const LI_KEY = "placedLinkedIn";
+const LI_TTL_MS = 3 * 60_000;
+const LI_TOKEN_RE = /^[A-Za-z0-9_-]{20,400}\.[A-Za-z0-9_-]{43}$/;
+const placedOrigins = () => (globalThis.PLACED_ORIGINS || []).map((o) => String(o).replace(/\/+$/, ""));
+const liGet = async () => {
+  const s = (await chrome.storage.session.get(LI_KEY))[LI_KEY];
+  if (s && Date.now() - s.armedAt > LI_TTL_MS) { await chrome.storage.session.remove(LI_KEY); return null; }
+  return s || null;
+};
+const liSet = (s) => chrome.storage.session.set({ [LI_KEY]: s });
+const liClear = () => chrome.storage.session.remove(LI_KEY);
+function fromPlacedPage(sender) {
+  return sender.id === chrome.runtime.id && Boolean(sender.tab) && sender.frameId === 0 && placedOrigins().includes(senderOrigin(sender));
+}
+function fromLinkedInProfile(sender) {
+  if (sender.id !== chrome.runtime.id || !sender.tab || sender.frameId !== 0 || senderOrigin(sender) !== "https://www.linkedin.com") return false;
+  try { return new URL(sender.url).pathname.startsWith("/in/"); } catch { return false; }
+}
+async function liHandle(msg, sender) {
+  if (msg.kind === "liArm") {
+    if (!fromPlacedPage(sender) || typeof msg.token !== "string" || !LI_TOKEN_RE.test(msg.token)) return { ok: false };
+    await liSet({ token: msg.token, origin: senderOrigin(sender), placedTabId: sender.tab.id, armedAt: Date.now(), tabId: null, profile: null });
+    return { ok: true };
+  }
+  if (!fromLinkedInProfile(sender)) return { ok: false };
+  const s = await liGet();
+  if (!s) return { ok: false };
+  if (msg.kind === "liClaim") {
+    if (s.tabId == null && msg.self === true) { s.tabId = sender.tab.id; await liSet(s); }
+    return s.tabId === sender.tab.id ? { ok: true, phase: s.profile ? "skills" : "read" } : { ok: false };
+  }
+  if (s.tabId !== sender.tab.id) return { ok: false };
+  if (msg.kind === "liStash") {
+    if (!msg.profile || typeof msg.profile !== "object") return { ok: false };
+    s.profile = msg.profile;
+    await liSet(s);
+    return { ok: true };
+  }
+  if (msg.kind === "liSubmit") {
+    const profile = { ...(s.profile || msg.profile || {}) };
+    if (Array.isArray(msg.skills) && msg.skills.length) { profile.skills = msg.skills; profile.skillsComplete = true; }
+    await liClear(); // single use, whatever happens next
+    let res;
+    try {
+      res = await fetch(`${s.origin}/api/linkedin/capture`, {
+        method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ token: s.token, profile }), credentials: "omit", cache: "no-store",
+      });
+    } catch {
+      return { ok: false, error: "Couldn't reach Placed. Check you're online and press the button in Placed again." };
+    }
+    if (!res.ok) return { ok: false, error: (await res.text().catch(() => "")).slice(0, 200) || `Placed answered ${res.status}.` };
+    const body = await res.json().catch(() => ({}));
+    try {
+      const t = await chrome.tabs.update(s.placedTabId, { active: true });
+      if (t && t.windowId != null) await chrome.windows.update(t.windowId, { focused: true });
+    } catch { /* the Placed tab was closed: the result is saved anyway */ }
+    return { ok: true, total: body.total, label: body.label };
+  }
+  return { ok: false };
+}
+
 // ---------- messages ----------
 chrome.runtime.onMessage.addListener((msg, sender, reply) => {
+  if (msg && typeof msg.kind === "string" && msg.kind.startsWith("li")) {
+    liHandle(msg, sender).then(reply, (e) => reply({ ok: false, error: String(e && e.message ? e.message : e) }));
+    return true;
+  }
   if (!msg || typeof msg.kind !== "string" || !fromAllowedPage(sender)) return false;
   const tabId = sender.tab.id;
   (async () => {

@@ -58,7 +58,7 @@ function section(html: string, name: string): string | null {
 }
 
 const MONTH = "(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)[a-z]*";
-function point(s: string): { year: number; month: number | null } | null {
+export function point(s: string): { year: number; month: number | null } | null {
   const y = s.match(/(19|20)\d{2}/);
   if (!y) return null;
   const m = s.match(new RegExp(MONTH, "i"));
@@ -66,7 +66,7 @@ function point(s: string): { year: number; month: number | null } | null {
   return { year: Number(y[0]), month: m ? months.indexOf(m[0].slice(0, 3).toLowerCase()) + 1 : null };
 }
 /** "Jun 2025 - Aug 2025 3 months" → ["Jun 2025", "Aug 2025"|"Present"]. */
-function range(s: string): [string, string] | null {
+export function range(s: string): [string, string] | null {
   const m = s.replace(/\s+/g, " ").match(new RegExp(`((?:${MONTH} )?(?:19|20)\\d{2})\\s*[-–—]\\s*((?:${MONTH} )?(?:19|20)\\d{2}|Present)`, "i"));
   return m ? [m[1], m[2]] : null;
 }
@@ -168,6 +168,8 @@ export function parsePublicProfile(html: string, profileUrl: string): PublicProf
 export function renderPublicText(li: ParsedLinkedIn): string {
   const out: string[] = [];
   if (li.profileUrl) out.push("Contact", li.profileUrl, ...li.links);
+  if (li.topSkills.length) out.push("Top Skills", ...li.topSkills);
+  if (li.languages.length) out.push("Languages", ...li.languages);
   if (li.certifications.length) out.push("Certifications", ...li.certifications);
   if (li.honors.length) out.push("Honors-Awards", ...li.honors);
   out.push(li.name ?? "", li.headline ?? "", li.location ?? "");
