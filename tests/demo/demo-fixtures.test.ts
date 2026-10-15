@@ -212,7 +212,9 @@ describe("explainMatch + defendQuestions demo fixtures", () => {
     const { explanation, source } = await explainMatchWithSource({ cv: persona, cvText: rawText, student, job, coverage });
     expect(source).toBe("fixture");
     const strong = explanation.rows.filter((r) => r.match === "strong");
-    expect(strong.length).toBe(2);
+    // One requirement line naming Python and SQL: tagJob's two per-skill rows are shown as one (mergeSameText).
+    expect(strong.length).toBe(1);
+    expect(strong[0].skill?.split(", ").sort()).toEqual(["Python", "SQL"]);
     for (const r of strong) expect(r.cvEvidence).toBe("Used Python and SQL to collect and clean 1,200 rental listings");
     const missing = explanation.rows.find((r) => r.match === "missing");
     expect(missing?.skill).toBe("Case Interviews");

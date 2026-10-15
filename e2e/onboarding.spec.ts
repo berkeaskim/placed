@@ -18,7 +18,7 @@ test("onboarding: tap-only flow saves and routes to profile/build, XP toast on f
   const repeat = await alreadyOnboardedXp();
   await page.goto("/onboarding");
   await expect(page).toHaveURL(/\/onboarding$/);
-  const next = page.getByRole("button", { name: "Next" });
+  const next = page.getByRole("button", { name: "Next", exact: true });
 
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("What year are you in?");
   await expect(next).toBeDisabled();
@@ -44,7 +44,7 @@ test("onboarding: tap-only flow saves and routes to profile/build, XP toast on f
   // Back keeps prior answers
   await page.getByRole("button", { name: "Back" }).click();
   await expect(page.getByRole("button", { name: "Economics" })).toHaveAttribute("aria-pressed", "true");
-  await page.getByRole("button", { name: "Next" }).click();
+  await page.getByRole("button", { name: "Next", exact: true }).click();
 
   await go.click();
   await expect(page).toHaveURL(/\/profile\/build$/, { timeout: 30_000 });
@@ -64,8 +64,8 @@ test("a11y: onboarding steps", async ({ page }) => {
   await page.goto("/onboarding");
   expect(await basicA11y(page)).toEqual([]);
   await page.getByRole("button", { name: "1st year" }).click();
-  await page.getByRole("button", { name: "Next" }).click();
+  await page.getByRole("button", { name: "Next", exact: true }).click();
   await page.getByRole("button", { name: "Law" }).click();
-  await page.getByRole("button", { name: "Next" }).click();
+  await page.getByRole("button", { name: "Next", exact: true }).click();
   expect(await basicA11y(page)).toEqual([]);
 });

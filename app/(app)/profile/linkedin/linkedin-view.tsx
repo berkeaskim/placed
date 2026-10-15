@@ -30,6 +30,8 @@ export function LinkedInView({ initial, sector: initialSector }: { initial: LiPa
   const [dragging, setDragging] = useState(false);
   const [showPdf, setShowPdf] = useState(false);
   const [step, setStep] = useState(0);
+  // Controlled: a form action resets uncontrolled fields, which wiped the link whenever scoring returned an error.
+  const [url, setUrl] = useState("");
   const run = (fd: FormData, act: (fd: FormData) => Promise<UploadLinkedInResult>) => start(async () => {
     setError(null);
     const r = await act(fd);
@@ -53,6 +55,7 @@ export function LinkedInView({ initial, sector: initialSector }: { initial: LiPa
             Your profile link
             <input
               name="url" type="text" inputMode="url" autoComplete="url" required disabled={pending}
+              value={url} onChange={(e) => setUrl(e.target.value)}
               placeholder="linkedin.com/in/your-name"
               className="min-h-12 rounded-xl border-2 border-[#E6E6EF] bg-white px-3 py-2 font-medium outline-none focus:border-[#5B3DF5]"
             />

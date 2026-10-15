@@ -49,9 +49,7 @@ test("image-only PDF shows the unreadable-CV guidance", async ({ page }) => {
   await expect(page.getByRole("link", { name: "Take the quiz" })).toBeVisible();
 });
 
-// BUG: app/(app)/profile/build/upload-card.tsx:31 router.push("/profile") — no app/(app)/profile/page.tsx
-// exists (`next build` route table has only /profile/build), so a successful upload lands on a 404.
-test.fail("realistic CV PDF parses live and lands on the profile page", async ({ page }) => {
+test("realistic CV PDF parses live and lands on the profile page", async ({ page }) => {
   test.setTimeout(150_000);
   const errors = trackConsole(page);
   await page.goto("/profile/build");

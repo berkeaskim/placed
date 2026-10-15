@@ -8,7 +8,7 @@ import {
 } from "@/lib/scoring/requirements";
 import { renderCvContent, stripPii } from "@/lib/cv-score/pii";
 import { canonicalize, extractSkills } from "@/lib/skills/extract";
-import { escapeRegex } from "@/lib/text/regex";
+import { escapeRegex, stripListMarker } from "@/lib/text/regex";
 import { aiMode } from "@/lib/env";
 import { AiError, generateStructured, runAi } from "./provider";
 import { SYSTEM_EXPLAIN, wrapJob } from "./prompts";
@@ -75,7 +75,7 @@ function mentionsSkill(quote: string, names: string[]): boolean {
  */
 export function verifyQuote(raw: string | null, lines: string[], req: Pick<Requirement, "skill" | "anyOf">): string | null {
   if (!raw) return null;
-  const quote = unescapeData(raw).trim();
+  const quote = stripListMarker(unescapeData(raw)).trim();
   const q = norm(quote);
   if (!q) return null;
   const line = lines.find((l) => l.includes(q));
@@ -99,12 +99,32 @@ export const MISSING_GAP_HOW_TO_CLOSE =
   "Not shown in your CV yet. If you have done this, add a line that shows it; if not, a small project, module or course can close the gap.";
 
 /**
+ * tagJob emits one requirement per skill, so "Knowledge in SQL and Python" arrived as two identical-looking rows.
+ * Rows with the same text become one: Strong only if every part is, Missing only if every part is, else Partial;
+ * the most important importance and the first verified quote are kept.
+ */
+export function mergeSameText(rows: RequirementRow[]): RequirementRow[] {
+  const byText = new Map<string, RequirementRow[]>();
+  for (const r of rows) byText.set(r.text, [...(byText.get(r.text) ?? []), r]);
+  return [...byText.values()].map((group) => {
+    if (group.length === 1) return group[0];
+    const match = group.every((r) => r.match === "strong") ? "strong" : group.every((r) => r.match === "missing") ? "missing" : "partial";
+    const top = [...group].sort((a, b) => IMPORTANCE_RANK[a.importance] - IMPORTANCE_RANK[b.importance])[0];
+    const skills = [...new Set(group.map((r) => r.skill).filter((x): x is string => Boolean(x)))];
+    return {
+      ...top, match, skill: skills.length ? skills.join(", ") : null,
+      cvEvidence: match === "missing" ? null : group.find((r) => r.cvEvidence)?.cvEvidence ?? null,
+    };
+  });
+}
+
+/**
  * Final shape shared by every branch: rows ordered and trimmed (orderRequirementRows); gaps only for rows still in
  * the table and not Strong; every Partial/Missing critical/high row gets a gap (a deterministic one if none was
  * given); gaps ordered by importance.
  */
 export function finalizeExplanation(rows: RequirementRow[], gaps: ExplanationGap[], whyFit: string[]): Explanation {
-  const table = orderRequirementRows(rows);
+  const table = orderRequirementRows(mergeSameText(rows));
   const byText = new Map(table.map((r) => [r.text, r]));
   const seen = new Set<string>();
   const out: ExplanationGap[] = [];
@@ -211,7 +231,7 @@ export async function explainMatch(i: ExplainInput): Promise<Explanation> {
 // ---------- cache record (matches.explanation_json) ----------
 
 /** Bump when toExplanation / the prompt change meaning: older cached rows are then recomputed. */
-export const EXPLAIN_CACHE_VERSION = 2;
+export const EXPLAIN_CACHE_VERSION = 3;
 
 /** Heuristic results are cheap and would mask a fixture or live answer added later, so they are never cached. */
 export const shouldCacheExplanation = (source: ExplainSource) => source !== "heuristic";
@@ -238,5 +258,6 @@ export function readCachedExplanation(json: unknown, key: string): Explanation |
   if (r.v !== EXPLAIN_CACHE_VERSION || r.key !== key || r.source === "heuristic" || r.source === undefined) return null;
   const e = r.explanation;
   if (!e || !Array.isArray(e.rows) || !Array.isArray(e.whyFit) || !Array.isArray(e.gaps)) return null;
-  return e;
+  // Rows cached before mergeSameText existed still hold one row per skill; merge on read instead of recomputing.
+  return { ...e, rows: orderRequirementRows(mergeSameText(e.rows)) };
 }

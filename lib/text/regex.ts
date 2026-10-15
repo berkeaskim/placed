@@ -13,3 +13,11 @@ export const EMAIL_RE = /[\w.+-]{1,64}@[\w-]{1,63}(?:\.[\w-]{1,63}){1,8}/;
  * brackets or dashes. Requiring 10 digits keeps year ranges ("2023 - 2026") out.
  */
 export const PHONE_RE = /(?:\+|\()?\d(?:[\s()-]{0,3}\d){9,14}/;
+
+/**
+ * Leading list markers a model copies from our own prompt rendering ("  - Used Python…", "• …"). They are not CV
+ * text, so a quote must be checked without them or a verbatim quote fails verification.
+ */
+export function stripListMarker(s: string): string {
+  return s.replace(/^\s*(?:[-–—•*▪●◦]\s+)+/, "");
+}

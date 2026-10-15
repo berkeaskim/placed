@@ -9,6 +9,8 @@ export type MarketDemand = { archetype: Archetype; n: number; smallSample: boole
 
 export const SMALL_SAMPLE = 5;
 const MAX_ITEMS = 12;
+/** A skill counts towards the readiness % once at least this many live roles ask for it. */
+export const MIN_JOBS_FOR_READINESS = 2;
 
 const keyOf = (s: JdSkill) => (s.anyOf?.length ? [...s.anyOf].map((x) => x.toLowerCase()).sort().join("|") : s.skill.toLowerCase());
 
@@ -45,7 +47,13 @@ export function readiness(d: MarketDemand, cv: CvSkillSource): { coverage: Cover
   const role = ARCHETYPE_LABELS[d.archetype];
   if (d.n === 0) return { coverage, pct: null, label: `No live ${role} roles right now` };
   if (d.smallSample || coverage.weighted === null) return { coverage, pct: null, label: `Small sample — ${d.n} live ${role} roles` };
-  let pct = Math.round(coverage.weighted * 100);
+  // The % counts only skills more than one live role asks for: with 5 Consulting roles every skill came from a single
+  // posting, and 9% readiness against that was noise. The list above still shows every item.
+  const recurring = d.items.filter((i) => i.jobs >= MIN_JOBS_FOR_READINESS);
+  if (recurring.length === 0) return { coverage, pct: null, label: `No skill shows up in more than one live ${role} role yet` };
+  const core = computeCoverage(recurring.map(({ skill, section, anyOf }) => ({ skill, section, ...(anyOf ? { anyOf } : {}) })), cv);
+  if (core.weighted === null) return { coverage, pct: null, label: `Small sample — ${d.n} live ${role} roles` };
+  let pct = Math.round(core.weighted * 100);
   if (pct >= 100 && coverage.items.some((i) => i.status !== "existing")) pct = 99; // never display 100% with a gap
   return { coverage, pct, label: `Readiness vs ${d.n} live ${role} internships` };
 }

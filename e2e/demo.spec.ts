@@ -39,14 +39,15 @@ test("3-minute demo flow", async ({ page, context }) => {
   await page.waitForURL(/\/profile(\?.*)?$/, { timeout: 60_000 });
   await expect(page.getByRole("img", { name: /CV score \d+ out of 100 for Data & Analytics/ })).toBeVisible({ timeout: 60_000 });
   await expect(page.getByText(/^Source: /).first()).toBeVisible();
-  await expect(page.getByText("Organised weekly society events", { exact: false }).first()).toBeVisible();
+  // The events bullet sits in the collapsed "More fixes" list on Data & Analytics.
+  await expect(page.getByText("Organised weekly society events", { exact: false }).first()).toBeAttached();
 
   // 3. Sector switch: rescored for Consulting, where the events bullet is the next best fix
   await page.getByLabel("Score my CV for").selectOption("consulting");
   await expect(page.getByRole("img", { name: /CV score \d+ out of 100 for Consulting/ })).toBeVisible({ timeout: 60_000 });
   const nextFix = page.locator("section", { has: page.getByRole("heading", { name: "Next best fix" }) });
-  await expect(nextFix.getByText("Organised weekly society events")).toBeVisible();
-  await expect(nextFix.getByText(/\[add your real number\]/)).toBeVisible();
+  await expect(nextFix.getByText("Organised weekly society events").first()).toBeVisible();
+  await expect(nextFix.getByText(/\[add your real number\]/).first()).toBeVisible();
 
   // 4. Feed → the demo job
   await page.getByRole("link", { name: "See my internships" }).click();

@@ -51,9 +51,9 @@ test.describe("public pages (logged out)", () => {
     await expect(page).toHaveURL(/\/login$/);
   });
 
-  test("auth callback without code bounces to /login", async ({ page }) => {
+  test("auth callback without code bounces to /login with a link error", async ({ page }) => {
     await page.goto("/auth/callback");
-    await expect(page).toHaveURL(/\/login$/);
+    await expect(page).toHaveURL(/\/login\?error=link$/);
   });
 
   test("a11y: landing", async ({ page }) => {
