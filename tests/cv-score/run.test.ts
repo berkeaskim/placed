@@ -76,7 +76,7 @@ describe("scoreCv", () => {
 
   it("fixture mode: scores from code rules, passes safety into checks, never stores a cache key for all-not_applicable verdicts", async () => {
     const { client, upserts } = fakeSupabase({ cvs: [cvRow], cv_scores: [] });
-    const score = await scoreCv(client, { userId: "u1", cvId: "cv1", sector: "consulting", year: "2nd" });
+    const score = await scoreCv(client, { userId: "u1", cvId: "cv1", sector: "consulting", year: "2nd" }, client);
     expect(score.total).toBeGreaterThan(0);
     expect(judgeCvRules).toHaveBeenCalledTimes(1);
     expect(upserts).toHaveLength(1);
@@ -92,31 +92,31 @@ describe("scoreCv", () => {
 
   it("reuses cached LLM verdicts when the cache key matches (no re-judge)", async () => {
     const first = fakeSupabase({ cvs: [cvRow], cv_scores: [] });
-    await scoreCv(first.client, { userId: "u1", cvId: "cv1", sector: "consulting", year: "2nd" });
+    await scoreCv(first.client, { userId: "u1", cvId: "cv1", sector: "consulting", year: "2nd" }, first.client);
     const prev = first.upserts[0].row;
     const cachedLlm = [{ ruleId: "CON-01", status: "pass", evidenceLine: null, fix: null }];
     const key = { model_id: "fixture", prompt_version: PROMPT_VERSION, rules_version: RULES_VERSION };
     const cachedRow = { ...prev, ...key, cv_id: "cv-old", rule_results: { ...(prev.rule_results as object), llm: cachedLlm, spellingErrors: [] } };
     vi.mocked(judgeCvRules).mockClear();
     const second = fakeSupabase({ cvs: [cvRow], cv_scores: [cachedRow] });
-    await scoreCv(second.client, { userId: "u1", cvId: "cv1", sector: "consulting", year: "2nd" });
+    await scoreCv(second.client, { userId: "u1", cvId: "cv1", sector: "consulting", year: "2nd" }, second.client);
     expect(judgeCvRules).not.toHaveBeenCalled();
     expect((second.upserts[0].row.rule_results as { llm: unknown }).llm).toEqual(cachedLlm);
   });
 
   it("a non-cacheable (fixture, no verdicts) row is never reused", async () => {
     const first = fakeSupabase({ cvs: [cvRow], cv_scores: [] });
-    await scoreCv(first.client, { userId: "u1", cvId: "cv1", sector: "consulting", year: "2nd" });
+    await scoreCv(first.client, { userId: "u1", cvId: "cv1", sector: "consulting", year: "2nd" }, first.client);
     vi.mocked(judgeCvRules).mockClear();
     const second = fakeSupabase({ cvs: [cvRow], cv_scores: [first.upserts[0].row] });
-    await scoreCv(second.client, { userId: "u1", cvId: "cv1", sector: "consulting", year: "2nd" });
+    await scoreCv(second.client, { userId: "u1", cvId: "cv1", sector: "consulting", year: "2nd" }, second.client);
     expect(judgeCvRules).toHaveBeenCalledTimes(1);
   });
 
   it("judge unavailable: stores the code-only score without a cache key and flags aiUnavailable", async () => {
     vi.mocked(judgeCvRules).mockResolvedValueOnce({ results: [], spellingErrors: null, modelId: "anthropic:claude-sonnet-5-5", cacheable: false, aiUnavailable: true });
     const { client, upserts } = fakeSupabase({ cvs: [cvRow], cv_scores: [] });
-    const score = await scoreCv(client, { userId: "u1", cvId: "cv1", sector: "consulting", year: "2nd" });
+    const score = await scoreCv(client, { userId: "u1", cvId: "cv1", sector: "consulting", year: "2nd" }, client);
     expect(score.aiUnavailable).toBe(true);
     const row = upserts[0].row;
     expect(row).toMatchObject({ model_id: null, prompt_version: null, rules_version: null });
@@ -125,11 +125,11 @@ describe("scoreCv", () => {
 
   it("re-judges when the stored prompt_version differs", async () => {
     const first = fakeSupabase({ cvs: [cvRow], cv_scores: [] });
-    await scoreCv(first.client, { userId: "u1", cvId: "cv1", sector: "consulting", year: "2nd" });
+    await scoreCv(first.client, { userId: "u1", cvId: "cv1", sector: "consulting", year: "2nd" }, first.client);
     const stale = { ...first.upserts[0].row, model_id: "fixture", prompt_version: "old", rules_version: RULES_VERSION };
     vi.mocked(judgeCvRules).mockClear();
     const second = fakeSupabase({ cvs: [cvRow], cv_scores: [stale] });
-    await scoreCv(second.client, { userId: "u1", cvId: "cv1", sector: "consulting", year: "2nd" });
+    await scoreCv(second.client, { userId: "u1", cvId: "cv1", sector: "consulting", year: "2nd" }, second.client);
     expect(judgeCvRules).toHaveBeenCalledTimes(1);
   });
 
@@ -138,9 +138,25 @@ describe("scoreCv", () => {
     const rawOther = raw.replace("Ayse Demir", "Mohammed Okafor").replace("ayse@example.com", "mo@example.org").replace("07700 900123", "07123 456789");
     const a = fakeSupabase({ cvs: [cvRow], cv_scores: [] });
     const b = fakeSupabase({ cvs: [{ ...cvRow, raw_text: rawOther, page_texts: [rawOther], parsed_json: other }], cv_scores: [] });
-    const sa = await scoreCv(a.client, { userId: "u1", cvId: "cv1", sector: "consulting", year: "2nd" });
-    const sb = await scoreCv(b.client, { userId: "u1", cvId: "cv1", sector: "consulting", year: "2nd" });
+    const sa = await scoreCv(a.client, { userId: "u1", cvId: "cv1", sector: "consulting", year: "2nd" }, a.client);
+    const sb = await scoreCv(b.client, { userId: "u1", cvId: "cv1", sector: "consulting", year: "2nd" }, b.client);
     expect(sb.total).toBe(sa.total);
     expect(b.upserts[0].row.text_hash).toBe(a.upserts[0].row.text_hash);
+  });
+
+  it("reads the CV with the caller's client and writes the score through the writer, scoped to the caller", async () => {
+    const reader = fakeSupabase({ cvs: [cvRow], cv_scores: [] });
+    const writer = fakeSupabase({});
+    await scoreCv(reader.client, { userId: "u1", cvId: "cv1", sector: "consulting", year: "2nd" }, writer.client);
+    expect(reader.upserts).toEqual([]);
+    expect(writer.upserts).toHaveLength(1);
+    expect(writer.upserts[0]).toMatchObject({ table: "cv_scores", row: { user_id: "u1", cv_id: "cv1", sector: "consulting" } });
+  });
+
+  it("never writes when the caller's client can't read the CV as theirs", async () => {
+    const reader = fakeSupabase({ cvs: [{ ...cvRow, user_id: "someone-else" }], cv_scores: [] });
+    const writer = fakeSupabase({});
+    await expect(scoreCv(reader.client, { userId: "u1", cvId: "cv1", sector: "consulting", year: "2nd" }, writer.client)).rejects.toThrow(/CV not found/);
+    expect(writer.upserts).toEqual([]);
   });
 });
