@@ -117,7 +117,7 @@ describe("geminiStructured: request shape", () => {
     await geminiStructured({ ...req, tier: "smart", maxTokens: 123 }, client);
     const [fast, smart] = generateContent.mock.calls.map((c) => c[0] as { model: string; config: Record<string, unknown>; contents: unknown });
     expect(fast.model).toBe("gemini-3.8-flash");
-    expect(smart.model).toBe("gemini-3.1-pro-preview");
+    expect(smart.model).toBe("gemini-3.8-flash");
     expect(fast.config).toMatchObject({ systemInstruction: "sys", responseMimeType: "application/json", maxOutputTokens: 16000 });
     expect(fast.config.responseJsonSchema).toEqual(z.toJSONSchema(schema));
     expect(smart.config.maxOutputTokens).toBe(123);
