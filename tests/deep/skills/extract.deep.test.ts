@@ -10,11 +10,11 @@ function rng(seed: number) {
   };
 }
 const CANONICALS = new Set(SKILLS.map((s) => s.canonical));
-// Terms that intentionally need special context (single letters / "Go" / "q").
-const CONTEXTUAL = new Set(["C", "R", "Go", "q"]);
+// Terms that intentionally need special context (single letters / "Go" / "q", and ACL/CPA, which need a cue nearby).
+const CONTEXTUAL = new Set(["C", "R", "Go", "q", "ACL", "CPA"]);
 
 describe("vocabulary round-trip", () => {
-  it("every canonical name and alias (except contextual single-letter ones) extracts to its canonical", () => {
+  it("every canonical name and alias (except contextual ones) extracts to its canonical", () => {
     const misses: string[] = [];
     for (const s of SKILLS) for (const term of [s.canonical, ...s.aliases]) {
       if (CONTEXTUAL.has(term)) continue;

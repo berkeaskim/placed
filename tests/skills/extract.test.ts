@@ -136,4 +136,34 @@ describe("SKILLS vocabulary", () => {
     }
     expect(collisions).toEqual([]);
   });
+  it("does not credit skills for generic everyday phrases", () => {
+    expect(extractSkills("Ran the data collection script weekly on AWS")).toEqual(["AWS"]);
+    expect(extractSkills("Contributor to the student newspaper")).toEqual([]);
+    expect(extractSkills("OR for an individual contributor, they develop technical expertise")).not.toContain("Open Source");
+    expect(extractSkills("Took a vacation internship at Deloitte")).not.toContain("Research Assistant");
+  });
+  it("still finds the specific phrasings of those skills", () => {
+    expect(extractSkills("Designed a randomised controlled trial with 40 participants")).toContain("Experimental Design");
+    expect(extractSkills("Ran a controlled experiment; experimental design in R")).toContain("Experimental Design");
+    expect(extractSkills("Open source contributor to pandas")).toContain("Open Source");
+    expect(extractSkills("EPSRC vacation bursary in the Physics department")).toContain("Research Assistant");
+  });
+  it("matches the acronyms MVP, ACL and CPA only in capitals", () => {
+    expect(extractSkills("Shipped an MVP in two weeks")).toContain("MVP");
+    expect(extractSkills("Shipped a Minimum Viable Product")).toContain("MVP");
+    expect(extractSkills("mvp acl cpa")).toEqual([]);
+    expect(canonicalize("mvp")).toBe("MVP");
+  });
+  it("counts ACL only as the NLP conference", () => {
+    for (const t of ["Paper accepted at ACL 2026", "First-author paper at ACL", "Published in Findings of ACL", "Reviewer for ACL and EMNLP", "Submitted to the ACL workshop on NLP for education"])
+      expect(extractSkills(t), t).toContain("ACL");
+    for (const t of ["Recovered from an ACL injury and returned to rugby", "ACL reconstruction rehab", "Configured ACL rules on the firewall", "Rugby captain\nACL tear"])
+      expect(extractSkills(t), t).not.toContain("ACL");
+  });
+  it("counts CPA only as cost per acquisition", () => {
+    for (const t of ["Cut CPA by 30% on paid social", "Lowered CPA from £12 to £8", "Tracked CTR, CPA and ROAS weekly", "Optimised CPA across Google Ads campaigns", "Reduced CPA through bid tests"])
+      expect(extractSkills(t), t).toContain("CPA");
+    for (const t of ["Qualified CPA", "CPA candidate, passed all four exams", "Studying for the CPA exam", "Interned at a CPA firm"])
+      expect(extractSkills(t), t).not.toContain("CPA");
+  });
 });

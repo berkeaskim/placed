@@ -48,6 +48,15 @@ describe("verifyTailoring (brief)", () => {
     const t2 = toTailored(source); t2.skills = [{ group: "Skills", items: ["Python", "Excel", "SQL"] }];
     expect(verifyTailoring(base(t2)).verdict).toBe("block");
   });
+  it("does not read an everyday phrase as a skill: 'data collection' is not Experimental Design", () => {
+    const src: ParsedCV = { ...source, experience: [{ ...source.experience[0], bullets: [
+      source.experience[0].bullets[0], { id: "x0-b1", text: "Ran the collection script weekly on AWS" },
+    ] }] };
+    const t = toTailored(src);
+    t.experience[0].bullets[1] = { id: "x0-b1", text: "Ran the data collection script weekly on AWS", sourceRefs: ["x0-b1"] };
+    const r = verifyTailoring({ ...base(t), source: src, sourceText: "Organised weekly society events for 60 members\nRan the collection script weekly on AWS\nPython, Excel" });
+    expect(has(r.issues, "skillInjection")).toBe(false);
+  });
   it("blocks orphan bullets and forbidden phrases", () => {
     expect(verifyTailoring(base(withBullet("Analysed sales", []))).issues.some((i) => i.type === "orphanBullets")).toBe(true);
     expect(verifyTailoring(base(withBullet("Analysed sales", ["nope"]))).issues.some((i) => i.type === "orphanBullets")).toBe(true);

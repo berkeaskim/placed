@@ -97,6 +97,22 @@ const PATTERNS: { canonical: string; re: RegExp; term: string }[] = [...ALIAS.en
 
 const IMPLIED_PARENTS = new Set(["JavaScript", "React"]);
 
+// Acronyms with a common unrelated meaning count only with a cue on the same line within ~60 chars:
+// ACL the NLP conference (not the knee ligament), CPA cost per acquisition (not the accountant qualification).
+const CONTEXT_WINDOW = 60;
+const NEEDS_CONTEXT: Record<string, RegExp> = {
+  ACL: /\b(?:19|20)\d{2}\b|\b(?:paper|papers|conference|workshop|findings|proceedings|anthology|accepted|published|submitted|main track|NAACL|EACL|EMNLP|NeurIPS|ICML|ICLR|COLING|NLP|computational linguistics)\b/i,
+  CPA: /%|[£$€]|\b(?:cost per (?:acquisition|action)|CTR|CPC|CPM|ROAS|CAC|campaigns?|ads|paid|bid(?:ding)?|ppc|acquisition|conversions?|cut|reduced?|lowered?|lower|optimi[sz](?:ed|ing|e)|target)\b/i,
+};
+
+function hasContext(canonical: string, text: string, index: number, end: number): boolean {
+  const cue = NEEDS_CONTEXT[canonical];
+  if (!cue) return true;
+  const before = text.slice(Math.max(0, index - CONTEXT_WINDOW), index).split("\n").pop()!;
+  const after = text.slice(end, end + CONTEXT_WINDOW).split("\n")[0];
+  return cue.test(before) || cue.test(after);
+}
+
 export function extractSkills(text: string): string[] {
   const found: { canonical: string; index: number; end: number }[] = [];
 
@@ -105,7 +121,7 @@ export function extractSkills(text: string): string[] {
     p.re.lastIndex = 0;
     let m: RegExpExecArray | null;
     while ((m = p.re.exec(text)) !== null) {
-      found.push({ canonical: p.canonical, index: m.index, end: m.index + m[0].length });
+      if (hasContext(p.canonical, text, m.index, m.index + m[0].length)) found.push({ canonical: p.canonical, index: m.index, end: m.index + m[0].length });
     }
   }
 
