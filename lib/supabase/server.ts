@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { cache } from "react";
 import { env } from "@/lib/env";
 
 export async function createClient() {
@@ -20,7 +21,8 @@ export async function createClient() {
   });
 }
 
-export async function requireUser() {
+/** Memoised per request, so the layout and the page share one auth round-trip. */
+export const requireUser = cache(async () => {
   const supabase = await createClient();
   const { data } = await supabase.auth.getUser();
   if (!data.user) {
@@ -28,4 +30,4 @@ export async function requireUser() {
     redirect("/login");
   }
   return { supabase, user: data.user! };
-}
+});

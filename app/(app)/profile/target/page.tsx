@@ -132,20 +132,22 @@ function Steps({ v, role }: { v: TargetView; role: string }) {
 
 export default async function TargetRolePage() {
   const { supabase, user } = await requireUser();
-  const p = await getProfile(supabase, user.id);
-  const { sector, year } = targetFor(p);
   const today = todayLondon();
 
-  const [cv, jobsRes, progress, factsRes] = await Promise.all([
+  // Two round-trips instead of four: everything that doesn't depend on the sector, then the sector-keyed reads.
+  const [p, cv, progress, factsRes] = await Promise.all([
+    getProfile(supabase, user.id),
     getActiveCv(supabase, user.id),
-    supabase.from("jobs").select("id, archetype, is_live, deadline, requirements, text_lines").eq("archetype", sector).eq("is_live", true).limit(1000),
     loadProgress(supabase, user.id),
     supabase.from("confirmed_facts").select("claim").eq("user_id", user.id),
   ]);
+  const { sector, year } = targetFor(p);
+  const [jobsRes, scoreRes] = await Promise.all([
+    supabase.from("jobs").select("id, archetype, is_live, deadline, requirements, text_lines").eq("archetype", sector).eq("is_live", true).limit(1000),
+    cv ? supabase.from("cv_scores").select("total").eq("user_id", user.id).eq("cv_id", cv.id).eq("sector", sector).maybeSingle<{ total: number }>() : null,
+  ]);
   if (jobsRes.error) console.error("target: jobs read failed", jobsRes.error.message);
-  const score = cv
-    ? (await supabase.from("cv_scores").select("total").eq("user_id", user.id).eq("cv_id", cv.id).eq("sector", sector).maybeSingle<{ total: number }>()).data
-    : null;
+  const score = scoreRes?.data ?? null;
 
   const v = buildTargetView({
     sector, year, today, cv: cv?.parsed ?? null, profileSkills: p.skills ?? [], progress,
