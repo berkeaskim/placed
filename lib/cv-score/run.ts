@@ -6,6 +6,7 @@ import { isImageOnly } from "@/lib/cv/image-only";
 import { rulesFor } from "@/lib/cv-rules";
 import { countUnevidencedFails, judgeCvRules, PROMPT_VERSION } from "@/lib/ai/judgeCvRules";
 import { currentModelId } from "@/lib/ai/models";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { EMAIL_RE, PHONE_RE } from "@/lib/text/regex";
 import { runCodeChecks } from "./checkers";
 import { aggregateCvScore, type CvScore } from "./aggregate";
@@ -28,14 +29,24 @@ type CvRow = { raw_text: string; page_texts: string[] | null; page_count: number
 
 /** True when the error is "column does not exist" (migration 0007 not run yet): Postgres 42703 or PostgREST PGRST204. */
 const missingColumn = (e: { code?: string } | null) => !!e && (e.code === "42703" || e.code === "PGRST204");
+/** Foreign key violation: the CV row was deleted (re-upload, data reset) while it was being scored. */
+const cvGone = (e: { code?: string } | null) => !!e && e.code === "23503";
 
 /**
  * Score one CV for one sector and upsert cv_scores (one row per cv × sector).
  * LLM verdicts are reused whenever a row with the same cache key exists for this user (06 R2):
  * sha256(normalised redacted text) + sector + rules_version + model_id + prompt_version.
  * Code checks and aggregation always re-run (pure and cheap). No XP is awarded here (amendment item 5).
+ *
+ * `supabase` is the caller's own client: the CV read below is the ownership check (RLS + user_id), and the score is
+ * never written unless it returns the row. The write goes through `writer` (service role by default) with that same
+ * verified user id and CV id, because the judge call can take ~60 s and a user session that can't be loaded or
+ * refreshed by then makes supabase-js fall back to the anon key, which cv_scores RLS rejects and the score is lost.
+ * `userId` must come from the authenticated session (requireUser), never from the client.
  */
-export async function scoreCv(supabase: SupabaseClient, i: { userId: string; cvId: string; sector: Archetype; year: Year }): Promise<CvScore & { aiUnavailable: boolean }> {
+export async function scoreCv(
+  supabase: SupabaseClient, i: { userId: string; cvId: string; sector: Archetype; year: Year }, writer?: SupabaseClient,
+): Promise<CvScore & { aiUnavailable: boolean }> {
   const { data: cv, error } = await supabase
     .from("cvs")
     .select("raw_text, page_texts, page_count, file_size, parsed_json")
@@ -108,11 +119,13 @@ export async function scoreCv(supabase: SupabaseClient, i: { userId: string; cvI
   const cacheCols = llm.cacheable
     ? { text_hash: hash, model_id: modelId, prompt_version: PROMPT_VERSION, rules_version: RULES_VERSION }
     : { text_hash: hash, model_id: null, prompt_version: null, rules_version: null };
-  let up = await supabase.from("cv_scores").upsert({ ...row, ...cacheCols }, { onConflict: "cv_id,sector" });
+  const db = writer ?? createAdminClient();
+  let up = await db.from("cv_scores").upsert({ ...row, ...cacheCols }, { onConflict: "cv_id,sector" });
   if (up.error && missingColumn(up.error)) {
     console.warn("cv_scores cache columns missing: run supabase/migrations/0007_cv_score_cache.sql");
-    up = await supabase.from("cv_scores").upsert(row, { onConflict: "cv_id,sector" });
+    up = await db.from("cv_scores").upsert(row, { onConflict: "cv_id,sector" });
   }
-  if (up.error) throw new Error(`Couldn't save CV score: ${up.error.message}`);
+  if (up.error && cvGone(up.error)) throw new Error(`Couldn't save CV score: CV ${i.cvId} was deleted while it was being scored`);
+  if (up.error) throw new Error(`Couldn't save CV score: ${up.error.message} (${up.error.code ?? "no code"})`);
   return { ...score, aiUnavailable: llm.aiUnavailable };
 }

@@ -37,7 +37,7 @@ async function scoreRow(parsed: ParsedCV & { safety?: SafetyReport }, rawText: s
     };
     return b;
   };
-  const s = await scoreCv({ from } as unknown as SupabaseClient, { userId: "u1", cvId: "cv1", sector, year: "2nd" });
+  const s = await scoreCv({ from } as unknown as SupabaseClient, { userId: "u1", cvId: "cv1", sector, year: "2nd" }, { from } as unknown as SupabaseClient);
   const rr = upserts[0].rule_results as { llm: unknown; code: { ruleId: string; status: string }[] };
   return { total: s.total, hash: upserts[0].text_hash as string, llm: rr.llm, code: rr.code };
 }

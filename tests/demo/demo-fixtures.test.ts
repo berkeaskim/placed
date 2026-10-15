@@ -142,7 +142,7 @@ describe("judgeCvRules demo fixtures (A1, hand-labelled)", () => {
       };
       return b;
     };
-    const score = await scoreCv({ from } as unknown as SupabaseClient, { userId: "u1", cvId: "cv1", sector: "data_analytics", year: "2nd" });
+    const score = await scoreCv({ from } as unknown as SupabaseClient, { userId: "u1", cvId: "cv1", sector: "data_analytics", year: "2nd" }, { from } as unknown as SupabaseClient);
     const fix = score.fixes.find((f) => f.ruleId === "GEN-03");
     expect(fix?.evidenceLine).toBe("Organised weekly society events");
     expect(sourceChip(fix!).label).toMatch(/^Source: /);
