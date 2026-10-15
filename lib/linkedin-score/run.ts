@@ -122,7 +122,7 @@ async function scoreParsed(
     meta: { source: i.source, assessed: data.assessed, passed: data.passed, notCovered: data.notCovered, couldNotAssess: data.couldNotAssess, aiUnavailable: data.aiUnavailable, hasCv: data.hasCv, parseWarnings: data.parseWarnings, profile: data.profile },
     profile_json: profileJson, text_hash: hash,
   });
-  if (missingTable(ins.error)) console.warn("linkedin_scores missing: run supabase/migrations/0013_linkedin_scores.sql");
+  if (missingTable(ins.error)) console.warn("linkedin_scores missing: run supabase/migrations/0014_linkedin_scores.sql");
   else if (ins.error) console.error("linkedin_scores insert failed", ins.error);
   else data.saved = true;
   return data;

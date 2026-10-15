@@ -1,7 +1,7 @@
 -- LinkedIn profile scores (docs/research/linkedin/00-playbook.md). Idempotent: safe to run more than once.
 -- One row per scoring run (history kept for a trend line). The uploaded PDF itself is never stored: only the
 -- parsed profile (without email) and the score.
--- Numbered 0013 because 0010 (feat/target-role), 0011 (feat/ingest-coverage) and 0012 (feat/autopilot) are taken.
+-- Numbered 0014: 0010 (feat/target-role), 0011 (feat/ingest-coverage), 0012 (feat/autopilot) and 0013 (feat/inbox-network) are taken.
 
 create table if not exists public.linkedin_scores (
   id uuid primary key default gen_random_uuid(),
