@@ -10,6 +10,8 @@ export const env = {
   gmailTokenKey: process.env.GMAIL_TOKEN_KEY ?? "",
   demoMode: process.env.NEXT_PUBLIC_DEMO_MODE === "1",
   autopilot: process.env.NEXT_PUBLIC_AUTOPILOT === "1",
+  // Chrome Web Store listing for the Autopilot extension; until it is set, the site offers the packed zip instead.
+  autopilotStoreUrl: process.env.NEXT_PUBLIC_AUTOPILOT_STORE_URL ?? "",
 };
 
 export type AiProvider = "anthropic" | "gemini";

@@ -44,3 +44,7 @@ next-env.d.ts
 # local tooling
 .superpowers/
 .eval/
+
+# packed Chrome extension (scripts/pack-extension.mjs)
+/public/placed-autopilot.zip
+/dist/
