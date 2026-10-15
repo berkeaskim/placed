@@ -1,13 +1,13 @@
 import { test, expect } from "@playwright/test";
 import { createClient } from "@supabase/supabase-js";
-import { AUTH_FILE, hasDemoCreds, trackConsole, basicA11y } from "./fixtures/helpers";
+import { AUTH_FILE, hasE2eCreds, trackConsole, basicA11y } from "./fixtures/helpers";
 
 test.use({ storageState: AUTH_FILE });
-test.skip(!hasDemoCreds, "DEMO_EMAIL/DEMO_PASSWORD not set");
+test.skip(!hasE2eCreds, "E2E_USER_EMAIL/E2E_USER_PASSWORD not set");
 
 async function alreadyOnboardedXp() {
   const sb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, { auth: { persistSession: false } });
-  const { data } = await sb.auth.signInWithPassword({ email: process.env.DEMO_EMAIL!, password: process.env.DEMO_PASSWORD! });
+  const { data } = await sb.auth.signInWithPassword({ email: process.env.E2E_USER_EMAIL!, password: process.env.E2E_USER_PASSWORD! });
   const { count } = await sb.from("xp_events").select("id", { count: "exact", head: true })
     .eq("user_id", data.user!.id).eq("type", "onboarding_complete");
   return (count ?? 0) > 0;

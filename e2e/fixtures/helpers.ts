@@ -1,11 +1,16 @@
 import path from "node:path";
 import os from "node:os";
 import { expect, type Page, type ConsoleMessage } from "@playwright/test";
+import { liveDemoWriteAllowed } from "../../lib/demo/guard";
 
 const TMP = path.join(os.tmpdir(), "placed-e2e");
-export const AUTH_FILE = path.join(TMP, "demo-auth.json");
+export const AUTH_FILE = path.join(TMP, "e2e-auth.json");
 export const GEN = (f: string) => path.join(TMP, "generated", f);
-export const hasDemoCreds = Boolean(process.env.DEMO_EMAIL && process.env.DEMO_PASSWORD);
+/** The dedicated e2e test account (never the demo account; global-setup refuses that). */
+export const hasE2eCreds = Boolean(process.env.E2E_USER_EMAIL && process.env.E2E_USER_PASSWORD);
+/** Specs that drive the live "Try the demo" persona write to it, so they also need PLACED_ALLOW_LIVE_DEMO_WRITE=1. */
+export const liveDemoSpecsAllowed = Boolean(process.env.DEMO_EMAIL && process.env.DEMO_PASSWORD) && liveDemoWriteAllowed(process.env);
+export const LIVE_DEMO_SKIP = "writes to the LIVE demo account: needs DEMO_EMAIL/DEMO_PASSWORD and PLACED_ALLOW_LIVE_DEMO_WRITE=1 (Berke's OK only)";
 
 /** Collect console errors + uncaught page errors. Ignores HMR/dev-only noise. */
 export function trackConsole(page: Page) {

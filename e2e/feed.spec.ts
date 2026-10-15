@@ -1,8 +1,8 @@
 import { test, expect } from "@playwright/test";
-import { AUTH_FILE, hasDemoCreds } from "./fixtures/helpers";
+import { AUTH_FILE, hasE2eCreds } from "./fixtures/helpers";
 
 test.use({ storageState: AUTH_FILE });
-test.skip(!hasDemoCreds, "DEMO_EMAIL/DEMO_PASSWORD not set");
+test.skip(!hasE2eCreds, "E2E_USER_EMAIL/E2E_USER_PASSWORD not set");
 
 /** innerText lines of a job's header: avatar initial, company name, then the title. */
 const lines = async (loc: import("@playwright/test").Locator) => (await loc.innerText()).split("\n").map((l) => l.trim()).filter(Boolean);

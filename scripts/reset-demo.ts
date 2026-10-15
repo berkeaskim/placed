@@ -2,15 +2,18 @@
  * Wipes the demo user's data (CVs, scores, matches, applications, XP, badges, confirmed facts, stored files) and resets
  * the profile to "not onboarded", reusing lib/db/reset.ts resetUserData (C14b). The auth account is kept. Then the FICTIONAL
  * persona's Autopilot Vault is re-seeded (completed, so no XP fires on stage) because the reset wipes it. Idempotent.
- * Run right before presenting: npm run demo:reset
+ * Run right before presenting, only with Berke's OK (it wipes whatever live visitors are doing as the demo):
+ *   PLACED_ALLOW_LIVE_DEMO_WRITE=1 npm run demo:reset
  * Fails with a clear message when a required migration hasn't been applied.
  */
 import { scriptClient } from "./db";
 import { resetUserData } from "@/lib/db/reset";
 import { seedAyseVault } from "@/lib/demo/autopilot-persona";
 import { demoCredentials, demoPreflight, findUserByEmail } from "@/lib/demo/admin";
+import { assertLiveDemoWriteAllowed } from "@/lib/demo/guard";
 
 async function main() {
+  assertLiveDemoWriteAllowed(process.env, "demo:reset");
   const { email } = demoCredentials(process.env);
   const db = scriptClient();
   const problems = await demoPreflight(db);

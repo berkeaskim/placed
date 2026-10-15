@@ -1,19 +1,20 @@
 import path from "node:path";
 import { test, expect } from "@playwright/test";
-import { hasDemoCreds, trackConsole } from "./fixtures/helpers";
+import { LIVE_DEMO_SKIP, liveDemoSpecsAllowed, trackConsole } from "./fixtures/helpers";
 
 /**
  * The 3-minute demo (spec §12, amendments Task 25 demo order) as one run, signed in through the real
  * "Try the demo" button as the FICTIONAL persona Ayşe Demir, in fixture mode.
  *
+ * It onboards, uploads and applies AS THE LIVE DEMO ACCOUNT, so it is opt-in (PLACED_ALLOW_LIVE_DEMO_WRITE=1, Berke's OK).
  * Preconditions (the human runs these; see docs/demo/REHEARSAL.md):
- *   npm run demo:user && npm run demo:reset     (demo account exists and is NOT onboarded)
+ *   PLACED_ALLOW_LIVE_DEMO_WRITE=1 npm run demo:reset     (demo account exists and is NOT onboarded)
  *   the dev server runs with NEXT_PUBLIC_DEMO_MODE=1 and AI_MODE=fixture (playwright.config.ts sets both when it starts it)
  * Selectors follow the rendered UI: onboarding (app/onboarding/page.tsx), upload (profile/build/upload-card.tsx),
  * score panel (components/cv-score-panel.tsx), feed card (components/job-card.tsx), tailor panel
  * (jobs/[id]/tailor-panel.tsx + components/tailor/*), apply (jobs/[id]/apply-button.tsx).
  */
-test.skip(!hasDemoCreds, "DEMO_EMAIL/DEMO_PASSWORD not set: run npm run demo:user first");
+test.skip(!liveDemoSpecsAllowed, LIVE_DEMO_SKIP);
 
 const DEMO_CV = path.join(process.cwd(), "seed", "demo", "ayse-demir-cv.pdf");
 const DEMO_JOB = "Credit Analyst Intern (June 2027)"; // Lendable, ext_id a2214edc-… (lib/demo/fixture-keys.ts)
