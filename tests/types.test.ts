@@ -1,6 +1,6 @@
 import { describe, it, expect, afterEach } from "vitest";
 import { ARCHETYPES, YEARS } from "@/lib/types";
-import { aiMode, aiProvider } from "@/lib/env";
+import { aiMode, aiProvider } from "@/lib/ai/config";
 
 describe("shared types", () => {
   it("has the 8 archetypes and 5 years from the spec", () => {

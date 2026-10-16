@@ -9,7 +9,7 @@ import {
 import { renderCvContent, stripPii } from "@/lib/cv-score/pii";
 import { canonicalize, extractSkills } from "@/lib/skills/extract";
 import { escapeRegex, stripListMarker } from "@/lib/text/regex";
-import { aiMode } from "@/lib/env";
+import { aiMode } from "@/lib/ai/config";
 import { AiError, generateStructured, runAi } from "./provider";
 import { SYSTEM_EXPLAIN, wrapJob } from "./prompts";
 import { ExplainOutput, type ExplainOutputT } from "./schemas";

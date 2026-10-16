@@ -9,7 +9,7 @@ vi.mock("@/lib/ai/provider", async (importOriginal) => {
   return {
     ...orig,
     generateStructured: async <T,>(req: import("@/lib/ai/provider").StructuredRequest<T>): Promise<T> => {
-      const { aiProvider } = await import("@/lib/env");
+      const { aiProvider } = await import("@/lib/ai/config");
       if (aiProvider() !== "gemini") return orig.generateStructured(req);
       const { geminiStructured } = await import("@/lib/ai/gemini");
       const { instrumentedGemini } = await import("./_harness");

@@ -97,7 +97,7 @@ describe("fix round 1: live AiError falls back loudly", () => {
   it("logs the error and flags usedFallback with a reason", async () => {
     const { vi } = await import("vitest");
     vi.resetModules();
-    vi.doMock("@/lib/env", async (orig) => ({ ...(await orig<typeof import("@/lib/env")>()), aiMode: () => "live" }));
+    vi.doMock("@/lib/ai/config", async (orig) => ({ ...(await orig<typeof import("@/lib/ai/config")>()), aiMode: () => "live" }));
     const provider = await import("@/lib/ai/provider");
     vi.doMock("@/lib/ai/provider", () => ({
       ...provider,
@@ -112,7 +112,7 @@ describe("fix round 1: live AiError falls back loudly", () => {
     expect(spy).toHaveBeenCalled();
     expect(String(spy.mock.calls[0].join(" "))).toMatch(/tailorCV/);
     spy.mockRestore();
-    vi.doUnmock("@/lib/env"); vi.doUnmock("@/lib/ai/provider"); vi.resetModules();
+    vi.doUnmock("@/lib/ai/config"); vi.doUnmock("@/lib/ai/provider"); vi.resetModules();
   });
   it("fixture mode with no recorded answer flags the heuristic too", async () => {
     process.env.AI_MODE = "fixture";

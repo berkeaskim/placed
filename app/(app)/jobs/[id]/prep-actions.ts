@@ -7,7 +7,7 @@ import { getActiveCv, getJob } from "@/lib/db/queries";
 import { isUuid } from "@/lib/feed/save-result";
 import { isPastSaved } from "@/lib/tracker/status";
 import { currentModelId } from "@/lib/ai/models";
-import { aiMode } from "@/lib/env";
+import { aiMode } from "@/lib/ai/config";
 import { generatePrepPack, mapStories, PrepResult } from "@/lib/ai/interviewPrep";
 import { roleKey } from "@/lib/interview-prep/sources";
 import { getOrCreatePrep, type PrepView } from "@/lib/interview-prep/service";

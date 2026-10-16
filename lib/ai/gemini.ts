@@ -1,10 +1,11 @@
 import { GoogleGenAI, ThinkingLevel } from "@google/genai";
 import { z } from "zod";
 import { AiError, AI_BAD_FORMAT, AI_REFUSAL, AI_UNAVAILABLE, type GroundedRequest, type GroundedResult, type StructuredRequest } from "./provider";
-import { GEMINI_MODELS as MODELS } from "./models";
+import { geminiModel } from "./models";
+import { aiApiKey } from "./config";
 
 type ModelsClient = Pick<GoogleGenAI, "models">;
-let ai: GoogleGenAI | null = null;
+let cached: { key: string; ai: GoogleGenAI } | null = null;
 
 /** Finish reasons that mean the model/policy refused, not that the output was malformed. */
 const REFUSAL_FINISH = new Set(["SAFETY", "RECITATION", "BLOCKLIST", "PROHIBITED_CONTENT", "SPII", "IMAGE_SAFETY"]);
@@ -13,10 +14,20 @@ const REFUSAL_FINISH = new Set(["SAFETY", "RECITATION", "BLOCKLIST", "PROHIBITED
 export const geminiAcceptsTemperature = (model: string) => !/^gemini-([3-9]|\d{2,})/.test(model);
 
 function client(c?: ModelsClient): ModelsClient {
-  return c ?? (ai ??= new GoogleGenAI({
-    apiKey: process.env.GEMINI_API_KEY,
-    httpOptions: { timeout: 240_000, retryOptions: { attempts: 3, initialDelay: 2, maxDelay: 8, httpStatusCodes: [429, 500, 502, 503, 504] } },
-  }));
+  if (c) return c;
+  // The key is read per call (env, then Settings → AI), so a key saved in the UI applies without a restart.
+  const key = aiApiKey("gemini");
+  if (!key) throw new AiError(AI_UNAVAILABLE);
+  if (cached?.key !== key) {
+    cached = {
+      key,
+      ai: new GoogleGenAI({
+        apiKey: key,
+        httpOptions: { timeout: 240_000, retryOptions: { attempts: 3, initialDelay: 2, maxDelay: 8, httpStatusCodes: [429, 500, 502, 503, 504] } },
+      }),
+    };
+  }
+  return cached.ai;
 }
 
 export async function geminiStructured<T>(req: StructuredRequest<T>, c?: ModelsClient): Promise<T> {
@@ -31,7 +42,7 @@ export async function geminiStructured<T>(req: StructuredRequest<T>, c?: ModelsC
     let res: Awaited<ReturnType<GoogleGenAI["models"]["generateContent"]>>;
     try {
       res = await api.models.generateContent({
-        model: MODELS[req.tier],
+        model: geminiModel(req.tier),
         contents: [{ role: "user", parts }],
         config: {
           systemInstruction: req.system,
@@ -39,7 +50,7 @@ export async function geminiStructured<T>(req: StructuredRequest<T>, c?: ModelsC
           responseJsonSchema: jsonSchema,
           maxOutputTokens: req.maxTokens ?? 16000,
           thinkingConfig: { thinkingLevel: req.thinking === "high" ? ThinkingLevel.HIGH : ThinkingLevel.LOW },
-          ...(req.temperature !== undefined && geminiAcceptsTemperature(MODELS[req.tier]) ? { temperature: req.temperature } : {}),
+          ...(req.temperature !== undefined && geminiAcceptsTemperature(geminiModel(req.tier)) ? { temperature: req.temperature } : {}),
         },
       });
     } catch (cause) {
@@ -65,7 +76,7 @@ export async function geminiGrounded(req: GroundedRequest, c?: ModelsClient): Pr
   let res: Awaited<ReturnType<GoogleGenAI["models"]["generateContent"]>>;
   try {
     res = await client(c).models.generateContent({
-      model: MODELS.fast,
+      model: geminiModel("fast"),
       contents: [{ role: "user", parts: [{ text: req.prompt }] }],
       config: { systemInstruction: req.system, tools: [{ googleSearch: {} }], maxOutputTokens: 12000, thinkingConfig: { thinkingLevel: ThinkingLevel.LOW } },
     });

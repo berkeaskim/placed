@@ -10,7 +10,7 @@
 import { readFileSync } from "node:fs";
 import { judgeCvRules } from "@/lib/ai/judgeCvRules";
 import { heuristicParseCv } from "@/lib/ai/heuristics";
-import { aiMode } from "@/lib/env";
+import { aiMode } from "@/lib/ai/config";
 import { currentModelId } from "@/lib/ai/models";
 import { rulesFor } from "@/lib/cv-rules";
 import { assignIds } from "@/lib/cv/ids";

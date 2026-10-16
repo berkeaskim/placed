@@ -3,7 +3,7 @@ import { requireUser } from "@/lib/supabase/server";
 import { getActiveCv, getJob, getProfile, toStudent } from "@/lib/db/queries";
 import { coverageFor } from "@/lib/scoring/coverage";
 import { explainCacheKey, explainMatchWithSource, readCachedExplanation, shouldCacheExplanation, toCacheRecord } from "@/lib/ai/explainMatch";
-import { aiMode } from "@/lib/env";
+import { aiMode } from "@/lib/ai/config";
 import { awardXP } from "@/lib/gamify/award";
 import { isUuid } from "@/lib/feed/save-result";
 import type { Explanation } from "@/lib/scoring/requirements";
