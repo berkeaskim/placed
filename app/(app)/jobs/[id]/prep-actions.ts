@@ -1,6 +1,8 @@
 import "server-only";
-import { requireUser } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { and, count, eq, gte } from "drizzle-orm";
+import { requireUser } from "@/lib/auth/local-user";
+import { db } from "@/lib/db/client";
+import { applications, interviewPreps, jobs } from "@/lib/db/schema";
 import { getActiveCv, getJob } from "@/lib/db/queries";
 import { isUuid } from "@/lib/feed/save-result";
 import { isPastSaved } from "@/lib/tracker/status";
@@ -18,40 +20,37 @@ const GONE = "This role is no longer available.";
  */
 export async function getInterviewPrep(jobId: string): Promise<PrepView | { error: string }> {
   if (!isUuid(jobId)) return { error: GONE };
-  const { supabase, user } = await requireUser();
-  const [job, cv, app, jobRow] = await Promise.all([
-    getJob(supabase, jobId),
-    getActiveCv(supabase, user.id),
-    supabase.from("applications").select("status").eq("user_id", user.id).eq("job_id", jobId).maybeSingle(),
-    supabase.from("jobs").select("company_id").eq("id", jobId).maybeSingle(),
-  ]);
-  if (!job || !jobRow.data) return { error: GONE };
-  if (!isPastSaved(app.data?.status as string | undefined)) return { error: "Mark this role as applied to unlock interview prep." };
+  const { user } = await requireUser();
+  const [job, cv] = await Promise.all([getJob(jobId), getActiveCv(user.id)]);
+  const app = db.select({ status: applications.status }).from(applications)
+    .where(and(eq(applications.user_id, user.id), eq(applications.job_id, jobId))).get();
+  const jobRow = db.select({ company_id: jobs.company_id }).from(jobs).where(eq(jobs.id, jobId)).get();
+  if (!job || !jobRow) return { error: GONE };
+  if (!isPastSaved(app?.status)) return { error: "Mark this role as applied to unlock interview prep." };
 
-  const companyId = jobRow.data.company_id as number;
+  const companyId = jobRow.company_id;
   const key = roleKey(job);
-  const admin = createAdminClient();
   return getOrCreatePrep({
     key: `${companyId}:${key}`,
     cache: aiMode() !== "fixture",
     now: () => new Date(),
     readCache: async () => {
-      const { data } = await supabase.from("interview_preps").select("pack, sources, grounded, created_at").eq("company_id", companyId).eq("role_key", key).maybeSingle();
+      const data = db.select({ pack: interviewPreps.pack, sources: interviewPreps.sources, grounded: interviewPreps.grounded, created_at: interviewPreps.created_at })
+        .from(interviewPreps).where(and(eq(interviewPreps.company_id, companyId), eq(interviewPreps.role_key, key))).get();
       if (!data) return null;
       const parsed = PrepResult.safeParse({ pack: data.pack, sources: data.sources, grounded: data.grounded });
-      return parsed.success ? { ...parsed.data, createdAt: data.created_at as string } : null;
+      return parsed.success ? { ...parsed.data, createdAt: data.created_at } : null;
     },
     countRecent: async (since) => {
-      const { count, error } = await admin.from("interview_preps").select("company_id", { count: "exact", head: true }).eq("created_by", user.id).gte("created_at", since);
-      if (error || count === null) throw new Error(`interview prep: daily count unavailable${error ? `: ${error.message}` : ""}`);
-      return count;
+      return db.select({ n: count() }).from(interviewPreps)
+        .where(and(eq(interviewPreps.created_by, user.id), gte(interviewPreps.created_at, since))).get()?.n ?? 0;
     },
     writeCache: async (r, createdAt) => {
-      const { error } = await admin.from("interview_preps").upsert({
+      const row = {
         company_id: companyId, role_key: key, pack: r.pack, sources: r.sources, grounded: r.grounded,
         model_id: currentModelId("fast"), created_by: user.id, created_at: createdAt,
-      }, { onConflict: "company_id,role_key" });
-      if (error) throw new Error(error.message);
+      };
+      db.insert(interviewPreps).values(row).onConflictDoUpdate({ target: [interviewPreps.company_id, interviewPreps.role_key], set: row }).run();
     },
     generate: () => generatePrepPack({ company: job.company, jobTitle: job.title, roleKey: key, jdText: job.textLines.join("\n"), fixtureKey: job.extId }),
     stories: (r) => (cv ? mapStories({ questions: r.pack.questions, cvText: cv.rawText ?? "", fixtureKey: job.extId }) : Promise.resolve([])),

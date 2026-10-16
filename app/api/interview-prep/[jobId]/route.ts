@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { getInterviewPrep } from "@/app/(app)/jobs/[id]/prep-actions";
 
 // A first generation runs a grounded web search (~35-60 s, more if Gemini retries a 503).
@@ -12,9 +11,6 @@ export const maxDuration = 300;
  */
 export async function POST(_request: Request, { params }: { params: Promise<{ jobId: string }> }) {
   const { jobId } = await params;
-  const supabase = await createClient();
-  const { data } = await supabase.auth.getUser();
-  if (!data.user) return NextResponse.json({ error: "Please sign in again." }, { status: 401 });
   const r = await getInterviewPrep(jobId);
   return NextResponse.json(r, { headers: { "Cache-Control": "private, no-store" } });
 }

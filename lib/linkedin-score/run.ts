@@ -1,6 +1,8 @@
 import "server-only";
 import { createHash } from "node:crypto";
-import type { SupabaseClient } from "@supabase/supabase-js";
+import { and, desc, eq, sql } from "drizzle-orm";
+import { db } from "@/lib/db/client";
+import { cvs, linkedinScores } from "@/lib/db/schema";
 import type { Archetype, ParsedCV, Year } from "@/lib/types";
 import { extractLinkedInLines } from "@/lib/linkedin/extract";
 import { parseLinkedInExport, type ParsedLinkedIn } from "@/lib/linkedin/parse-export";
@@ -33,11 +35,9 @@ export type LiPanelData = {
   /** What we read from the export, so the student can spot a misread. */
   profile: { headline: string | null; location: string | null; experience: number; education: number; topSkills: string[] };
   scoredAt: string;
-  /** false when migration 0013 isn't applied: the result is shown but not kept. */
+  /** false when the insert failed: the result is shown but not kept. */
   saved: boolean;
 };
-
-const missingTable = (e: { code?: string } | null) => !!e && (e.code === "42P01" || e.code === "PGRST205");
 
 /** True when the parsed PDF has the export's structure (headings + a LinkedIn URL), not some other document. */
 export function looksLikeLinkedInExport(li: ParsedLinkedIn, text: string): boolean {
@@ -57,11 +57,9 @@ export function sameName(a: string, b: string): boolean {
   return shared >= Math.min(2, ta.length, tb.size);
 }
 
-async function activeCv(supabase: SupabaseClient, userId: string): Promise<ParsedCV | null> {
-  const { data } = await supabase
-    .from("cvs").select("parsed_json").eq("user_id", userId).eq("is_active", true)
-    .maybeSingle<{ parsed_json: ParsedCV & { safety?: unknown } }>();
-  return data?.parsed_json ?? null;
+function activeCv(userId: string): ParsedCV | null {
+  const row = db.select({ parsed_json: cvs.parsed_json }).from(cvs).where(and(eq(cvs.user_id, userId), eq(cvs.is_active, true))).get();
+  return (row?.parsed_json as ParsedCV | undefined) ?? null;
 }
 
 /**
@@ -69,57 +67,54 @@ async function activeCv(supabase: SupabaseClient, userId: string): Promise<Parse
  * student can't run someone else's profile through the AI. Throws LinkedInFetchError when LinkedIn blocks the read.
  */
 export async function scoreLinkedInUrl(
-  supabase: SupabaseClient,
   i: { userId: string; url: string; sector: Archetype; year: Year; today?: Date },
 ): Promise<LiPanelData> {
-  const cv = await activeCv(supabase, i.userId);
+  const cv = activeCv(i.userId);
   const canonical = normalizeProfileUrl(i.url);
   const html = await fetchPublicProfile(canonical);
   const { li, text } = parsePublicProfile(html, canonical);
   const cvName = cv?.name?.trim();
   if (cvName && li.name && !sameName(li.name, cvName)) throw new NotYourProfileError("profile name does not match the CV");
-  return scoreParsed(supabase, { ...i, li, text, cv, source: "url" });
+  return scoreParsed({ ...i, li, text, cv, source: "url" });
 }
 
 /** The extension posted a ticket that was already used. */
 export class CaptureUsedError extends Error {}
 
 /**
- * Profile read by the Placed extension in the student's own logged-in LinkedIn tab → score. `db` is the admin
- * client (the extension has no Placed session; the signed ticket names the user). One score per ticket nonce.
+ * Profile read by the Placed extension in the student's own logged-in LinkedIn tab → score. The extension has no
+ * Placed session; the signed ticket names the user. One score per ticket nonce.
  */
 export async function scoreLinkedInCapture(
-  db: SupabaseClient,
   i: { userId: string; nonce: string; payload: CapturePayload; sector: Archetype; year: Year; today?: Date },
 ): Promise<LiPanelData> {
-  const used = await db.from("linkedin_scores").select("id").eq("user_id", i.userId).eq("meta->>captureNonce", i.nonce).limit(1);
-  if (used.data?.length) throw new CaptureUsedError("ticket already used");
-  const cv = await activeCv(db, i.userId);
+  const used = db.select({ id: linkedinScores.id }).from(linkedinScores)
+    .where(and(eq(linkedinScores.user_id, i.userId), sql`json_extract(${linkedinScores.meta}, '$.captureNonce') = ${i.nonce}`)).limit(1).get();
+  if (used) throw new CaptureUsedError("ticket already used");
+  const cv = activeCv(i.userId);
   const slug = i.payload.profileUrl.match(/linkedin\.com\/in\/([^/?#]+)/i)?.[1];
   const { li, text } = parseCapturedProfile(i.payload, slug ? `https://www.linkedin.com/in/${slug}` : "https://www.linkedin.com/in/me");
   const cvName = cv?.name?.trim();
   if (cvName && li.name && !sameName(li.name, cvName)) throw new NotYourProfileError("profile name does not match the CV");
-  return scoreParsed(db, { ...i, li, text, cv, source: "extension", extraMeta: { captureNonce: i.nonce } });
+  return scoreParsed({ ...i, li, text, cv, source: "extension", extraMeta: { captureNonce: i.nonce } });
 }
 
 /**
  * PDF bytes → parsed profile → score for one sector, compared with the user's active CV when there is one.
- * Persists to linkedin_scores (skipped with a warning while migration 0013 is unapplied). Never stores the PDF.
+ * Persists to linkedin_scores. Never stores the PDF.
  */
 export async function scoreLinkedInPdf(
-  supabase: SupabaseClient,
   i: { userId: string; bytes: Uint8Array; sector: Archetype; year: Year; today?: Date },
 ): Promise<LiPanelData> {
-  const cv = await activeCv(supabase, i.userId);
+  const cv = activeCv(i.userId);
   const { lines, text } = await extractLinkedInLines(i.bytes);
   const li = parseLinkedInExport(lines, { knownName: cv?.name?.trim() || undefined });
   if (!looksLikeLinkedInExport(li, text)) throw new NotLinkedInExportError("not a LinkedIn export");
-  return scoreParsed(supabase, { ...i, li, text, cv, source: "pdf" });
+  return scoreParsed({ ...i, li, text, cv, source: "pdf" });
 }
 
-/** Shared core for both inputs: score, persist (when migration 0013 is applied), return the panel data. */
+/** Shared core for both inputs: score, persist, return the panel data. */
 async function scoreParsed(
-  supabase: SupabaseClient,
   i: { userId: string; li: ParsedLinkedIn; text: string; cv: ParsedCV | null; sector: Archetype; year: Year; today?: Date; source: "pdf" | "url" | "extension"; extraMeta?: Record<string, string> },
 ): Promise<LiPanelData> {
   const { li, text, cv } = i;
@@ -139,15 +134,17 @@ async function scoreParsed(
   };
 
   const profileJson = { ...li, email: null };
-  const ins = await supabase.from("linkedin_scores").insert({
+  try {
+    db.insert(linkedinScores).values({
     user_id: i.userId, sector: i.sector, year: i.year, total: data.total, label: data.label, dimensions: data.dimensions,
     caps_applied: data.capsApplied, fixes: data.fixes, rule_results: score.results, tips: data.tips,
     meta: { ...i.extraMeta, source: i.source, assessed: data.assessed, passed: data.passed, notCovered: data.notCovered, couldNotAssess: data.couldNotAssess, aiUnavailable: data.aiUnavailable, hasCv: data.hasCv, parseWarnings: data.parseWarnings, profile: data.profile },
     profile_json: profileJson, text_hash: hash,
-  });
-  if (missingTable(ins.error)) console.warn("linkedin_scores missing: run supabase/migrations/0014_linkedin_scores.sql");
-  else if (ins.error) console.error("linkedin_scores insert failed", ins.error);
-  else data.saved = true;
+    }).run();
+    data.saved = true;
+  } catch (e) {
+    console.error("linkedin_scores insert failed", e);
+  }
   return data;
 }
 
@@ -157,13 +154,17 @@ type Row = {
   meta: Pick<LiPanelData, "assessed" | "passed" | "notCovered" | "couldNotAssess" | "aiUnavailable" | "hasCv" | "parseWarnings" | "profile">;
 };
 
-/** Latest saved score for a sector, or null (none yet, or migration 0013 not applied). */
-export async function loadLatestLinkedInScore(supabase: SupabaseClient, userId: string, sector: Archetype, importance: LiPanelData["importance"]): Promise<LiPanelData | null> {
-  const { data, error } = await supabase
-    .from("linkedin_scores")
-    .select("sector, year, total, label, dimensions, caps_applied, fixes, tips, meta, created_at")
-    .eq("user_id", userId).eq("sector", sector).order("created_at", { ascending: false }).limit(1).maybeSingle<Row>();
-  if (error) { if (!missingTable(error)) console.error("linkedin_scores read failed", error); return null; }
+/** Latest saved score for a sector, or null. */
+export async function loadLatestLinkedInScore(userId: string, sector: Archetype, importance: LiPanelData["importance"]): Promise<LiPanelData | null> {
+  const s = linkedinScores;
+  let data: Row | undefined;
+  try {
+    data = db.select({ sector: s.sector, year: s.year, total: s.total, label: s.label, dimensions: s.dimensions, caps_applied: s.caps_applied, fixes: s.fixes, tips: s.tips, meta: s.meta, created_at: s.created_at })
+      .from(s).where(and(eq(s.user_id, userId), eq(s.sector, sector))).orderBy(desc(s.created_at)).limit(1).get() as Row | undefined;
+  } catch (e) {
+    console.error("linkedin_scores read failed", e);
+    return null;
+  }
   if (!data) return null;
   return {
     sector: data.sector, year: data.year, total: data.total, label: data.label, dimensions: data.dimensions,
