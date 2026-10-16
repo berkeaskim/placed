@@ -48,6 +48,22 @@ function Group({ group, icon, title, count, children, collapsed }: { group: Pack
 function Choice({ field, value, onChange, labelId }: { field: FormField; value: string[]; onChange: (v: string[]) => void; labelId: string }) {
   const opts = optionsOf(field);
   if (!opts) return <input aria-labelledby={labelId} className={INPUT} value={value[0] ?? ""} onChange={(e) => onChange([e.target.value])} />;
+  // Short single choices (Yes/No and the like) are one tap: no dropdown to open.
+  if (field.type !== "multiselect" && opts.length <= 4 && opts.every((o) => o.label.length <= 40)) {
+    return (
+      <div role="group" aria-labelledby={labelId} className="flex flex-wrap gap-2">
+        {opts.map((o) => {
+          const on = value[0] === o.value;
+          return (
+            <button key={o.value} type="button" aria-pressed={on} onClick={() => onChange([o.value])}
+              className={`min-h-11 rounded-full border-2 px-4 py-2 text-sm font-bold ${on ? "border-[#5B3DF5] bg-[#5B3DF5] text-white" : "border-[#D8D8E0] bg-white text-[#2A2A35]"}`}>
+              {o.label}
+            </button>
+          );
+        })}
+      </div>
+    );
+  }
   if (field.type === "multiselect") {
     return (
       <div role="group" aria-labelledby={labelId} className="flex flex-col gap-1">
@@ -244,6 +260,7 @@ export function AutopilotPanel({ jobId }: { jobId: string }) {
   const by = (g: PackGroup) => phase.items.filter((i) => i.group === g);
   const vault = by("vault"), ask = by("ask"), confirm = by("confirm"), draft = by("draft"), yours = by("yours");
   const ready = canOpen(phase.items, answers);
+  const left = [...ask, ...confirm].filter((i) => answers[i.field.key] === undefined).length;
   const suggested = confirm.filter((i) => i.value != null && answers[i.field.key] === undefined);
 
   const confirmAll = () => startConfirm(async () => {
@@ -274,6 +291,9 @@ export function AutopilotPanel({ jobId }: { jobId: string }) {
         <Rocket size={18} aria-hidden="true" />
         <h2 className="text-lg font-extrabold">Your application pack</h2>
       </div>
+      <p aria-live="polite" className={`rounded-xl px-3 py-2 text-sm font-bold ${left ? "bg-[#FFF1DC] text-[#7A4100]" : "bg-[#E3F6EE] text-[#0B6B49]"}`}>
+        {left ? `${left} question${left === 1 ? "" : "s"} left. Tap an answer and it's saved.` : "All answered. You're ready to fill the form."}
+      </p>
 
       {vault.length > 0 && (
         <Group group="vault" icon="✅" title="From your setup" count={vault.length} collapsed>
@@ -297,10 +317,10 @@ export function AutopilotPanel({ jobId }: { jobId: string }) {
 
       {confirm.length > 0 && (
         <Group group="confirm" icon="☑️" title="Please confirm" count={confirm.length}>
-          {suggested.length > 1 && (
+          {suggested.length > 0 && (
             <div className="flex flex-wrap items-center gap-2">
               <button type="button" onClick={confirmAll} disabled={confirming} className={SMALL_BTN}>
-                {confirming ? "Confirming…" : `Confirm all ${suggested.length} suggestions`}
+                {confirming ? "Confirming…" : suggested.length === 1 ? "Confirm the suggestion" : `Confirm all ${suggested.length} suggestions`}
               </button>
               {confirmFailed && <span role="alert" className="text-xs font-semibold text-[#7A4100]">Some didn&apos;t save. Try again.</span>}
             </div>

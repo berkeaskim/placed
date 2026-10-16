@@ -5,6 +5,7 @@ import { fetchForm } from "./forms";
 import type { Ats, NormalizedForm } from "./forms/types";
 import { classify } from "./classify";
 import { draftAnswer, type DraftResult } from "./drafts";
+import { suggestAnswers } from "./suggest";
 import { assemblePack, toFillPlan, type Answers, type FillInstruction, type PackItem } from "./pack";
 import { hashToken, safeNamePart } from "./handoff";
 import { isComplete, type Core, type Extra } from "./vault";
@@ -42,16 +43,23 @@ export async function buildPack(userId: string, jobId: string, opts: { withDraft
   const form: NormalizedForm = (existing.data?.form as NormalizedForm | undefined) ?? (await fetchForm(job));
   const cv = (cvRow.data?.parsed_json ?? null) as ParsedCV | null;
   const drafts: Record<string, DraftResult> = {};
+  const answers = (existing.data?.answers ?? {}) as Answers;
+  const base = assemblePack(form, core, extra, {});
+  // Questions nobody answered yet get a CV-backed suggestion, so the student only taps Confirm.
+  const toSuggest = base.filter((i) => i.group === "ask" && answers[i.field.key] === undefined);
+  const suggesting = withDrafts && toSuggest.length ? suggestAnswers({ items: toSuggest, core, extra, cv, fixtureKey: job.extId }) : Promise.resolve({});
   if (withDrafts && cv) {
     for (const f of form.fields) if (classify(f.label, f.type).kind === "freeText") {
       drafts[f.key] = await draftAnswer({ question: f.label, wordLimit: f.wordLimit, company: job.company, jobExtId: job.extId, fieldKey: f.key,
         jdLines: job.textLines, cv, facts: factsRow.data ?? [] });
     }
   }
-  const answers = (existing.data?.answers ?? {}) as Answers;
+  const suggested: Record<string, string | string[]> = await suggesting;
   const { error } = await db.from("autopilot_packs").upsert({ user_id: userId, job_id: jobId, form, answers }, { onConflict: "user_id,job_id" });
   if (error) throw new Error(`buildPack: ${error.message}`);
-  return { items: assemblePack(form, core, extra, drafts), answers };
+  const items = assemblePack(form, core, extra, drafts).map((i) =>
+    i.group === "ask" && suggested[i.field.key] !== undefined ? { ...i, group: "confirm" as const, value: suggested[i.field.key], sourceLabel: "suggested from your CV" } : i);
+  return { items, answers };
 }
 
 export async function claimPack(token: string): Promise<{ status: 200; body: ClaimBody } | { status: 404 | 410 }> {
