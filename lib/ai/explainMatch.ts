@@ -231,7 +231,7 @@ export async function explainMatch(i: ExplainInput): Promise<Explanation> {
 // ---------- cache record (matches.explanation_json) ----------
 
 /** Bump when toExplanation / the prompt change meaning: older cached rows are then recomputed. */
-export const EXPLAIN_CACHE_VERSION = 3;
+export const EXPLAIN_CACHE_VERSION = 4;
 
 /** Heuristic results are cheap and would mask a fixture or live answer added later, so they are never cached. */
 export const shouldCacheExplanation = (source: ExplainSource) => source !== "heuristic";

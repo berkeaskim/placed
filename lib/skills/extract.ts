@@ -97,6 +97,16 @@ const PATTERNS: { canonical: string; re: RegExp; term: string }[] = [...ALIAS.en
 
 const IMPLIED_PARENTS = new Set(["JavaScript", "React"]);
 
+// Soft skills need demonstrated behaviour, not only a self-description such as "team player".
+const COMMUNICATION_SIGNALS = [
+  /\bpresent(?:ed|s|ing)?\b.{0,80}\b(?:findings?|analysis|results?|recommendations?|to|with)\b/i,
+  /\bexplain(?:ed|s|ing)?\b.{0,80}\b(?:findings?|analysis|results?|concepts?|to|for)\b/i,
+  /\b(?:tutor(?:ed|ing)?|teach(?:es|ing|taught)?)\b/i,
+  /\b(?:liais(?:ed|ing)|negotiat(?:ed|ing)|communicat(?:ed|ing|es))\b/i,
+  /\b(?:authored|wrote|drafted|produced)\b.{0,60}\b(?:reports?|documentation|briefs?|proposals?|presentations?)\b/i,
+  /\bclient[- ]facing\b/i,
+];
+
 // Acronyms with a common unrelated meaning count only with a cue on the same line within ~60 chars:
 // ACL the NLP conference (not the knee ligament), CPA cost per acquisition (not the accountant qualification).
 const CONTEXT_WINDOW = 60;
@@ -157,6 +167,15 @@ export function extractSkills(text: string): string[] {
   let cm: RegExpExecArray | null;
   while ((cm = cRe.exec(text)) !== null) {
     if (inLanguageList(text, cm.index, cm.index + 1)) found.push({ canonical: "C", index: cm.index, end: cm.index + 1 });
+  }
+
+  let lineStart = 0;
+  for (const line of text.split("\n")) {
+    for (const signal of COMMUNICATION_SIGNALS) {
+      const m = signal.exec(line);
+      if (m) found.push({ canonical: "Communication", index: lineStart + m.index, end: lineStart + m.index + m[0].length });
+    }
+    lineStart += line.length + 1;
   }
 
   // A term inside a longer matched term is not a separate skill ("search engine optimisation" is SEO, not also

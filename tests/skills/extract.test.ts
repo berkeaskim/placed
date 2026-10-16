@@ -6,6 +6,7 @@ describe("canonicalize", () => {
     expect(canonicalize("JS")).toBe("JavaScript");
     expect(canonicalize("ml")).toBe("Machine Learning");
     expect(canonicalize("MS Excel")).toBe("Excel");
+    expect(canonicalize("interpersonal relationships")).toBe("Communication");
     expect(canonicalize("unknownthing")).toBeNull();
   });
 });
@@ -24,6 +25,24 @@ describe("extractSkills", () => {
   });
   it("de-duplicates aliases", () => {
     expect(extractSkills("Excel, MS Excel, Microsoft Excel").filter((x) => x === "Excel")).toHaveLength(1);
+  });
+  it("recognizes concrete written, verbal and interpersonal communication signals", () => {
+    const skills = extractSkills(
+      "Strong written and verbal communication skills; easily builds new interpersonal relationships.",
+    );
+    expect(skills).toContain("Communication");
+  });
+  it("recognizes demonstrated communication without requiring the exact soft-skill phrase", () => {
+    const skills = extractSkills(
+      "Presented analysis to senior stakeholders.\nTutored first-year students in econometrics.\nWrote briefing notes for clients.",
+    );
+    expect(skills).toContain("Communication");
+  });
+  it("keeps inferred communication when the text opens with another skill", () => {
+    expect(extractSkills("Python, SQL.\nPresented findings to the client.")).toEqual(expect.arrayContaining(["Python", "SQL", "Communication"]));
+  });
+  it("does not infer communication from generic teamwork wording alone", () => {
+    expect(extractSkills("Team player with a positive attitude.")).not.toContain("Communication");
   });
   it("covers every archetype with at least 8 skills", () => {
     const keys = ["software_eng", "data_analytics", "quant_trading", "consulting", "product", "finance_banking", "marketing_growth", "research"];
