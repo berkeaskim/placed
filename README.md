@@ -218,11 +218,16 @@ recommends models that fit, and downloads the one you pick with one click (or sh
 | Your computer | What to expect |
 |---|---|
 | 8 GB RAM | Small models only. Usable for parsing a CV and tagging jobs; scoring and tailoring are slower and less reliable. A cloud key is the better choice here. |
-| 16 GB RAM | Mid-size models. Everything works, at a few seconds to a minute per task. |
+| 16 GB RAM | Mid-size models. Everything works, but slowly: on a 24 GB Apple Silicon Mac with an 8B model, a CV score took about 4 minutes and a tailored CV about 5–6. |
 | 32 GB RAM or more | Larger models, close to cloud quality for this app. |
 | Apple Silicon or an NVIDIA GPU | Much faster than CPU-only at the same size. |
 
 The recommendations in the app are the source of truth: they are updated as better local models come out.
+
+A local model answers one request at a time, so Placed queues them and always serves what you are waiting for (a
+score, a tailor) before background work. With Ollama selected, each job refresh also re-tags new postings with the local
+model in the background, which can keep it busy for a long time after the first big refresh; set **Settings → Job search**
+to a longer interval if that gets in the way.
 
 ## Your data
 
