@@ -19,10 +19,14 @@ import { ExplainPanel } from "./explain-panel";
 import { ApplyButton } from "./apply-button";
 import { TailorPanel } from "./tailor-panel";
 import { AutopilotPanel } from "./autopilot-panel";
+import { InterviewPrepPanel } from "./interview-prep-panel";
 import type { StoredTailoring } from "./actions";
 import { PeoplePanel } from "@/components/outreach/people-panel";
 import { OUTREACH_TARGETS } from "@/lib/outreach/targets";
 import type { OutreachPurpose } from "@/lib/outreach/draft";
+
+// Interview prep's first generation runs a grounded web search (~40-60 s).
+export const maxDuration = 120;
 
 const BAND_TONE = {
   Strong: "bg-[#E3F6EE] text-[#0B6B49]", Good: "bg-[#E6EEFF] text-[#2340A8]",
@@ -135,6 +139,7 @@ export default async function JobPage({ params, searchParams }: { params: Promis
           />
         </aside>
       </div>
+      {alreadyApplied && <InterviewPrepPanel jobId={job.id} company={job.company} hasCv={Boolean(cv)} />}
     </div>
   );
 }
