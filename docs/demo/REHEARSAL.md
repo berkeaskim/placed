@@ -14,7 +14,8 @@ Analyst Intern (June 2027)**, London. Everything the AI "says" in fixture mode i
 - [ ] Apply the database migrations if they aren't live yet: `supabase/migrations/0003`, `0004` and `0006`–`0009`.
 - [ ] In `.env.local`, set `DEMO_EMAIL` (e.g. `demo@placed.test`) and `DEMO_PASSWORD` (from `openssl rand -base64 18`),
       and `NEXT_PUBLIC_DEMO_MODE=1`.
-- [ ] `npm run demo:user`: creates or updates the demo account, then reports any missing migration or missing demo job.
+- [ ] `PLACED_ALLOW_LIVE_DEMO_WRITE=1 npm run demo:user` (Berke's OK only): creates the demo account if it is missing (it never
+      resets an existing account's password), then reports any missing migration or missing demo job.
 - [ ] Install the extension: `chrome://extensions` -> Developer mode -> Load unpacked -> `extension/`. It defaults to
       `http://localhost:3200`; if the demo runs on another origin, set `PLACED_ORIGIN` in `extension/config.js` and add
       that origin to `host_permissions` in `extension/manifest.json`, then reload the extension (see `extension/README.md`).
@@ -25,11 +26,12 @@ Analyst Intern (June 2027)**, London. Everything the AI "says" in fixture mode i
 - [ ] Confirm Berke has applied `supabase/migrations/0012_autopilot.sql`.
 - [ ] Autopilot dry run on the real Monzo form (nothing is submitted; every submit request is aborted):
       `NEXT_PUBLIC_AUTOPILOT=1 AI_MODE=fixture E2E_PORT=3100 npx playwright test e2e/autopilot.spec.ts`.
-- [ ] Full dry run: `npm run demo:reset`, then `npx playwright install chromium`, then `npx playwright test e2e/demo.spec.ts`.
+- [ ] Full dry run (Berke's OK only, it writes to the live demo): `PLACED_ALLOW_LIVE_DEMO_WRITE=1 npm run demo:reset`, then
+      `npx playwright install chromium`, then `PLACED_ALLOW_LIVE_DEMO_WRITE=1 npx playwright test e2e/demo.spec.ts`.
 
 ## Right before presenting
 
-- [ ] `npm run demo:reset`: wipes Ayşe's data and leaves her not onboarded. It then re-seeds her fictional Autopilot
+- [ ] `PLACED_ALLOW_LIVE_DEMO_WRITE=1 npm run demo:reset` (Berke's OK only): wipes Ayşe's data and leaves her not onboarded. It then re-seeds her fictional Autopilot
       setup (completed, no XP), so demo step 10 opens on the pack instead of "Set up Autopilot first". The Autopilot e2e
       (`e2e/autopilot.spec.ts`) writes the same vault values, so running it before or after is harmless.
 - [ ] Keep a local server running as the backup if the Wi-Fi or an API fails:
@@ -103,4 +105,5 @@ Analyst Intern (June 2027)**, London. Everything the AI "says" in fixture mode i
 - **The demo job isn't in the feed.** Open `/jobs/<id>` directly; get the id with
   `select id from jobs where ext_id = 'a2214edc-39e3-4c70-8a09-875bb991062f'`. If the job is gone, see "The evening before".
 - **Autopilot says it couldn't reach Placed, or didn't accept the extension.** `PLACED_ORIGIN` and `host_permissions` must match the origin the app runs on; reload the extension after editing them.
-- **Sign-in fails.** Re-run `npm run demo:user`. It resets the password to `DEMO_PASSWORD`.
+- **Sign-in fails.** Check `DEMO_PASSWORD` matches the account. `demo:user` no longer resets an existing password; if it must
+  change, Berke sets it in the Supabase dashboard (that logs out everyone on the live demo).

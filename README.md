@@ -198,7 +198,7 @@ Open <http://localhost:3000>.
 | `npm test` | Unit tests (Vitest) |
 | `npm run e2e` | End-to-end demo run (Playwright) |
 | `npm run typecheck` | Type-check the project |
-| `npm run demo:user` / `demo:reset` | Create or reset the fictional demo student |
+| `npm run demo:user` / `demo:reset` | Create or reset the fictional demo student (live demo on prod: needs `PLACED_ALLOW_LIVE_DEMO_WRITE=1` and Berke's OK) |
 
 ## Project structure
 

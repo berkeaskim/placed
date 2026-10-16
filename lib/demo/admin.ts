@@ -35,16 +35,15 @@ export const isAlreadyRegistered = (message: string) => /already (been )?registe
 export type ExistingUser = { id: string; email?: string; user_metadata?: Record<string, unknown> };
 
 /**
- * Guard for the "already registered" path: only an account this script created (user_metadata.demo === true) may have
- * its password and metadata overwritten. A mistyped DEMO_EMAIL that belongs to a real user is refused unless the
- * operator passes --force explicitly.
+ * Guard for the "already registered" path: only an account this script created (user_metadata.demo === true) counts as
+ * the demo account. A mistyped DEMO_EMAIL that belongs to a real user is refused unless the operator passes --force.
  */
 export function canOverwriteExistingUser(u: ExistingUser, force: boolean): { ok: true } | { ok: false; reason: string } {
   if (u.user_metadata?.demo === true || force) return { ok: true };
   return {
     ok: false,
     reason: `${u.email ?? "This account"} already exists and is not marked as the demo account (user_metadata.demo !== true). ` +
-      "Refusing to reset its password: check DEMO_EMAIL. If it really is the demo account, re-run with --force.",
+      "Refusing to mark it as the demo account: check DEMO_EMAIL. If it really is the demo account, re-run with --force.",
   };
 }
 

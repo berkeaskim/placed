@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { AUTH_FILE, hasDemoCreds, expectNoHorizontalScroll } from "./fixtures/helpers";
+import { AUTH_FILE, hasE2eCreds, expectNoHorizontalScroll } from "./fixtures/helpers";
 
 test.use({ viewport: { width: 375, height: 812 }, isMobile: true, hasTouch: true });
 
@@ -13,7 +13,7 @@ for (const route of ["/", "/login"]) {
 
 test.describe("logged in", () => {
   test.use({ storageState: AUTH_FILE });
-  test.skip(!hasDemoCreds, "no demo creds");
+  test.skip(!hasE2eCreds, "no e2e user creds");
   for (const route of ["/onboarding", "/profile/build", "/feed"]) {
     test(`375px: no horizontal scroll on ${route}`, async ({ page }, info) => {
       await page.goto(route);

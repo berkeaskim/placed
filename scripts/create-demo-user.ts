@@ -1,15 +1,16 @@
 /**
- * Creates (or updates) the demo auth user for the FICTIONAL persona Ayşe Demir via the Supabase admin API.
- * Credentials come from DEMO_EMAIL / DEMO_PASSWORD in .env.local (never printed). Run by a human, once:
- *   npm run demo:user
- * An existing account is only updated if it is marked as the demo account (user_metadata.demo), or with
- *   npm run demo:user -- --force
- * Then `npm run demo:reset` before each demo. The app's "Try the demo" button signs in with the same pair.
+ * Creates the demo auth user for the FICTIONAL persona Ayşe Demir via the Supabase admin API, if it is missing.
+ * Credentials come from DEMO_EMAIL / DEMO_PASSWORD in .env.local (never printed). Run by a human, once, with Berke's OK:
+ *   PLACED_ALLOW_LIVE_DEMO_WRITE=1 npm run demo:user
+ * An existing account is never given a new password: that revokes every session and logs out everyone on the live demo.
+ * An existing account not yet marked as the demo account (user_metadata.demo) is only marked with --force.
  */
 import { scriptClient } from "./db";
 import { DEMO_FULL_NAME, canOverwriteExistingUser, demoCredentials, demoPreflight, findUserByEmail, hasForceFlag, isAlreadyRegistered } from "@/lib/demo/admin";
+import { assertLiveDemoWriteAllowed } from "@/lib/demo/guard";
 
 async function main() {
+  assertLiveDemoWriteAllowed(process.env, "demo:user");
   const { email, password } = demoCredentials(process.env);
   const db = scriptClient();
   const meta = { full_name: DEMO_FULL_NAME, demo: true };
@@ -18,11 +19,16 @@ async function main() {
     if (!isAlreadyRegistered(error.message)) throw new Error(`creating the demo user failed: ${error.message}`);
     const u = await findUserByEmail(db, email);
     if (!u) throw new Error(`Supabase says ${email} exists, but it isn't in the user list`);
-    const allowed = canOverwriteExistingUser(u, hasForceFlag(process.argv));
-    if (!allowed.ok) throw new Error(allowed.reason);
-    const up = await db.auth.admin.updateUserById(u.id, { password, email_confirm: true, user_metadata: meta });
-    if (up.error) throw new Error(`updating the demo user failed: ${up.error.message}`);
-    console.log(`demo user updated: ${email} (password reset to DEMO_PASSWORD)`);
+    if (u.user_metadata?.demo !== true) {
+      const allowed = canOverwriteExistingUser(u, hasForceFlag(process.argv));
+      if (!allowed.ok) throw new Error(allowed.reason);
+      // Metadata only: a password or email change would revoke the account's sessions.
+      const up = await db.auth.admin.updateUserById(u.id, { user_metadata: { ...u.user_metadata, ...meta } });
+      if (up.error) throw new Error(`marking the demo user failed: ${up.error.message}`);
+      console.log(`demo user marked: ${email} (password unchanged)`);
+    } else {
+      console.log(`demo user already exists: ${email} (left unchanged; its password is never reset here)`);
+    }
   } else {
     console.log(`demo user created: ${email}`);
   }
