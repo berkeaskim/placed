@@ -1,10 +1,19 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { AiError, AI_BAD_FORMAT, AI_REFUSAL, AI_UNAVAILABLE, type StructuredRequest } from "./provider";
-import { ANTHROPIC_MODELS as MODELS } from "./models";
+import { anthropicModel } from "./models";
+import { aiApiKey } from "./config";
 
 type MessagesClient = Pick<Anthropic, "messages">;
-let client: Anthropic | null = null;
+let cached: { key: string; client: Anthropic } | null = null;
+
+/** One client per API key: the key is read on every call (env, then Settings → AI), so a key saved in the UI applies without a restart. */
+function defaultClient(): Anthropic {
+  const key = aiApiKey("anthropic");
+  if (!key) throw new AiError(AI_UNAVAILABLE);
+  if (cached?.key !== key) cached = { key, client: new Anthropic({ apiKey: key }) };
+  return cached.client;
+}
 
 /**
  * Uses `messages.create` (not `.parse`): in SDK 0.133 `.parse` throws a raw AnthropicError on invalid
@@ -12,7 +21,7 @@ let client: Anthropic | null = null;
  * first, then validate the text with the same Zod schema ourselves.
  */
 export async function anthropicStructured<T>(req: StructuredRequest<T>, c?: MessagesClient): Promise<T> {
-  const api: MessagesClient = c ?? (client ??= new Anthropic()); // reads ANTHROPIC_API_KEY (server only)
+  const api: MessagesClient = c ?? defaultClient(); // server only
   const content: Anthropic.ContentBlockParam[] = req.parts.map((p) =>
     p.type === "pdf"
       ? { type: "document", source: { type: "base64", media_type: "application/pdf", data: p.base64 } }
@@ -22,7 +31,7 @@ export async function anthropicStructured<T>(req: StructuredRequest<T>, c?: Mess
     let res: Anthropic.Message;
     try {
       res = await api.messages.create({
-        model: MODELS[req.tier],
+        model: anthropicModel(req.tier),
         max_tokens: req.maxTokens ?? 16000,
         // never `temperature`: models released after Claude Opus 4.6 (our pinned Sonnet 5.5 / Haiku 4.5 tiers) reject it with a 400
         system: [{ type: "text", text: req.system, cache_control: { type: "ephemeral" } }],

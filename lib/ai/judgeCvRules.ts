@@ -4,7 +4,7 @@ import path from "node:path";
 import type { CvRule } from "@/lib/cv-rules/types";
 import type { ScoredRuleResult } from "@/lib/cv-score/context";
 import { isSpellingVariant } from "@/lib/cv-score/checkers";
-import { aiMode } from "@/lib/env";
+import { aiMode } from "@/lib/ai/config";
 import { escapeRegex, stripListMarker } from "@/lib/text/regex";
 import { currentModelId } from "./models";
 import { AiError, generateStructured, runAi } from "./provider";

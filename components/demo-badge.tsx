@@ -1,4 +1,4 @@
-import { aiMode } from "@/lib/env";
+import { aiMode } from "@/lib/ai/config";
 
 export function DemoBadge() {
   if (aiMode() === "live") return null;
