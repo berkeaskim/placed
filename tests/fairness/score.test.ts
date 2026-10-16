@@ -28,13 +28,15 @@ const SECTOR: Record<Base, Archetype> = { swe: "software_eng", data: "data_analy
 
 type Scored = { total: number; hash: string; llm: unknown; code: { ruleId: string; status: string }[] };
 
-/** scoreCv against a fresh cvs row in a temp SQLite (no cache rows), returning the total, judge-input hash and stored verdicts. */
+/**
+ * scoreCv against a fresh cvs row in a temp SQLite, returning the total, judge-input hash and stored verdicts. Each call
+ * is a new user, so the score cache (keyed by user) never answers and parallel calls don't interfere.
+ */
 async function scoreRow(parsed: ParsedCV & { safety?: SafetyReport }, rawText: string, sector: Archetype): Promise<Scored> {
-  db.delete(cvScores).run();
-  db.delete(cvs).run();
-  const cv = db.insert(cvs).values({ user_id: "u1", storage_path: "u1/cv.pdf", raw_text: rawText, page_texts: [rawText], page_count: 1, file_size: 120_000, parsed_json: parsed })
+  const userId = crypto.randomUUID();
+  const cv = db.insert(cvs).values({ user_id: userId, storage_path: `${userId}/cv.pdf`, raw_text: rawText, page_texts: [rawText], page_count: 1, file_size: 120_000, parsed_json: parsed })
     .returning({ id: cvs.id }).get();
-  const s = await scoreCv({ userId: "u1", cvId: cv.id, sector, year: "2nd" });
+  const s = await scoreCv({ userId, cvId: cv.id, sector, year: "2nd" });
   const row = db.select().from(cvScores).where(eq(cvScores.cv_id, cv.id)).get()!;
   const rr = row.rule_results as { llm: unknown; code: { ruleId: string; status: string }[] };
   return { total: s.total, hash: row.text_hash!, llm: rr.llm, code: rr.code };
