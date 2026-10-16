@@ -1,5 +1,8 @@
 import Link from "next/link";
-import { requireUser } from "@/lib/supabase/server";
+import { eq } from "drizzle-orm";
+import { requireUser } from "@/lib/auth/local-user";
+import { db } from "@/lib/db/client";
+import { applications } from "@/lib/db/schema";
 import { getActiveCv, getProfile, toStudent } from "@/lib/db/queries";
 import { getFeedJobs } from "@/lib/feed/jobs-cache";
 import { rankJobs } from "@/lib/feed/rank";
@@ -8,23 +11,24 @@ import { todayLondon } from "@/lib/scoring/dates";
 import { ARCHETYPE_LABELS, type Archetype } from "@/lib/types";
 import { JobCard } from "@/components/job-card";
 import { isPastSaved } from "@/lib/tracker/status";
+import { ingestRunning, lastIngestAt } from "@/lib/ingest/local";
+import { RefreshJobs } from "./refresh-jobs";
 
 const chipClass = (active: boolean) =>
   `rounded-full border px-3.5 py-2 text-[13px] font-semibold no-underline ${active ? "border-foreground bg-foreground text-white" : "bg-white text-foreground"}`;
 
 export default async function Feed({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const filters = parseFilters(await searchParams);
-  const { supabase, user } = await requireUser();
+  const { user } = await requireUser();
   const today = todayLondon();
-  const [profile, cv, jobs, { data: apps }] = await Promise.all([
-    getProfile(supabase, user.id), getActiveCv(supabase, user.id), getFeedJobs(today),
-    supabase.from("applications").select("job_id, status").eq("user_id", user.id),
-  ]);
+  const [profile, cv, jobs] = await Promise.all([getProfile(user.id), getActiveCv(user.id), getFeedJobs(today)]);
+  const apps = db.select({ job_id: applications.job_id, status: applications.status }).from(applications).where(eq(applications.user_id, user.id)).all();
+  const lastRun = lastIngestAt();
   const student = toStudent(profile);
   const all = rankJobs(student, cv?.parsed ?? null, jobs, today);
   const ranked = applyFilters(all, filters, today);
-  const savedIds = new Set((apps ?? []).map((x) => x.job_id as string));
-  const appliedIds = new Set((apps ?? []).filter((x) => isPastSaved(x.status as string)).map((x) => x.job_id as string));
+  const savedIds = new Set(apps.map((x) => x.job_id));
+  const appliedIds = new Set(apps.filter((x) => isPastSaved(x.status)).map((x) => x.job_id));
 
   const topArchetypes: Archetype[] = student.archetypes.slice(0, 3).map((x) => x.key);
   if (filters.a && !topArchetypes.includes(filters.a)) topArchetypes.push(filters.a);
@@ -35,6 +39,8 @@ export default async function Feed({ searchParams }: { searchParams: Promise<Rec
         <h1 className="text-[28px] font-extrabold tracking-tight">Internships for you</h1>
         <p className="text-sm text-muted-foreground">{ranked.length} live roles, ranked by how well they fit you.</p>
       </div>
+      <RefreshJobs running={ingestRunning()}
+        lastRun={lastRun ? new Date(lastRun).toLocaleString("en-GB", { timeZone: "Europe/London", dateStyle: "medium", timeStyle: "short" }) : null} />
       <nav className="flex flex-wrap gap-2" aria-label="Role filters">
         <Link href={feedHref(filters, { a: null })} aria-current={!filters.a ? "true" : undefined} className={chipClass(!filters.a)}>All roles</Link>
         {topArchetypes.map((k) => (

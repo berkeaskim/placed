@@ -1,6 +1,9 @@
 "use server";
 import { revalidatePath } from "next/cache";
-import { requireUser } from "@/lib/supabase/server";
+import { and, eq } from "drizzle-orm";
+import { requireUser } from "@/lib/auth/local-user";
+import { db } from "@/lib/db/client";
+import { applications } from "@/lib/db/schema";
 import { awardXP } from "@/lib/gamify/award";
 import { loadJobFit } from "@/lib/db/fit";
 import { isUuid } from "@/lib/feed/save-result";
@@ -14,20 +17,24 @@ import type { AppStatus } from "@/lib/types";
  */
 export async function updateStatus(appId: string, status: AppStatus): Promise<AwardResult | null> {
   if (!isUuid(appId) || !isAppStatus(status)) return null;
-  const { supabase, user } = await requireUser();
-  const { data: app, error } = await supabase.from("applications")
-    .update({ status, updated_at: new Date().toISOString() })
-    .eq("id", appId).eq("user_id", user.id).select("job_id").maybeSingle();
+  const { user } = await requireUser();
+  let app: { job_id: string } | undefined;
+  try {
+    app = db.update(applications).set({ status, updated_at: new Date().toISOString() })
+      .where(and(eq(applications.id, appId), eq(applications.user_id, user.id))).returning({ job_id: applications.job_id }).get();
+  } catch (e) {
+    console.error("updateStatus: update failed", e instanceof Error ? e.message : e);
+  }
   revalidatePath("/tracker");
-  if (error || !app || status === "saved") return null;
+  if (!app || status === "saved") return null;
   try {
     const type = STATUS_EVENT[status];
     let event: GamifyEvent = { type };
     if (status === "applied") {
-      const loaded = await loadJobFit(supabase, user.id, app.job_id);
+      const loaded = await loadJobFit(user.id, app.job_id);
       if (loaded) event = { type, fitLabel: loaded.fit.label, jobTitle: loaded.job.title, deadline: loaded.job.deadline };
     }
-    return await awardXP(supabase, user.id, event, app.job_id);
+    return await awardXP(user.id, event, app.job_id);
   } catch (e) {
     console.error("updateStatus: award failed", e instanceof Error ? e.message : e);
     return null; // the move itself is saved

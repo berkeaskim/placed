@@ -1,30 +1,40 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
+import { and, eq, inArray, notInArray, sql } from "drizzle-orm";
+import { db } from "@/lib/db/client";
+import { jobs, type NewJob } from "@/lib/db/schema";
 import type { IngestStore, JobRow } from "./run";
-import { pgInList } from "@/lib/db/postgrest";
 
-export function supabaseStore(db: SupabaseClient): IngestStore {
+/** Every JobRow column is overwritten on conflict; id and first_seen are kept. */
+const UPDATE_COLS = [
+  "title", "url", "location", "remote", "deadline", "deadline_source", "rolling", "closed_at", "posted_at", "archetype", "field_tags",
+  "year_eligibility", "sponsors_visa", "employment_type", "first_year_friendly", "cohort_clash", "requirements", "skills", "summary",
+  "raw_html", "text_lines", "fingerprint", "content_hash", "tag_status", "is_live", "last_seen",
+] as const satisfies readonly (keyof JobRow & keyof NewJob)[];
+
+const excluded = Object.fromEntries(UPDATE_COLS.map((c) => [c, sql`excluded.${sql.identifier(c)}`]));
+
+export function sqliteStore(): IngestStore {
   return {
     async existing(companyId) {
-      const { data, error } = await db.from("jobs").select("ext_id, content_hash, tag_status").eq("company_id", companyId);
-      if (error) throw error;
-      return new Map((data ?? []).map((r) => [r.ext_id as string, { content_hash: r.content_hash as string | null, tag_status: r.tag_status as string }]));
+      const rows = db.select({ ext_id: jobs.ext_id, content_hash: jobs.content_hash, tag_status: jobs.tag_status })
+        .from(jobs).where(eq(jobs.company_id, companyId)).all();
+      return new Map(rows.map((r) => [r.ext_id, { content_hash: r.content_hash, tag_status: r.tag_status }]));
     },
     async upsert(rows: JobRow[]) {
-      const { error } = await db.from("jobs").upsert(rows, { onConflict: "company_id,ext_id" });
-      if (error) throw error;
+      db.transaction((tx) => {
+        for (const r of rows) {
+          tx.insert(jobs).values(r as NewJob).onConflictDoUpdate({ target: [jobs.company_id, jobs.ext_id], set: excluded }).run();
+        }
+      });
     },
     async touch(companyId, extIds) {
-      const { error } = await db.from("jobs").update({ last_seen: new Date().toISOString(), is_live: true, closed_at: null })
-        .eq("company_id", companyId).in("ext_id", extIds);
-      if (error) throw error;
+      db.update(jobs).set({ last_seen: new Date().toISOString(), is_live: true, closed_at: null })
+        .where(and(eq(jobs.company_id, companyId), inArray(jobs.ext_id, extIds))).run();
     },
     async markDead(companyId, liveExtIds) {
       // closed_at = first run the posting was missing: the observed close date for ATSs that publish none.
-      let q = db.from("jobs").update({ is_live: false, closed_at: new Date().toISOString() }).eq("company_id", companyId).eq("is_live", true);
-      if (liveExtIds.length) q = q.not("ext_id", "in", pgInList(liveExtIds));
-      const { data, error } = await q.select("id");
-      if (error) throw error;
-      return data?.length ?? 0;
+      return db.update(jobs).set({ is_live: false, closed_at: new Date().toISOString() })
+        .where(and(eq(jobs.company_id, companyId), eq(jobs.is_live, true), liveExtIds.length ? notInArray(jobs.ext_id, liveExtIds) : undefined))
+        .run().changes;
     },
   };
 }

@@ -1,6 +1,7 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
+import { and, asc, eq, gte, isNull, or, sql } from "drizzle-orm";
 import type { Archetype, ArchetypeScore, JobForScoring, ParsedCV, Region, StudentProfile, Year } from "@/lib/types";
-import { isoDay } from "@/lib/db/postgrest";
+import { db } from "@/lib/db/client";
+import { companies, cvs, jobs, profiles } from "@/lib/db/schema";
 
 export type ProfileRow = {
   user_id: string; display_name: string | null; year: Year | null; field: string | null; location_pref: Region[];
@@ -8,10 +9,10 @@ export type ProfileRow = {
   onboarded: boolean; xp: number; level: number; streak_days: number; last_active_date: string | null;
 };
 
-export async function getProfile(supabase: SupabaseClient, userId: string): Promise<ProfileRow> {
-  const { data, error } = await supabase.from("profiles").select("*").eq("user_id", userId).single();
-  if (error) throw error;
-  return data as ProfileRow;
+export async function getProfile(userId: string): Promise<ProfileRow> {
+  const row = db.select().from(profiles).where(eq(profiles.user_id, userId)).get();
+  if (!row) throw new Error(`profile ${userId} not found`);
+  return row;
 }
 
 export function toStudent(p: ProfileRow): StudentProfile {
@@ -24,67 +25,50 @@ export function toStudent(p: ProfileRow): StudentProfile {
   };
 }
 
-/** `rolling`: the posting says it may close early (migration 0004); false when the column is missing. */
+/** `rolling`: the posting says it may close early. */
 export type JobListItem = JobForScoring & { company: string; url: string; summary: string; extId: string; rolling?: boolean };
 
-type JobDbRow = {
-  id: string; ext_id: string; title: string; url: string; location: string; remote: boolean; deadline: string | null; posted_at: string | null;
-  archetype: JobForScoring["archetype"]; year_eligibility: JobForScoring["yearEligibility"]; sponsors_visa: JobForScoring["sponsorsVisa"];
-  employment_type: JobForScoring["employmentType"]; first_year_friendly: boolean; cohort_clash: boolean | null; requirements: JobForScoring["requirements"];
-  text_lines: string[]; summary: string; companies: { name: string } | null; rolling?: boolean | null;
+const JOB_COLUMNS = {
+  id: jobs.id, ext_id: jobs.ext_id, title: jobs.title, url: jobs.url, location: jobs.location, remote: jobs.remote, deadline: jobs.deadline,
+  posted_at: jobs.posted_at, archetype: jobs.archetype, year_eligibility: jobs.year_eligibility, sponsors_visa: jobs.sponsors_visa,
+  employment_type: jobs.employment_type, first_year_friendly: jobs.first_year_friendly, cohort_clash: jobs.cohort_clash,
+  requirements: jobs.requirements, text_lines: jobs.text_lines, summary: jobs.summary, rolling: jobs.rolling, company: companies.name,
 };
 
-// Excludes deadline_source / closed_at (migration 0004). `rolling` (also 0004) is asked for, with a retry without it
-// when the column is missing, so the feed still works on a DB where 0004 was never applied.
-const JOB_COLUMNS_BASE = "id, ext_id, title, url, location, remote, deadline, posted_at, archetype, year_eligibility, sponsors_visa, employment_type, first_year_friendly, cohort_clash, requirements, text_lines, summary, companies(name)";
-const JOB_COLUMNS = `${JOB_COLUMNS_BASE}, rolling`;
-
-/** "column does not exist": Postgres 42703 or PostgREST PGRST204 (schema cache). */
-const isMissingColumn = (e: { code?: string } | null | undefined) => !!e && (e.code === "42703" || e.code === "PGRST204");
-
-/** Runs `query` with `rolling`, and once more without it if that column is missing. */
-async function withRollingFallback<R extends { error: { code?: string } | null }>(query: (columns: string) => PromiseLike<R>): Promise<R> {
-  const first = await query(JOB_COLUMNS);
-  if (!isMissingColumn(first.error)) return first;
-  return query(JOB_COLUMNS_BASE);
-}
+const jobQuery = () => db.select(JOB_COLUMNS).from(jobs).leftJoin(companies, eq(companies.id, jobs.company_id));
+type JobDbRow = Awaited<ReturnType<ReturnType<typeof jobQuery>["all"]>>[number];
 
 function toJob(r: JobDbRow): JobListItem {
   return {
     id: r.id, extId: r.ext_id, title: r.title, url: r.url, location: r.location, remote: r.remote, deadline: r.deadline, postedAt: r.posted_at,
-    archetype: r.archetype, yearEligibility: r.year_eligibility ?? [], sponsorsVisa: r.sponsors_visa, employmentType: r.employment_type,
-    firstYearFriendly: r.first_year_friendly, cohortClash: r.cohort_clash ?? false, requirements: r.requirements ?? [], textLines: r.text_lines ?? [],
-    summary: r.summary, company: r.companies?.name ?? "", rolling: r.rolling === true,
+    archetype: r.archetype as JobForScoring["archetype"], yearEligibility: r.year_eligibility ?? [], sponsorsVisa: r.sponsors_visa,
+    employmentType: r.employment_type as JobForScoring["employmentType"], firstYearFriendly: r.first_year_friendly, cohortClash: r.cohort_clash ?? false,
+    requirements: r.requirements ?? [], textLines: r.text_lines ?? [], summary: r.summary, company: r.company ?? "", rolling: r.rolling === true,
   };
 }
 
-/** Live jobs that have not closed. `today` is the London day; a job closing today is still returned. */
-export const LIVE_JOBS_PAGE = 1000; // PostgREST's default max-rows
 export const LIVE_JOBS_MAX = 5000;
 
-export async function getLiveJobs(supabase: SupabaseClient, today: string): Promise<JobListItem[]> {
-  // Paged: a single capped query (it was .limit(500)) silently dropped the oldest live jobs once the seed list grew
-  // past ~1000 live postings, so they never reached ranking.
-  const rows: JobDbRow[] = [];
-  const liveFilter = ["deadline.is.null", `deadline.gte.${isoDay(today)}`].join(",");
-  for (let from = 0; from < LIVE_JOBS_MAX; from += LIVE_JOBS_PAGE) {
-    const { data, error } = await withRollingFallback((cols) => supabase.from("jobs").select(cols).eq("is_live", true)
-      .or(liveFilter)
-      .order("posted_at", { ascending: false, nullsFirst: false }).order("id").range(from, from + LIVE_JOBS_PAGE - 1));
-    if (error) throw error;
-    const page = (data ?? []) as unknown as JobDbRow[];
-    rows.push(...page);
-    if (page.length < LIVE_JOBS_PAGE) break;
-  }
-  return rows.map(toJob);
+const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
+
+/** Live jobs that have not closed. `today` is the London day; a job closing today is still returned. */
+export async function getLiveJobs(today: string): Promise<JobListItem[]> {
+  if (!ISO_DAY.test(today)) throw new Error("expected a YYYY-MM-DD date");
+  return jobQuery()
+    .where(and(eq(jobs.is_live, true), or(isNull(jobs.deadline), gte(jobs.deadline, today))))
+    .orderBy(sql`${jobs.posted_at} desc nulls last`, asc(jobs.id))
+    .limit(LIVE_JOBS_MAX)
+    .all()
+    .map(toJob);
 }
 
-export async function getJob(supabase: SupabaseClient, id: string): Promise<JobListItem | null> {
-  const { data } = await withRollingFallback((cols) => supabase.from("jobs").select(cols).eq("id", id).maybeSingle());
-  return data ? toJob(data as unknown as JobDbRow) : null;
+export async function getJob(id: string): Promise<JobListItem | null> {
+  const row = jobQuery().where(eq(jobs.id, id)).get();
+  return row ? toJob(row) : null;
 }
 
-export async function getActiveCv(supabase: SupabaseClient, userId: string) {
-  const { data } = await supabase.from("cvs").select("id, parsed_json, raw_text").eq("user_id", userId).eq("is_active", true).maybeSingle();
-  return data ? { id: data.id as string, parsed: data.parsed_json as ParsedCV, rawText: data.raw_text as string } : null;
+export async function getActiveCv(userId: string) {
+  const row = db.select({ id: cvs.id, parsed_json: cvs.parsed_json, raw_text: cvs.raw_text }).from(cvs)
+    .where(and(eq(cvs.user_id, userId), eq(cvs.is_active, true))).get();
+  return row ? { id: row.id, parsed: row.parsed_json as ParsedCV, rawText: row.raw_text } : null;
 }

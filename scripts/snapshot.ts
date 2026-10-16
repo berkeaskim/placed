@@ -1,17 +1,18 @@
 import { writeFileSync } from "node:fs";
-import { scriptClient } from "./db";
+import { eq } from "drizzle-orm";
+import { db } from "../lib/db/client";
+import { companies, jobs } from "../lib/db/schema";
 
-async function main() {
-  const db = scriptClient();
-  const { data, error } = await db.from("jobs").select("*, companies!inner(slug, ats)").eq("is_live", true);
-  if (error) throw error;
-  const snap = (data ?? []).map((row) => {
-    const { companies, ...j } = row as Record<string, unknown> & { companies: { slug: string; ats: string } };
-    for (const k of ["id", "first_seen", "company_id"]) delete j[k];
-    return { ...j, company_slug: companies.slug, company_ats: companies.ats };
+/** Writes the live jobs to seed/jobs.json (what `npm run setup` seeds a fresh install with). */
+function main() {
+  const rows = db.select({ j: jobs, slug: companies.slug, ats: companies.ats }).from(jobs)
+    .innerJoin(companies, eq(companies.id, jobs.company_id)).where(eq(jobs.is_live, true)).all();
+  const snap = rows.map(({ j, slug, ats }) => {
+    const { id: _id, first_seen: _f, company_id: _c, ...rest } = j;
+    return { ...rest, company_slug: slug, company_ats: ats };
   });
   writeFileSync("seed/jobs.json", JSON.stringify(snap, null, 1));
   console.log(`snapshot: ${snap.length} jobs -> seed/jobs.json`);
 }
 
-main().catch((e) => { console.error(e); process.exit(1); });
+main();

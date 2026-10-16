@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { requireUser } from "@/lib/supabase/server";
+import { and, eq } from "drizzle-orm";
+import { requireUser } from "@/lib/auth/local-user";
+import { db } from "@/lib/db/client";
+import { confirmedFacts, cvScores, playbookProgress } from "@/lib/db/schema";
 import { getActiveCv, getProfile } from "@/lib/db/queries";
 import { todayLondon } from "@/lib/scoring/dates";
 import { buildTargetView, targetFor, type ProgressRow, type TargetView } from "@/lib/target/view";
@@ -23,11 +26,15 @@ const STATUS_CHIP = {
   gap: { text: "Not shown yet", cls: "bg-[#F0F0F5] text-[#5B5B6B]" },
 } as const;
 
-/** playbook_progress arrives with migration 0010; until it is applied the page still works, with no saved progress. */
-async function loadProgress(supabase: Awaited<ReturnType<typeof requireUser>>["supabase"], userId: string): Promise<ProgressRow[]> {
-  const { data, error } = await supabase.from("playbook_progress").select("action_id, status, evidence_note, evidence_url").eq("user_id", userId);
-  if (error) { console.error("target: playbook_progress read failed", error.message); return []; }
-  return (data ?? []) as ProgressRow[];
+/** A failed read still renders the page, with no saved progress. */
+function loadProgress(userId: string): ProgressRow[] {
+  try {
+    return db.select({ action_id: playbookProgress.action_id, status: playbookProgress.status, evidence_note: playbookProgress.evidence_note, evidence_url: playbookProgress.evidence_url })
+      .from(playbookProgress).where(eq(playbookProgress.user_id, userId)).all();
+  } catch (e) {
+    console.error("target: playbook_progress read failed", e instanceof Error ? e.message : e);
+    return [];
+  }
 }
 
 function Ring({ pct, label }: { pct: number | null; label: string }) {
@@ -133,29 +140,25 @@ function Steps({ v, role }: { v: TargetView; role: string }) {
 }
 
 export default async function TargetRolePage() {
-  const { supabase, user } = await requireUser();
+  const { user } = await requireUser();
   const today = todayLondon();
 
-  // Two round-trips instead of four: everything that doesn't depend on the sector, then the sector-keyed reads.
-  const [p, cv, progress, factsRes] = await Promise.all([
-    getProfile(supabase, user.id),
-    getActiveCv(supabase, user.id),
-    loadProgress(supabase, user.id),
-    supabase.from("confirmed_facts").select("claim").eq("user_id", user.id),
-  ]);
+  const [p, cv] = await Promise.all([getProfile(user.id), getActiveCv(user.id)]);
+  const progress = loadProgress(user.id);
+  const facts = db.select({ claim: confirmedFacts.claim }).from(confirmedFacts).where(eq(confirmedFacts.user_id, user.id)).all();
   const { sector, year } = targetFor(p);
   // The cached feed jobs already carry parsed JD skills; reading up to 1000 raw rows (with text_lines) and re-parsing them made every visit slow.
-  const [feedJobs, scoreRes] = await Promise.all([
-    getFeedJobs(today).catch((e: unknown) => { console.error("target: jobs read failed", e); return []; }),
-    cv ? supabase.from("cv_scores").select("total").eq("user_id", user.id).eq("cv_id", cv.id).eq("sector", sector).maybeSingle<{ total: number }>() : null,
-  ]);
-  const score = scoreRes?.data ?? null;
+  const feedJobs = await getFeedJobs(today).catch((e: unknown) => { console.error("target: jobs read failed", e); return []; });
+  const score = cv
+    ? db.select({ total: cvScores.total }).from(cvScores)
+      .where(and(eq(cvScores.user_id, user.id), eq(cvScores.cv_id, cv.id), eq(cvScores.sector, sector))).get() ?? null
+    : null;
   const jobs: DemandJob[] = feedJobs.filter((j) => j.archetype === sector)
     .map((j) => ({ id: j.id, archetype: j.archetype, is_live: true, deadline: j.deadline, skills: j.jdSkills }));
 
   const v = buildTargetView({
     sector, year, today, cv: cv?.parsed ?? null, profileSkills: p.skills ?? [], progress,
-    jobs, confirmedClaims: (factsRes.data ?? []).map((f) => f.claim as string),
+    jobs, confirmedClaims: facts.map((f) => f.claim),
   });
   const role = ARCHETYPE_LABELS[sector];
 
