@@ -5,6 +5,7 @@
   "license": "MIT",
   "scripts": {
     "predev": "node scripts/pack-extension.mjs",
+    "setup": "tsx scripts/setup.ts",
     "dev": "next dev",
     "prebuild": "node scripts/pack-extension.mjs",
     "build": "next build",
@@ -26,7 +27,8 @@
     "user:add": "tsx --env-file=.env.local scripts/add-user.ts",
     "demo:reset": "tsx --env-file=.env.local scripts/reset-demo.ts",
     "reliability": "node --env-file=.env.local scripts/run-ts.mjs scripts/reliability.ts",
-    "vault:encrypt": "tsx --env-file=.env.local scripts/encrypt-vault.ts"
+    "vault:encrypt": "tsx --env-file=.env.local scripts/encrypt-vault.ts",
+    "db:generate": "drizzle-kit generate"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.133.0",
