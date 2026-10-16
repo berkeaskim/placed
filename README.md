@@ -252,10 +252,9 @@ New jobs are tagged by your AI backend once, then cached. No key is needed to fe
 The extension fills application forms on Greenhouse, Ashby and Lever (it never presses *Submit*) and captures your
 own LinkedIn profile for the LinkedIn score.
 
-1. Turn Autopilot on: create `.env.local` with `NEXT_PUBLIC_AUTOPILOT=1` and restart `npm run dev`.
-2. Open `chrome://extensions` and switch on **Developer mode**.
-3. Click **Load unpacked** and select the [`extension/`](extension) folder of this repo.
-4. Keep Placed running. The extension talks to the app at `http://localhost:3000`.
+1. Open `chrome://extensions` and switch on **Developer mode**.
+2. Click **Load unpacked** and select the [`extension/`](extension) folder of this repo.
+3. Keep Placed running. The extension talks to the app at `http://localhost:3000`.
 
 See [`extension/README.md`](extension/README.md) for how it works and what it will never do.
 
