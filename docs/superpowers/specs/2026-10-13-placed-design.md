@@ -451,7 +451,7 @@ generateStructured<T>({ tier: "fast" | "smart", system, parts: (Text | Pdf)[], s
 
 ## 15. Target Role mode and Role Playbooks (added 2026-10-13, board decision)
 
-> **Source:** board meeting 2026-10-13 (`memory/board-meetings/decisions.md`). Founder proposal: "I want this role — how do I make my CV stronger for it?" Research: `docs/research/role-playbooks-tech-product.{md,json}` and `docs/research/role-playbooks-finance-consulting.{md,json}`. Both files passed an independent adversarial verification on 2026-10-13; each one ends with a verification log.
+> **Source:** board meeting 2026-10-13 (private founder notes). Founder proposal: "I want this role — how do I make my CV stronger for it?" Research: `docs/research/role-playbooks-tech-product.{md,json}` and `docs/research/role-playbooks-finance-consulting.{md,json}`. Both files passed an independent adversarial verification on 2026-10-13; each one ends with a verification log.
 
 ### 15.1 Intent
 

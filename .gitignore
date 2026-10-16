@@ -48,3 +48,6 @@ next-env.d.ts
 # packed Chrome extension (scripts/pack-extension.mjs)
 /public/placed-autopilot.zip
 /dist/
+
+# private founder notes (kept outside the public repo)
+/memory/

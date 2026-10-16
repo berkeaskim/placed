@@ -1,7 +1,7 @@
 # Placed Autopilot: Design Spec
 
 > **Status:** Approved in brainstorming (2026-10-14) · **Owner:** Berke · **Deadline:** Friday 2026-10-16
-> **Board decision:** `memory/board-meetings/decisions.md`, 2026-10-14 ("Crown feature")
+> **Board decision:** private founder notes, 2026-10-14 ("Crown feature")
 > **Branch / worktree:** `feat/autopilot` in `~/Repository/ucl-hackathon-autopilot`, based on `feat/placed-build` at 88be367
 
 ## 1. Goal
