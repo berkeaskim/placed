@@ -319,7 +319,7 @@ export function checkOutreach(text: string, s: GuardSource): GuardIssue[] {
     }
   }
 
-  // 5b. Offers and progress at the target firm are claims the inbox, not this guard, can know. Interview claims pass only for interview_prep.
+  // 5b. Offers and progress at the target firm are claims this guard can't verify. Interview claims pass only for interview_prep.
   for (const sen of ss) {
     if (!firstPerson(sen)) continue;
     const msen = mask(sen);

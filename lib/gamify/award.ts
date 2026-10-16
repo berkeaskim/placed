@@ -1,87 +1,55 @@
 import "server-only";
-import type { SupabaseClient } from "@supabase/supabase-js";
+import { and, count, eq, gte } from "drizzle-orm";
+import { db } from "@/lib/db/client";
+import { awardXp } from "@/lib/db/functions";
+import { badges, profiles, xpEvents } from "@/lib/db/schema";
 import { todayLondon } from "@/lib/scoring/dates";
-import { createAdminClient } from "@/lib/supabase/admin";
 import { computeAward, levelFromXp, londonDayStart, noAward, type AwardResult, type BadgeKey, type GamifyEvent } from "./core";
 
 const JOB_EVENTS = new Set(["job_saved", "cv_tailored", "applied", "interview", "rejected", "offer", "number_confirmed", "suggestion_edited"]);
 
-function fail(what: string, error: { message: string }): never {
-  throw new Error(`awardXP: ${what} failed: ${error.message}`);
-}
-
-/**
- * `supabase` is the user's session client: it proves who the user is and does the reads.
- * Writes go through `writer` (service role), because RLS makes gamify state read-only for users (0003).
- */
-export async function awardXP(
-  supabase: SupabaseClient, userId: string, e: GamifyEvent, jobId?: string, writer?: SupabaseClient,
-): Promise<AwardResult> {
-  const { data: auth } = await supabase.auth.getUser();
-  if (!auth.user || auth.user.id !== userId) throw new Error("awardXP: userId does not match the session user");
+/** Reads, the event row, the xp increment, the profile update and badges all run in one synchronous transaction. */
+export async function awardXP(userId: string, e: GamifyEvent, jobId?: string): Promise<AwardResult> {
   if (JOB_EVENTS.has(e.type) && !jobId) throw new Error(`awardXP: ${e.type} requires a jobId`);
   if (e.type === "playbook_done" && !e.ref) throw new Error("awardXP: playbook_done requires a ref (action id)");
-  const admin = writer ?? createAdminClient();
-
   const today = todayLondon();
-  const count = (type: string, since?: string) => {
-    let q = supabase.from("xp_events").select("id", { count: "exact", head: true }).eq("user_id", userId).eq("type", type);
-    if (since) q = q.gte("created_at", since);
-    return q;
-  };
-  const [p, badges, applied, rejected, saves, playbookDone] = await Promise.all([
-    supabase.from("profiles").select("xp, streak_days, last_active_date").eq("user_id", userId).single(),
-    supabase.from("badges").select("badge_key").eq("user_id", userId),
-    count("applied"), count("rejected"), count("job_saved", londonDayStart(today)),
-    count("playbook_done", londonDayStart(today)),
-  ]);
-  if (p.error) fail("reading profile", p.error);
-  if (badges.error) fail("reading badges", badges.error);
-  if (applied.error) fail("counting applications", applied.error);
-  if (rejected.error) fail("counting rejections", rejected.error);
-  if (saves.error) fail("counting saves", saves.error);
-  if (playbookDone.error) fail("counting playbook actions", playbookDone.error);
 
-  // An image-only CV builds no profile: don't burn the once-per-user cv_uploaded event, so a later
-  // readable CV can still earn the XP and profile_pro.
-  if (e.type === "cv_uploaded" && !e.profileComplete) return noAward(p.data?.xp ?? 0, p.data?.streak_days ?? 0);
+  return db.transaction((tx) => {
+    const countOf = (type: string, since?: string) => tx.select({ n: count() }).from(xpEvents)
+      .where(and(eq(xpEvents.user_id, userId), eq(xpEvents.type, type), since ? gte(xpEvents.created_at, since) : undefined)).get()?.n ?? 0;
+    const p = tx.select({ xp: profiles.xp, streak_days: profiles.streak_days, last_active_date: profiles.last_active_date })
+      .from(profiles).where(eq(profiles.user_id, userId)).get();
+    if (!p) throw new Error("awardXP: reading profile failed: profile not found");
+    const owned = tx.select({ badge_key: badges.badge_key }).from(badges).where(eq(badges.user_id, userId)).all();
 
-  const { result, next } = computeAward({
-    xp: p.data?.xp ?? 0, streakDays: p.data?.streak_days ?? 0, lastActiveDate: p.data?.last_active_date ?? null,
-    badges: (badges.data ?? []).map((b) => b.badge_key as BadgeKey),
-    savesToday: saves.count ?? 0, appliedCount: applied.count ?? 0, rejectedCount: rejected.count ?? 0,
-    playbookDoneToday: playbookDone.count ?? 0,
-  }, e, today);
+    // An image-only CV builds no profile: don't burn the once-per-user cv_uploaded event, so a later
+    // readable CV can still earn the XP and profile_pro.
+    if (e.type === "cv_uploaded" && !e.profileComplete) return noAward(p.xp, p.streak_days);
 
-  // Event row first: unique indexes make this the idempotency gate (ref: one award per playbook action, 0010).
-  const ins = await admin.from("xp_events").insert({ user_id: userId, type: e.type, xp: result.xpGained, job_id: jobId ?? null, ...(e.ref ? { ref: e.ref } : {}) });
-  if (ins.error) {
-    if (ins.error.code === "23505") return noAward(p.data?.xp ?? 0, p.data?.streak_days ?? 0);
-    fail("recording event", ins.error);
-  }
+    const { result, next } = computeAward({
+      xp: p.xp, streakDays: p.streak_days, lastActiveDate: p.last_active_date ?? null,
+      badges: owned.map((b) => b.badge_key as BadgeKey),
+      savesToday: countOf("job_saved", londonDayStart(today)), appliedCount: countOf("applied"), rejectedCount: countOf("rejected"),
+      playbookDoneToday: countOf("playbook_done", londonDayStart(today)),
+    }, e, today);
 
-  let newXp = next.xp;
-  if (result.xpGained !== 0) {
-    const inc = await admin.rpc("award_xp", { p_user: userId, p_delta: result.xpGained });
-    if (inc.error) fail("incrementing xp", inc.error);
-    if (typeof inc.data === "number") newXp = inc.data;
-  }
-  const level = levelFromXp(newXp).level;
-  // From award_xp's result, not the pre-read XP: a concurrent award may already have crossed the boundary.
-  const levelUp = level > levelFromXp(newXp - result.xpGained).level;
-  const upd = await admin.from("profiles").update({ level, streak_days: next.streakDays, last_active_date: today }).eq("user_id", userId);
-  if (upd.error) fail("updating profile", upd.error);
+    // Event row first: the partial unique indexes make this the idempotency gate.
+    const ins = tx.insert(xpEvents).values({ user_id: userId, type: e.type, xp: result.xpGained, job_id: jobId ?? null, ref: e.ref ?? null })
+      .onConflictDoNothing().run();
+    if (ins.changes === 0) return noAward(p.xp, p.streak_days);
 
-  // ON CONFLICT DO NOTHING ... RETURNING yields only the rows this call inserted, so a badge a concurrent
-  // award already saved isn't reported as new twice.
-  let newBadges: BadgeKey[] = [];
-  if (result.newBadges.length) {
-    const b = await admin.from("badges")
-      .upsert(result.newBadges.map((badge_key) => ({ user_id: userId, badge_key })), { onConflict: "user_id,badge_key", ignoreDuplicates: true })
-      .select("badge_key");
-    if (b.error) fail("saving badges", b.error);
-    const inserted = new Set((b.data ?? []).map((r) => r.badge_key as BadgeKey));
-    newBadges = result.newBadges.filter((k) => inserted.has(k));
-  }
-  return { ...result, newXp, level, levelName: levelFromXp(newXp).name, levelUp, newBadges };
+    let newXp = next.xp;
+    if (result.xpGained !== 0) newXp = awardXp(userId, result.xpGained) ?? newXp;
+    const level = levelFromXp(newXp).level;
+    const levelUp = level > levelFromXp(newXp - result.xpGained).level;
+    tx.update(profiles).set({ level, streak_days: next.streakDays, last_active_date: today }).where(eq(profiles.user_id, userId)).run();
+
+    let newBadges: BadgeKey[] = [];
+    if (result.newBadges.length) {
+      const inserted = new Set(tx.insert(badges).values(result.newBadges.map((badge_key) => ({ user_id: userId, badge_key })))
+        .onConflictDoNothing().returning({ badge_key: badges.badge_key }).all().map((r) => r.badge_key as BadgeKey));
+      newBadges = result.newBadges.filter((k) => inserted.has(k));
+    }
+    return { ...result, newXp, level, levelName: levelFromXp(newXp).name, levelUp, newBadges };
+  }, { behavior: "immediate" });
 }

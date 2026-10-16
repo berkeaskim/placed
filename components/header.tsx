@@ -1,5 +1,7 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { eq } from "drizzle-orm";
+import { db } from "@/lib/db/client";
+import { badges, profiles } from "@/lib/db/schema";
 import { levelFromXp, type BadgeKey } from "@/lib/gamify/core";
 import { env } from "@/lib/env";
 import { DemoBadge } from "./demo-badge";
@@ -7,11 +9,8 @@ import { BadgesModal } from "./badges-modal";
 import { NavLinks } from "./nav-links";
 
 export async function Header({ userId }: { userId: string }) {
-  const supabase = await createClient();
-  const [{ data: p }, { data: b }] = await Promise.all([
-    supabase.from("profiles").select("xp, streak_days").eq("user_id", userId).single(),
-    supabase.from("badges").select("badge_key").eq("user_id", userId),
-  ]);
+  const p = db.select({ xp: profiles.xp, streak_days: profiles.streak_days }).from(profiles).where(eq(profiles.user_id, userId)).get();
+  const b = db.select({ badge_key: badges.badge_key }).from(badges).where(eq(badges.user_id, userId)).all();
   const xp = p?.xp ?? 0;
   const lvl = levelFromXp(xp);
   return (
@@ -20,7 +19,7 @@ export async function Header({ userId }: { userId: string }) {
       {/* One scrollable row on phones instead of wrapping into two (the header took ~180px at 390px wide). */}
       <nav className="order-last -mx-4 flex w-[calc(100%+2rem)] gap-1.5 overflow-x-auto px-4 pb-2 sm:order-none sm:mx-0 sm:w-auto sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0">
         <NavLinks autopilot={env.autopilot} />
-        <BadgesModal earned={(b ?? []).map((x) => x.badge_key as BadgeKey)} />
+        <BadgesModal earned={b.map((x) => x.badge_key as BadgeKey)} />
       </nav>
       <div className="flex-1" />
       <DemoBadge />
