@@ -1,4 +1,4 @@
-/** Shown the instant a link inside the app is clicked, while the server renders the next page (most pages read Supabase first). */
+/** Shown the instant a link inside the app is clicked, while the server renders the next page. */
 export default function Loading() {
   const bar = "rounded-full bg-[#ECECF3] motion-safe:animate-pulse";
   return (
