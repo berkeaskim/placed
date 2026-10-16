@@ -12,6 +12,11 @@
   const CARD = '[id^="com.linkedin.sdui.profile.card"]';
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const send = (m) => new Promise((r) => chrome.runtime.sendMessage(m, (x) => r(chrome.runtime.lastError ? { ok: false } : x || { ok: false })));
+  // /in/me loads as its own document, then LinkedIn swaps the URL to /in/<slug>/?isSelfProfile=true without a reload,
+  // so this script would otherwise only ever see "/in/me". Wait for the swap.
+  const ME = /^\/in\/me\/?$/;
+  for (let i = 0; i < 60 && ME.test(location.pathname); i++) await sleep(250);
+  if (ME.test(location.pathname)) return;
   const slug = (location.pathname.match(/^\/in\/([^/]+)/) || [])[1];
   if (!slug) return;
   const onSkills = /^\/in\/[^/]+\/details\/skills\/?$/.test(location.pathname);
