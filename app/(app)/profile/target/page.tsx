@@ -9,6 +9,7 @@ import { todayLondon } from "@/lib/scoring/dates";
 import { buildTargetView, targetFor, type ProgressRow, type TargetView } from "@/lib/target/view";
 import type { DemandJob } from "@/lib/target/market";
 import { getFeedJobs } from "@/lib/feed/jobs-cache";
+import { lastIngestAt } from "@/lib/ingest/local";
 import type { PickedAction } from "@/lib/target/actions";
 import { ARCHETYPE_LABELS } from "@/lib/types";
 import { ActionCard } from "@/components/target/action-card";
@@ -148,7 +149,7 @@ export default async function TargetRolePage() {
   const facts = db.select({ claim: confirmedFacts.claim }).from(confirmedFacts).where(eq(confirmedFacts.user_id, user.id)).all();
   const { sector, year } = targetFor(p);
   // The cached feed jobs already carry parsed JD skills; reading up to 1000 raw rows (with text_lines) and re-parsing them made every visit slow.
-  const feedJobs = await getFeedJobs(today).catch((e: unknown) => { console.error("target: jobs read failed", e); return []; });
+  const feedJobs = await getFeedJobs(today, lastIngestAt()).catch((e: unknown) => { console.error("target: jobs read failed", e); return []; });
   const score = cv
     ? db.select({ total: cvScores.total }).from(cvScores)
       .where(and(eq(cvScores.user_id, user.id), eq(cvScores.cv_id, cv.id), eq(cvScores.sector, sector))).get() ?? null

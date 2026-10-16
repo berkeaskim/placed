@@ -9,11 +9,12 @@ export const JOBS_TAG = "jobs";
 export type FeedJob = JobListItem & { jdSkills: JdSkill[] };
 
 /**
- * Live jobs for the feed, shared across requests. Jobs only change on ingest, which revalidates JOBS_TAG; seed scripts
- * are picked up within `revalidate`. Without this every feed load re-read every posting and re-parsed its requirements.
+ * Live jobs for the feed, shared across requests. Jobs only change on ingest: pass the last run's time as `version` so
+ * a run from anywhere (button, background scheduler, `npm run ingest`) is picked up at once; the button also expires
+ * JOBS_TAG. Without this every feed load re-read every posting and re-parsed its requirements.
  */
 export const getFeedJobs = unstable_cache(
-  async (today: string): Promise<FeedJob[]> => {
+  async (today: string, _version: string | null = null): Promise<FeedJob[]> => {
     const jobs = await getLiveJobs(today);
     return jobs.map((j) => ({ ...j, jdSkills: jdRequirementSkills(j.textLines, j.requirements), textLines: [] }));
   },

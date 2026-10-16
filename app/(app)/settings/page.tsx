@@ -1,5 +1,6 @@
 import { requireUser } from "@/lib/supabase/server";
 import { DeleteDataForm } from "./delete-data-form";
+import { JobSearchSettings } from "@/components/settings/job-search";
 
 export default async function Settings() {
   const { user } = await requireUser();
@@ -19,6 +20,7 @@ export default async function Settings() {
           </button>
         </form>
       </section>
+      <JobSearchSettings />
       <section className="card-quest flex flex-col gap-3 p-5">
         <h2 className="font-bold">Your data</h2>
         <p className="text-sm text-muted-foreground">Your CV is stored privately and only used to score and tailor it for you.</p>

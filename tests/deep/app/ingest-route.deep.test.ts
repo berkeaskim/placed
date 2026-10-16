@@ -1,182 +1,79 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const s = vi.hoisted(() => ({
-  env: { cronSecret: "s3cret-value-for-tests" } as { cronSecret: string },
-  companies: [] as { id: number; slug: string }[],
-  cursor: 0 as number,
-  cursorWrites: [] as number[],
-  ingested: [] as string[],
-  ingestImpl: null as null | ((c: { slug: string }) => Promise<unknown>),
-  adminCreated: 0,
+  running: false,
+  impl: null as null | ((o: { onProgress?: (p: unknown) => void }) => Promise<unknown>),
+  runs: 0,
 }));
 
-vi.mock("node:crypto", async (orig) => {
-  const real = await orig<typeof import("node:crypto")>();
-  return { ...real, default: real, timingSafeEqual: vi.fn(real.timingSafeEqual) };
-});
-vi.mock("@/lib/env", () => ({ env: s.env }));
-vi.mock("@/lib/ingest/providers", () => ({ fetchJobs: vi.fn(async () => { throw new Error("network must not be hit"); }) }));
-vi.mock("@/lib/ai/tagJob", () => ({ tagJob: vi.fn() }));
-vi.mock("@/lib/ingest/store", () => ({ supabaseStore: () => ({}) }));
-// The route revalidates the feed cache tag after a run; outside a Next request there is no static generation store.
 vi.mock("next/cache", () => ({ revalidateTag: vi.fn(), unstable_cache: (fn: unknown) => fn }));
-vi.mock("@/lib/ingest/run", () => ({
-  ingestCompany: vi.fn(async (c: { slug: string }) => {
-    s.ingested.push(c.slug);
-    if (s.ingestImpl) await s.ingestImpl(c);
-    return { kept: 1, tagged: 1, pending: 0, dead: 0 };
-  }),
-}));
-vi.mock("@/lib/supabase/admin", () => ({
-  createAdminClient: () => {
-    s.adminCreated++;
-    return {
-      from: (table: string) => {
-        const b: Record<string, unknown> = {};
-        let op = "select";
-        let payload: { cursor?: number } = {};
-        b.select = () => b; b.eq = () => b;
-        b.update = (p: { cursor: number }) => { op = "update"; payload = p; return b; };
-        b.order = async () => ({ data: s.companies, error: null });
-        b.single = async () => ({ data: { cursor: s.cursor }, error: null });
-        b.then = (res: (v: unknown) => unknown) => {
-          if (table === "ingest_state" && op === "update") { s.cursorWrites.push(payload.cursor!); s.cursor = payload.cursor!; }
-          return Promise.resolve({ error: null }).then(res);
-        };
-        return b;
-      },
-    };
-  },
-}));
+vi.mock("@/lib/ingest/local", () => {
+  class IngestBusyError extends Error { constructor() { super("A job refresh is already running."); } }
+  return {
+    IngestBusyError,
+    ingestRunning: () => s.running,
+    lastIngestAt: () => "2026-10-16T09:00:00.000Z",
+    runIngest: vi.fn(async (o: { onProgress?: (p: unknown) => void }) => { s.runs++; return s.impl!(o); }),
+  };
+});
 
-import { timingSafeEqual } from "node:crypto";
-import { GET } from "@/app/api/ingest/route";
+import { revalidateTag } from "next/cache";
+import { GET, POST } from "@/app/api/ingest/route";
 
-const req = (qs = "", auth?: string | null) =>
-  new Request(`https://placed.test/api/ingest${qs}`, { headers: auth === null || auth === undefined ? {} : { authorization: auth } });
-const OK = () => `Bearer ${s.env.cronSecret}`;
+const post = (headers: Record<string, string> = { origin: "http://localhost:3000", host: "localhost:3000", "sec-fetch-site": "same-origin" }) =>
+  POST(new Request("http://localhost:3000/api/ingest", { method: "POST", headers }));
+const lines = async (r: Response) => (await r.text()).trim().split("\n").map((l) => JSON.parse(l));
 
 beforeEach(() => {
-  s.env.cronSecret = "s3cret-value-for-tests";
-  s.companies = Array.from({ length: 25 }, (_, i) => ({ id: i + 1, slug: `c${i}` }));
-  s.cursor = 0; s.cursorWrites = []; s.ingested = []; s.ingestImpl = null; s.adminCreated = 0;
-  vi.mocked(timingSafeEqual).mockClear();
+  s.running = false;
+  s.runs = 0;
+  s.impl = async (o) => {
+    o.onProgress?.({ done: 1, total: 2, slug: "acme", line: "kept=1", error: false });
+    o.onProgress?.({ done: 2, total: 2, slug: "boom", line: "ERROR x", error: true });
+    return { companies: 2, failed: 1, kept: 1, newJobs: 1, dead: 0, aiTagging: false };
+  };
+  vi.mocked(revalidateTag).mockClear();
 });
 
-describe("/api/ingest auth", () => {
+describe("/api/ingest", () => {
+  it("GET reports whether a run is going and when the last one finished", async () => {
+    s.running = true;
+    expect(await (await GET()).json()).toEqual({ running: true, lastRun: "2026-10-16T09:00:00.000Z" });
+  });
+
+  it("POST streams progress then the summary, and expires the feed cache", async () => {
+    const r = await post();
+    expect(r.status).toBe(200);
+    expect(r.headers.get("content-type")).toMatch(/ndjson/);
+    const out = await lines(r);
+    expect(out.map((l) => l.type)).toEqual(["progress", "progress", "done"]);
+    expect(out[2]).toMatchObject({ newJobs: 1, failed: 1 });
+    expect(revalidateTag).toHaveBeenCalledWith("jobs", { expire: 0 });
+  });
+
   it.each([
-    ["missing header", null],
-    ["empty header", ""],
-    ["no Bearer prefix", "s3cret-value-for-tests"],
-    ["lowercase bearer", "bearer s3cret-value-for-tests"],
-    ["wrong secret, same length", "Bearer s3cret-value-for-tesTS"],
-    ["prefix of secret", "Bearer s3cret"],
-    ["secret + suffix", "Bearer s3cret-value-for-testsX"],
-    ["double space", "Bearer  s3cret-value-for-tests"],
-    ["Basic auth", "Basic czNjcmV0"],
-  ])("%s → 401 and no DB access", async (_n, auth) => {
-    const r = await GET(req("?batch=0", auth));
-    expect(r.status).toBe(401);
-    expect(await r.json()).toEqual({ error: "unauthorized" });
-    expect(s.adminCreated).toBe(0);
-    expect(s.ingested).toEqual([]);
+    ["cross-site fetch", { origin: "https://evil.example", host: "localhost:3000", "sec-fetch-site": "cross-site" }],
+    ["foreign origin without fetch metadata", { origin: "https://evil.example", host: "localhost:3000" }],
+    ["no origin and no fetch metadata", { host: "localhost:3000" }],
+    ["same-site but other port", { origin: "http://localhost:4000", host: "localhost:3000", "sec-fetch-site": "same-site" }],
+  ])("%s → 403, no run", async (_n, headers) => {
+    expect((await post(headers as Record<string, string>)).status).toBe(403);
+    expect(s.runs).toBe(0);
   });
-  it("unset CRON_SECRET locks the route even for 'Bearer ' and 'Bearer undefined'", async () => {
-    s.env.cronSecret = "";
-    for (const a of ["Bearer ", "Bearer", "Bearer undefined", "Bearer null"]) {
-      expect((await GET(req("", a))).status).toBe(401);
-    }
-    expect(timingSafeEqual).not.toHaveBeenCalled();
-    expect(s.adminCreated).toBe(0);
-  });
-  it("uses a constant-time compare for equal-length candidates", async () => {
-    await GET(req("?batch=0", "Bearer s3cret-value-for-tesTS"));
-    expect(timingSafeEqual).toHaveBeenCalledTimes(1);
-    const [a, b] = vi.mocked(timingSafeEqual).mock.calls[0] as [Buffer, Buffer];
-    expect(a.length).toBe(b.length);
-  });
-  it("length mismatch short-circuits (timingSafeEqual would throw on unequal lengths)", async () => {
-    expect((await GET(req("?batch=0", "Bearer x"))).status).toBe(401);
-    expect(timingSafeEqual).not.toHaveBeenCalled();
-  });
-  it("multi-byte header bytes are compared by byte length, not string length (no throw)", async () => {
-    // "é" is 2 UTF-8 bytes but header values are latin1/ByteString; build a same-char-length value
-    const sameChars = "Bearer " + "é".repeat(s.env.cronSecret.length);
-    const r = await GET(new Request("https://placed.test/api/ingest?batch=0", { headers: { authorization: sameChars } }));
-    expect(r.status).toBe(401);
-  });
-  it("correct secret → 200", async () => {
-    const r = await GET(req("?batch=0", OK()));
-    expect(r.status).toBe(200);
-  });
-});
 
-describe("/api/ingest ?batch parsing", () => {
-  it.each(["-1", "NaN", "1.5", "1e3", "", " 1", "0x1", "１", "+1", "abc", "1,2"])("batch=%j → 400 without touching the DB", async (b) => {
-    const r = await GET(req(`?batch=${encodeURIComponent(b)}`, OK()));
-    expect(r.status).toBe(400);
-    expect(s.adminCreated).toBe(0);
+  it("409 while a run is going", async () => {
+    s.running = true;
+    const r = await post();
+    expect(r.status).toBe(409);
+    expect(s.runs).toBe(0);
   });
-  it("batch=0 → first 10 companies", async () => {
-    const body = await (await GET(req("?batch=0", OK()))).json();
-    expect(body).toMatchObject({ batch: 0, total: 25, partial: false });
-    expect(s.ingested).toEqual(s.companies.slice(0, 10).map((c) => c.slug));
-  });
-  it("batch=2 → the 5-company tail; batch=3 → empty", async () => {
-    await GET(req("?batch=2", OK()));
-    expect(s.ingested).toEqual(["c20", "c21", "c22", "c23", "c24"]);
-    s.ingested = [];
-    const body = await (await GET(req("?batch=3", OK()))).json();
-    expect(body.log).toEqual([]);
-    expect(s.ingested).toEqual([]);
-  });
-  it("leading zeros are accepted as decimal", async () => {
-    expect((await (await GET(req("?batch=001", OK()))).json()).batch).toBe(1);
-  });
-  it("huge batch numbers (beyond 2^53, even Infinity-sized) are a harmless empty 200", async () => {
-    for (const b of ["9007199254740993", "9".repeat(400)]) {
-      const r = await GET(req(`?batch=${b}`, OK()));
-      expect(r.status).toBe(200);
-      expect((await r.json()).log).toEqual([]);
-    }
-    expect(s.ingested).toEqual([]);
-  });
-  it("batch mode never touches the cron cursor", async () => {
-    await GET(req("?batch=1", OK()));
-    expect(s.cursorWrites).toEqual([]);
-  });
-  it("one company failing is logged and the batch continues", async () => {
-    s.ingestImpl = async (c) => { if (c.slug === "c3") throw new Error("ATS 500"); };
-    const body = await (await GET(req("?batch=0", OK()))).json();
-    expect(body.log).toContain("c3: ERROR ATS 500");
-    expect(s.ingested).toHaveLength(10);
-  });
-});
 
-describe("/api/ingest cron (cursor) mode", () => {
-  it("resumes from the stored cursor and wraps around once", async () => {
-    s.cursor = 23;
-    const body = await (await GET(req("", OK()))).json();
-    expect(s.ingested).toEqual(["c23", "c24"]); // stops when cursor wraps to 0
-    expect(body).toMatchObject({ cursor: 0, partial: false });
-  });
-  it("a stored cursor beyond the list length is taken modulo the length", async () => {
-    s.cursor = 52; // 52 % 25 = 2
-    await GET(req("", OK()));
-    expect(s.ingested[0]).toBe("c2");
-  });
-  it("empty company list → no work, cursor saved, 200", async () => {
-    s.companies = [];
-    const r = await GET(req("", OK()));
-    expect(r.status).toBe(200);
-    expect(s.ingested).toEqual([]);
-  });
-  // BUG: a negative stored cursor (corrupt row / manual edit) is not normalised: (-1 % n) === -1 → list[-1] is
-  // undefined → the catch block itself throws on `c.slug` → unhandled 500 and cron makes no progress.
-  // Fixed: the stored cursor is normalised with ((c % n) + n) % n.
-  it("a negative stored cursor is normalised instead of crashing", async () => {
-    s.cursor = -1;
-    const r = await GET(req("", OK()));
-    expect(r.status).toBe(200);
+  it("a run that fails (or loses the lock race) ends the stream with an error line", async () => {
+    s.impl = async () => { throw new Error("disk full"); };
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    expect((await lines(await post())).at(-1)).toEqual({ type: "error", error: "The refresh failed. Try again." });
+    const { IngestBusyError } = await import("@/lib/ingest/local");
+    s.impl = async () => { throw new IngestBusyError(); };
+    expect((await lines(await post())).at(-1)).toEqual({ type: "error", error: "A job refresh is already running." });
   });
 });

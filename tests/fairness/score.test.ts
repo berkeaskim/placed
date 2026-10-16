@@ -7,9 +7,13 @@
  * Gated here: T1 (score level, incl. the demo persona WITH hand-labelled judge verdicts), T13, T17 (deterministic
  * half), T19. Reported: T15, T16 (Δ printed; T16 also asserted ≤ 2 because the pipeline is deterministic).
  */
-import { readFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import type { SupabaseClient } from "@supabase/supabase-js";
+import { eq } from "drizzle-orm";
+import { db, resetDbForTests } from "@/lib/db/client";
+import { cvs, cvScores } from "@/lib/db/schema";
 import { scoreCv } from "@/lib/cv-score/run";
 import { textHash } from "@/lib/cv-score/cache";
 import { prepareJudgeInput } from "@/lib/cv-score/pii";
@@ -24,22 +28,16 @@ const SECTOR: Record<Base, Archetype> = { swe: "software_eng", data: "data_analy
 
 type Scored = { total: number; hash: string; llm: unknown; code: { ruleId: string; status: string }[] };
 
-/** scoreCv against an in-memory cvs row (no cache rows), returning the total, judge-input hash and stored verdicts. */
+/** scoreCv against a fresh cvs row in a temp SQLite (no cache rows), returning the total, judge-input hash and stored verdicts. */
 async function scoreRow(parsed: ParsedCV & { safety?: SafetyReport }, rawText: string, sector: Archetype): Promise<Scored> {
-  const row = { id: "cv1", user_id: "u1", raw_text: rawText, page_texts: [rawText], page_count: 1, file_size: 120_000, parsed_json: parsed };
-  const upserts: Record<string, unknown>[] = [];
-  const from = (table: string) => {
-    const b = {
-      select: () => b, eq: () => b, limit: () => b, order: () => b,
-      single: async () => (table === "cvs" ? { data: row, error: null } : { data: null, error: { message: "not found" } }),
-      maybeSingle: async () => ({ data: null, error: null }),
-      upsert: async (r: Record<string, unknown>) => (upserts.push(r), { error: null }),
-    };
-    return b;
-  };
-  const s = await scoreCv({ from } as unknown as SupabaseClient, { userId: "u1", cvId: "cv1", sector, year: "2nd" }, { from } as unknown as SupabaseClient);
-  const rr = upserts[0].rule_results as { llm: unknown; code: { ruleId: string; status: string }[] };
-  return { total: s.total, hash: upserts[0].text_hash as string, llm: rr.llm, code: rr.code };
+  db.delete(cvScores).run();
+  db.delete(cvs).run();
+  const cv = db.insert(cvs).values({ user_id: "u1", storage_path: "u1/cv.pdf", raw_text: rawText, page_texts: [rawText], page_count: 1, file_size: 120_000, parsed_json: parsed })
+    .returning({ id: cvs.id }).get();
+  const s = await scoreCv({ userId: "u1", cvId: cv.id, sector, year: "2nd" });
+  const row = db.select().from(cvScores).where(eq(cvScores.cv_id, cv.id)).get()!;
+  const rr = row.rule_results as { llm: unknown; code: { ruleId: string; status: string }[] };
+  return { total: s.total, hash: row.text_hash!, llm: rr.llm, code: rr.code };
 }
 
 /** Same steps as app/(app)/profile/build/actions.ts uploadCv, with the fixture-mode (heuristic) parser. */
@@ -52,8 +50,18 @@ async function scoreText(text: string, sector: Archetype): Promise<Scored & { fl
 }
 
 const savedMode = process.env.AI_MODE;
-beforeAll(() => { process.env.AI_MODE = "fixture"; });
+const savedDir = process.env.PLACED_DATA_DIR;
+let dir: string;
+beforeAll(() => {
+  process.env.AI_MODE = "fixture";
+  dir = mkdtempSync(path.join(tmpdir(), "placed-fairness-"));
+  process.env.PLACED_DATA_DIR = dir;
+  resetDbForTests();
+});
 afterAll(() => {
+  resetDbForTests();
+  process.env.PLACED_DATA_DIR = savedDir;
+  rmSync(dir, { recursive: true, force: true });
   if (savedMode === undefined) delete process.env.AI_MODE;
   else process.env.AI_MODE = savedMode;
 });

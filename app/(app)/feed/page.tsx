@@ -11,7 +11,9 @@ import { todayLondon } from "@/lib/scoring/dates";
 import { ARCHETYPE_LABELS, type Archetype } from "@/lib/types";
 import { JobCard } from "@/components/job-card";
 import { isPastSaved } from "@/lib/tracker/status";
-import { ingestRunning, lastIngestAt } from "@/lib/ingest/local";
+import { ingestRunning, lastIngestSummary } from "@/lib/ingest/local";
+import { nextIngestAt } from "@/lib/ingest/scheduler";
+import { ago, inTime } from "@/lib/feed/when";
 import { RefreshJobs } from "./refresh-jobs";
 
 const chipClass = (active: boolean) =>
@@ -21,9 +23,10 @@ export default async function Feed({ searchParams }: { searchParams: Promise<Rec
   const filters = parseFilters(await searchParams);
   const { user } = await requireUser();
   const today = todayLondon();
-  const [profile, cv, jobs] = await Promise.all([getProfile(user.id), getActiveCv(user.id), getFeedJobs(today)]);
+  const last = lastIngestSummary();
+  const next = nextIngestAt();
+  const [profile, cv, jobs] = await Promise.all([getProfile(user.id), getActiveCv(user.id), getFeedJobs(today, last?.finishedAt ?? null)]);
   const apps = db.select({ job_id: applications.job_id, status: applications.status }).from(applications).where(eq(applications.user_id, user.id)).all();
-  const lastRun = lastIngestAt();
   const student = toStudent(profile);
   const all = rankJobs(student, cv?.parsed ?? null, jobs, today);
   const ranked = applyFilters(all, filters, today);
@@ -39,8 +42,7 @@ export default async function Feed({ searchParams }: { searchParams: Promise<Rec
         <h1 className="text-[28px] font-extrabold tracking-tight">Internships for you</h1>
         <p className="text-sm text-muted-foreground">{ranked.length} live roles, ranked by how well they fit you.</p>
       </div>
-      <RefreshJobs running={ingestRunning()}
-        lastRun={lastRun ? new Date(lastRun).toLocaleString("en-GB", { timeZone: "Europe/London", dateStyle: "medium", timeStyle: "short" }) : null} />
+      <RefreshJobs running={ingestRunning()} lastRun={last ? ago(last.finishedAt) : null} next={next ? inTime(next) : null} lastNew={last?.newJobs ?? 0} />
       <nav className="flex flex-wrap gap-2" aria-label="Role filters">
         <Link href={feedHref(filters, { a: null })} aria-current={!filters.a ? "true" : undefined} className={chipClass(!filters.a)}>All roles</Link>
         {topArchetypes.map((k) => (

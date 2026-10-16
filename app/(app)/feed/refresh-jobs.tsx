@@ -10,7 +10,8 @@ type Line =
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
 /** "Refresh jobs": runs the ingest via /api/ingest (a route, so a long run doesn't hold up server actions) and streams progress. */
-export function RefreshJobs({ lastRun, running }: { lastRun: string | null; running: boolean }) {
+/** `lastRun`/`next` are preformatted ("3h ago", "in 3h"); `next` is null when background refresh is off. */
+export function RefreshJobs({ lastRun, next, lastNew, running }: { lastRun: string | null; next: string | null; lastNew: number; running: boolean }) {
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState<string | null>(running ? "A refresh is already running. Check back in a few minutes." : null);
 
@@ -59,8 +60,9 @@ export function RefreshJobs({ lastRun, running }: { lastRun: string | null; runn
         className="min-h-11 rounded-full border bg-white px-4 font-semibold hover:bg-[#EFEBFF] disabled:opacity-60">
         {busy ? "Refreshing…" : "Refresh jobs"}
       </button>
+      {!status && lastNew > 0 && <span className="rounded-full bg-[#EFEBFF] px-2.5 py-0.5 text-xs font-bold text-[#5B3DF5]">{plural(lastNew, "new job")}</span>}
       <span role="status" aria-live="polite" className="text-muted-foreground">
-        {status ?? (lastRun ? `Last refreshed ${lastRun}.` : "Not refreshed yet.")}
+        {status ?? `${lastRun ? `Last updated ${lastRun}` : "Not updated yet"}${next ? ` · next ${next}` : ""}`}
       </span>
     </div>
   );
