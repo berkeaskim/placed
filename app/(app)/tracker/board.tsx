@@ -62,6 +62,9 @@ export function Board({ cards, today }: { cards: Card[]; today: string }) {
                     {c.nudge.text} →
                   </Link>
                 )}
+                {c.status === "interview" && (
+                  <Link href={`/jobs/${c.jobId}#prep`} className="text-xs font-semibold text-[#5B3DF5]">Prep for this interview →</Link>
+                )}
                 {c.outreach.sent > 0 && (
                   <span className="text-xs text-muted-foreground">Reached {c.outreach.sent} {c.outreach.sent === 1 ? "person" : "people"}, {c.outreach.replied} repl{c.outreach.replied === 1 ? "y" : "ies"}</span>
                 )}

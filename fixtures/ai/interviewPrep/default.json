@@ -1,0 +1,35 @@
+{
+  "grounded": true,
+  "sources": [
+    { "url": "https://www.wallstreetoasis.com/company/goldman-sachs/interview", "title": "wallstreetoasis.com" },
+    { "url": "https://www.reddit.com/r/FinancialCareers/", "title": "reddit.com" },
+    { "url": "https://www.glassdoor.co.uk/Interview/Goldman-Sachs-Interview-Questions-E2800.htm", "title": "glassdoor.co.uk" }
+  ],
+  "pack": {
+    "process": [
+      { "stage": "Online application", "note": "CV and a short statement, with up to three division and location choices." },
+      { "stage": "HireVue video interview", "note": "Pre-recorded answers to competency and motivation questions, about two minutes each." },
+      { "stage": "First-round call", "note": "Some divisions run a 30 minute phone or video screen before the final round." },
+      { "stage": "Superday", "note": "Two to four back-to-back interviews with associates, VPs and MDs, mixing technical, CV and fit questions." },
+      { "stage": "Offer", "note": "Usually a phone call within a week or two, then a written contract." }
+    ],
+    "questions": [
+      { "question": "Why Goldman Sachs over another bank?", "category": "motivational", "reported": true, "sourceUrl": "https://www.glassdoor.co.uk/Interview/Goldman-Sachs-Interview-Questions-E2800.htm", "whyTheyAsk": "They want to see you chose them for a reason, not because they are famous.", "prepTip": "Name one deal, team or value of the firm and link it to something you have actually done." },
+      { "question": "Walk me through a DCF.", "category": "technical", "reported": true, "sourceUrl": "https://www.wallstreetoasis.com/company/goldman-sachs/interview", "whyTheyAsk": "It checks you understand how a company is valued, step by step.", "prepTip": "Practise a two minute version: cash flows, discount rate, terminal value, enterprise to equity value." },
+      { "question": "Tell me about a time you worked in a team that disagreed.", "category": "behavioural", "reported": true, "sourceUrl": "https://www.reddit.com/r/FinancialCareers/", "whyTheyAsk": "Banking teams work long hours together, so they check how you handle friction.", "prepTip": "Use STAR and say what you personally did to move the team forward." },
+      { "question": "Pitch me a stock.", "category": "technical", "reported": true, "sourceUrl": "https://www.wallstreetoasis.com/company/goldman-sachs/interview", "whyTheyAsk": "It shows whether you follow markets and can argue a view clearly.", "prepTip": "Pick one company you know well, give two reasons and one risk, and keep it under two minutes." },
+      { "question": "What is a recent deal Goldman worked on that interested you?", "category": "motivational", "reported": true, "sourceUrl": "https://www.glassdoor.co.uk/Interview/Goldman-Sachs-Interview-Questions-E2800.htm", "whyTheyAsk": "They test whether you follow the firm and the market, not just the brand.", "prepTip": "Read the firm's recent press releases and be ready to explain why the deal made sense for the client." },
+      { "question": "Describe a goal you reached that others thought you could not.", "category": "behavioural", "reported": true, "sourceUrl": "https://www.reddit.com/r/FinancialCareers/", "whyTheyAsk": "It checks drive and how you respond to doubt.", "prepTip": "Choose a real, specific goal and be clear about the obstacle and the result." },
+      { "question": "How would you value a company with no profits yet?", "category": "technical", "reported": false, "sourceUrl": null, "whyTheyAsk": "It checks you can adapt standard valuation methods.", "prepTip": "Mention revenue multiples and comparable companies, and say why a DCF is harder here." },
+      { "question": "Tell me about a mistake you made and what you learnt.", "category": "behavioural", "reported": false, "sourceUrl": null, "whyTheyAsk": "They want honesty and evidence that you learn quickly.", "prepTip": "Pick a real but recoverable mistake and spend most of the answer on what changed afterwards." },
+      { "question": "Where do you see interest rates going over the next year, and how would that affect M&A?", "category": "case", "reported": false, "sourceUrl": null, "whyTheyAsk": "It tests commercial awareness and linking macro news to the business.", "prepTip": "Have one view with a reason, and explain how financing costs change deal activity." },
+      { "question": "Why investment banking rather than consulting?", "category": "motivational", "reported": false, "sourceUrl": null, "whyTheyAsk": "They check you understand the job and will stay with it.", "prepTip": "Talk about the transaction work itself and something concrete that drew you to it." }
+    ],
+    "tips": [
+      "Practise HireVue answers on camera: you get one attempt and a short time to think.",
+      "Read the Financial Times for the week before your superday and have two market stories ready.",
+      "Expect every interviewer to ask 'why Goldman': have a specific answer, not a general one.",
+      "Know every line of your CV well enough to talk about it for two minutes."
+    ]
+  }
+}
