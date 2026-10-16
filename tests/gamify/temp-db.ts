@@ -7,7 +7,7 @@ import { badges, companies, jobs, profiles, xpEvents } from "@/lib/db/schema";
 import { LOCAL_USER_ID } from "@/lib/auth/local-user";
 
 /** Points the app at a fresh temp SQLite for this test file; `wipe` runs before each test. */
-export function useTempDb(wipe?: () => void) {
+export function withTempDb(wipe?: () => void) {
   let dir = "";
   const prev = process.env.PLACED_DATA_DIR;
   beforeAll(() => {

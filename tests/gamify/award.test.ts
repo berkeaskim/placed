@@ -3,9 +3,9 @@ import { eq } from "drizzle-orm";
 import { db } from "@/lib/db/client";
 import { profiles, xpEvents } from "@/lib/db/schema";
 import { awardXP } from "@/lib/gamify/award";
-import { resetGamify, seedJob, U, useTempDb } from "./temp-db";
+import { resetGamify, seedJob, U, withTempDb } from "./temp-db";
 
-useTempDb(() => resetGamify({ xp: 40, streak_days: 2, last_active_date: "2026-01-01" }));
+withTempDb(() => resetGamify({ xp: 40, streak_days: 2, last_active_date: "2026-01-01" }));
 const xp = () => db.select().from(profiles).where(eq(profiles.user_id, U)).get()!.xp;
 
 describe("awardXP", () => {

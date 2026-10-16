@@ -3,13 +3,13 @@ import { eq } from "drizzle-orm";
 import { db } from "@/lib/db/client";
 import { badges, profiles, xpEvents } from "@/lib/db/schema";
 import { awardXP } from "@/lib/gamify/award";
-import { resetGamify, seedJob, U, useTempDb } from "../../gamify/temp-db";
+import { resetGamify, seedJob, U, withTempDb } from "../../gamify/temp-db";
 
 /**
  * Real SQLite: the partial unique indexes on xp_events are the idempotency gate, and each award runs in one
  * synchronous IMMEDIATE transaction (reads, event row, xp increment, profile, badges).
  */
-useTempDb(() => resetGamify());
+withTempDb(() => resetGamify());
 afterEach(() => { vi.useRealTimers(); });
 
 const profile = () => db.select().from(profiles).where(eq(profiles.user_id, U)).get()!;

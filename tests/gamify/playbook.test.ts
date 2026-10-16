@@ -3,7 +3,7 @@ import { db } from "@/lib/db/client";
 import { xpEvents } from "@/lib/db/schema";
 import { computeAward, xpFor, BADGES, type GamifyState } from "@/lib/gamify/core";
 import { awardXP } from "@/lib/gamify/award";
-import { resetGamify, U, useTempDb } from "./temp-db";
+import { resetGamify, U, withTempDb } from "./temp-db";
 
 const base: GamifyState = { xp: 0, streakDays: 0, lastActiveDate: null, badges: [], savesToday: 0, appliedCount: 0, rejectedCount: 0 };
 const today = "2026-10-13";
@@ -30,7 +30,7 @@ describe("playbook_done XP", () => {
 });
 
 describe("awardXP for playbook_done", () => {
-  useTempDb(() => resetGamify());
+  withTempDb(() => resetGamify());
 
   it("requires a ref and records it on the event row", async () => {
     await expect(awardXP(U, { type: "playbook_done" })).rejects.toThrow(/ref/);

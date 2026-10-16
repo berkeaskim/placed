@@ -3,7 +3,7 @@ import { db } from "@/lib/db/client";
 import { eq } from "drizzle-orm";
 import { applications, interviewPreps, jobs } from "@/lib/db/schema";
 import { DAILY_CAP } from "@/lib/interview-prep/service";
-import { seedJob, U, useTempDb } from "../gamify/temp-db";
+import { seedJob, U, withTempDb } from "../gamify/temp-db";
 
 const generatePrepPack = vi.fn();
 vi.mock("@/lib/db/queries", () => ({
@@ -18,7 +18,7 @@ vi.mock("@/lib/ai/interviewPrep", async (importOriginal) => {
 const { getInterviewPrep } = await import("@/app/(app)/jobs/[id]/prep-actions");
 
 let ID = "";
-useTempDb(() => {
+withTempDb(() => {
   db.delete(interviewPreps).run();
   db.delete(applications).run();
   ID = seedJob();
