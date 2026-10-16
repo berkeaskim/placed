@@ -3,7 +3,6 @@ import { useState } from "react";
 import { AgentSteps, useAgentSteps } from "@/components/agent/agent-steps";
 import { AiWrittenTag } from "@/components/ai-written-tag";
 import type { PrepView } from "@/lib/interview-prep/service";
-import { getInterviewPrep } from "./prep-actions";
 
 type State = { status: "idle" } | { status: "loading" } | { status: "error"; message: string } | { status: "ready"; p: PrepView };
 const CATS = [["all", "All"], ["behavioural", "Behavioural"], ["technical", "Technical"], ["motivational", "Motivation"], ["case", "Case"]] as const;
@@ -21,7 +20,9 @@ export function InterviewPrepPanel({ jobId, company, hasCv }: { jobId: string; c
   const run = async () => {
     setState({ status: "loading" });
     try {
-      const r = await getInterviewPrep(jobId);
+      // A route, not a server action: a ~40 s first build must not queue the page's other actions behind it.
+      const res = await fetch(`/api/interview-prep/${encodeURIComponent(jobId)}`, { method: "POST", cache: "no-store" });
+      const r = (await res.json()) as PrepView | { error: string };
       setState("error" in r ? { status: "error", message: r.error } : { status: "ready", p: r });
     } catch {
       setState({ status: "error", message: "We couldn't build your interview prep right now. Try again in a moment." });

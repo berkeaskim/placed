@@ -1,4 +1,4 @@
-"use server";
+import "server-only";
 import { requireUser } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getActiveCv, getJob } from "@/lib/db/queries";
@@ -12,7 +12,10 @@ import { getOrCreatePrep, type PrepView } from "@/lib/interview-prep/service";
 
 const GONE = "This role is no longer available.";
 
-/** Interview prep for a job the student has applied to: shared pack (cached per company + role family) plus their CV stories. */
+/**
+ * Interview prep for a job the student has applied to: shared pack (cached per company + role family) plus their CV
+ * stories. Called by /api/interview-prep/[jobId], not a server action (server actions run one at a time).
+ */
 export async function getInterviewPrep(jobId: string): Promise<PrepView | { error: string }> {
   if (!isUuid(jobId)) return { error: GONE };
   const { supabase, user } = await requireUser();
