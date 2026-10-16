@@ -14,7 +14,7 @@ export type FeedJob = JobListItem & { jdSkills: JdSkill[] };
  * JOBS_TAG. Without this every feed load re-read every posting and re-parsed its requirements.
  */
 export const getFeedJobs = unstable_cache(
-  async (today: string, _version: string | null = null): Promise<FeedJob[]> => {
+  async (...[today]: [today: string, version?: string | null]): Promise<FeedJob[]> => {
     const jobs = await getLiveJobs(today);
     return jobs.map((j) => ({ ...j, jdSkills: jdRequirementSkills(j.textLines, j.requirements), textLines: [] }));
   },

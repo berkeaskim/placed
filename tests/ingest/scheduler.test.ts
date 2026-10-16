@@ -66,11 +66,11 @@ describe("due", () => {
 
 describe("schedulerEnabled", () => {
   it("off under vitest and fixture e2e unless forced", () => {
-    expect(schedulerEnabled({ VITEST: "true" } as NodeJS.ProcessEnv)).toBe(false);
-    expect(schedulerEnabled({ AI_MODE: "fixture" } as NodeJS.ProcessEnv)).toBe(false);
-    expect(schedulerEnabled({ VITEST: "true", INGEST_SCHEDULER: "1" } as NodeJS.ProcessEnv)).toBe(true);
-    expect(schedulerEnabled({} as NodeJS.ProcessEnv)).toBe(true);
-    expect(schedulerEnabled({ INGEST_SCHEDULER: "0" } as NodeJS.ProcessEnv)).toBe(false);
+    expect(schedulerEnabled({ VITEST: "true" })).toBe(false);
+    expect(schedulerEnabled({ AI_MODE: "fixture" })).toBe(false);
+    expect(schedulerEnabled({ VITEST: "true", INGEST_SCHEDULER: "1" })).toBe(true);
+    expect(schedulerEnabled({})).toBe(true);
+    expect(schedulerEnabled({ INGEST_SCHEDULER: "0" })).toBe(false);
   });
 });
 

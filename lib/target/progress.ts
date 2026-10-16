@@ -39,7 +39,8 @@ const progressOf = (userId: string, id: string) =>
     .where(and(eq(playbookProgress.user_id, userId), eq(playbookProgress.action_id, id))).get();
 
 function upsertProgress(row: typeof playbookProgress.$inferInsert) {
-  const { user_id: _u, action_id: _a, ...set } = row;
+  // like a PostgREST upsert: only the columns given are overwritten
+  const set = Object.fromEntries(Object.entries(row).filter(([k]) => k !== "user_id" && k !== "action_id"));
   db.insert(playbookProgress).values(row)
     .onConflictDoUpdate({ target: [playbookProgress.user_id, playbookProgress.action_id], set }).run();
 }

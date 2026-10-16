@@ -8,7 +8,8 @@ function main() {
   const rows = db.select({ j: jobs, slug: companies.slug, ats: companies.ats }).from(jobs)
     .innerJoin(companies, eq(companies.id, jobs.company_id)).where(eq(jobs.is_live, true)).all();
   const snap = rows.map(({ j, slug, ats }) => {
-    const { id: _id, first_seen: _f, company_id: _c, ...rest } = j;
+    const rest: Partial<typeof j> = { ...j };
+    for (const k of ["id", "first_seen", "company_id"] as const) delete rest[k];
     return { ...rest, company_slug: slug, company_ats: ats };
   });
   writeFileSync("seed/jobs.json", JSON.stringify(snap, null, 1));

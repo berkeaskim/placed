@@ -39,7 +39,7 @@ export function ingestDue(now = Date.now()): boolean {
 }
 
 /** Off under vitest and fixture-mode e2e unless INGEST_SCHEDULER=1; INGEST_SCHEDULER=0 turns it off anywhere. */
-export function schedulerEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
+export function schedulerEnabled(env: Record<string, string | undefined> = process.env): boolean {
   if (env.INGEST_SCHEDULER === "1") return true;
   if (env.INGEST_SCHEDULER === "0") return false;
   return !env.VITEST && env.AI_MODE !== "fixture";
