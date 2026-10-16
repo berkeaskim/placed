@@ -10,6 +10,7 @@ export function NavLinks({ autopilot }: { autopilot: boolean }) {
   const links = [
     { href: "/feed", label: "Feed", match: ["/feed", "/jobs"] },
     { href: "/tracker", label: "Tracker", match: ["/tracker"] },
+    { href: "/strategy", label: "Strategy", match: ["/strategy"] },
     { href: "/profile", label: "Profile", match: ["/profile"] },
     ...(autopilot ? [{ href: "/autopilot/setup", label: "Autopilot", match: ["/autopilot"] }] : []),
     { href: "/settings", label: "Settings", match: ["/settings"] },

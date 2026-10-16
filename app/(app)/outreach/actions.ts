@@ -8,6 +8,7 @@ import { isUuid } from "@/lib/feed/save-result";
 import { AiError } from "@/lib/ai/provider";
 import { draftOutreach, isEmptyDraft, type OutreachDraft } from "@/lib/outreach/draft";
 import { cleanDraftInput } from "@/lib/outreach/input";
+import { universityFor } from "@/lib/profile/university";
 
 export async function draftOutreachAction(
   jobId: string, raw: { target: unknown; purpose: unknown; recipientName: unknown; note: unknown },
@@ -26,7 +27,7 @@ export async function draftOutreachAction(
   const company = job.company ?? "";
   try {
     const draft = await draftOutreach({
-      ...input, cv: cv.parsed, cvText: cv.rawText, facts: facts.map((f) => f.claim), company, jobTitle: job.title,
+      ...input, university: universityFor(user.id), cv: cv.parsed, cvText: cv.rawText, facts: facts.map((f) => f.claim), company, jobTitle: job.title,
     });
     if (isEmptyDraft(draft)) return { ok: false, message: "Couldn't write a message right now. Try again." };
     let id: string | null = null;

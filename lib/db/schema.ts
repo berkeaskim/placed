@@ -37,6 +37,8 @@ export const profiles = sqliteTable("profiles", {
   display_name: text("display_name"),
   year: text("year", { enum: YEAR_VALUES }).$type<Year>(),
   field: text("field"),
+  /** The student's university as they want it named (Settings); null = read it from the active CV. */
+  university: text("university"),
   location_pref: json<Region[]>("location_pref").notNull().default(sql`'[]'`),
   needs_visa: bool("needs_visa").notNull().default(false),
   target_archetype: text("target_archetype").$type<Archetype>(),

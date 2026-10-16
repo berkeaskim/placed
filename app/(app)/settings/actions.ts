@@ -1,5 +1,9 @@
 "use server";
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
+import { eq } from "drizzle-orm";
+import { db } from "@/lib/db/client";
+import { profiles } from "@/lib/db/schema";
 import { requireUser } from "@/lib/auth/local-user";
 import { resetUserData } from "@/lib/db/reset";
 import { isDeleteConfirmed } from "@/lib/settings/confirm";
@@ -21,4 +25,17 @@ export async function deleteMyData(_prev: DeleteState, formData: FormData): Prom
     return { error: "We couldn't delete everything — please try again." };
   }
   redirect("/onboarding");
+}
+
+export type UniversityState = { ok: true; value: string | null } | { ok: false; error: string } | null;
+
+/** Saves the university Placed uses for alumni searches and messages; empty clears it (falls back to the CV). */
+export async function saveUniversity(_prev: UniversityState, formData: FormData): Promise<UniversityState> {
+  const { user } = await requireUser();
+  const raw = String(formData.get("university") ?? "").replace(/\s+/g, " ").trim();
+  if (raw.length > 120) return { ok: false, error: "Keep it under 120 characters." };
+  if (raw && !/\p{L}/u.test(raw)) return { ok: false, error: "Enter your university's name." };
+  db.update(profiles).set({ university: raw || null }).where(eq(profiles.user_id, user.id)).run();
+  revalidatePath("/", "layout");
+  return { ok: true, value: raw || null };
 }
