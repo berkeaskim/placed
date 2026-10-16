@@ -18,7 +18,8 @@ function chatBody(content: string, doneReason = "stop") {
 }
 
 function fetchStub(bodies: (string | Error)[]) {
-  return vi.fn(async (_url: string, _init?: RequestInit) => {
+  return vi.fn(async (...args: [string, RequestInit?]) => {
+    void args;
     const b = bodies.shift()!;
     if (b instanceof Error) throw b;
     return new Response(b, { status: 200, headers: { "content-type": "application/x-ndjson" } });
