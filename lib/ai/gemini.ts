@@ -38,7 +38,7 @@ export async function geminiStructured<T>(req: StructuredRequest<T>, c?: ModelsC
           responseMimeType: "application/json",
           responseJsonSchema: jsonSchema,
           maxOutputTokens: req.maxTokens ?? 16000,
-          ...(req.thinking === "low" ? { thinkingConfig: { thinkingLevel: ThinkingLevel.LOW } } : {}),
+          thinkingConfig: { thinkingLevel: req.thinking === "high" ? ThinkingLevel.HIGH : ThinkingLevel.LOW },
           ...(req.temperature !== undefined && geminiAcceptsTemperature(MODELS[req.tier]) ? { temperature: req.temperature } : {}),
         },
       });

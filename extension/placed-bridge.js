@@ -6,11 +6,18 @@
 (function () {
   const ARM = "placed:linkedin-arm";
   const ARMED = "placed:linkedin-armed";
+  const FAILED = "placed:linkedin-failed";
   const TOKEN_RE = /^[A-Za-z0-9_-]{20,400}\.[A-Za-z0-9_-]{43}$/;
   const origins = globalThis.PLACED_ORIGINS || [];
   if (!origins.includes(location.origin)) return;
 
   document.documentElement.dataset.placedExtension = chrome.runtime.getManifest().version;
+
+  // The service worker reports a failed LinkedIn read (e.g. the name doesn't match the CV) so the page can stop waiting.
+  chrome.runtime.onMessage.addListener((msg, sender) => {
+    if (sender.id !== chrome.runtime.id || sender.tab || !msg || msg.kind !== "liFailed") return;
+    window.postMessage({ type: FAILED, error: String(msg.error || "").slice(0, 300) }, location.origin);
+  });
 
   window.addEventListener("message", (e) => {
     if (e.source !== window || e.origin !== location.origin) return;

@@ -3,7 +3,9 @@ import Link from "next/link";
 import { requireUser } from "@/lib/supabase/server";
 import { getActiveCv, getProfile } from "@/lib/db/queries";
 import { todayLondon } from "@/lib/scoring/dates";
-import { buildTargetView, targetFor, type JobRow, type ProgressRow, type TargetView } from "@/lib/target/view";
+import { buildTargetView, targetFor, type ProgressRow, type TargetView } from "@/lib/target/view";
+import type { DemandJob } from "@/lib/target/market";
+import { getFeedJobs } from "@/lib/feed/jobs-cache";
 import type { PickedAction } from "@/lib/target/actions";
 import { ARCHETYPE_LABELS } from "@/lib/types";
 import { ActionCard } from "@/components/target/action-card";
@@ -142,16 +144,18 @@ export default async function TargetRolePage() {
     supabase.from("confirmed_facts").select("claim").eq("user_id", user.id),
   ]);
   const { sector, year } = targetFor(p);
-  const [jobsRes, scoreRes] = await Promise.all([
-    supabase.from("jobs").select("id, archetype, is_live, deadline, requirements, text_lines").eq("archetype", sector).eq("is_live", true).limit(1000),
+  // The cached feed jobs already carry parsed JD skills; reading up to 1000 raw rows (with text_lines) and re-parsing them made every visit slow.
+  const [feedJobs, scoreRes] = await Promise.all([
+    getFeedJobs(today).catch((e: unknown) => { console.error("target: jobs read failed", e); return []; }),
     cv ? supabase.from("cv_scores").select("total").eq("user_id", user.id).eq("cv_id", cv.id).eq("sector", sector).maybeSingle<{ total: number }>() : null,
   ]);
-  if (jobsRes.error) console.error("target: jobs read failed", jobsRes.error.message);
   const score = scoreRes?.data ?? null;
+  const jobs: DemandJob[] = feedJobs.filter((j) => j.archetype === sector)
+    .map((j) => ({ id: j.id, archetype: j.archetype, is_live: true, deadline: j.deadline, skills: j.jdSkills }));
 
   const v = buildTargetView({
     sector, year, today, cv: cv?.parsed ?? null, profileSkills: p.skills ?? [], progress,
-    jobs: (jobsRes.data ?? []) as JobRow[], confirmedClaims: (factsRes.data ?? []).map((f) => f.claim as string),
+    jobs, confirmedClaims: (factsRes.data ?? []).map((f) => f.claim as string),
   });
   const role = ARCHETYPE_LABELS[sector];
 

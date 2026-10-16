@@ -2804,6 +2804,7 @@
       "sectors": "all",
       "dimension": "presence",
       "statement": "Advisory (weight 0): a recent photo of the student alone is on the profile. Placed never assesses the photo's appearance, dress, background or 'professionalism' and never runs face analysis. The only checks are the user's own answers ('Is it a recent photo of you?').",
+      "tip": "Use a recent photo of just you. Placed never looks at or judges your photo.",
       "check": "code",
       "input": "self_report",
       "severity": "minor",
@@ -2834,6 +2835,7 @@
       "sectors": "all",
       "dimension": "presence",
       "statement": "Advisory (weight 0): when actively applying, Open to Work is set to 'Recruiters only' with target job titles (sector titles from the keyword bank), UK locations and start dates. The public #OpenToWork frame is the student's choice and is never scored.",
+      "tip": "When you're applying, turn on Open to Work for recruiters only, with your target roles, UK locations and start date. The public green frame is up to you.",
       "check": "code",
       "input": "self_report",
       "altInputs": [
@@ -2870,6 +2872,7 @@
       "sectors": "all",
       "dimension": "presence",
       "statement": "Advisory (weight 0): at least one recommendation from a manager, supervisor, lecturer, society lead or client that names specific work.",
+      "tip": "A recommendation from a manager, lecturer, society lead or client that names specific work you did carries weight.",
       "check": "code",
       "input": "self_report",
       "altInputs": [
@@ -2904,6 +2907,7 @@
       "sectors": "all",
       "dimension": "presence",
       "statement": "Advisory risk check (weight 0): recent public posts, comments or photos contain nothing the student would be uncomfortable with an interviewer reading (abuse, discriminatory content, explicit images, confidential employer information). Political or religious views alone are not a fail. Posting nothing passes.",
+      "tip": "Before applying, skim your recent posts, comments and photos: anything you wouldn't want an interviewer to read? Posting nothing is fine.",
       "check": "llm",
       "input": "screenshot",
       "altInputs": [
@@ -2951,6 +2955,7 @@
       "sectors": "all",
       "dimension": "presence",
       "statement": "Advisory (weight 0): a deliberate network of relevant connections (course mates, colleagues, society members, alumni at target employers; at least ~50, 20 for 1st years) and follows target firms. Coaching only; never ranked against peers.",
+      "tip": "Connect with course mates, colleagues, society members and alumni at firms you're targeting (around 50 is a good start; 20 in first year), and follow those firms.",
       "check": "code",
       "input": "self_report",
       "altInputs": [
@@ -2992,6 +2997,7 @@
       "sectors": "all",
       "dimension": "presence",
       "statement": "Advisory (weight 0): a verification badge (identity via Persona passport, or education/workplace where offered).",
+      "tip": "If LinkedIn offers it, verify your identity, school or workplace to get the verification badge.",
       "check": "code",
       "input": "self_report",
       "altInputs": [
@@ -3342,6 +3348,7 @@
       ],
       "dimension": "presence",
       "statement": "Advisory risk check (weight 0): activity is neutral-to-technical. No posting is fine; technical write-ups are good; engagement-bait or unprofessional posts are flagged.",
+      "tip": "You don't need to post. Technical write-ups help; engagement-bait doesn't.",
       "check": "llm",
       "input": "screenshot",
       "severity": "minor",
@@ -3714,6 +3721,7 @@
       ],
       "dimension": "presence",
       "statement": "Advisory risk check (weight 0): posting is optional; if posts exist they share real work and contain no AI-generic 'tips' content or employer data.",
+      "tip": "Posting is optional. If you post, share real work, not generic AI-written tips, and never employer data.",
       "check": "llm",
       "input": "screenshot",
       "altInputs": [
@@ -3989,6 +3997,7 @@
       ],
       "dimension": "presence",
       "statement": "Advisory risk check (weight 0, shown prominently): no posts or articles sharing online-assessment or interview questions, or internal programme content, from trading firms.",
+      "tip": "Never post online-assessment or interview questions from trading firms, or anything from an internal programme. Firms check.",
       "check": "llm",
       "input": "screenshot",
       "altInputs": [
@@ -4317,6 +4326,7 @@
       ],
       "dimension": "presence",
       "statement": "Advisory risk check (weight 0): posting, if any, is low-risk: no case-interview content, no complaints about firms or recruiters, no AI-generic posts. No posting is never penalised.",
+      "tip": "Posting is optional. Skip case-interview content, complaints about firms or recruiters, and generic AI-written posts.",
       "check": "llm",
       "input": "screenshot",
       "altInputs": [
@@ -4686,6 +4696,7 @@
       ],
       "dimension": "presence",
       "statement": "Advisory risk check (weight 0): posting is a bonus, never a requirement; unprofessional posts (criticising target employers, ranting about rejections, engagement-bait) are flagged.",
+      "tip": "Posting is a bonus, never a must. Avoid criticising target employers, ranting about rejections or engagement-bait.",
       "check": "llm",
       "input": "screenshot",
       "altInputs": [
@@ -4920,6 +4931,7 @@
       ],
       "dimension": "presence",
       "statement": "Advisory risk check (weight 0, shown prominently): recent posts/comments (~90 days) contain no deal chatter, office/screen photos, offer-letter pay, political rants or investment promotion. Posting nothing passes.",
+      "tip": "Check your last 90 days of posts and comments: no deal talk, office or screen photos, offer pay, political rants or investment tips. Posting nothing is fine.",
       "check": "llm",
       "input": "screenshot",
       "altInputs": [
@@ -5609,6 +5621,7 @@
       ],
       "dimension": "presence",
       "statement": "Advisory risk check (weight 0; prominent for ONS/Civil Service targets): no unpublished or confidential lab data and no partisan content in visible posts.",
+      "tip": "Keep unpublished or confidential lab data and partisan content out of your posts, especially if you're targeting the ONS or Civil Service.",
       "check": "llm",
       "input": "self_report",
       "altInputs": [

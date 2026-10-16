@@ -23,8 +23,8 @@ const RING = 327;
 const PARSE_WARNING: Record<string, string> = {
   top_card_guessed: "We guessed where your name and headline are. Check the headline below is right.",
   no_headline: "We couldn't find your headline.",
-  no_experience_section: "No Experience section in the export.",
-  no_education_section: "No Education section in the export.",
+  no_experience_section: "We couldn't find an Experience section on your profile.",
+  no_education_section: "We couldn't find an Education section on your profile.",
   experience_unparsed: "We found an Experience section but couldn't read its dates.",
 };
 
@@ -152,7 +152,7 @@ export function LinkedInScorePanel({ data }: { data: LiPanelData }) {
       )}
 
       <details className="rounded-[20px] border border-[#E6E6EF] bg-white">
-        <summary className="flex min-h-11 cursor-pointer items-center px-5 py-3 text-sm font-semibold">What we read from your export</summary>
+        <summary className="flex min-h-11 cursor-pointer items-center px-5 py-3 text-sm font-semibold">What we read from your profile</summary>
         <div className="flex flex-col gap-2 px-5 pb-5 text-sm">
           {data.parseWarnings.map((w) => <p key={w} className="rounded-xl bg-[#FFF1DC] px-3 py-2 text-[#7A4100]">{PARSE_WARNING[w] ?? w}</p>)}
           <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
@@ -161,7 +161,7 @@ export function LinkedInScorePanel({ data }: { data: LiPanelData }) {
             <dt className="font-semibold">Top skills</dt><dd>{data.profile.topSkills.join(", ") || "—"}</dd>
             <dt className="font-semibold">Entries</dt><dd>{data.profile.experience} experience, {data.profile.education} education</dd>
           </dl>
-          <p className="text-xs text-[#5B5B6B]">Your email, name and profile link were removed before the AI read your profile. We don&apos;t keep the PDF.{data.saved ? "" : " This result isn't saved yet."}</p>
+          <p className="text-xs text-[#5B5B6B]">Your email, name and profile link were removed before the AI read your profile.{data.saved ? "" : " This result isn't saved yet."}</p>
         </div>
       </details>
     </div>

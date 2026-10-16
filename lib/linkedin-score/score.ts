@@ -1,6 +1,6 @@
 import type { Archetype, ParsedCV, Year } from "@/lib/types";
 import type { ParsedLinkedIn } from "@/lib/linkedin/parse-export";
-import { LI_SECTOR_IMPORTANCE, checkableFromPdf, liRulesFor, type LiResolvedRule } from "@/lib/linkedin-rules";
+import { LI_SECTOR_IMPORTANCE, checkableFromPdf, liRulesFor, presenceTip, type LiResolvedRule } from "@/lib/linkedin-rules";
 import { redactCv } from "@/lib/cv/redact";
 import { renderCvContent, stripPii } from "@/lib/cv-score/pii";
 import { isJudged, type LiJudgeInput, type LiJudgeResult } from "@/lib/ai/judgeLinkedIn";
@@ -95,7 +95,7 @@ export async function scoreLinkedIn(i: {
   return {
     ...score,
     importance: LI_SECTOR_IMPORTANCE[i.sector],
-    tips: rules.filter((r) => r.advisory && !r.yearAdjust?.[i.year]?.skip).map((r) => ({ ruleId: r.id, statement: r.statement.replace(/^Advisory \(weight 0\):\s*/i, "") })),
+    tips: rules.filter((r) => r.advisory && !r.yearAdjust?.[i.year]?.skip).map((r) => ({ ruleId: r.id, statement: presenceTip(r) })),
     aiUnavailable: judge.aiUnavailable === true,
     parseWarnings: i.li.warnings,
   };
