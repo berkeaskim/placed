@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { IngestStore, JobRow } from "./run";
+import { pgInList } from "@/lib/db/postgrest";
 
 export function supabaseStore(db: SupabaseClient): IngestStore {
   return {
@@ -20,7 +21,7 @@ export function supabaseStore(db: SupabaseClient): IngestStore {
     async markDead(companyId, liveExtIds) {
       // closed_at = first run the posting was missing: the observed close date for ATSs that publish none.
       let q = db.from("jobs").update({ is_live: false, closed_at: new Date().toISOString() }).eq("company_id", companyId).eq("is_live", true);
-      if (liveExtIds.length) q = q.not("ext_id", "in", `(${liveExtIds.map((id) => `"${id}"`).join(",")})`);
+      if (liveExtIds.length) q = q.not("ext_id", "in", pgInList(liveExtIds));
       const { data, error } = await q.select("id");
       if (error) throw error;
       return data?.length ?? 0;

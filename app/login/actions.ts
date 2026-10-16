@@ -2,6 +2,10 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { allow, clientIp } from "@/lib/auth/rate-limit";
+import { normalizeEmail } from "@/lib/auth/validate";
+
+const TOO_MANY = "Too many attempts. Wait a few minutes and try again.";
 
 async function origin() {
   const h = await headers();
@@ -9,30 +13,34 @@ async function origin() {
 }
 
 export async function signInWithEmail(formData: FormData) {
-  const email = String(formData.get("email") ?? "").trim();
-  if (!email.includes("@")) return { error: "Enter a valid email." };
+  const email = normalizeEmail(formData.get("email"));
+  if (!email) return { error: "Enter a valid email." };
+  if (!(await allow("otpIp", await clientIp()))) return { error: TOO_MANY };
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithOtp({
     email,
     options: { emailRedirectTo: `${await origin()}/auth/callback` },
   });
-  if (error) return { error: error.message };
+  // Never echo Supabase's message: it can reveal whether the address has an account.
+  if (error) return { error: error.status === 429 ? TOO_MANY : "Couldn't send the sign-in link. Try again in a moment." };
   return { ok: true };
 }
 
 /**
  * Email + password sign-in for accounts Berke creates by hand (`npm run user:add`). Self sign-up stays off:
  * a wrong email or password gets one generic message so the form can't be used to probe which emails exist.
+ * Limited per client IP and per target email (lib/auth/rate-limit.ts) against password guessing.
  */
 export async function signInWithPassword(formData: FormData) {
-  const email = String(formData.get("email") ?? "").trim().toLowerCase();
-  const password = String(formData.get("password") ?? "");
-  if (!email.includes("@") || !password) return { error: "Enter your email and password." };
+  const email = normalizeEmail(formData.get("email"));
+  const password = formData.get("password");
+  if (!email || typeof password !== "string" || !password) return { error: "Enter your email and password." };
+  // Both limits are counted on every attempt, so neither reveals whether the email exists.
+  const [byIp, byEmail] = await Promise.all([allow("loginIp", await clientIp()), allow("loginEmail", email)]);
+  if (!byIp || !byEmail) return { error: TOO_MANY };
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error || !data.user) {
-    return { error: error?.status === 429 ? "Too many attempts. Wait a minute and try again." : "Wrong email or password." };
-  }
+  if (error || !data.user) return { error: error?.status === 429 ? TOO_MANY : "Wrong email or password." };
   const { data: profile } = await supabase.from("profiles").select("onboarded").eq("user_id", data.user.id).maybeSingle();
   redirect(profile?.onboarded ? "/feed" : "/onboarding");
 }
