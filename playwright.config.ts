@@ -8,14 +8,16 @@ const PORT = Number(process.env.E2E_PORT ?? 3100);
 const OUT = path.join(os.tmpdir(), "placed-e2e");
 const baseURL = `http://127.0.0.1:${PORT}`;
 
-// A fresh temp data dir per run, never ./data. Playwright re-reads this config in its workers; they inherit the env
-// var, so only the main process creates the dir and removes it on exit.
+// A fresh temp data dir per run, never ./data, made at config load: Playwright starts the webServer BEFORE
+// globalSetup. PLACED_DATA_DIR is set here too so e2e/global-setup.ts (and the workers, which re-read this config and
+// inherit the env) use the same dir. Only the main process creates it and removes it on exit.
 if (!process.env.PLACED_E2E_DATA_DIR) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "placed-e2e-data-"));
   process.env.PLACED_E2E_DATA_DIR = dir;
   process.on("exit", () => fs.rmSync(dir, { recursive: true, force: true }));
 }
 const DATA_DIR = process.env.PLACED_E2E_DATA_DIR;
+process.env.PLACED_DATA_DIR = DATA_DIR;
 
 export default defineConfig({
   testDir: "./e2e",
