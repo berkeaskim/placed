@@ -1,6 +1,6 @@
 import { classify } from "./classify";
 import { CONFIRM_KEYS, matchOption } from "./options";
-import { normLabel, vaultValue, type Core } from "./vault";
+import { findRemembered, normLabel, vaultValue, type Core, type Extra } from "./vault";
 import type { FormField, NormalizedForm } from "./forms/types";
 import type { DraftResult } from "./drafts";
 
@@ -17,36 +17,54 @@ const normBool = (s: string): "true" | "false" | null => {
   return t === "yes" || t === "true" ? "true" : t === "no" || t === "false" ? "false" : null;
 };
 const hasOptions = (f: FormField) => (f.type === "select" || f.type === "multiselect") && f.options.length > 0;
+const BEFORE = "you answered this before", SIMILAR = "you answered a similar question";
 
-export function assemblePack(form: NormalizedForm, core: Partial<Core>, extra: Record<string, string>, drafts: Record<string, DraftResult>): PackItem[] {
+/** Turns a remembered answer (text, Yes/No, or option label(s)) into this field's value, or null when it no longer fits the field. */
+export function rememberedValue(field: FormField, saved: string | string[]): string | string[] | null {
+  const list = Array.isArray(saved) ? saved : [saved];
+  if (field.type === "boolean" && !field.options.length) return list.length === 1 ? normBool(list[0]) : null;
+  if (field.options.length) {
+    const hits = list.map((l) => field.options.find((o) => normLabel(o.label) === normLabel(l))?.value).filter((v): v is string => Boolean(v));
+    if (!hits.length || (field.type !== "multiselect" && hits.length !== 1)) return null;
+    return field.type === "multiselect" ? hits : hits[0];
+  }
+  if (field.type === "multiselect") return null;
+  const t = list.join(", ").trim();
+  return t || null;
+}
+
+export function assemblePack(form: NormalizedForm, core: Partial<Core>, extra: Extra, drafts: Record<string, DraftResult>): PackItem[] {
   return form.fields.map((field): PackItem => {
     const c = classify(field.label, field.type);
     const item = (group: PackGroup, value: PackItem["value"] = null, sourceLabel: string | null = null): PackItem => ({ field, group, value, sourceLabel });
+    // An exact earlier answer fills like setup data; a near-identical question is pre-selected for a one-click confirm.
+    // Right to work and sponsorship are always confirmed, whatever was remembered.
+    const recall = (): PackItem | null => {
+      const r = findRemembered(extra, field.label);
+      const v = r && rememberedValue(field, r.value);
+      if (!r || v == null) return null;
+      const mustConfirm = !r.exact || (c.kind === "vault" && CONFIRM_KEYS.has(c.key));
+      return item(mustConfirm ? "confirm" : "vault", v, r.exact ? BEFORE : SIMILAR);
+    };
     switch (c.kind) {
       case "eeo": case "consent": case "yours": return item("yours");
       case "file": return c.which === "cv" ? item("vault", null, "your tailored CV") : item("yours");
       case "freeText": return { ...item("draft"), draft: drafts[field.key] };
       case "extra": {
-        const saved = extra[normLabel(field.label)];
-        if (!saved) return item(field.required ? "ask" : "yours"); // never block "Open & fill" on an optional question
-        if (field.type === "boolean" && !field.options.length) {
-          const b = normBool(saved);
-          return b ? item("vault", b, "you answered this before") : item(field.required ? "ask" : "yours");
-        }
-        if (!hasOptions(field)) return item("vault", saved, "you answered this before");
-        const hit = field.options.find((o) => normLabel(o.label) === normLabel(saved));
-        return hit ? item("vault", field.type === "multiselect" ? [hit.value] : hit.value, "you answered this before") : item(field.required ? "ask" : "yours");
+        const r = recall();
+        if (r) return r;
+        return item(field.required ? "ask" : "yours"); // never block "Open & fill" on an optional question
       }
       case "vault": {
         if (hasOptions(field) || field.type === "boolean") {
           const opts = field.type === "boolean" && !field.options.length ? [{ label: "Yes", value: "true" }, { label: "No", value: "false" }] : field.options;
           const m = matchOption(c.key, core, opts, field.label);
-          if ("ambiguous" in m) return item(vaultValue(core, c.key) ? "confirm" : field.required ? "ask" : "yours");
+          if ("ambiguous" in m) return recall() ?? item(vaultValue(core, c.key) ? "confirm" : field.required ? "ask" : "yours");
           const value = field.type === "multiselect" ? [m.value] : m.value;
           return item(CONFIRM_KEYS.has(c.key) ? "confirm" : "vault", value, SETUP);
         }
         const v = vaultValue(core, c.key);
-        if (!v) return item(field.required ? "ask" : "yours");
+        if (!v) return recall() ?? item(field.required ? "ask" : "yours");
         return item(CONFIRM_KEYS.has(c.key) ? "confirm" : "vault", v, SETUP);
       }
     }

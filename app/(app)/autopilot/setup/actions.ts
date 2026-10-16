@@ -68,3 +68,18 @@ export async function deleteVault(): Promise<DeleteResult> {
   revalidatePath("/autopilot/setup");
   return { ok: true };
 }
+
+/** Forgets one remembered form answer; the next form that asks it will ask again. */
+export async function forgetAnswer(key: string): Promise<{ ok: boolean }> {
+  const { user } = await requireUser();
+  if (!env.autopilot || typeof key !== "string" || key.length > 500) return { ok: false };
+  const db = createAdminClient();
+  const { data } = await db.from("autopilot_vault").select("extra").eq("user_id", user.id).maybeSingle();
+  const extra = { ...((data?.extra ?? {}) as Record<string, unknown>) };
+  if (!Object.hasOwn(extra, key)) return { ok: true };
+  delete extra[key];
+  const { error } = await db.from("autopilot_vault").update({ extra, updated_at: new Date().toISOString() }).eq("user_id", user.id);
+  if (error) return { ok: false };
+  revalidatePath("/autopilot/setup");
+  return { ok: true };
+}

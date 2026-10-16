@@ -7,7 +7,7 @@ import { classify } from "./classify";
 import { draftAnswer, type DraftResult } from "./drafts";
 import { assemblePack, toFillPlan, type Answers, type FillInstruction, type PackItem } from "./pack";
 import { hashToken, safeNamePart } from "./handoff";
-import { isComplete, type Core } from "./vault";
+import { isComplete, type Core, type Extra } from "./vault";
 import type { ParsedCV } from "@/lib/types";
 
 export type JobForPack = { id: string; extId: string; url: string; ats: Ats; company: string; textLines: string[] };
@@ -22,9 +22,9 @@ export async function loadJobForPack(db: SupabaseClient, jobId: string): Promise
 }
 
 /** `completed` = Autopilot is unlocked: the saved core is complete right now. `completed_at` alone is only the once-only XP marker, so it never unlocks by itself. */
-export async function getVault(db: SupabaseClient, userId: string): Promise<{ core: Partial<Core>; extra: Record<string, string>; completed: boolean }> {
+export async function getVault(db: SupabaseClient, userId: string): Promise<{ core: Partial<Core>; extra: Extra; completed: boolean }> {
   const { data } = await db.from("autopilot_vault").select("core, extra, completed_at").eq("user_id", userId).maybeSingle();
-  return { core: (data?.core ?? {}) as Partial<Core>, extra: (data?.extra ?? {}) as Record<string, string>, completed: Boolean(data?.completed_at) && isComplete(data?.core) };
+  return { core: (data?.core ?? {}) as Partial<Core>, extra: (data?.extra ?? {}) as Extra, completed: Boolean(data?.completed_at) && isComplete(data?.core) };
 }
 
 /** Fetches the form, (optionally) drafts free-text answers, upserts autopilot_packs. `withDrafts: false` never calls the LLM. */
