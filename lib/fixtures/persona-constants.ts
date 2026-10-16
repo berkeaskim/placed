@@ -1,4 +1,4 @@
-/** Demo persona constants (Task 25). Import-light on purpose: tsx scripts load this without pulling PDF libraries. */
+/** Fixture persona constants (Task 25). Import-light on purpose: tsx scripts load this without pulling PDF libraries. */
 import type { Archetype } from "@/lib/types";
 
 export const DEMO_SECTORS = ["data_analytics", "consulting", "finance_banking"] as const satisfies readonly Archetype[];

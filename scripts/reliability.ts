@@ -20,7 +20,7 @@ import { MAX_SD, reliabilityStats } from "@/lib/cv-score/reliability";
 import { prepareJudgeInput } from "@/lib/cv-score/pii";
 import { EMAIL_RE, PHONE_RE } from "@/lib/text/regex";
 import type { Archetype, ParsedCV, Year } from "@/lib/types";
-import { DEMO_CV_PATH, DEMO_PERSONA_PATH, uploadedRawText } from "@/lib/demo/fixture-keys";
+import { DEMO_CV_PATH, DEMO_PERSONA_PATH, uploadedRawText } from "@/lib/fixtures/persona";
 import { fill, loadBase } from "@/tests/fairness/helpers";
 
 const RUNS = Number(process.env.RUNS ?? 5);

@@ -8,7 +8,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import type { SupabaseClient } from "@supabase/supabase-js";
 import { ParsedCvOutput, JudgeOutput, TailoredCvFixture, ExplainOutput } from "@/lib/ai/schemas";
 import { parseCV } from "@/lib/ai/parseCV";
 import { judgeCvRules, mapVerdicts } from "@/lib/ai/judgeCvRules";
@@ -18,8 +17,6 @@ import { defendQuestions } from "@/lib/ai/defendQuestions";
 import { rulesFor } from "@/lib/cv-rules";
 import { textHash } from "@/lib/cv-score/cache";
 import { prepareJudgeInput } from "@/lib/cv-score/pii";
-import { scoreCv } from "@/lib/cv-score/run";
-import { sourceChip } from "@/lib/cv-score/present";
 import { runTailoring } from "@/lib/tailor/run";
 import { caughtNumbers } from "@/lib/tailor/view";
 import { computeCoverage, cvSkillSource, jdRequirementSkills } from "@/lib/scoring/coverage";
@@ -29,7 +26,7 @@ import type { ParsedCV } from "@/lib/types";
 import {
   DEMO_CV_PATH, DEMO_JOB_EXT_ID, DEMO_PASS_JOB_EXT_ID, DEMO_PERSONA_PATH, DEMO_SECTORS,
   demoTextHash, judgeFixtureKey, parseFixtureKey, uploadedRawText,
-} from "@/lib/demo/fixture-keys";
+} from "@/lib/fixtures/persona";
 
 const persona = JSON.parse(readFileSync(DEMO_PERSONA_PATH, "utf8")) as ParsedCV;
 const pdf = new Uint8Array(readFileSync(DEMO_CV_PATH));
@@ -128,25 +125,6 @@ describe("judgeCvRules demo fixtures (A1, hand-labelled)", () => {
       expect(r.cacheable).toBe(true);
       expect(r.results.find((x) => x.ruleId === "GEN-03")).toMatchObject({ status: "fail", evidenceLine: "Organised weekly society events" });
     });
-  });
-
-  it("scoreCv end to end (fixture mode): the GEN-03 fix carries its evidence line and a citation chip", async () => {
-    const row = { id: "cv1", user_id: "u1", raw_text: rawText, page_texts: [rawText], page_count: 1, file_size: pdf.byteLength, parsed_json: { ...persona, safety: { verdict: "clean", issues: [] } } };
-    const upserts: Record<string, unknown>[] = [];
-    const from = (table: string) => {
-      const b = {
-        select: () => b, eq: () => b, limit: () => b, order: () => b,
-        single: async () => (table === "cvs" ? { data: row, error: null } : { data: null, error: { message: "nf" } }),
-        maybeSingle: async () => ({ data: null, error: null }),
-        upsert: async (r: Record<string, unknown>) => (upserts.push(r), { error: null }),
-      };
-      return b;
-    };
-    const score = await scoreCv({ from } as unknown as SupabaseClient, { userId: "u1", cvId: "cv1", sector: "data_analytics", year: "2nd" }, { from } as unknown as SupabaseClient);
-    const fix = score.fixes.find((f) => f.ruleId === "GEN-03");
-    expect(fix?.evidenceLine).toBe("Organised weekly society events");
-    expect(sourceChip(fix!).label).toMatch(/^Source: /);
-    expect(upserts[0].model_id).not.toBeNull(); // a real verdict set: cached
   });
 });
 

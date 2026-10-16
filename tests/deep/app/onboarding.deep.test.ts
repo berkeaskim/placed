@@ -1,37 +1,40 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
+import { describe, it, expect, vi, beforeAll, afterAll, beforeEach } from "vitest";
+import { eq } from "drizzle-orm";
 import { OnboardingInput, FIELDS } from "@/lib/validation/onboarding";
 import { YEARS } from "@/lib/types";
+import { db, resetDbForTests } from "@/lib/db/client";
+import { profiles } from "@/lib/db/schema";
+import { LOCAL_USER_ID } from "@/lib/auth/local-user";
 
-const s = vi.hoisted(() => ({
-  updates: [] as Record<string, unknown>[],
-  eqs: [] as [string, unknown][],
-  updateError: null as null | { message: string },
-  award: null as null | ((...a: unknown[]) => Promise<unknown>),
-  requireUserCalls: 0,
-}));
-vi.mock("@/lib/supabase/server", () => ({
-  requireUser: async () => {
-    s.requireUserCalls++;
-    const supabase = {
-      from: () => ({
-        update: (p: Record<string, unknown>) => {
-          s.updates.push(p);
-          return { eq: async (c: string, v: unknown) => { s.eqs.push([c, v]); return { error: s.updateError }; } };
-        },
-      }),
-    };
-    return { supabase, user: { id: "u1" } };
-  },
-}));
+const s = vi.hoisted(() => ({ award: null as null | ((...a: unknown[]) => Promise<unknown>) }));
 vi.mock("@/lib/gamify/award", () => ({ awardXP: (...a: unknown[]) => s.award!(...a) }));
+vi.mock("next/server", () => ({ connection: async () => {} }));
+vi.mock("next/navigation", () => ({ redirect: (to: string) => { throw new Error(`REDIRECT ${to}`); } }));
 
 import { saveOnboarding } from "@/app/onboarding/actions";
+import Home from "@/app/page";
 
 const valid = { year: "2nd", field: "Economics", locationPref: ["london"], needsVisa: false } as const;
 const ok = (x: unknown) => OnboardingInput.safeParse(x).success;
+const profile = () => db.select().from(profiles).where(eq(profiles.user_id, LOCAL_USER_ID)).get();
 
+let dir: string;
+const prevDir = process.env.PLACED_DATA_DIR;
+beforeAll(() => {
+  dir = mkdtempSync(path.join(tmpdir(), "placed-onb-"));
+  process.env.PLACED_DATA_DIR = dir;
+  resetDbForTests();
+});
+afterAll(() => {
+  resetDbForTests();
+  process.env.PLACED_DATA_DIR = prevDir;
+  rmSync(dir, { recursive: true, force: true });
+});
 beforeEach(() => {
-  s.updates = []; s.eqs = []; s.updateError = null; s.requireUserCalls = 0;
+  db.delete(profiles).run();
   s.award = vi.fn(async () => ({ xpGained: 50 }));
 });
 
@@ -83,28 +86,41 @@ describe("OnboardingInput — boundaries", () => {
 });
 
 describe("saveOnboarding action", () => {
-  it("invalid input → error without auth lookup or DB write", async () => {
+  it("invalid input → error without a DB write", async () => {
     expect(await saveOnboarding({ ...valid, field: "<script>" } as never)).toEqual({ error: "Please answer every step." });
-    expect(s.requireUserCalls).toBe(0);
-    expect(s.updates).toEqual([]);
+    expect(profile()).toBeUndefined();
   });
-  it("writes only whitelisted columns, scoped to the session user, and dedupes locations", async () => {
+  it("writes only whitelisted columns for the local user, and dedupes locations", async () => {
     const r = await saveOnboarding({ ...valid, locationPref: ["uk", "uk", "remote"], xp: 1e9, user_id: "victim", level: 99 } as never);
     expect(r).toEqual({ award: { xpGained: 50 } });
-    expect(s.updates).toEqual([{ year: "2nd", field: "Economics", location_pref: ["uk", "remote"], needs_visa: false, onboarded: true }]);
-    expect(s.eqs).toEqual([["user_id", "u1"]]);
+    expect(profile()).toMatchObject({ year: "2nd", field: "Economics", location_pref: ["uk", "remote"], needs_visa: false, onboarded: true, xp: 0, level: 1 });
+    expect(db.select().from(profiles).all()).toHaveLength(1);
   });
-  it("awards onboarding_complete for the session user", async () => {
+  it("awards onboarding_complete for the local user", async () => {
     await saveOnboarding(valid as never);
-    expect(s.award).toHaveBeenCalledWith(expect.anything(), "u1", { type: "onboarding_complete" });
+    expect(s.award).toHaveBeenCalledWith(LOCAL_USER_ID, { type: "onboarding_complete" });
   });
   it("profile save failure → friendly error and no award", async () => {
-    s.updateError = { message: "rls" };
-    expect(await saveOnboarding(valid as never)).toEqual({ error: "Couldn't save — try again." });
+    db.$client.exec("create trigger no_upd before update on profiles begin select raise(abort, 'nope'); end");
+    try {
+      expect(await saveOnboarding(valid as never)).toEqual({ error: "Couldn't save — try again." });
+    } finally {
+      db.$client.exec("drop trigger no_upd");
+    }
     expect(s.award).not.toHaveBeenCalled();
   });
   it("an XP failure never blocks onboarding", async () => {
     s.award = vi.fn(async () => { throw new Error("db down"); });
     expect(await saveOnboarding(valid as never)).toEqual({ award: null });
+    expect(profile()?.onboarded).toBe(true);
+  });
+});
+
+describe("landing → onboarding → app", () => {
+  it("sends a fresh install to onboarding, then to the feed once onboarded", async () => {
+    await expect(Home()).rejects.toThrow("REDIRECT /onboarding");
+    expect(profile()?.onboarded).toBe(false);
+    await saveOnboarding(valid as never);
+    await expect(Home()).rejects.toThrow("REDIRECT /feed");
   });
 });

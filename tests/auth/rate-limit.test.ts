@@ -1,11 +1,9 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-const h = vi.hoisted(() => ({ calls: [] as { fn: string; args: Record<string, unknown> }[], result: { data: true as boolean | null, error: null as { message: string } | null } }));
 vi.mock("next/headers", () => ({ headers: async () => new Headers({ "x-forwarded-for": "203.0.113.7, 10.0.0.1" }) }));
-vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: () => ({ rpc: async (fn: string, args: Record<string, unknown>) => { h.calls.push({ fn, args }); return h.result; } }) }));
-import { allow, clientIp, limitKey, LIMITS } from "@/lib/auth/rate-limit";
+import { allow, clientIp, limitKey, LIMITS, resetRateLimitsForTests } from "@/lib/auth/rate-limit";
 
 describe("rate limit", () => {
-  beforeEach(() => { h.calls.length = 0; h.result = { data: true, error: null }; });
+  beforeEach(() => resetRateLimitsForTests());
   it("takes the client from the first forwarded hop", async () => {
     expect(await clientIp()).toBe("203.0.113.7");
   });
@@ -15,15 +13,13 @@ describe("rate limit", () => {
     expect(k).not.toContain("ayse");
     expect(k).toBe(limitKey("loginEmail", "ayse@example.com"));
   });
-  it("passes the configured window to hit_rate_limit and honours a refusal", async () => {
-    expect(await allow("loginEmail", "a@b.com")).toBe(true);
-    expect(h.calls[0]).toMatchObject({ fn: "hit_rate_limit", args: { p_max: LIMITS.loginEmail.max, p_window_seconds: LIMITS.loginEmail.windowSeconds } });
-    h.result = { data: false, error: null };
-    expect(await allow("loginEmail", "a@b.com")).toBe(false);
-  });
-  it("fails open when the function is missing (migration not applied)", async () => {
-    h.result = { data: null, error: { message: "function public.hit_rate_limit does not exist" } };
-    vi.spyOn(console, "warn").mockImplementation(() => {});
-    expect(await allow("saveIp", "1.2.3.4")).toBe(true);
+  it("allows max attempts per window, refuses the next, and frees up once the window slides", async () => {
+    const { max, windowSeconds } = LIMITS.loginEmail;
+    const t0 = 1_000_000;
+    for (let i = 0; i < max; i++) expect(await allow("loginEmail", "a@b.com", t0 + i)).toBe(true);
+    expect(await allow("loginEmail", "a@b.com", t0 + max)).toBe(false);
+    expect(await allow("loginEmail", "other@b.com", t0 + max)).toBe(true);
+    expect(await allow("loginIp", "a@b.com", t0 + max)).toBe(true);
+    expect(await allow("loginEmail", "a@b.com", t0 + max + windowSeconds * 1000)).toBe(true);
   });
 });

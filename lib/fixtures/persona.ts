@@ -1,9 +1,9 @@
 /**
- * Fixture keys for the fictional demo persona (spec §12, Task 25). No server-only import: the demo scripts
+ * Fixture keys for the fictional persona "Ayşe" (spec §12, Task 25), used by fixture mode. No server-only import: scripts
  * (tsx) and the tests share this. Each key mirrors the app path exactly:
  *   parseCV       -> app/(app)/profile/build/actions.ts: contentHash(base64 of the PDF).slice(0, 12)
  *   judgeCvRules  -> lib/cv-score/run.ts: `${textHash(redactedText).slice(0, 16)}-${sector}`
- * textHash lives in lib/cv-score/cache.ts (server-only), so it is restated here; tests/demo asserts they agree.
+ * textHash lives in lib/cv-score/cache.ts (server-only), so it is restated here; tests/fixtures asserts they agree.
  */
 import { createHash } from "node:crypto";
 import type { Archetype, ParsedCV } from "@/lib/types";
@@ -12,7 +12,7 @@ import { extractPdf } from "@/lib/cv/pdf-text";
 import { scanCvSafety, stripFlaggedSpans } from "@/lib/cv/safety";
 import { prepareJudgeInput } from "@/lib/cv-score/pii";
 
-export * from "./constants";
+export * from "./persona-constants";
 
 export function parseFixtureKey(pdf: Uint8Array): string {
   return contentHash(Buffer.from(pdf).toString("base64")).slice(0, 12);

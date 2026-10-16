@@ -17,7 +17,7 @@ import { heuristicParseCv } from "@/lib/ai/heuristics";
 import { assignIds } from "@/lib/cv/ids";
 import { scanCvSafety, stripFlaggedSpans, type SafetyReport } from "@/lib/cv/safety";
 import type { Archetype, ParsedCV } from "@/lib/types";
-import { DEMO_CV_PATH, DEMO_PERSONA_PATH, uploadedRawText } from "@/lib/demo/fixture-keys";
+import { DEMO_CV_PATH, DEMO_PERSONA_PATH, uploadedRawText } from "@/lib/fixtures/persona";
 import { BASES, PERSONAS, loadBase, fill, type Base } from "./helpers";
 
 const SECTOR: Record<Base, Archetype> = { swe: "software_eng", data: "data_analytics", consulting: "consulting", finance: "finance_banking" };
