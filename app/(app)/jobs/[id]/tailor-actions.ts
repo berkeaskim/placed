@@ -4,7 +4,10 @@
  * with the 23b XP decisions, and add the live preview (gate + must-haves + rules gained) and C13 questions.
  */
 import { createHash } from "node:crypto";
-import { requireUser } from "@/lib/supabase/server";
+import { and, eq } from "drizzle-orm";
+import { requireUser } from "@/lib/auth/local-user";
+import { db } from "@/lib/db/client";
+import { applications, confirmedFacts } from "@/lib/db/schema";
 import { getActiveCv, getJob, getProfile, toStudent } from "@/lib/db/queries";
 import { isUuid } from "@/lib/feed/save-result";
 import { awardXP } from "@/lib/gamify/award";
@@ -30,12 +33,15 @@ export type DefendResult = { questions: DefendQuestionT[]; source: DefendSource 
 const GONE = "This role is no longer available.";
 
 async function load(jobId: string) {
-  const { supabase, user } = await requireUser();
-  const [job, cv, profile, facts] = await Promise.all([
-    getJob(supabase, jobId), getActiveCv(supabase, user.id), getProfile(supabase, user.id),
-    supabase.from("confirmed_facts").select("claim").eq("user_id", user.id),
-  ]);
-  return { supabase, user, job, cv, profile, confirmedFacts: (facts.data ?? []).map((f) => f.claim as string) };
+  const { user } = await requireUser();
+  const [job, cv, profile] = await Promise.all([getJob(jobId), getActiveCv(user.id), getProfile(user.id)]);
+  const facts = db.select({ claim: confirmedFacts.claim }).from(confirmedFacts).where(eq(confirmedFacts.user_id, user.id)).all();
+  return { user, job, cv, profile, confirmedFacts: facts.map((f) => f.claim) };
+}
+
+function storedTailoring<T = StoredTailoring>(userId: string, jobId: string): T | null {
+  return (db.select({ tailored_json: applications.tailored_json }).from(applications)
+    .where(and(eq(applications.user_id, userId), eq(applications.job_id, jobId))).get()?.tailored_json ?? null) as T | null;
 }
 
 /**
@@ -65,14 +71,11 @@ export async function saveTailoredVersion(jobId: string, edited: unknown): Promi
   if ("error" in r) return r;
   let award: AwardResult | null = null;
   try {
-    const { supabase, user } = await requireUser();
-    const [cv, app] = await Promise.all([
-      getActiveCv(supabase, user.id),
-      supabase.from("applications").select("tailored_json").eq("user_id", user.id).eq("job_id", jobId).maybeSingle(),
-    ]);
-    const stored = app.data?.tailored_json as StoredTailoring | null;
+    const { user } = await requireUser();
+    const cv = await getActiveCv(user.id);
+    const stored = storedTailoring(user.id, jobId);
     if (cv && stored?.final && stored.outcome && countStudentEdits(stored.final, stored.outcome.tailored, cv.parsed) > 0) {
-      award = await awardXP(supabase, user.id, { type: "suggestion_edited" }, jobId);
+      award = await awardXP(user.id, { type: "suggestion_edited" }, jobId);
     }
   } catch (e) {
     console.error("saveTailoredVersion: award failed", e instanceof Error ? e.message : e);
@@ -87,8 +90,8 @@ export async function confirmNumberWithXp(jobId: string, claim: string, choice: 
   let award: AwardResult | null = null;
   if (r.stored) {
     try {
-      const { supabase, user } = await requireUser();
-      award = await awardXP(supabase, user.id, { type: "number_confirmed" }, jobId);
+      const { user } = await requireUser();
+      award = await awardXP(user.id, { type: "number_confirmed" }, jobId);
     } catch (e) {
       console.error("confirmNumberWithXp: award failed", e instanceof Error ? e.message : e);
     }
@@ -112,14 +115,11 @@ export async function getDefendQuestions(jobId: string, bullets: unknown): Promi
       ? [{ id: x.id.slice(0, 64), before: x.before.slice(0, MAX_TEXT), after: x.after.slice(0, MAX_TEXT) }] : [];
   });
   if (!clean.length) return { error: "Nothing to prepare yet." };
-  const { supabase, user } = await requireUser();
-  const [job, app] = await Promise.all([
-    getJob(supabase, jobId),
-    supabase.from("applications").select("tailored_json").eq("user_id", user.id).eq("job_id", jobId).maybeSingle(),
-  ]);
+  const { user } = await requireUser();
+  const job = await getJob(jobId);
   if (!job) return { error: GONE };
   const key = createHash("sha256").update(JSON.stringify(clean)).digest("hex").slice(0, 32);
-  const stored = app.data?.tailored_json as (StoredTailoring & { defend?: { key: string; questions: DefendQuestionT[] } }) | null;
+  const stored = storedTailoring<StoredTailoring & { defend?: { key: string; questions: DefendQuestionT[] } }>(user.id, jobId);
   if (!stored?.outcome) return { error: "Tailor your CV for this role first." };
   // Only lines that are in the saved version (fix round 1): never generate for arbitrary client text.
   const saved = stored.final ?? stored.outcome.tailored;
@@ -132,9 +132,12 @@ export async function getDefendQuestions(jobId: string, bullets: unknown): Promi
     const { questions, source } = await defendQuestions({ bullets: clean, jobTitle: job.title, company: job.company, fixtureKey: job.extId });
     // The heuristic fallback is cheap and must not mask an AI answer once the model is back, so it is not cached.
     if (source === "ai") {
-      const { error } = await supabase.from("applications").update({ tailored_json: { ...stored, defend: { key, questions } } })
-        .eq("user_id", user.id).eq("job_id", jobId);
-      if (error) console.error("getDefendQuestions: cache write failed", error.message);
+      try {
+        db.update(applications).set({ tailored_json: { ...stored, defend: { key, questions } } })
+          .where(and(eq(applications.user_id, user.id), eq(applications.job_id, jobId))).run();
+      } catch (e) {
+        console.error("getDefendQuestions: cache write failed", e instanceof Error ? e.message : e);
+      }
     }
     return { questions, source };
   } catch (e) {

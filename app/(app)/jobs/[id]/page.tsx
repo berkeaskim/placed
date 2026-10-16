@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { requireUser } from "@/lib/supabase/server";
+import { and, eq } from "drizzle-orm";
+import { requireUser } from "@/lib/auth/local-user";
+import { db } from "@/lib/db/client";
+import { applications } from "@/lib/db/schema";
 import { getActiveCv, getJob, getProfile, toStudent } from "@/lib/db/queries";
 import { coverageFor } from "@/lib/scoring/coverage";
 import { scoreFit } from "@/lib/scoring/fit";
@@ -45,12 +48,11 @@ function JobText({ lines }: { lines: string[] }) {
 export default async function JobPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ target?: string; purpose?: string }> }) {
   const { id } = await params;
   const sp = await searchParams;
-  const { supabase, user } = await requireUser();
+  const { user } = await requireUser();
   if (!isUuid(id)) notFound();
-  const [job, profile, cv, { data: app }] = await Promise.all([
-    getJob(supabase, id), getProfile(supabase, user.id), getActiveCv(supabase, user.id),
-    supabase.from("applications").select("status, tailored_json").eq("user_id", user.id).eq("job_id", id).maybeSingle(),
-  ]);
+  const [job, profile, cv] = await Promise.all([getJob(id), getProfile(user.id), getActiveCv(user.id)]);
+  const app = db.select({ status: applications.status, tailored_json: applications.tailored_json }).from(applications)
+    .where(and(eq(applications.user_id, user.id), eq(applications.job_id, id))).get();
   if (!job) notFound();
 
   const today = todayLondon();
@@ -65,7 +67,7 @@ export default async function JobPage({ params, searchParams }: { params: Promis
       stuffed: keywordStuffing(cv.rawText ?? "", coverage.items.flatMap((c) => c.anyOf?.length ? c.anyOf : [c.skill])),
     })
     : false;
-  const status = (app?.status as string | undefined) ?? null;
+  const status = app?.status ?? null;
   const alreadyApplied = isPastSaved(status);
   const stored = (app?.tailored_json ?? null) as StoredTailoring | null;
 

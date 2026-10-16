@@ -1,8 +1,4 @@
 import { test, expect } from "@playwright/test";
-import { AUTH_FILE, hasE2eCreds } from "./fixtures/helpers";
-
-test.use({ storageState: AUTH_FILE });
-test.skip(!hasE2eCreds, "E2E_USER_EMAIL/E2E_USER_PASSWORD not set");
 
 /** innerText lines of a job's header: avatar initial, company name, then the title. */
 const lines = async (loc: import("@playwright/test").Locator) => (await loc.innerText()).split("\n").map((l) => l.trim()).filter(Boolean);
@@ -25,4 +21,10 @@ test("every feed card names the company above the title, and the job page repeat
   const [, pageCompany, pageTitle] = await lines(page.getByRole("article").first());
   expect(pageCompany).toBe(company);
   expect(pageTitle).toBe(title);
+});
+
+test("the feed shows the Refresh jobs control with the last/next update", async ({ page }) => {
+  await page.goto("/feed");
+  await expect(page.getByRole("button", { name: "Refresh jobs" })).toBeVisible();
+  await expect(page.getByRole("status").filter({ hasText: /updated/i })).toBeVisible();
 });

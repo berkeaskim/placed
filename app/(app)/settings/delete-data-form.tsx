@@ -10,8 +10,8 @@ export function DeleteDataForm() {
   return (
     <form action={action} className="flex flex-col gap-3">
       <p className="text-sm text-muted-foreground">
-        This permanently deletes your CVs, scores, tailored CVs, applications, XP, badges and saved feedback. Your account itself stays, so you remain
-        signed in. This can&apos;t be undone.
+        This permanently deletes your CVs, scores, tailored CVs, applications, XP, badges and saved feedback from this computer, and restarts
+        onboarding. Your AI settings and the job list stay. This can&apos;t be undone.
       </p>
       <div className="flex flex-col gap-1.5">
         <label htmlFor="confirm" className="text-sm font-semibold">
@@ -43,7 +43,7 @@ export function DeleteDataForm() {
         disabled={!confirmed || pending}
         className="min-h-11 rounded-[14px] border-2 border-destructive px-4 py-3 font-bold text-destructive disabled:cursor-not-allowed disabled:opacity-50"
       >
-        {pending ? "Deleting..." : "Delete my CV & data"}
+        {pending ? "Resetting..." : "Reset all local data"}
       </button>
     </form>
   );

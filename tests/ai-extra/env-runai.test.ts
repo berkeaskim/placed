@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, afterAll, beforeAll } from
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { z } from "zod";
-import { aiMode, aiProvider } from "@/lib/env";
+import { aiMode, aiProvider } from "@/lib/ai/config";
 import { generateStructured, runAi, AiError } from "@/lib/ai/provider";
 import { loadFixture } from "@/lib/ai/fixtures";
 

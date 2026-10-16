@@ -1,13 +1,10 @@
 import "server-only";
 import { createHash } from "node:crypto";
 import { headers } from "next/headers";
-import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
- * Attempt limits for the email/password forms. Supabase Auth's own per-IP limit sees every server action as coming
- * from Vercel, so it can't tell attackers from students; this limits by the real client IP and by the target email.
- * Backed by hit_rate_limit() (0016). Fails open (with a warning) if the database call fails, so a missing migration
- * never locks everyone out.
+ * In-memory sliding-window attempt limits (port of 0016 hit_rate_limit). Placed runs as one local process, so a Map
+ * is enough; it resets on restart.
  */
 export const LIMITS = {
   loginEmail: { max: 5, windowSeconds: 15 * 60 },
@@ -18,8 +15,9 @@ export const LIMITS = {
 export type LimitName = keyof typeof LIMITS;
 
 const hash = (s: string) => createHash("sha256").update(s).digest("hex");
+const DAY_MS = 24 * 60 * 60 * 1000;
+const attempts = new Map<string, number[]>();
 
-/** Vercel sets x-real-ip / x-forwarded-for to the real client; the first forwarded hop is the client. */
 export async function clientIp(): Promise<string> {
   const h = await headers();
   return h.get("x-real-ip")?.trim() || h.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
@@ -27,13 +25,17 @@ export async function clientIp(): Promise<string> {
 
 export const limitKey = (name: LimitName, subject: string) => `${name}:${hash(subject.toLowerCase())}`;
 
-/** true = allowed. Each call counts as one attempt. */
-export async function allow(name: LimitName, subject: string): Promise<boolean> {
+/** true = allowed. Each call counts as one attempt, refused ones included. */
+export async function allow(name: LimitName, subject: string, now = Date.now()): Promise<boolean> {
   const { max, windowSeconds } = LIMITS[name];
-  const { data, error } = await createAdminClient().rpc("hit_rate_limit", { p_key: limitKey(name, subject), p_max: max, p_window_seconds: windowSeconds });
-  if (error) {
-    console.warn("rate limit unavailable (is 0016 applied?):", error.message);
-    return true;
-  }
-  return data !== false;
+  const key = limitKey(name, subject);
+  for (const [k, ts] of attempts) if (ts[ts.length - 1] < now - DAY_MS) attempts.delete(k); // keys that never come back
+  const recent = (attempts.get(key) ?? []).filter((t) => t >= now - windowSeconds * 1000);
+  recent.push(now);
+  attempts.set(key, recent);
+  return recent.length <= max;
+}
+
+export function resetRateLimitsForTests(): void {
+  attempts.clear();
 }

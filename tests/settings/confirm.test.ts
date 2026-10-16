@@ -16,10 +16,7 @@ const resetUserData = vi.fn();
 const redirect = vi.fn(() => {
   throw new Error("NEXT_REDIRECT");
 });
-vi.mock("@/lib/supabase/server", () => ({ requireUser: () => requireUser() }));
-vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: () => ({}) }));
-const dropConnection = vi.fn();
-vi.mock("@/lib/gmail/connection", () => ({ dropConnection: (...a: unknown[]) => dropConnection(...a) }));
+vi.mock("@/lib/auth/local-user", () => ({ requireUser: () => requireUser() }));
 vi.mock("@/lib/db/reset", () => ({ resetUserData: (...a: unknown[]) => resetUserData(...a) }));
 vi.mock("next/navigation", () => ({ redirect: (...a: unknown[]) => (redirect as (...x: unknown[]) => never)(...a) }));
 
@@ -34,7 +31,6 @@ describe("deleteMyData", () => {
     vi.clearAllMocks();
     requireUser.mockResolvedValue({ user: { id: "u1" } });
     resetUserData.mockResolvedValue(undefined);
-    dropConnection.mockResolvedValue(undefined);
   });
 
   it("returns an error and deletes nothing when unconfirmed", async () => {
@@ -43,7 +39,6 @@ describe("deleteMyData", () => {
       expect(await deleteMyData(null, f)).toEqual({ error: "Type DELETE to confirm." });
     }
     expect(resetUserData).not.toHaveBeenCalled();
-    expect(dropConnection).not.toHaveBeenCalled();
     expect(redirect).not.toHaveBeenCalled();
   });
 
@@ -56,11 +51,10 @@ describe("deleteMyData", () => {
     spy.mockRestore();
   });
 
-  it("resets for the session user and redirects when confirmed", async () => {
+  it("resets for the local user and redirects when confirmed", async () => {
     const { deleteMyData } = await import("@/app/(app)/settings/actions");
     await expect(deleteMyData(null, fd(" DELETE "))).rejects.toThrow("NEXT_REDIRECT");
-    expect(dropConnection).toHaveBeenCalledWith({}, "u1", true);
-    expect(resetUserData).toHaveBeenCalledWith({}, "u1");
+    expect(resetUserData).toHaveBeenCalledWith("u1");
     expect(redirect).toHaveBeenCalledWith("/onboarding");
   });
 });

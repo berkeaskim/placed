@@ -4,14 +4,12 @@ import Link from "next/link";
 import type { AppStatus } from "@/lib/types";
 import { celebrate } from "@/components/reward-toast";
 import { COLUMNS, groupByStatus, isAppStatus } from "@/lib/tracker/status";
-import { CardEvidence } from "@/components/tracker/card-evidence";
 import { DeadlineChip } from "@/components/tracker/deadline-chip";
 import type { Nudge } from "@/lib/outreach/nudges";
 import { updateStatus } from "./actions";
 
 export type Card = {
   id: string; jobId: string; title: string; company: string; status: AppStatus; updatedAt: string; lastEventAt: string | null;
-  evidence: { eventId: string; subject: string; date: string; to: AppStatus; canUndo: boolean } | null;
   deadline: { date: string; label: string; url: string | null } | null;
   nudge: Nudge | null; outreach: { sent: number; replied: number };
 };
@@ -56,7 +54,6 @@ export function Board({ cards, today }: { cards: Card[]; today: string }) {
                 <Link href={`/jobs/${c.jobId}`} className="text-sm font-bold text-foreground no-underline">{c.title}</Link>
                 <span className="text-xs text-muted-foreground">{c.company}</span>
                 {c.deadline && <DeadlineChip label={c.deadline.label} date={c.deadline.date} today={today} url={c.deadline.url} />}
-                {c.evidence && c.evidence.to === c.status && <CardEvidence e={c.evidence} />}
                 {c.nudge && (
                   <Link href={`/jobs/${c.jobId}?target=${c.nudge.target}&purpose=${c.nudge.purpose}#people`} className="text-xs font-semibold">
                     {c.nudge.text} →

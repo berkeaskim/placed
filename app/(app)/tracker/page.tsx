@@ -1,86 +1,67 @@
-import { requireUser } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { desc, eq } from "drizzle-orm";
+import { requireUser } from "@/lib/auth/local-user";
+import { db } from "@/lib/db/client";
+import { applications, companies, jobs, outreach as outreachTable } from "@/lib/db/schema";
 import { isAppStatus } from "@/lib/tracker/status";
 import { nudgeFor } from "@/lib/outreach/nudges";
 import { OUTREACH_TARGETS, type OutreachTarget } from "@/lib/outreach/targets";
-import { isDemoEmail } from "@/lib/demo/is-demo";
 import { todayLondon } from "@/lib/scoring/dates";
-import { InboxBanner } from "@/components/tracker/inbox-banner";
 import { showDeadline } from "@/components/tracker/deadline-chip";
-import { InboxSuggestions, type Suggestion } from "@/components/tracker/inbox-suggestions";
-import type { AppStatus } from "@/lib/types";
 import { Board, type Card } from "./board";
 
-type Ev = { id: string; application_id: string | null; company: string | null; subject: string; received_at: string; kind: string;
-  deadline: string | null; action_url: string | null; effect: string; new_status: AppStatus | null };
-
-const DEADLINE_LABEL: Record<string, string> = { assessment: "Assessment", interview: "Interview" };
-
-/** The admin client throws when the service key is missing; the board must still render without the Gmail banner state. */
-async function loadConnection(userId: string): Promise<{ conn: { google_email: string | null; last_synced_at: string | null } | null; failed: boolean }> {
+function loadApplications(userId: string) {
   try {
-    const { data, error } = await createAdminClient().from("gmail_connections").select("google_email, last_synced_at").eq("user_id", userId).maybeSingle();
-    if (error) { console.error("tracker: loading Gmail connection failed", error.message); return { conn: null, failed: true }; }
-    return { conn: data, failed: false };
+    return db.select({
+      id: applications.id, job_id: applications.job_id, status: applications.status, last_event_at: applications.last_event_at,
+      updated_at: applications.updated_at, title: jobs.title, deadline: jobs.deadline, company: companies.name,
+    }).from(applications)
+      .leftJoin(jobs, eq(jobs.id, applications.job_id)).leftJoin(companies, eq(companies.id, jobs.company_id))
+      .where(eq(applications.user_id, userId)).orderBy(desc(applications.updated_at)).all();
   } catch (e) {
-    console.error("tracker: loading Gmail connection failed", e instanceof Error ? e.message : "unknown");
-    return { conn: null, failed: true };
+    console.error("tracker: loading applications failed", e instanceof Error ? e.message : e);
+    return null;
   }
 }
 
-export default async function Tracker({ searchParams }: { searchParams: Promise<{ gmail?: string }> }) {
-  const { supabase, user } = await requireUser();
+function loadOutreach(userId: string) {
+  try {
+    return db.select({ job_id: outreachTable.job_id, target: outreachTable.target, status: outreachTable.status }).from(outreachTable)
+      .where(eq(outreachTable.user_id, userId)).all();
+  } catch (e) {
+    console.error("tracker: loading outreach failed", e instanceof Error ? e.message : e);
+    return [];
+  }
+}
+
+export default async function Tracker() {
+  const { user } = await requireUser();
   const today = todayLondon();
-  const [{ data, error: appsErr }, { data: evs, error: evsErr }, { data: outreachRows, error: outErr }, gmail] = await Promise.all([
-    supabase.from("applications").select("id, job_id, status, next_deadline, last_event_at, updated_at, jobs(title, companies(name))")
-      .eq("user_id", user.id).order("updated_at", { ascending: false }),
-    supabase.from("inbox_events").select("id, application_id, company, subject, received_at, kind, deadline, action_url, effect, new_status")
-      .eq("user_id", user.id).order("received_at", { ascending: false }).limit(300),
-    supabase.from("outreach").select("job_id, target, status").eq("user_id", user.id),
-    loadConnection(user.id),
-  ]);
-  if (appsErr) console.error("tracker: loading applications failed", appsErr.message);
-  if (evsErr) console.error("tracker: loading inbox events failed", evsErr.message);
-  if (outErr) console.error("tracker: loading outreach failed", outErr.message);
-  const outreach = outErr ? [] : outreachRows ?? [];
+  const apps = loadApplications(user.id);
+  const outreach = loadOutreach(user.id);
   // Targets already messaged per job: a nudge toward them is not repeated.
   const sentTargets = new Map<string, Set<OutreachTarget>>();
   for (const o of outreach) {
-    if (o.status === "drafted" || !(OUTREACH_TARGETS as readonly string[]).includes(o.target)) continue;
+    if (!o.job_id || o.status === "drafted" || !(OUTREACH_TARGETS as readonly string[]).includes(o.target)) continue;
     const set = sentTargets.get(o.job_id) ?? new Set<OutreachTarget>();
-    set.add(o.target as OutreachTarget);
+    set.add(o.target);
     sentTargets.set(o.job_id, set);
   }
-  const conn = gmail.conn;
-  const events = (evsErr ? [] : evs ?? []) as Ev[];
-  const cards: Card[] = (data ?? []).filter((a) => isAppStatus(a.status)).map((a) => {
-    const j = a.jobs as unknown as { title: string; companies: { name: string } | null } | null;
-    const mine = events.filter((e) => e.application_id === a.id);
-    const moved = mine.find((e) => e.effect === "moved");
-    const due = mine.filter((e) => e.deadline && e.deadline === a.next_deadline && showDeadline(e.deadline, today, a.status))[0];
-    return {
-      id: a.id, jobId: a.job_id, status: a.status, title: j?.title ?? "Role", company: j?.companies?.name ?? "",
-      updatedAt: a.updated_at, lastEventAt: a.last_event_at,
-      evidence: moved ? { eventId: moved.id, subject: moved.subject, date: moved.received_at, to: moved.new_status!, canUndo: moved.new_status === a.status } : null,
-      nudge: a.jobs ? nudgeFor({ status: a.status, company: j?.companies?.name ?? "this company", lastEventAt: a.last_event_at, updatedAt: a.updated_at }, new Date(),
-        sentTargets.get(a.job_id)) : null,
-      outreach: {
-        sent: outreach.filter((o) => o.job_id === a.job_id && o.status !== "drafted").length,
-        replied: outreach.filter((o) => o.job_id === a.job_id && o.status === "replied").length,
-      },
-      deadline: due ? { date: due.deadline!, label: DEADLINE_LABEL[due.kind] ?? "Deadline", url: due.action_url } : null,
-    };
-  });
-  const suggestions: Suggestion[] = events.filter((e) => e.effect === "suggested")
-    .map((e) => ({ eventId: e.id, subject: e.subject, company: e.company, reason: e.application_id ? "matched" : "unmatched" }));
-  const flash = { connected: "Gmail connected. Press Sync inbox.", denied: "Gmail wasn't connected.", error: "Couldn't connect Gmail. Try again.",
-    unconfigured: "Gmail isn't set up on this server yet.", demo: "The demo account uses a sample inbox; Gmail can't be connected to it." }[(await searchParams).gmail ?? ""] ?? null;
+  const cards: Card[] = (apps ?? []).filter((a) => isAppStatus(a.status)).map((a) => ({
+    id: a.id, jobId: a.job_id, status: a.status, title: a.title ?? "Role", company: a.company ?? "",
+    updatedAt: a.updated_at, lastEventAt: a.last_event_at,
+    nudge: a.title !== null ? nudgeFor({ status: a.status, company: a.company ?? "this company", lastEventAt: a.last_event_at, updatedAt: a.updated_at }, new Date(),
+      sentTargets.get(a.job_id)) : null,
+    outreach: {
+      sent: outreach.filter((o) => o.job_id === a.job_id && o.status !== "drafted").length,
+      replied: outreach.filter((o) => o.job_id === a.job_id && o.status === "replied").length,
+    },
+    // The posting's own closing date, while the student hasn't applied yet.
+    deadline: a.status === "saved" && a.deadline && showDeadline(a.deadline, today, a.status) ? { date: a.deadline, label: "Closes", url: null } : null,
+  }));
   return (
     <div className="flex flex-col gap-4">
       <h1 className="text-[28px] font-extrabold tracking-tight">Your applications</h1>
-      <InboxBanner connected={!!conn} googleEmail={conn?.google_email ?? null} lastSynced={conn?.last_synced_at ?? null} demo={isDemoEmail(user.email)} flash={flash} degraded={gmail.failed} />
-      <InboxSuggestions items={suggestions} />
-      {appsErr
+      {apps === null
         ? <p role="alert" className="card-quest p-6 font-semibold">Could not load your applications. Refresh to try again.</p>
         : cards.length === 0
         ? <p className="card-quest p-6 font-semibold">Save a role from your feed to start tracking.</p>

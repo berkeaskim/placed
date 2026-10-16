@@ -1,21 +1,26 @@
 import { test, expect } from "@playwright/test";
-import { createClient } from "@supabase/supabase-js";
-import { AUTH_FILE, hasE2eCreds, trackConsole, basicA11y } from "./fixtures/helpers";
+import path from "node:path";
+import Database from "better-sqlite3";
+import { trackConsole, basicA11y } from "./fixtures/helpers";
+import { E2E_DATA_DIR } from "./global-setup";
 
-test.use({ storageState: AUTH_FILE });
-test.skip(!hasE2eCreds, "E2E_USER_EMAIL/E2E_USER_PASSWORD not set");
-
-async function alreadyOnboardedXp() {
-  const sb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, { auth: { persistSession: false } });
-  const { data } = await sb.auth.signInWithPassword({ email: process.env.E2E_USER_EMAIL!, password: process.env.E2E_USER_PASSWORD! });
-  const { count } = await sb.from("xp_events").select("id", { count: "exact", head: true })
-    .eq("user_id", data.user!.id).eq("type", "onboarding_complete");
-  return (count ?? 0) > 0;
+function alreadyOnboardedXp() {
+  const sqlite = new Database(path.join(process.env.PLACED_DATA_DIR || E2E_DATA_DIR, "placed.db"), { readonly: true });
+  try {
+    return Boolean(sqlite.prepare("select 1 from xp_events where type = 'onboarding_complete'").get());
+  } finally {
+    sqlite.close();
+  }
 }
+
+test("landing sends a fresh install straight to onboarding (no login)", async ({ page }) => {
+  await page.goto("/");
+  await expect(page).toHaveURL(/\/(onboarding|feed)$/);
+});
 
 test("onboarding: tap-only flow saves and routes to profile/build, XP toast on first completion", async ({ page }) => {
   const errors = trackConsole(page);
-  const repeat = await alreadyOnboardedXp();
+  const repeat = alreadyOnboardedXp();
   await page.goto("/onboarding");
   await expect(page).toHaveURL(/\/onboarding$/);
   const next = page.getByRole("button", { name: "Next", exact: true });

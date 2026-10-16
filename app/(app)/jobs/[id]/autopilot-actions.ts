@@ -1,6 +1,8 @@
 "use server";
-import { requireUser } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { and, eq } from "drizzle-orm";
+import { requireUser } from "@/lib/auth/local-user";
+import { db } from "@/lib/db/client";
+import { autopilotPacks, autopilotVault, jobs } from "@/lib/db/schema";
 import { buildPack, getVault } from "@/lib/autopilot/server";
 import { canOpen, type Answers, type PackItem } from "@/lib/autopilot/pack";
 import { mintToken } from "@/lib/autopilot/handoff";
@@ -14,6 +16,8 @@ import { safeHttpUrl } from "@/lib/text/url";
 import type { FormField, NormalizedForm } from "@/lib/autopilot/forms/types";
 
 type Prepared = { locked: true } | { error: string; applyUrl: string | null } | { items: PackItem[]; answers: Answers };
+
+const ownPack = (userId: string, jobId: string) => and(eq(autopilotPacks.user_id, userId), eq(autopilotPacks.job_id, jobId));
 
 const MAX_TEXT = 5000, MAX_ITEMS = 50, MAX_ITEM = 500, MAX_EXTRA_KEYS = 200;
 
@@ -39,13 +43,12 @@ export async function preparePack(jobId: string): Promise<Prepared> {
   const { user } = await requireUser();
   if (!env.autopilot) return { error: "Autopilot isn't switched on.", applyUrl: null };
   if (!isUuid(jobId)) return { error: "Unknown job", applyUrl: null };
-  const db = createAdminClient();
-  if (!(await getVault(db, user.id)).completed) return { locked: true };
+  if (!(await getVault(user.id)).completed) return { locked: true };
   try {
     return await buildPack(user.id, jobId);
   } catch (e) {
     console.error("autopilot preparePack:", e instanceof Error ? e.message : "unknown error");
-    const { data } = await db.from("jobs").select("url").eq("id", jobId).maybeSingle();
+    const data = db.select({ url: jobs.url }).from(jobs).where(eq(jobs.id, jobId)).get();
     return {
       error: e instanceof FormUnavailableError ? "We couldn't read this form. Here's the normal Apply link." : "Something went wrong building your pack.",
       applyUrl: safeHttpUrl(data?.url),
@@ -65,26 +68,31 @@ export async function setAnswer(
 ): Promise<{ ok: boolean }> {
   const { user } = await requireUser();
   if (!env.autopilot || !isUuid(jobId) || typeof fieldKey !== "string" || !validValue(value)) return { ok: false };
-  const db = createAdminClient();
-  const vault = await getVault(db, user.id);
+  const vault = await getVault(user.id);
   if (!vault.completed) return { ok: false };
-  const { data: pack } = await db.from("autopilot_packs").select("answers, form").eq("user_id", user.id).eq("job_id", jobId).maybeSingle();
+  const pack = db.select({ answers: autopilotPacks.answers, form: autopilotPacks.form }).from(autopilotPacks).where(ownPack(user.id, jobId)).get();
   const field = (pack?.form as NormalizedForm | null)?.fields?.find((f) => f.key === fieldKey);
   if (!pack || !field) return { ok: false };
   // Never store an answer for diversity, consent, "yours" or file fields: those stay the student's own.
   const kind = classify(field.label, field.type).kind;
   if (kind !== "vault" && kind !== "extra" && kind !== "freeText") return { ok: false };
   const answers = { ...((pack.answers ?? {}) as Answers), [fieldKey]: { value, approved: opts.approved ?? false } };
-  const { error } = await db.from("autopilot_packs").update({ answers, status: "draft" }).eq("user_id", user.id).eq("job_id", jobId);
-  if (error) return { ok: false };
+  try {
+    db.update(autopilotPacks).set({ answers, status: "draft" }).where(ownPack(user.id, jobId)).run();
+  } catch {
+    return { ok: false };
+  }
   if (opts.remember !== false && !isEeoLabel(field.label) && (kind === "extra" || kind === "vault")) {
     const text = rememberable(field, value);
     const k = normLabel(field.label);
     const same = JSON.stringify(vault.extra[k]) === JSON.stringify(text);
     if (text && !same && (k in vault.extra || Object.keys(vault.extra).length < MAX_EXTRA_KEYS)) {
-      const { error: e2 } = await db.from("autopilot_vault")
-        .update({ extra: sealVault("extra", user.id, { ...vault.extra, [k]: text }), updated_at: new Date().toISOString() }).eq("user_id", user.id);
-      if (e2) return { ok: false };
+      try {
+        db.update(autopilotVault).set({ extra: sealVault("extra", user.id, { ...vault.extra, [k]: text }), updated_at: new Date().toISOString() })
+          .where(eq(autopilotVault.user_id, user.id)).run();
+      } catch {
+        return { ok: false };
+      }
     }
   }
   return { ok: true };
@@ -94,8 +102,7 @@ export async function openAndFill(jobId: string): Promise<{ url: string } | { er
   const { user } = await requireUser();
   if (!env.autopilot) return { error: "Autopilot isn't switched on." };
   if (!isUuid(jobId)) return { error: "Unknown job" };
-  const db = createAdminClient();
-  if (!(await getVault(db, user.id)).completed) return { error: "Finish Autopilot setup first." };
+  if (!(await getVault(user.id)).completed) return { error: "Finish Autopilot setup first." };
   let built;
   try {
     // Drafts never block opening (unapproved ones are simply left for the student), so skip the LLM here.
@@ -105,13 +112,15 @@ export async function openAndFill(jobId: string): Promise<{ url: string } | { er
     return { error: "Couldn't read this form. Use the normal Apply link." };
   }
   if (!canOpen(built.items, built.answers)) return { error: "Answer the highlighted questions first." };
-  const { data: pack } = await db.from("autopilot_packs").select("form").eq("user_id", user.id).eq("job_id", jobId).maybeSingle();
+  const pack = db.select({ form: autopilotPacks.form }).from(autopilotPacks).where(ownPack(user.id, jobId)).get();
   const formUrl = (pack?.form as { url?: string } | null)?.url;
   if (!formUrl) return { error: "Pack not found" };
   const t = mintToken(); // a fresh token each time: re-minting invalidates the previous link
-  const { error } = await db.from("autopilot_packs")
-    .update({ token_hash: t.hash, token_expires_at: t.expiresAt, token_used_at: null, status: "ready" })
-    .eq("user_id", user.id).eq("job_id", jobId);
-  if (error) return { error: "Couldn't create your link, please try again." };
+  try {
+    db.update(autopilotPacks).set({ token_hash: t.hash, token_expires_at: t.expiresAt, token_used_at: null, status: "ready" })
+      .where(ownPack(user.id, jobId)).run();
+  } catch {
+    return { error: "Couldn't create your link, please try again." };
+  }
   return { url: `${formUrl}#placed=${t.token}` };
 }

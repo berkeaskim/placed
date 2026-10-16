@@ -3,7 +3,7 @@ import { AUTH_FILE, hasE2eCreds, expectNoHorizontalScroll } from "./fixtures/hel
 
 test.use({ viewport: { width: 375, height: 812 }, isMobile: true, hasTouch: true });
 
-for (const route of ["/", "/login"]) {
+for (const route of ["/onboarding"]) {
   test(`375px: no horizontal scroll on ${route}`, async ({ page }, info) => {
     await page.goto(route);
     await page.screenshot({ path: info.outputPath("mobile.png"), fullPage: true });

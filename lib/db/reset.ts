@@ -1,53 +1,35 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
+import { rm } from "node:fs/promises";
+import path from "node:path";
+import { eq, getTableName } from "drizzle-orm";
+import { db } from "./client";
+import { dataDir } from "./paths";
+import {
+  applications, autopilotPacks, autopilotVault, badges, confirmedFacts, cvFeedback, cvScores, cvs, linkedinScores, matches,
+  outreach, playbookProgress, profiles, xpEvents,
+} from "./schema";
 
-/** Deleted in this order: cv_scores/cv_feedback reference cvs, so they go first. All have a user_id column. */
-export const USER_TABLES = [
-  "autopilot_packs", "autopilot_vault", "cv_scores", "cv_feedback", "cvs", "confirmed_facts", "matches", "inbox_events", "outreach", "gmail_connections",
-  "applications", "xp_events", "badges", "playbook_progress", "linkedin_scores",
+/** Deleted in this order: cv_scores/cv_feedback reference cvs, outreach references applications. All have a user_id column. */
+const TABLES = [
+  autopilotPacks, autopilotVault, cvScores, cvFeedback, cvs, confirmedFacts, matches, outreach,
+  applications, xpEvents, badges, playbookProgress, linkedinScores,
 ] as const;
-/** Tables from migrations that may not be applied yet (0010, 0013): a missing table holds no rows, so it isn't a failure. */
-const OPTIONAL_TABLES = new Set<string>(["playbook_progress", "inbox_events", "outreach", "gmail_connections", "linkedin_scores"]);
-/** "relation does not exist": Postgres 42P01 or PostgREST PGRST205 (schema cache). */
-const isMissingTable = (e: { code?: string }) => e.code === "42P01" || e.code === "PGRST205";
+export const USER_TABLES: readonly string[] = TABLES.map(getTableName);
 export const USER_BUCKETS = ["cvs", "tailored"] as const;
 
-const PAGE = 100;
-const MAX_PAGES = 1000; // safety stop: 100k objects per bucket per user
-
-const fail = (what: string, e: { message: string }): never => {
-  throw new Error(`resetUserData: ${what} failed: ${e.message}`);
-};
-
 /**
- * Removes everything the user stored (their rows and the profile's onboarding + gamification fields first, then the
- * storage objects under `{userId}/` in both private buckets). Rows go first so a DB failure never leaves rows
- * pointing at already-deleted files; a storage failure afterwards only leaves orphaned files, and a retry removes them.
- * The auth account itself is kept.
- * `db` must be a service-role client (RLS makes gamify state read-only for users); the caller verifies the session
- * user and passes only that user's id. No server-only import: the demo-reset script reuses this.
+ * Removes everything the user stored: their rows and the profile's onboarding + gamification fields (one transaction),
+ * then their files under `files/<bucket>/<userId>/`. Rows go first so a failure never leaves rows pointing at deleted
+ * files; a file failure afterwards only leaves orphans, and a retry removes them. Shared data (jobs, companies,
+ * interview preps) and app settings (AI keys) are kept.
  */
-export async function resetUserData(db: SupabaseClient, userId: string): Promise<void> {
-  if (!userId) throw new Error("resetUserData: userId required");
-
-  for (const table of USER_TABLES) {
-    const { error } = await db.from(table).delete().eq("user_id", userId);
-    if (error && !(OPTIONAL_TABLES.has(table) && isMissingTable(error))) fail(`deleting ${table}`, error);
-  }
-
-  const { error } = await db.from("profiles").update({
-    year: null, field: null, location_pref: [], needs_visa: false, target_archetype: null, archetypes: [], skills: [],
-    onboarded: false, xp: 0, level: 1, streak_days: 0, last_active_date: null,
-  }).eq("user_id", userId);
-  if (error) fail("resetting profile", error);
-
-  for (const bucket of USER_BUCKETS) {
-    for (let page = 0; page < MAX_PAGES; page++) {
-      // Always list from the start: each pass removes what it listed, so the next pass sees the remainder.
-      const { data, error } = await db.storage.from(bucket).list(userId, { limit: PAGE, offset: 0 });
-      if (error) fail(`listing ${bucket}`, error);
-      if (!data?.length) break;
-      const { error: rmErr } = await db.storage.from(bucket).remove(data.map((f) => `${userId}/${f.name}`));
-      if (rmErr) fail(`removing from ${bucket}`, rmErr);
-    }
-  }
+export async function resetUserData(userId: string): Promise<void> {
+  if (!userId || userId.includes("/") || userId.includes("\\") || userId.startsWith(".")) throw new Error("resetUserData: userId required");
+  db.transaction((tx) => {
+    for (const t of TABLES) tx.delete(t).where(eq(t.user_id, userId)).run();
+    tx.update(profiles).set({
+      year: null, field: null, location_pref: [], needs_visa: false, target_archetype: null, archetypes: [], skills: [],
+      onboarded: false, xp: 0, level: 1, streak_days: 0, last_active_date: null,
+    }).where(eq(profiles.user_id, userId)).run();
+  });
+  for (const bucket of USER_BUCKETS) await rm(path.join(dataDir(), "files", bucket, userId), { recursive: true, force: true });
 }

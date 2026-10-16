@@ -51,3 +51,6 @@ next-env.d.ts
 
 # private founder notes (kept outside the public repo)
 /memory/
+
+# local data (SQLite db, files, secret key)
+/data/

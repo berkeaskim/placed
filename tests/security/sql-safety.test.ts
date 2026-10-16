@@ -1,45 +1,34 @@
-import { readdirSync, readFileSync } from "node:fs";
+import { readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { ESLint } from "eslint";
 
-const MIGRATIONS = path.resolve(__dirname, "../../supabase/migrations");
+const ROOT = path.resolve(__dirname, "../..");
+const DIRS = ["app", "lib", "scripts", "components"];
 
-describe("migrations never build SQL from values", () => {
-  const files = readdirSync(MIGRATIONS).filter((f) => f.endsWith(".sql"));
-  it.each(files)("%s: dynamic EXECUTE uses only %%I/%%L or USING", (f) => {
-    const sql = readFileSync(path.join(MIGRATIONS, f), "utf8").replace(/--.*$/gm, "");
-    for (const m of sql.matchAll(/\bexecute\s+(?!function\b)([^;]+);/gi)) {
-      const stmt = m[1];
-      expect(stmt, `${f}: EXECUTE with %s splices raw text into SQL`).not.toMatch(/%s/);
-      expect(stmt, `${f}: EXECUTE built with || concatenation`).not.toMatch(/\|\|/);
-    }
+function* sources(dir: string): Generator<string> {
+  for (const name of readdirSync(dir)) {
+    const p = path.join(dir, name);
+    if (statSync(p).isDirectory()) yield* sources(p);
+    else if (/\.(ts|tsx|mjs)$/.test(name)) yield p;
+  }
+}
+const files = DIRS.flatMap((d) => [...sources(path.join(ROOT, d))]).map((f) => ({ rel: path.relative(ROOT, f), text: readFileSync(f, "utf8") }));
+
+/** Drizzle binds every value in `sql\`...\``, eq(), like() etc. as a parameter. These are the escape hatches that don't. */
+describe("SQL is never built from strings", () => {
+  it("sql.raw only in the schema (constant enum lists for CHECK constraints)", () => {
+    const hits = files.filter((f) => /\bsql\.raw\s*\(/.test(f.text)).map((f) => f.rel);
+    expect(hits).toEqual([path.join("lib", "db", "schema.ts")]);
   });
-});
 
-describe("lint blocks Supabase filter-string injection", () => {
-  const lint = async (code: string) => {
-    const [r] = await new ESLint({ cwd: path.resolve(__dirname, "../..") }).lintText(code, { filePath: "lib/x.ts" });
-    return r.messages.filter((m) => m.ruleId === "no-restricted-syntax").length;
-  };
-  it("flags interpolated and concatenated filter strings", async () => {
-    expect(await lint("declare const q: any, s: string; q.or(`name.ilike.%${s}%`);")).toBe(1);
-    expect(await lint("declare const q: any, s: string; q.filter('name.eq.' + s);")).toBe(1);
-    expect(await lint("declare const q: any, s: string; q.textSearch(`${s}`);")).toBe(1);
+  it("raw better-sqlite3 exec/prepare only inside lib/db, and never with an interpolated template", () => {
+    const raw = files.filter((f) => /\$client\.(exec|prepare)\s*\(/.test(f.text));
+    expect(raw.filter((f) => !f.rel.startsWith(path.join("lib", "db"))).map((f) => f.rel)).toEqual([]);
+    for (const f of raw) expect(f.text, f.rel).not.toMatch(/\$client\.(exec|prepare)\s*\(\s*`[^`]*\$\{/);
   });
-  it("allows argument-style filters and plain array .filter", async () => {
-    expect(await lint("declare const q: any, s: string; q.eq('name', s).ilike('name', `%${s}%`);")).toBe(0);
-    expect(await lint("const xs = [1, 2]; xs.filter((x) => x > 1);")).toBe(0);
-  });
-}, 30_000);
 
-describe("pgInList", () => {
-  it("keeps hostile ATS ids as single quoted literals", async () => {
-    const { pgInList, isoDay } = await import("@/lib/db/postgrest");
-    expect(pgInList(["123", "abc"])).toBe('("123","abc")');
-    expect(pgInList(['a"),id.neq.(x'])).toBe('("a\\"),id.neq.(x")');
-    expect(pgInList(["back\\slash"])).toBe('("back\\\\slash")');
-    expect(isoDay("2026-10-16")).toBe("2026-10-16");
-    expect(() => isoDay("2026-10-16,id.neq.0")).toThrow();
+  it("no string-built queries through db.run / db.all / db.get", () => {
+    const bad = files.filter((f) => /\bdb\.(run|all|get|values)\s*\(\s*(`|["'][^"']*["']\s*\+)/.test(f.text)).map((f) => f.rel);
+    expect(bad).toEqual([]);
   });
 });

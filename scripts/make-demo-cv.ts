@@ -16,7 +16,7 @@ import { ParsedCvOutput, JudgeOutput } from "@/lib/ai/schemas";
 import type { ParsedCV } from "@/lib/types";
 import {
   DEMO_CV_PATH, DEMO_JUDGE_LABELS_PATH, DEMO_PERSONA_PATH, DEMO_SECTORS, judgeFixtureKey, parseFixtureKey, uploadedRawText,
-} from "@/lib/demo/fixture-keys";
+} from "@/lib/fixtures/persona";
 
 async function main() {
   const cv = ParsedCvOutput.parse(JSON.parse(readFileSync(DEMO_PERSONA_PATH, "utf8"))) as ParsedCV;

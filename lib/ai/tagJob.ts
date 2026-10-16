@@ -68,6 +68,7 @@ export async function tagJob(input: { title: string; textLines: string[] }): Pro
             parts: [{ type: "text", text: wrapJob(input.textLines.join("\n"), input.title) }],
             schema: TagJobOutput,
             maxTokens: 8000, // Gemini counts thinking tokens here; 4000 truncated long JDs
+            background: true,
           }),
         ),
       fallback,

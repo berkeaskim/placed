@@ -1,8 +1,7 @@
 import { test, expect } from "@playwright/test";
-import { AUTH_FILE, GEN, hasE2eCreds, trackConsole, basicA11y } from "./fixtures/helpers";
+import { GEN, trackConsole, basicA11y } from "./fixtures/helpers";
 
-test.use({ storageState: AUTH_FILE });
-test.skip(!hasE2eCreds, "E2E_USER_EMAIL/E2E_USER_PASSWORD not set");
+// No sign-in: Placed is single-user and local. Run against a scratch PLACED_DATA_DIR, never your real data/.
 
 const cvInput = (page: import("@playwright/test").Page) => page.locator("input[name=cv]");
 // Scoped to the form: Next's route announcer is also role="alert".
@@ -49,7 +48,7 @@ test("image-only PDF shows the unreadable-CV guidance", async ({ page }) => {
   await expect(page.getByRole("link", { name: "Take the quiz" })).toBeVisible();
 });
 
-test("realistic CV PDF parses live and lands on the profile page", async ({ page }) => {
+test("realistic CV PDF parses and lands on the profile page", async ({ page }) => {
   test.setTimeout(150_000);
   const errors = trackConsole(page);
   await page.goto("/profile/build");

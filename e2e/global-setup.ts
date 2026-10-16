@@ -1,46 +1,27 @@
+import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
-import { createServerClient } from "@supabase/ssr";
-import type { FullConfig } from "@playwright/test";
 import { makePdf, REALISTIC_CV } from "./fixtures/make-pdf";
-import { assertSeparateE2eUser } from "../lib/demo/guard";
 
-// Session cookies live outside the repo so they can never be committed.
+// Everything lives outside the repo: generated fixtures, an empty storage state (there is no login) and the local data.
 const TMP = path.join(os.tmpdir(), "placed-e2e");
 const AUTH_FILE = path.join(TMP, "e2e-auth.json");
 const FIX_DIR = path.join(TMP, "generated");
+/** The e2e app's data dir. playwright.config must pass the same PLACED_DATA_DIR to the webServer. */
+export const E2E_DATA_DIR = path.join(TMP, "data");
 
-export default async function globalSetup(config: FullConfig) {
-  assertSeparateE2eUser(process.env);
+export default async function globalSetup() {
   fs.mkdirSync(FIX_DIR, { recursive: true });
   fs.writeFileSync(path.join(FIX_DIR, "realistic-cv.pdf"), makePdf(REALISTIC_CV));
   fs.writeFileSync(path.join(FIX_DIR, "image-only-cv.pdf"), makePdf([], { textless: true }));
   fs.writeFileSync(path.join(FIX_DIR, "not-a-pdf.txt"), "This is my CV as plain text. Python, SQL, Excel.\n");
   // A .pdf name + application/pdf type but not real PDF bytes (magic-number check).
   fs.writeFileSync(path.join(FIX_DIR, "fake.pdf"), "Hello, I am definitely a PDF.\n");
+  fs.writeFileSync(AUTH_FILE, JSON.stringify({ cookies: [], origins: [] }));
 
-  // Sign the e2e test user (never the live demo account) in with a password (the UI only offers magic link / Google)
-  // and convert the @supabase/ssr cookies into a Playwright storageState.
-  const { NEXT_PUBLIC_SUPABASE_URL: url, NEXT_PUBLIC_SUPABASE_ANON_KEY: key, E2E_USER_EMAIL: email, E2E_USER_PASSWORD: password } = process.env;
-  fs.mkdirSync(path.dirname(AUTH_FILE), { recursive: true });
-  if (!url || !key || !email || !password) {
-    fs.writeFileSync(AUTH_FILE, JSON.stringify({ cookies: [], origins: [] }));
-    return;
-  }
-  const jar = new Map<string, string>();
-  const supabase = createServerClient(url, key, {
-    cookies: {
-      getAll: () => [...jar].map(([name, value]) => ({ name, value })),
-      setAll: (cs) => cs.forEach(({ name, value }) => (value ? jar.set(name, value) : jar.delete(name))),
-    },
-  });
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) throw new Error(`E2E user sign-in failed: ${error.message}`);
-  const cookies = [...jar].map(([name, value]) => ({
-    name, value, domain: "localhost", path: "/", expires: Math.floor(Date.now() / 1000) + 3600,
-    httpOnly: false, secure: false, sameSite: "Lax" as const,
-  }));
-  fs.writeFileSync(AUTH_FILE, JSON.stringify({ cookies, origins: [] }, null, 2));
-  void config;
+  const dataDir = process.env.PLACED_DATA_DIR || E2E_DATA_DIR;
+  if (dataDir === E2E_DATA_DIR) fs.rmSync(dataDir, { recursive: true, force: true }); // fresh install each run
+  process.env.PLACED_DATA_DIR = dataDir;
+  execFileSync("npx", ["tsx", "scripts/setup.ts"], { env: { ...process.env, PLACED_DATA_DIR: dataDir }, stdio: "inherit" });
 }

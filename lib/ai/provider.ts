@@ -1,11 +1,12 @@
 import type { z } from "zod";
-import { aiMode, aiProvider } from "@/lib/env";
+import { aiMode, aiProvider } from "@/lib/ai/config";
 import { loadFixture } from "./fixtures";
 
 export type Part = { type: "text"; text: string } | { type: "pdf"; base64: string };
 /** `temperature` is optional and currently never sent: Anthropic models reject it and Gemini 3 should stay at its default (gemini.ts). */
 /** Gemini runs every call at a LOW thinking level (Flash at its default HIGH level took ~2x as long); `thinking: "high"` opts back in. Adapters without the knob ignore it. */
-export type StructuredRequest<T> = { tier: "fast" | "smart"; system: string; parts: Part[]; schema: z.ZodType<T>; maxTokens?: number; temperature?: number; thinking?: "low" | "high" };
+/** `background`: batch work (job tagging during ingest). A local model serves every interactive call before it. */
+export type StructuredRequest<T> = { tier: "fast" | "smart"; system: string; parts: Part[]; schema: z.ZodType<T>; maxTokens?: number; temperature?: number; thinking?: "low" | "high"; background?: boolean };
 
 export type GroundedChunk = { uri: string; title: string };
 export type GroundedResult = { text: string; chunks: GroundedChunk[] };
@@ -22,6 +23,7 @@ export const AI_UNAVAILABLE = "The AI service is unavailable right now. Please t
 // evaluation ("Cannot access 'ai' before initialization" under jiti).
 let anthropicMod: Promise<typeof import("./anthropic")> | null = null;
 let geminiMod: Promise<typeof import("./gemini")> | null = null;
+let ollamaMod: Promise<typeof import("./ollama")> | null = null;
 
 /** The only entry point business functions use to reach an LLM. Vendor SDKs load lazily, server-side. */
 export async function generateStructured<T>(req: StructuredRequest<T>): Promise<T> {
@@ -31,18 +33,22 @@ export async function generateStructured<T>(req: StructuredRequest<T>): Promise<
     const { anthropicStructured } = await (anthropicMod ??= import("./anthropic"));
     return anthropicStructured(req);
   }
+  if (provider === "ollama") {
+    const { ollamaStructured } = await (ollamaMod ??= import("./ollama"));
+    return ollamaStructured(req);
+  }
   const { geminiStructured } = await (geminiMod ??= import("./gemini"));
   return geminiStructured(req);
 }
 
 /**
  * Free-text answer researched with web search. Gemini only (Google Search grounding); returns null for a provider
- * without search (Anthropic), so callers fall back to an inferred, unsourced answer.
+ * without search (Anthropic, Ollama), so callers fall back to an inferred, unsourced answer.
  */
 export async function generateGrounded(req: GroundedRequest): Promise<GroundedResult | null> {
   const provider = aiProvider();
   if (!provider) throw new AiError("No AI provider configured");
-  if (provider === "anthropic") return null;
+  if (provider !== "gemini") return null;
   const { geminiGrounded } = await (geminiMod ??= import("./gemini"));
   return geminiGrounded(req);
 }
