@@ -2,9 +2,8 @@
 import { useState, useTransition } from "react";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { signInDemo, signInWithEmail, signInWithGoogle } from "./actions";
-
-const DEMO = process.env.NEXT_PUBLIC_DEMO_MODE === "1";
+import { StartButton } from "@/components/start-button";
+import { signInWithEmail, signInWithGoogle, signInWithPassword } from "./actions";
 
 function MailIcon() {
   return (
@@ -18,6 +17,7 @@ function MailIcon() {
 /** `initialError`: friendly copy for a known /login?error= code (page.tsx maps it; never the raw query string). */
 export function LoginForm({ initialError = null }: { initialError?: string | null }) {
   const [sent, setSent] = useState(false);
+  const [magic, setMagic] = useState(false);
   const [error, setError] = useState<string | null>(initialError);
   const [pending, start] = useTransition();
 
@@ -36,7 +36,7 @@ export function LoginForm({ initialError = null }: { initialError?: string | nul
               <MailIcon />
               Check your inbox — we sent you a magic link.
             </p>
-          ) : (
+          ) : magic ? (
             <form
               action={(fd) =>
                 start(async () => {
@@ -53,6 +53,37 @@ export function LoginForm({ initialError = null }: { initialError?: string | nul
                 Email me a magic link
               </button>
             </form>
+          ) : (
+            <form
+              onSubmit={(e) => {
+                e.preventDefault(); // not `action=`: React resets the form after an action, wiping the email on a wrong password
+                const fd = new FormData(e.currentTarget);
+                start(async () => {
+                  setError(null);
+                  const r = await signInWithPassword(fd);
+                  if (r?.error) setError(r.error);
+                });
+              }}
+              className="space-y-3"
+            >
+              <Input aria-label="Email address" name="email" type="email" autoComplete="email" placeholder="you@ucl.ac.uk" required className="h-12 text-base" />
+              <Input aria-label="Password" name="password" type="password" autoComplete="current-password" placeholder="Password" required className="h-12 text-base" />
+              <button type="submit" className="btn-quest h-12 w-full disabled:opacity-50" disabled={pending}>
+                {pending ? "Signing in…" : "Sign in"}
+              </button>
+            </form>
+          )}
+          {!sent && (
+            <button
+              type="button"
+              className="w-full text-sm font-semibold text-muted-foreground underline-offset-4 hover:underline"
+              onClick={() => {
+                setError(null);
+                setMagic((m) => !m);
+              }}
+            >
+              {magic ? "Sign in with a password instead" : "Email me a magic link instead"}
+            </button>
           )}
           <button
             type="button"
@@ -68,23 +99,11 @@ export function LoginForm({ initialError = null }: { initialError?: string | nul
           >
             Continue with Google
           </button>
-          {DEMO && (
-            <button
-              type="button"
-              disabled={pending}
-              className="h-12 w-full rounded-[14px] border-2 border-dashed border-[#C9C2FF] bg-[#F8F7FF] font-bold text-[#3A20C4] transition-colors hover:bg-[#EEEBFF] disabled:opacity-50"
-              onClick={() =>
-                start(async () => {
-                  setError(null);
-                  const r = await signInDemo();
-                  if (r?.error) setError(r.error);
-                })
-              }
-            >
-              Try the demo as Ayşe (fictional student)
-            </button>
-          )}
           {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+          <div className="flex items-center justify-center gap-1 border-t pt-4 text-sm text-muted-foreground">
+            New here?
+            <StartButton className="font-bold text-primary underline-offset-4 hover:underline">Get started — no sign-up needed</StartButton>
+          </div>
         </CardContent>
       </Card>
     </main>

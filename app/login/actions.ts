@@ -20,6 +20,23 @@ export async function signInWithEmail(formData: FormData) {
   return { ok: true };
 }
 
+/**
+ * Email + password sign-in for accounts Berke creates by hand (`npm run user:add`). Self sign-up stays off:
+ * a wrong email or password gets one generic message so the form can't be used to probe which emails exist.
+ */
+export async function signInWithPassword(formData: FormData) {
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  const password = String(formData.get("password") ?? "");
+  if (!email.includes("@") || !password) return { error: "Enter your email and password." };
+  const supabase = await createClient();
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error || !data.user) {
+    return { error: error?.status === 429 ? "Too many attempts. Wait a minute and try again." : "Wrong email or password." };
+  }
+  const { data: profile } = await supabase.from("profiles").select("onboarded").eq("user_id", data.user.id).maybeSingle();
+  redirect(profile?.onboarded ? "/feed" : "/onboarding");
+}
+
 export async function signInWithGoogle() {
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signInWithOAuth({
