@@ -13,7 +13,7 @@ vi.mock("@/lib/supabase/server", () => ({
   }),
 }));
 vi.mock("@supabase/ssr", () => ({
-  createServerClient: () => ({ auth: { getUser: async () => ({ data: { user: s.user } }) } }),
+  createServerClient: () => ({ auth: { getClaims: async () => ({ data: s.user ? { claims: { sub: s.user.id } } : null }) } }),
 }));
 
 import { GET as callback } from "@/app/auth/callback/route";

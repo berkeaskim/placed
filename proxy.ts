@@ -19,9 +19,11 @@ export async function proxy(request: NextRequest) {
       },
     },
   );
-  const { data } = await supabase.auth.getUser();
+  // getClaims refreshes the session like getUser, but checks the JWT locally (asymmetric signing keys) instead of calling
+  // Supabase Auth on every request, prefetch and server action; requireUser still does the full check in the render.
+  const { data } = await supabase.auth.getClaims();
   const path = request.nextUrl.pathname;
-  if (!data.user && PROTECTED.some((p) => path.startsWith(p))) {
+  if (!data?.claims && PROTECTED.some((p) => path.startsWith(p))) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);

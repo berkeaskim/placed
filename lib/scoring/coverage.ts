@@ -69,10 +69,24 @@ export function profileSkillSource(skills: string[]): CvSkillSource {
   return { skillsList: skills, bulletText: "", otherText: "" };
 }
 
+type SourceSets = { listed: Set<string>; inBullets: Set<string>; inOther: Set<string> };
+/** Per-source skill sets: the feed scores every live job against one source, and extractSkills over the CV text was most of that time. */
+const sourceSets = new WeakMap<CvSkillSource, SourceSets>();
+function setsFor(cv: CvSkillSource): SourceSets {
+  let sets = sourceSets.get(cv);
+  if (!sets) {
+    sets = {
+      listed: new Set(cv.skillsList.map((s) => s.toLowerCase())),
+      inBullets: new Set(extractSkills(cv.bulletText).map((s) => s.toLowerCase())),
+      inOther: new Set(extractSkills(cv.otherText).map((s) => s.toLowerCase())),
+    };
+    sourceSets.set(cv, sets);
+  }
+  return sets;
+}
+
 export function computeCoverage(reqs: JdSkill[], cv: CvSkillSource): CoverageResult {
-  const listed = new Set(cv.skillsList.map((s) => s.toLowerCase()));
-  const inBullets = new Set(extractSkills(cv.bulletText).map((s) => s.toLowerCase()));
-  const inOther = new Set(extractSkills(cv.otherText).map((s) => s.toLowerCase()));
+  const { listed, inBullets, inOther } = setsFor(cv);
   const statusOf = (skill: string): CoverageStatus => {
     const k = skill.toLowerCase();
     return listed.has(k) || inBullets.has(k) ? "existing" : inOther.has(k) ? "supportedByResume" : "gap";
