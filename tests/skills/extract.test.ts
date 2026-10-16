@@ -32,6 +32,15 @@ describe("extractSkills", () => {
     );
     expect(skills).toContain("Communication");
   });
+  it("recognizes demonstrated communication without requiring the exact soft-skill phrase", () => {
+    const skills = extractSkills(
+      "Presented analysis to senior stakeholders.\nTutored first-year students in econometrics.\nWrote briefing notes for clients.",
+    );
+    expect(skills).toContain("Communication");
+  });
+  it("does not infer communication from generic teamwork wording alone", () => {
+    expect(extractSkills("Team player with a positive attitude.")).not.toContain("Communication");
+  });
   it("covers every archetype with at least 8 skills", () => {
     const keys = ["software_eng", "data_analytics", "quant_trading", "consulting", "product", "finance_banking", "marketing_growth", "research"];
     for (const k of keys) expect(SKILLS.filter((s) => s.archetypes.includes(k as never)).length).toBeGreaterThanOrEqual(8);
