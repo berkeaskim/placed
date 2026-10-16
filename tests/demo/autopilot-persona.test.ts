@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { AYSE_VAULT_CORE, seedAyseVault } from "@/lib/demo/autopilot-persona";
 import { CoreSchema, isComplete } from "@/lib/autopilot/vault";
+import { isSealed, openVault } from "@/lib/autopilot/vault-crypto";
 
 const fake = (error: { message: string } | null = null) => {
   const calls: { table: string; row: Record<string, unknown>; opts: unknown }[] = [];
@@ -21,7 +22,9 @@ describe("seedAyseVault", () => {
     await seedAyseVault(db, "u1", new Date("2026-10-15T09:00:00Z"));
     expect(calls).toHaveLength(2);
     expect(calls[0]).toMatchObject({ table: "autopilot_vault", opts: { onConflict: "user_id" }, row: { user_id: "u1", completed_at: "2026-10-15T09:00:00.000Z" } });
-    expect(calls[0].row.core).toEqual(calls[1].row.core);
+    expect(isSealed(calls[0].row.core)).toBe(true);
+    expect(JSON.stringify(calls[0].row)).not.toContain(AYSE_VAULT_CORE.email);
+    expect(openVault("core", "u1", calls[0].row.core)).toEqual(openVault("core", "u1", calls[1].row.core));
   });
   it("surfaces a database error", async () => {
     await expect(seedAyseVault(fake({ message: "boom" }).db, "u1")).rejects.toThrow(/boom/);

@@ -25,7 +25,8 @@
     "demo:user": "tsx --env-file=.env.local scripts/create-demo-user.ts",
     "user:add": "tsx --env-file=.env.local scripts/add-user.ts",
     "demo:reset": "tsx --env-file=.env.local scripts/reset-demo.ts",
-    "reliability": "node --env-file=.env.local scripts/run-ts.mjs scripts/reliability.ts"
+    "reliability": "node --env-file=.env.local scripts/run-ts.mjs scripts/reliability.ts",
+    "vault:encrypt": "tsx --env-file=.env.local scripts/encrypt-vault.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.133.0",

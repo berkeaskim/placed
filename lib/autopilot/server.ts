@@ -9,6 +9,7 @@ import { suggestAnswers } from "./suggest";
 import { assemblePack, toFillPlan, type Answers, type FillInstruction, type PackItem } from "./pack";
 import { hashToken, safeNamePart } from "./handoff";
 import { isComplete, type Core, type Extra } from "./vault";
+import { openVault } from "./vault-crypto";
 import type { ParsedCV } from "@/lib/types";
 
 export type JobForPack = { id: string; extId: string; url: string; ats: Ats; company: string; textLines: string[] };
@@ -25,7 +26,8 @@ export async function loadJobForPack(db: SupabaseClient, jobId: string): Promise
 /** `completed` = Autopilot is unlocked: the saved core is complete right now. `completed_at` alone is only the once-only XP marker, so it never unlocks by itself. */
 export async function getVault(db: SupabaseClient, userId: string): Promise<{ core: Partial<Core>; extra: Extra; completed: boolean }> {
   const { data } = await db.from("autopilot_vault").select("core, extra, completed_at").eq("user_id", userId).maybeSingle();
-  return { core: (data?.core ?? {}) as Partial<Core>, extra: (data?.extra ?? {}) as Extra, completed: Boolean(data?.completed_at) && isComplete(data?.core) };
+  const core = openVault("core", userId, data?.core) as Partial<Core>;
+  return { core, extra: openVault("extra", userId, data?.extra) as Extra, completed: Boolean(data?.completed_at) && isComplete(core) };
 }
 
 /** Fetches the form, (optionally) drafts free-text answers, upserts autopilot_packs. `withDrafts: false` never calls the LLM. */
