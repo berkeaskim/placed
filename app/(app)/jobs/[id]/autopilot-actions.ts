@@ -5,6 +5,7 @@ import { buildPack, getVault } from "@/lib/autopilot/server";
 import { canOpen, type Answers, type PackItem } from "@/lib/autopilot/pack";
 import { mintToken } from "@/lib/autopilot/handoff";
 import { isEeoLabel, normLabel } from "@/lib/autopilot/vault";
+import { sealVault } from "@/lib/autopilot/vault-crypto";
 import { FormUnavailableError } from "@/lib/autopilot/forms/types";
 import { isUuid } from "@/lib/feed/save-result";
 import { env } from "@/lib/env";
@@ -82,7 +83,7 @@ export async function setAnswer(
     const same = JSON.stringify(vault.extra[k]) === JSON.stringify(text);
     if (text && !same && (k in vault.extra || Object.keys(vault.extra).length < MAX_EXTRA_KEYS)) {
       const { error: e2 } = await db.from("autopilot_vault")
-        .update({ extra: { ...vault.extra, [k]: text }, updated_at: new Date().toISOString() }).eq("user_id", user.id);
+        .update({ extra: sealVault("extra", user.id, { ...vault.extra, [k]: text }), updated_at: new Date().toISOString() }).eq("user_id", user.id);
       if (e2) return { ok: false };
     }
   }

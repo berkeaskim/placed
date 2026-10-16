@@ -25,7 +25,11 @@ import { openAndFill, setAnswer, preparePack } from "@/app/(app)/jobs/[id]/autop
 const field = (key: string, label: string, over: Partial<F> = {}): F => ({ key, target: key, label, type: "select", required: true, options: [{ label: "Yes", value: "1" }, { label: "No", value: "0" }], ...over });
 const JOB = "00000000-0000-4000-8000-000000000001";
 const packRow = () => (h.updates.find((u) => (u as { t: string }).t === "autopilot_packs") as { row: { answers: Record<string, { value: unknown; approved?: boolean }> } }).row;
-const vaultRow = () => h.updates.find((u) => (u as { t: string }).t === "autopilot_vault") as { row: { extra: Record<string, string> } } | undefined;
+import { openVault } from "@/lib/autopilot/vault-crypto";
+const vaultRow = () => {
+  const u = h.updates.find((u) => (u as { t: string }).t === "autopilot_vault") as { row: { extra: unknown } } | undefined;
+  return u && { row: { extra: openVault("extra", "u1", u.row.extra) } };
+};
 
 describe("autopilot actions", () => {
   beforeEach(() => {

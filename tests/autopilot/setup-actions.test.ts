@@ -12,7 +12,9 @@ vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: () => ({
 }) }));
 import { saveVault, deleteVault } from "@/app/(app)/autopilot/setup/actions";
 import { AYSE_CORE } from "./fixtures";
+import { isSealed, openVault } from "@/lib/autopilot/vault-crypto";
 
+const savedCore = () => openVault("core", "u1", (h.upserts[0] as { core: unknown }).core) as Record<string, string>;
 const fd = (o: Record<string, string>) => { const f = new FormData(); for (const [k, v] of Object.entries(o)) f.set(k, v); return f; };
 
 describe("saveVault", () => {
@@ -34,13 +36,21 @@ describe("saveVault", () => {
   });
   it("never stores EEO fields even if posted", async () => {
     await saveVault(null, fd({ ...(AYSE_CORE as unknown as Record<string, string>), gender: "x", ethnicity: "y" }));
-    expect(JSON.stringify(h.upserts[0])).not.toMatch(/gender|ethnicity/);
+    expect(JSON.stringify(savedCore())).not.toMatch(/gender|ethnicity/);
+  });
+  it("stores the core encrypted: no email or phone in the row", async () => {
+    await saveVault(null, fd(AYSE_CORE as unknown as Record<string, string>));
+    const row = h.upserts[0] as { core: unknown };
+    expect(isSealed(row.core)).toBe(true);
+    expect(JSON.stringify(row)).not.toContain(AYSE_CORE.email);
+    expect(JSON.stringify(row)).not.toContain(AYSE_CORE.phone);
+    expect(savedCore().email).toBe(AYSE_CORE.email);
   });
   it("keeps a prior valid value when a posted one is rejected, and reports it in invalid", async () => {
     h.core = { ...AYSE_CORE }; h.completed = "2026-10-14T00:00:00Z";
     const r = await saveVault(null, fd({ grad_year: "28", phone: "123" }));
     expect(r!.invalid.sort()).toEqual(["grad_year", "phone"]);
-    const saved = (h.upserts[0] as { core: Record<string, string> }).core;
+    const saved = savedCore();
     expect(saved.grad_year).toBe(AYSE_CORE.grad_year);
     expect(saved.phone).toBe(AYSE_CORE.phone);
     expect(r!.values).toMatchObject({ grad_year: "28", phone: "123" }); // typed input is handed back
@@ -51,14 +61,14 @@ describe("saveVault", () => {
     const r = await saveVault(null, fd({ phone: "" }));
     expect(r).toMatchObject({ ok: true, unlocked: false, invalid: [] });
     expect(r!.missing).toContain("phone");
-    expect((h.upserts[0] as { core: Record<string, string> }).core.phone).toBeUndefined();
+    expect(savedCore().phone).toBeUndefined();
     expect((h.upserts[0] as { completed_at: string }).completed_at).toBe("2026-10-14T00:00:00Z");
     expect(h.award).not.toHaveBeenCalled();
   });
   it("fields not posted keep their saved value", async () => {
     h.core = { ...AYSE_CORE };
     await saveVault(null, fd({ city: "Leeds" }));
-    const saved = (h.upserts[0] as { core: Record<string, string> }).core;
+    const saved = savedCore();
     expect(saved).toMatchObject({ city: "Leeds", first_name: "Ayşe" });
   });
 });
