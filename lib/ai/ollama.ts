@@ -2,6 +2,7 @@ import { z } from "zod";
 import { extractPdf } from "@/lib/cv/pdf-text";
 import { AiError, AI_BAD_FORMAT, AI_UNAVAILABLE, type Part, type StructuredRequest } from "./provider";
 import { ollamaHost, ollamaModel } from "./config";
+import { httpFetch } from "./http-fetch";
 
 export type FetchLike = (input: string, init?: RequestInit) => Promise<Response>;
 
@@ -12,6 +13,37 @@ export const OLLAMA_TIMEOUT_MS = 10 * 60_000;
  * description plus our prompts; 16k fits our largest prompts while staying affordable on 16 GB machines.
  */
 export const OLLAMA_NUM_CTX = 16_384;
+
+/**
+ * Ollama answers one request per loaded model at a time by default; extra requests wait inside Ollama with no response
+ * headers, so callers' timers (and Node fetch's 300 s headers timeout) run out while they queue. Queue them here
+ * instead: each call's timeout starts when it is actually sent. OLLAMA_PARALLEL raises the limit for a server started
+ * with OLLAMA_NUM_PARALLEL.
+ */
+let active = 0;
+/** Interactive calls (a user is waiting) always go before background ones (job tagging during ingest). */
+const waiting = { interactive: [] as (() => void)[], background: [] as (() => void)[] };
+
+function parallelLimit(): number {
+  const n = Number(process.env.OLLAMA_PARALLEL);
+  return Number.isInteger(n) && n > 0 ? n : 1;
+}
+
+async function withSlot<T>(background: boolean, run: () => Promise<T>): Promise<T> {
+  if (active >= parallelLimit()) {
+    await new Promise<void>((resolve) => waiting[background ? "background" : "interactive"].push(resolve));
+  } else {
+    active++;
+  }
+  try {
+    return await run();
+  } finally {
+    // Hand the slot straight to the next caller (active stays the same), or free it.
+    const next = waiting.interactive.shift() ?? waiting.background.shift();
+    if (next) next();
+    else active--;
+  }
+}
 
 type ChatChunk = { message?: { content?: string }; done?: boolean; done_reason?: string; error?: string };
 
@@ -59,7 +91,11 @@ export function extractJson(text: string): string {
   return t;
 }
 
-export async function ollamaStructured<T>(req: StructuredRequest<T>, f: FetchLike = fetch): Promise<T> {
+export function ollamaStructured<T>(req: StructuredRequest<T>, f: FetchLike = httpFetch): Promise<T> {
+  return withSlot(Boolean(req.background), () => structured(req, f));
+}
+
+async function structured<T>(req: StructuredRequest<T>, f: FetchLike): Promise<T> {
   const model = ollamaModel(req.tier);
   if (!model) throw new AiError(AI_UNAVAILABLE);
   const schema = z.toJSONSchema(req.schema);
@@ -149,7 +185,7 @@ export type PullProgress = { status: string; total?: number; completed?: number;
  * Starts `POST /api/pull` (streamed) and returns its NDJSON body: one PullProgress per line, ending with
  * `{"status":"success"}` or a line with `error`. Throws AiError(AI_UNAVAILABLE) when Ollama can't be reached.
  */
-export async function ollamaPull(tag: string, f: FetchLike = fetch, signal?: AbortSignal): Promise<ReadableStream<Uint8Array>> {
+export async function ollamaPull(tag: string, f: FetchLike = httpFetch, signal?: AbortSignal): Promise<ReadableStream<Uint8Array>> {
   if (!OLLAMA_TAG_RE.test(tag)) throw new AiError("Not a valid Ollama model tag.");
   let res: Response;
   try {

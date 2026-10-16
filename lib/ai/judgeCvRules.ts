@@ -4,7 +4,7 @@ import path from "node:path";
 import type { CvRule } from "@/lib/cv-rules/types";
 import type { ScoredRuleResult } from "@/lib/cv-score/context";
 import { isSpellingVariant } from "@/lib/cv-score/checkers";
-import { aiMode } from "@/lib/ai/config";
+import { aiDeadline, aiMode } from "@/lib/ai/config";
 import { escapeRegex, stripListMarker } from "@/lib/text/regex";
 import { currentModelId } from "./models";
 import { AiError, generateStructured, runAi } from "./provider";
@@ -178,7 +178,7 @@ export async function judgeCvRules(i: JudgeInput): Promise<JudgeResult> {
             // Gemini counts thinking tokens in maxOutputTokens, so a per-rule budget (400 + 180/rule) truncated. Billing is per token used.
             maxTokens: Math.max(16000, 400 + 180 * rules.length),
             parts: [{ type: "text", text: buildJudgePrompt({ ...i, rules }) }],
-          }), JUDGE_BATCH_DEADLINE_MS).catch((err) => {
+          }), aiDeadline(JUDGE_BATCH_DEADLINE_MS)).catch((err) => {
             if (!(err instanceof AiError)) throw err;
             console.error("judgeCvRules: a rule batch failed, its rules are not counted", err.message);
             return null;

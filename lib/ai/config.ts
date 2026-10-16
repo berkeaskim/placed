@@ -72,3 +72,14 @@ export function aiMode(): "live" | "fixture" {
   if (process.env.AI_MODE === "fixture") return "fixture";
   return aiProvider() ? "live" : "fixture";
 }
+
+/** Budget for callers that race an AI call against a deadline (CV parse, judge batches). */
+export const LOCAL_AI_DEADLINE_MS = 20 * 60_000;
+
+/**
+ * A caller's deadline for the active provider. Cloud deadlines are tuned to cloud latency; a local model answers one
+ * call at a time (ollama.ts queues them) and can take minutes per call, so it gets LOCAL_AI_DEADLINE_MS instead.
+ */
+export function aiDeadline(cloudMs: number): number {
+  return aiProvider() === "ollama" ? Math.max(cloudMs, LOCAL_AI_DEADLINE_MS) : cloudMs;
+}

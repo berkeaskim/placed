@@ -1,6 +1,7 @@
 import type { ParsedCV } from "@/lib/types";
 import { assignIds } from "@/lib/cv/ids";
 import { generateStructured, runAi, type Part } from "./provider";
+import { aiDeadline } from "./config";
 import { SYSTEM_PARSE_CV } from "./prompts";
 import { ParsedCvOutput } from "./schemas";
 import { heuristicParseCv } from "./heuristics";
@@ -41,7 +42,7 @@ export async function parseCV(input: { base64: string; text: string; fixtureKey?
     live: () => withDeadline(generateStructured({
       tier: "fast", thinking: "low", system: SYSTEM_PARSE_CV, schema: ParsedCvOutput, maxTokens: 16000,
       parts: buildParseParts(input, input.textOnly),
-    }), PARSE_DEADLINE_MS, fallback, "parseCV"),
+    }), aiDeadline(PARSE_DEADLINE_MS), fallback, "parseCV"),
     fallback,
   });
   return assignIds(cv as ParsedCV);

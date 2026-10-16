@@ -106,3 +106,22 @@ describe("generateGrounded", () => {
     f.mockRestore();
   });
 });
+
+describe("aiDeadline", () => {
+  it("keeps cloud deadlines and stretches them for Ollama", async () => {
+    const { aiDeadline, LOCAL_AI_DEADLINE_MS } = await import("@/lib/ai/config");
+    const { setSetting } = await import("@/lib/settings/store");
+    const saved = process.env.AI_PROVIDER;
+    process.env.AI_PROVIDER = "ollama";
+    setSetting("ai.ollama.model", "qwen3.5:9b");
+    expect(aiDeadline(60_000)).toBe(LOCAL_AI_DEADLINE_MS);
+    setSetting("ai.ollama.model", null);
+    delete process.env.AI_PROVIDER;
+    process.env.AI_PROVIDER = "anthropic";
+    process.env.ANTHROPIC_API_KEY = "sk-test";
+    expect(aiDeadline(60_000)).toBe(60_000);
+    delete process.env.ANTHROPIC_API_KEY;
+    delete process.env.AI_PROVIDER;
+    if (saved !== undefined) process.env.AI_PROVIDER = saved;
+  });
+});

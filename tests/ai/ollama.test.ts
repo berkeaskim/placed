@@ -156,3 +156,49 @@ describe("ollama helpers", () => {
     expect(f).not.toHaveBeenCalled();
   });
 });
+
+describe("ollamaStructured queueing", () => {
+  it("sends one request at a time to Ollama", async () => {
+    let inFlight = 0;
+    let peak = 0;
+    const f = vi.fn(async () => {
+      inFlight++;
+      peak = Math.max(peak, inFlight);
+      await new Promise((r) => setTimeout(r, 10));
+      inFlight--;
+      return new Response(chatBody('{"a":1}'), { status: 200 });
+    });
+    const out = await Promise.all([1, 2, 3].map(() => ollamaStructured(req, f)));
+    expect(out).toEqual([{ a: 1 }, { a: 1 }, { a: 1 }]);
+    expect(f).toHaveBeenCalledTimes(3);
+    expect(peak).toBe(1);
+  });
+
+  it("frees the slot when a call fails", async () => {
+    const f = fetchStub([new Error("ECONNREFUSED"), chatBody('{"a":2}')]);
+    await expect(ollamaStructured(req, f)).rejects.toThrow(AI_UNAVAILABLE);
+    await expect(ollamaStructured(req, f)).resolves.toEqual({ a: 2 });
+  });
+});
+
+describe("ollamaStructured priority", () => {
+  it("serves waiting interactive calls before waiting background ones", async () => {
+    const order: string[] = [];
+    let release!: () => void;
+    const gate = new Promise<void>((r) => (release = r));
+    const f = vi.fn(async (_u: string, init?: RequestInit) => {
+      const tag = JSON.parse(String(init?.body)).messages[1].content as string;
+      order.push(tag);
+      if (tag === "first") await gate;
+      return new Response(chatBody('{"a":1}'), { status: 200 });
+    });
+    const call = (text: string, background: boolean) =>
+      ollamaStructured({ ...req, parts: [{ type: "text", text }], background }, f);
+    const first = call("first", true);
+    await new Promise((r) => setTimeout(r, 0));
+    const rest = [call("bg1", true), call("bg2", true), call("user", false)];
+    release();
+    await Promise.all([first, ...rest]);
+    expect(order).toEqual(["first", "user", "bg1", "bg2"]);
+  });
+});
