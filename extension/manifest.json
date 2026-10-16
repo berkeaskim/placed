@@ -14,10 +14,8 @@
     "storage"
   ],
   "host_permissions": [
-    "http://localhost:3200/*",
-    "http://localhost:3000/*",
-    "https://placed-lovat.vercel.app/*",
-    "https://*.supabase.co/*"
+    "http://localhost/*",
+    "http://127.0.0.1/*"
   ],
   "background": {
     "service_worker": "background.js"
@@ -25,7 +23,8 @@
   "content_scripts": [
     {
       "matches": [
-        "http://localhost:3200/*"
+        "http://localhost/*",
+        "http://127.0.0.1/*"
       ],
       "js": [
         "hello.js"
@@ -69,9 +68,8 @@
     },
     {
       "matches": [
-        "http://localhost:3200/*",
-        "http://localhost:3000/*",
-        "https://placed-lovat.vercel.app/*"
+        "http://localhost/*",
+        "http://127.0.0.1/*"
       ],
       "js": [
         "config.js",

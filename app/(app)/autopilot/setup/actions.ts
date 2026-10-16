@@ -1,7 +1,9 @@
 "use server";
 import { revalidatePath } from "next/cache";
-import { requireUser } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { eq } from "drizzle-orm";
+import { requireUser } from "@/lib/auth/local-user";
+import { db } from "@/lib/db/client";
+import { autopilotPacks, autopilotVault } from "@/lib/db/schema";
 import { awardXP } from "@/lib/gamify/award";
 import { CoreSchema } from "@/lib/autopilot/vault";
 import { openVault, sealVault } from "@/lib/autopilot/vault-crypto";
@@ -23,10 +25,9 @@ export type DeleteResult = { ok: boolean; error?: string };
 const KEYS = Object.keys(CoreSchema.shape) as (keyof typeof CoreSchema.shape)[];
 
 export async function saveVault(_prev: SaveState, form: FormData): Promise<SaveState> {
-  const { supabase, user } = await requireUser();
+  const { user } = await requireUser();
   if (!env.autopilot) return { ok: false, missing: [], invalid: [], unlocked: false };
-  const db = createAdminClient();
-  const { data: prior } = await db.from("autopilot_vault").select("core, completed_at").eq("user_id", user.id).maybeSingle();
+  const prior = db.select({ core: autopilotVault.core, completed_at: autopilotVault.completed_at }).from(autopilotVault).where(eq(autopilotVault.user_id, user.id)).get();
   const merged: Record<string, unknown> = { ...openVault("core", user.id, prior?.core) };
   const invalid: string[] = [];
   const rejected: Record<string, string> = {};
@@ -45,11 +46,15 @@ export async function saveVault(_prev: SaveState, form: FormData): Promise<SaveS
   const completedAt = prior?.completed_at ?? (unlocked ? new Date().toISOString() : null);
   const values: Record<string, string> = {};
   for (const [k, v] of Object.entries({ ...merged, ...rejected })) if (typeof v === "string") values[k] = v;
-  const { error } = await db.from("autopilot_vault").upsert({ user_id: user.id, core: sealVault("core", user.id, merged), completed_at: completedAt, updated_at: new Date().toISOString() }, { onConflict: "user_id" });
-  if (error) return { ok: false, missing, invalid, unlocked: false, values };
+  try {
+    const set = { core: sealVault("core", user.id, merged), completed_at: completedAt, updated_at: new Date().toISOString() };
+    db.insert(autopilotVault).values({ user_id: user.id, ...set }).onConflictDoUpdate({ target: autopilotVault.user_id, set }).run();
+  } catch {
+    return { ok: false, missing, invalid, unlocked: false, values };
+  }
   let xp: number | undefined;
   if (unlocked && !prior?.completed_at) {
-    xp = (await awardXP(supabase, user.id, { type: "autopilot_ready" }).catch((e) => {
+    xp = (await awardXP(user.id, { type: "autopilot_ready" }).catch((e) => {
       console.error("autopilot_ready XP award failed:", e instanceof Error ? e.message : "unknown error");
       return null;
     }))?.xpGained;
@@ -61,11 +66,14 @@ export async function saveVault(_prev: SaveState, form: FormData): Promise<SaveS
 export async function deleteVault(): Promise<DeleteResult> {
   const { user } = await requireUser();
   if (!env.autopilot) return { ok: false, error: "Autopilot isn't switched on." };
-  const db = createAdminClient();
-  const packs = await db.from("autopilot_packs").delete().eq("user_id", user.id);
-  if (packs.error) return { ok: false, error: "We couldn't delete your Autopilot data. Please try again." };
-  const vault = await db.from("autopilot_vault").delete().eq("user_id", user.id);
-  if (vault.error) return { ok: false, error: "We couldn't delete your Autopilot data. Please try again." };
+  try {
+    db.transaction((tx) => {
+      tx.delete(autopilotPacks).where(eq(autopilotPacks.user_id, user.id)).run();
+      tx.delete(autopilotVault).where(eq(autopilotVault.user_id, user.id)).run();
+    });
+  } catch {
+    return { ok: false, error: "We couldn't delete your Autopilot data. Please try again." };
+  }
   revalidatePath("/autopilot/setup");
   return { ok: true };
 }
@@ -74,13 +82,15 @@ export async function deleteVault(): Promise<DeleteResult> {
 export async function forgetAnswer(key: string): Promise<{ ok: boolean }> {
   const { user } = await requireUser();
   if (!env.autopilot || typeof key !== "string" || key.length > 500) return { ok: false };
-  const db = createAdminClient();
-  const { data } = await db.from("autopilot_vault").select("extra").eq("user_id", user.id).maybeSingle();
+  const data = db.select({ extra: autopilotVault.extra }).from(autopilotVault).where(eq(autopilotVault.user_id, user.id)).get();
   const extra = { ...openVault("extra", user.id, data?.extra) };
   if (!Object.hasOwn(extra, key)) return { ok: true };
   delete extra[key];
-  const { error } = await db.from("autopilot_vault").update({ extra: sealVault("extra", user.id, extra), updated_at: new Date().toISOString() }).eq("user_id", user.id);
-  if (error) return { ok: false };
+  try {
+    db.update(autopilotVault).set({ extra: sealVault("extra", user.id, extra), updated_at: new Date().toISOString() }).where(eq(autopilotVault.user_id, user.id)).run();
+  } catch {
+    return { ok: false };
+  }
   revalidatePath("/autopilot/setup");
   return { ok: true };
 }

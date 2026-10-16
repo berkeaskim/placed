@@ -1,20 +1,19 @@
-// Packs extension/ into public/placed-autopilot.zip, pointed at the origin this build will serve from, so students can
-// download it from /autopilot/setup instead of cloning the repo. Runs before `next build` and `next dev`.
-//   Origin: PLACED_PUBLIC_ORIGIN, else Vercel's production domain, else the local dev server.
-//   --store: writes dist/placed-autopilot-store.zip instead, files at the zip root, for the Chrome Web Store upload.
+// Packs extension/ into public/placed-autopilot.zip, pointed at the origin this app serves from, so students can
+// download it from /autopilot/setup instead of loading the repo folder. Runs before `next build` and `next dev`.
+//   Origin: PLACED_PUBLIC_ORIGIN, else http://localhost:$PORT (default 3000).
 import { mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { zipSync, strToU8 } from "fflate";
 
 const ROOT = new URL("..", import.meta.url).pathname;
 const SRC = join(ROOT, "extension");
-const STORE = process.argv.includes("--store");
-const OUT = STORE ? join(ROOT, "dist", "placed-autopilot-store.zip") : join(ROOT, "public", "placed-autopilot.zip");
-const DIR = STORE ? "" : "placed-autopilot/";
-const LOCAL = "http://localhost:3200";
+const OUT = join(ROOT, "public", "placed-autopilot.zip");
+const DIR = "placed-autopilot/";
 
-const fromVercel = process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : null;
-const origin = (process.env.PLACED_PUBLIC_ORIGIN || fromVercel || LOCAL).replace(/\/+$/, "");
+const origin = (process.env.PLACED_PUBLIC_ORIGIN || `http://localhost:${process.env.PORT || 3000}`).replace(/\/+$/, "");
+const u = new URL(origin);
+const origins = [...new Set([origin, ...(["localhost", "127.0.0.1"].includes(u.hostname)
+  ? [`${u.protocol}//localhost${u.port ? `:${u.port}` : ""}`, `${u.protocol}//127.0.0.1${u.port ? `:${u.port}` : ""}`] : [])])];
 
 const walk = (dir) => readdirSync(dir).flatMap((name) => {
   const p = join(dir, name);
@@ -30,20 +29,16 @@ for (const path of walk(SRC)) {
 
 // config.js: the one place the extension learns where Placed runs.
 files[`${DIR}config.js`] = strToU8(
-  `// config.js — where the Placed app runs (set when this copy was packed).\nglobalThis.PLACED_ORIGIN = ${JSON.stringify(origin)};\n`,
+  `// config.js — where the Placed app runs (set when this copy was packed).\nglobalThis.PLACED_ORIGIN = ${JSON.stringify(origin)};\n` +
+  `globalThis.PLACED_ORIGINS = ${JSON.stringify(origins)};\n`,
 );
 
-// manifest: allow fetches to that origin and let the site see the extension is installed.
+// manifest: allow fetches to that origin and let the site see the extension is installed (localhost is already covered).
 const manifest = JSON.parse(readFileSync(join(SRC, "manifest.json"), "utf8"));
-const pattern = `${origin}/*`;
+const pattern = `${u.protocol}//${u.hostname}/*`;
 if (!manifest.host_permissions.includes(pattern)) manifest.host_permissions.unshift(pattern);
-const hello = manifest.content_scripts.find((c) => c.js.includes("hello.js"));
-if (hello && !hello.matches.includes(pattern)) hello.matches.unshift(pattern);
-// The store copy talks only to production; dev copies keep localhost too.
-if (STORE) {
-  const prod = (list) => list.filter((m) => !m.startsWith(LOCAL));
-  manifest.host_permissions = prod(manifest.host_permissions);
-  for (const c of manifest.content_scripts) c.matches = prod(c.matches);
+for (const c of manifest.content_scripts) {
+  if ((c.js.includes("hello.js") || c.js.includes("placed-bridge.js")) && !c.matches.includes(pattern)) c.matches.unshift(pattern);
 }
 files[`${DIR}manifest.json`] = strToU8(JSON.stringify(manifest, null, 2) + "\n");
 

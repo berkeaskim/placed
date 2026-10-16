@@ -1,12 +1,14 @@
 "use server";
 import { revalidatePath } from "next/cache";
-import { requireUser } from "@/lib/supabase/server";
+import { and, eq } from "drizzle-orm";
+import { requireUser } from "@/lib/auth/local-user";
+import { db } from "@/lib/db/client";
+import { cvs, profiles } from "@/lib/db/schema";
 import { awardXP } from "@/lib/gamify/award";
 import type { AwardResult } from "@/lib/gamify/core";
 import { quizToArchetypes } from "@/lib/ai/quizToArchetypes";
 import { QUESTIONS } from "@/lib/quiz/questions";
 import { quizMayWriteArchetypes, roleCards, type RoleCard } from "@/lib/quiz/view";
-import type { ArchetypeScore } from "@/lib/types";
 
 export type SubmitQuizResult =
   | { ok: true; award: AwardResult | null; roles: RoleCard[]; skills: string[]; keptCvRoles: boolean }
@@ -25,30 +27,29 @@ export async function submitQuiz(answers: Record<string, string>): Promise<Submi
     if (typeof a !== "string" || !q.options.some((o) => o.id === a)) return { error: "Answer all six questions." };
     clean[q.id] = a;
   }
-  const { supabase, user } = await requireUser();
+  const { user } = await requireUser();
   const r = await quizToArchetypes(clean);
   if (!r.archetypes.length) return { error: "We couldn't work out your roles. Try the quiz again." };
 
-  const [prof, cv] = await Promise.all([
-    supabase.from("profiles").select("target_archetype").eq("user_id", user.id).single<{ target_archetype: string | null }>(),
-    supabase.from("cvs").select("page_texts, parsed_json").eq("user_id", user.id).eq("is_active", true)
-      .maybeSingle<{ page_texts: string[] | null; parsed_json: { archetypes?: ArchetypeScore[] } | null }>(),
-  ]);
-  if (prof.error || cv.error) return { error: "Couldn't save your quiz — try again." };
-
-  const write = quizMayWriteArchetypes(cv.data);
-  if (write) {
-    const upd = await supabase.from("profiles").update({
-      archetypes: r.archetypes,
-      target_archetype: prof.data?.target_archetype ?? r.archetypes[0].key,
-    }).eq("user_id", user.id);
-    if (upd.error) return { error: "Couldn't save your quiz — try again." };
+  let write: boolean;
+  try {
+    const prof = db.select({ target_archetype: profiles.target_archetype }).from(profiles).where(eq(profiles.user_id, user.id)).get();
+    if (!prof) return { error: "Couldn't save your quiz — try again." };
+    const cv = db.select({ page_texts: cvs.page_texts, parsed_json: cvs.parsed_json }).from(cvs)
+      .where(and(eq(cvs.user_id, user.id), eq(cvs.is_active, true))).get();
+    write = quizMayWriteArchetypes(cv ?? null);
+    if (write) {
+      db.update(profiles).set({ archetypes: r.archetypes, target_archetype: prof.target_archetype ?? r.archetypes[0].key })
+        .where(eq(profiles.user_id, user.id)).run();
+    }
+  } catch {
+    return { error: "Couldn't save your quiz — try again." };
   }
 
   // quiz_done is once per user (DB unique index): a retake returns no XP rather than failing.
   let award: AwardResult | null = null;
   try {
-    award = await awardXP(supabase, user.id, { type: "quiz_done", profileComplete: true });
+    award = await awardXP(user.id, { type: "quiz_done", profileComplete: true });
   } catch (e) {
     console.error("awardXP failed after quiz", e);
   }

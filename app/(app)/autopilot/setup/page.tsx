@@ -1,6 +1,5 @@
 import { notFound } from "next/navigation";
-import { requireUser } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { requireUser } from "@/lib/auth/local-user";
 import { env } from "@/lib/env";
 import { getActiveCv, getProfile } from "@/lib/db/queries";
 import { getVault } from "@/lib/autopilot/server";
@@ -11,9 +10,10 @@ import { ExtensionInstall } from "@/components/autopilot/extension-install";
 
 export default async function AutopilotSetupPage() {
   if (!env.autopilot) notFound();
-  const { supabase, user } = await requireUser();
-  const [vault, profile, cv] = await Promise.all([getVault(createAdminClient(), user.id), getProfile(supabase, user.id), getActiveCv(supabase, user.id)]);
-  const prefill = prefillCore({ email: user.email ?? null, year: profile.year, cv: cv?.parsed ?? null, needsVisa: profile.needs_visa });
+  const { user } = await requireUser();
+  const [vault, profile, cv] = await Promise.all([getVault(user.id), getProfile(user.id), getActiveCv(user.id)]);
+  // The local user has no real email (you@localhost): the CV's email is the prefill.
+  const prefill = prefillCore({ email: null, year: profile.year, cv: cv?.parsed ?? null, needsVisa: profile.needs_visa });
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-4">
       <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">Set up Autopilot</h1>

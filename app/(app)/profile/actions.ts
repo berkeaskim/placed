@@ -1,7 +1,10 @@
 "use server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requireUser } from "@/lib/supabase/server";
+import { and, eq } from "drizzle-orm";
+import { requireUser } from "@/lib/auth/local-user";
+import { db } from "@/lib/db/client";
+import { cvs, profiles } from "@/lib/db/schema";
 import { scoreCv } from "@/lib/cv-score/run";
 import { ARCHETYPES, YEARS, type Archetype, type Year } from "@/lib/types";
 
@@ -10,22 +13,23 @@ const toYear = (y: unknown): Year => ((YEARS as readonly string[]).includes(y as
 
 /** Score the active CV for `sector` (cached per CV × sector inside scoreCv). Returns false when there is no active CV. */
 async function scoreActiveCv(sector: Archetype): Promise<boolean> {
-  const { supabase, user } = await requireUser();
-  const [{ data: cv }, { data: p }] = await Promise.all([
-    supabase.from("cvs").select("id").eq("user_id", user.id).eq("is_active", true).maybeSingle<{ id: string }>(),
-    supabase.from("profiles").select("year").eq("user_id", user.id).single<{ year: string | null }>(),
-  ]);
+  const { user } = await requireUser();
+  const cv = db.select({ id: cvs.id }).from(cvs).where(and(eq(cvs.user_id, user.id), eq(cvs.is_active, true))).get();
+  const p = db.select({ year: profiles.year }).from(profiles).where(eq(profiles.user_id, user.id)).get();
   if (!cv) return false;
-  await scoreCv(supabase, { userId: user.id, cvId: cv.id, sector, year: toYear(p?.year) });
+  await scoreCv({ userId: user.id, cvId: cv.id, sector, year: toYear(p?.year) });
   return true;
 }
 
 /** Sector switcher: saves the target sector and rescores the active CV for it. */
 export async function setTargetSector(sector: Archetype): Promise<{ error: string; switched: boolean } | { ok: true }> {
   if (!isArchetype(sector)) return { error: "Pick a sector from the list.", switched: false };
-  const { supabase, user } = await requireUser();
-  const upd = await supabase.from("profiles").update({ target_archetype: sector }).eq("user_id", user.id);
-  if (upd.error) return { error: "Couldn't switch sector — try again.", switched: false };
+  const { user } = await requireUser();
+  try {
+    db.update(profiles).set({ target_archetype: sector }).where(eq(profiles.user_id, user.id)).run();
+  } catch {
+    return { error: "Couldn't switch sector — try again.", switched: false };
+  }
   let failed = false;
   try { await scoreActiveCv(sector); } catch (e) {
     console.error("setTargetSector: scoreCv failed", e);
