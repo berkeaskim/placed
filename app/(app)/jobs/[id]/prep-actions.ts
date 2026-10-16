@@ -5,6 +5,7 @@ import { getActiveCv, getJob } from "@/lib/db/queries";
 import { isUuid } from "@/lib/feed/save-result";
 import { isPastSaved } from "@/lib/tracker/status";
 import { currentModelId } from "@/lib/ai/models";
+import { aiMode } from "@/lib/env";
 import { generatePrepPack, mapStories, PrepResult } from "@/lib/ai/interviewPrep";
 import { roleKey } from "@/lib/interview-prep/sources";
 import { getOrCreatePrep, type PrepView } from "@/lib/interview-prep/service";
@@ -28,6 +29,8 @@ export async function getInterviewPrep(jobId: string): Promise<PrepView | { erro
   const key = roleKey(job);
   const admin = createAdminClient();
   return getOrCreatePrep({
+    key: `${companyId}:${key}`,
+    cache: aiMode() !== "fixture",
     now: () => new Date(),
     readCache: async () => {
       const { data } = await supabase.from("interview_preps").select("pack, sources, grounded, created_at").eq("company_id", companyId).eq("role_key", key).maybeSingle();
@@ -36,8 +39,9 @@ export async function getInterviewPrep(jobId: string): Promise<PrepView | { erro
       return parsed.success ? { ...parsed.data, createdAt: data.created_at as string } : null;
     },
     countRecent: async (since) => {
-      const { count } = await admin.from("interview_preps").select("company_id", { count: "exact", head: true }).eq("created_by", user.id).gte("created_at", since);
-      return count ?? 0;
+      const { count, error } = await admin.from("interview_preps").select("company_id", { count: "exact", head: true }).eq("created_by", user.id).gte("created_at", since);
+      if (error || count === null) throw new Error(`interview prep: daily count unavailable${error ? `: ${error.message}` : ""}`);
+      return count;
     },
     writeCache: async (r, createdAt) => {
       const { error } = await admin.from("interview_preps").upsert({

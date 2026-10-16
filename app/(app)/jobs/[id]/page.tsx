@@ -25,8 +25,9 @@ import { PeoplePanel } from "@/components/outreach/people-panel";
 import { OUTREACH_TARGETS } from "@/lib/outreach/targets";
 import type { OutreachPurpose } from "@/lib/outreach/draft";
 
-// Interview prep's first generation runs a grounded web search (~40-60 s).
-export const maxDuration = 120;
+// Interview prep's first generation runs a grounded web search (~35-60 s, more if Gemini retries a 503). 300 s is the
+// Fluid compute default, so the page's other actions (tailor, autopilot) keep the limit they had before.
+export const maxDuration = 300;
 
 const BAND_TONE = {
   Strong: "bg-[#E3F6EE] text-[#0B6B49]", Good: "bg-[#E6EEFF] text-[#2340A8]",
