@@ -1,5 +1,7 @@
 import "server-only";
-import type { SupabaseClient } from "@supabase/supabase-js";
+import { and, eq, sql } from "drizzle-orm";
+import { db } from "@/lib/db/client";
+import { confirmedFacts, playbookProgress, profiles } from "@/lib/db/schema";
 import { awardXP } from "@/lib/gamify/award";
 import type { AwardResult } from "@/lib/gamify/core";
 import { PLAYBOOKS, type Action } from "@/lib/playbooks";
@@ -26,9 +28,32 @@ export function actionFor(id: string, sector: Archetype, year: Year): Action | n
   return a && YEARS.indexOf(a.minYear) <= YEARS.indexOf(year) ? a : null;
 }
 
-async function studentTarget(supabase: SupabaseClient, userId: string) {
-  const { data } = await supabase.from("profiles").select("target_archetype, archetypes, year").eq("user_id", userId).maybeSingle();
-  return targetFor(data ?? {});
+function studentTarget(userId: string) {
+  const row = db.select({ target_archetype: profiles.target_archetype, archetypes: profiles.archetypes, year: profiles.year })
+    .from(profiles).where(eq(profiles.user_id, userId)).get();
+  return targetFor(row ?? {});
+}
+
+const progressOf = (userId: string, id: string) =>
+  db.select({ status: playbookProgress.status }).from(playbookProgress)
+    .where(and(eq(playbookProgress.user_id, userId), eq(playbookProgress.action_id, id))).get();
+
+function upsertProgress(row: typeof playbookProgress.$inferInsert) {
+  // like a PostgREST upsert: only the columns given are overwritten
+  const set = Object.fromEntries(Object.entries(row).filter(([k]) => k !== "user_id" && k !== "action_id"));
+  db.insert(playbookProgress).values(row)
+    .onConflictDoUpdate({ target: [playbookProgress.user_id, playbookProgress.action_id], set }).run();
+}
+
+/** Runs a write; false (logged) when the DB rejects it. */
+function tryWrite(what: string, fn: () => void): boolean {
+  try {
+    fn();
+    return true;
+  } catch (e) {
+    console.error(`target: ${what} failed`, e instanceof Error ? e.message : e);
+    return false;
+  }
 }
 
 /** The note is the student's own words: trimmed, never rewritten. The link is kept apart from it. */
@@ -46,14 +71,13 @@ export function validateCompletion(note: unknown, url: unknown): { note: string;
   return { note: clean, url: link };
 }
 
-export async function planAction(supabase: SupabaseClient, userId: string, id: unknown) {
+export async function planAction(userId: string, id: unknown) {
   if (typeof id !== "string" || !findAction(id)) return { error: "Unknown action." };
-  const t = await studentTarget(supabase, userId);
+  const t = studentTarget(userId);
   if (!actionFor(id, t.sector, t.year)) return { error: "That step isn't part of your target role." };
-  const { data: prev } = await supabase.from("playbook_progress").select("status").eq("user_id", userId).eq("action_id", id).maybeSingle();
-  if (prev?.status === "done") return { ok: true as const }; // never downgrade a done item
-  const { error } = await supabase.from("playbook_progress").upsert({ user_id: userId, action_id: id, status: "planned", updated_at: new Date().toISOString() });
-  return error ? { error: SAVE_FAILED } : { ok: true as const };
+  if (progressOf(userId, id)?.status === "done") return { ok: true as const }; // never downgrade a done item
+  const ok = tryWrite("plan", () => upsertProgress({ user_id: userId, action_id: id, status: "planned", updated_at: new Date().toISOString() }));
+  return ok ? { ok: true as const } : { error: SAVE_FAILED };
 }
 
 export type CompleteResult = { error: string } | { award: AwardResult | null; firstTime: boolean };
@@ -63,28 +87,25 @@ export type CompleteResult = { error: string } | { award: AwardResult | null; fi
  * playbook's skills into the corpus) becomes a confirmed fact: the only way a playbook item reaches tailoring.
  * Order: fact first, then done, so "done" always implies the fact exists and a retry can't skip it.
  */
-export async function completeAction(supabase: SupabaseClient, userId: string, id: unknown, note: unknown, url: unknown): Promise<CompleteResult> {
+export async function completeAction(userId: string, id: unknown, note: unknown, url: unknown): Promise<CompleteResult> {
   if (typeof id !== "string" || !findAction(id)) return { error: "Unknown action." };
   const v = validateCompletion(note, url);
   if ("error" in v) return v;
-  const t = await studentTarget(supabase, userId);
+  const t = studentTarget(userId);
   if (!actionFor(id, t.sector, t.year)) return { error: "That step isn't part of your target role." };
 
-  const { data: prev, error: readErr } = await supabase.from("playbook_progress").select("status").eq("user_id", userId).eq("action_id", id).maybeSingle();
-  if (readErr) return { error: SAVE_FAILED };
-  const firstTime = prev?.status !== "done";
-  if (firstTime) {
-    const fact = await supabase.from("confirmed_facts").insert({ user_id: userId, claim: v.note, source: "user-stated" });
-    if (fact.error) return { error: SAVE_FAILED };
+  const firstTime = progressOf(userId, id)?.status !== "done";
+  if (firstTime && !tryWrite("fact insert", () => db.insert(confirmedFacts).values({ user_id: userId, claim: v.note, source: "user-stated" }).run())) {
+    return { error: SAVE_FAILED };
   }
-  const up = await supabase.from("playbook_progress").upsert({
+  const up = tryWrite("complete", () => upsertProgress({
     user_id: userId, action_id: id, status: "done", evidence_note: v.note, evidence_url: v.url, updated_at: new Date().toISOString(),
-  });
-  if (up.error) return { error: SAVE_FAILED };
+  }));
+  if (!up) return { error: SAVE_FAILED };
   if (!firstTime) return { award: null, firstTime };
   try {
-    // xp_events.ref (0010) makes this once per action even if two requests race
-    return { award: await awardXP(supabase, userId, { type: "playbook_done", ref: id }), firstTime };
+    // xp_events.ref makes this once per action even if two requests race
+    return { award: await awardXP(userId, { type: "playbook_done", ref: id }), firstTime };
   } catch (e) {
     console.error("completeAction: awardXP failed", e instanceof Error ? e.message : e);
     return { award: null, firstTime }; // the action and the fact are saved; only the XP is missing
@@ -96,17 +117,16 @@ export async function completeAction(supabase: SupabaseClient, userId: string, i
  * verifyTailoring accepts the skill from now on; the CV itself is never changed. No XP: a claim isn't an action.
  * The link is not part of the claim, so a URL path can't confirm extra skills.
  */
-export async function confirmSkill(supabase: SupabaseClient, userId: string, skill: unknown, note: unknown, url: unknown) {
+export async function confirmSkill(userId: string, skill: unknown, note: unknown, url: unknown) {
   const canon = typeof skill === "string" ? canonicalize(skill.trim()) : null;
   if (!canon) return { error: "Unknown skill." };
   const v = validateCompletion(note, url);
   if ("error" in v) return { error: v.error.replace("what you did", `where you used ${canon}`) };
   const prefix = `${canon}: `;
-  const { data: prev, error: readErr } = await supabase.from("confirmed_facts").select("id")
-    .eq("user_id", userId).like("claim", `${prefix.replace(/[%_\\]/g, "\\$&")}%`).limit(1).maybeSingle();
-  if (readErr) return { error: SAVE_FAILED };
+  const prev = db.select({ id: confirmedFacts.id }).from(confirmedFacts)
+    .where(and(eq(confirmedFacts.user_id, userId), sql`instr(${confirmedFacts.claim}, ${prefix}) = 1`)).limit(1).get();
   if (prev) return { ok: true as const, stored: null };
   const claim = `${prefix}${v.note}`;
-  const { error } = await supabase.from("confirmed_facts").insert({ user_id: userId, claim, source: "user-stated" });
-  return error ? { error: SAVE_FAILED } : { ok: true as const, stored: claim };
+  const ok = tryWrite("skill fact insert", () => db.insert(confirmedFacts).values({ user_id: userId, claim, source: "user-stated" }).run());
+  return ok ? { ok: true as const, stored: claim } : { error: SAVE_FAILED };
 }

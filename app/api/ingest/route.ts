@@ -1,77 +1,51 @@
-import { timingSafeEqual } from "node:crypto";
-import { NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
-import { createAdminClient } from "@/lib/supabase/admin";
-import { env } from "@/lib/env";
-import { fetchJobs } from "@/lib/ingest/providers";
-import { ingestCompany, type CompanyRow } from "@/lib/ingest/run";
-import { supabaseStore } from "@/lib/ingest/store";
-import { batchSlice, parseBatch, shouldStartNext } from "@/lib/ingest/batch";
-import { tagJob } from "@/lib/ai/tagJob";
+import { IngestBusyError, ingestRunning, lastIngestAt, runIngest } from "@/lib/ingest/local";
 import { JOBS_TAG } from "@/lib/feed/jobs-cache";
 
-export const maxDuration = 300;
+export const dynamic = "force-dynamic";
 
-function authorized(request: Request): boolean {
-  if (!env.cronSecret) return false;
-  const got = Buffer.from(request.headers.get("authorization") ?? "");
-  const want = Buffer.from(`Bearer ${env.cronSecret}`);
-  return got.length === want.length && timingSafeEqual(got, want);
+/** Another site's page in the user's browser must not be able to start a run (no auth locally, so check the origin). */
+function sameOrigin(request: Request): boolean {
+  const site = request.headers.get("sec-fetch-site");
+  if (site && site !== "same-origin") return false;
+  const origin = request.headers.get("origin");
+  if (!origin) return site === "same-origin";
+  try {
+    return new URL(origin).host === (request.headers.get("host") ?? new URL(request.url).host);
+  } catch {
+    return false;
+  }
 }
 
-export async function GET(request: Request) {
-  if (!authorized(request)) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  const batch = parseBatch(new URL(request.url).searchParams.get("batch"));
-  if (batch === "invalid") return NextResponse.json({ error: "batch must be an integer >= 0" }, { status: 400 });
+export async function GET() {
+  return Response.json({ running: ingestRunning(), lastRun: lastIngestAt() }, { headers: { "Cache-Control": "no-store" } });
+}
 
-  const db = createAdminClient();
-  const store = supabaseStore(db);
-  const { data: companies, error: cErr } = await db.from("companies").select("*").eq("enabled", true).order("id");
-  if (cErr) return NextResponse.json({ error: `companies: ${cErr.message}` }, { status: 500 });
-  const list = (companies ?? []) as CompanyRow[];
-  const log: string[] = [];
-  const started = Date.now();
-
-  async function run(c: CompanyRow) {
-    try {
-      const r = await ingestCompany(c, { fetchJobs, tagJob, store });
-      log.push(`${c.slug}: kept ${r.kept}, tagged ${r.tagged}, pending ${r.pending}, dead ${r.dead}`);
-    } catch (e) {
-      log.push(`${c.slug}: ERROR ${(e as Error).message}`);
-    }
-  }
-
-  // Explicit batch: ~10 companies per call, no cursor, same time budget.
-  if (batch !== null) {
-    let partial = false;
-    for (const c of batchSlice(list, batch)) {
-      if (!shouldStartNext(Date.now() - started)) { partial = true; break; }
-      await run(c);
-    }
-    revalidateTag(JOBS_TAG, "max");
-    return NextResponse.json({ batch, total: list.length, partial, log });
-  }
-
-  // Vercel Cron: resume from the stored cursor, time-boxed, cursor saved after every company.
-  const { data: state, error: sErr } = await db.from("ingest_state").select("cursor").eq("id", 1).single();
-  if (sErr) return NextResponse.json({ error: `ingest_state: ${sErr.message}` }, { status: 500 });
-  // Normalise into [0, n): a negative/corrupt stored cursor must not index list[-1].
-  const n = Math.max(1, list.length);
-  const stored = Math.trunc(Number(state?.cursor ?? 0)) || 0;
-  let cursor = ((stored % n) + n) % n;
-  let partial = false;
-  const save = () => db.from("ingest_state").update({ cursor, updated_at: new Date().toISOString() }).eq("id", 1);
-  try {
-    while (list.length) {
-      if (!shouldStartNext(Date.now() - started)) { partial = true; break; }
-      await run(list[cursor]);
-      cursor = (cursor + 1) % list.length;
-      await save();
-      if (cursor === 0) break;
-    }
-  } finally {
-    await save();
-    revalidateTag(JOBS_TAG, "max");
-  }
-  return NextResponse.json({ cursor, partial, log });
+/**
+ * The feed's "Refresh jobs" button: runs the ingest pipeline (same as `npm run ingest`) and streams NDJSON, one
+ * `{ type: "progress", ... }` line per company and a final `{ type: "done", ... }` or `{ type: "error", ... }`.
+ * 409 when a run is already going.
+ */
+export async function POST(request: Request) {
+  if (!sameOrigin(request)) return Response.json({ error: "forbidden" }, { status: 403 });
+  if (ingestRunning()) return Response.json({ error: new IngestBusyError().message }, { status: 409 });
+  const enc = new TextEncoder();
+  const stream = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      const send = (o: unknown) => {
+        try { controller.enqueue(enc.encode(`${JSON.stringify(o)}\n`)); } catch { /* client went away; the run continues */ }
+      };
+      try {
+        const summary = await runIngest({ onProgress: (p) => send({ type: "progress", ...p }) });
+        try { revalidateTag(JOBS_TAG, { expire: 0 }); } catch { /* the feed's refresh action (updateTag) covers it */ }
+        send({ type: "done", ...summary });
+      } catch (e) {
+        if (!(e instanceof IngestBusyError)) console.error("ingest: run failed", e instanceof Error ? e.message : e);
+        send({ type: "error", error: e instanceof IngestBusyError ? e.message : "The refresh failed. Try again." });
+      } finally {
+        try { controller.close(); } catch { /* already closed */ }
+      }
+    },
+  });
+  return new Response(stream, { headers: { "Content-Type": "application/x-ndjson; charset=utf-8", "Cache-Control": "no-store" } });
 }

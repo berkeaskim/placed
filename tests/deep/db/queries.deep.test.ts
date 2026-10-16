@@ -1,4 +1,9 @@
-import { describe, it, expect } from "vitest";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
+import { afterAll, beforeAll, describe, it, expect } from "vitest";
+import { db, resetDbForTests } from "@/lib/db/client";
+import { profiles } from "@/lib/db/schema";
 import { getProfile, toStudent, type ProfileRow } from "@/lib/db/queries";
 
 const row: ProfileRow = {
@@ -20,16 +25,23 @@ describe("toStudent", () => {
 });
 
 describe("getProfile", () => {
-  const client = (res: { data: unknown; error: unknown }, seen: unknown[]) => ({
-    from: (t: string) => ({ select: (c: string) => ({ eq: (k: string, v: string) => { seen.push([t, c, k, v]); return { single: async () => res }; } }) }),
-  }) as never;
-  it("scopes the read to the given user id", async () => {
-    const seen: unknown[] = [];
-    expect(await getProfile(client({ data: row, error: null }, seen), "u1")).toBe(row);
-    expect(seen).toEqual([["profiles", "*", "user_id", "u1"]]);
+  let dir: string;
+  const prevDir = process.env.PLACED_DATA_DIR;
+  beforeAll(() => {
+    dir = mkdtempSync(path.join(tmpdir(), "placed-q-"));
+    process.env.PLACED_DATA_DIR = dir;
+    resetDbForTests();
   });
-  it("throws the Supabase error (e.g. RLS-filtered / missing row)", async () => {
-    const err = { code: "PGRST116", message: "0 rows" };
-    await expect(getProfile(client({ data: null, error: err }, []), "u1")).rejects.toBe(err);
+  afterAll(() => {
+    resetDbForTests();
+    process.env.PLACED_DATA_DIR = prevDir;
+    rmSync(dir, { recursive: true, force: true });
+  });
+  it("scopes the read to the given user id", async () => {
+    db.insert(profiles).values([{ user_id: "u1", display_name: "Sam" }, { user_id: "u2", display_name: "Other" }]).run();
+    expect(await getProfile("u1")).toMatchObject({ user_id: "u1", display_name: "Sam" });
+  });
+  it("throws for a missing row", async () => {
+    await expect(getProfile("nobody")).rejects.toThrow(/not found/);
   });
 });

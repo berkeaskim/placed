@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { DeleteDataForm } from "./delete-data-form";
+import { JobSearchSettings } from "@/components/settings/job-search";
 import { aiProvider } from "@/lib/ai/config";
 
 const PROVIDER_LABEL = { anthropic: "Claude", gemini: "Gemini", ollama: "Ollama (local)" } as const;
@@ -18,6 +19,7 @@ export default async function Settings() {
           AI settings
         </Link>
       </section>
+      <JobSearchSettings />
       <section className="card-quest flex flex-col gap-3 p-5">
         <h2 className="font-bold">Your data</h2>
         <p className="text-sm text-muted-foreground">Everything is stored on this computer, in the <code>data/</code> folder.</p>

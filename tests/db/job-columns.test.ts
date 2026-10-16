@@ -1,90 +1,64 @@
-import { describe, it, expect } from "vitest";
-import type { SupabaseClient } from "@supabase/supabase-js";
-import { getJob, getLiveJobs } from "@/lib/db/queries";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { db, resetDbForTests } from "@/lib/db/client";
+import { companies, cvs, jobs, profiles, type NewJob } from "@/lib/db/schema";
+import { getActiveCv, getJob, getLiveJobs, getProfile } from "@/lib/db/queries";
 
-const dbRow = {
-  id: "j1", ext_id: "e1", title: "Analyst", url: "https://x", location: "London", remote: false, deadline: null, posted_at: null,
-  archetype: "data_analytics", year_eligibility: [], sponsors_visa: "unknown", employment_type: "internship", first_year_friendly: true,
-  cohort_clash: null, requirements: [], text_lines: [], summary: "", companies: { name: "Acme" },
-};
-
-/** Fake jobs query: fails with `missingCode` whenever the select asks for `rolling`, like a DB without migration 0004. */
-function fake(opts: { rolling?: boolean; missingCode?: string; otherError?: boolean }) {
-  const selects: string[] = [];
-  const client = {
-    from: () => ({
-      select: (cols: string) => {
-        selects.push(cols);
-        const asksRolling = /\brolling\b/.test(cols);
-        const res = opts.otherError
-          ? { data: null, error: { code: "57014", message: "timeout" } }
-          : asksRolling && opts.missingCode
-            ? { data: null, error: { code: opts.missingCode, message: "column jobs.rolling does not exist" } }
-            : { data: [{ ...dbRow, ...(asksRolling ? { rolling: opts.rolling ?? false } : {}) }], error: null };
-        const q = {
-          eq: () => q, or: () => q, order: () => q, limit: () => q, range: () => q,
-          maybeSingle: async () => ({ data: res.data?.[0] ?? null, error: res.error }),
-          then: (ok: (v: unknown) => unknown, bad: (e: unknown) => unknown) => Promise.resolve(res).then(ok, bad),
-        };
-        return q;
-      },
-    }),
-  };
-  return { client: client as unknown as SupabaseClient, selects };
-}
-
-describe("job queries read `rolling` with a fallback for a DB without migration 0004", () => {
-  it("returns rolling when the column exists (one query)", async () => {
-    const f = fake({ rolling: true });
-    const [job] = await getLiveJobs(f.client, "2026-10-14");
-    expect(job.rolling).toBe(true);
-    expect(f.selects).toHaveLength(1);
-    expect((await getJob(fake({ rolling: true }).client, "j1"))?.rolling).toBe(true);
-  });
-  for (const code of ["42703", "PGRST204"]) {
-    it(`retries without rolling on ${code} (column missing)`, async () => {
-      const f = fake({ missingCode: code });
-      const jobs = await getLiveJobs(f.client, "2026-10-14");
-      expect(jobs).toHaveLength(1);
-      expect(jobs[0].rolling).toBe(false);
-      expect(f.selects).toHaveLength(2);
-      expect(f.selects[1]).not.toMatch(/\brolling\b/);
-      const g = fake({ missingCode: code });
-      expect((await getJob(g.client, "j1"))?.title).toBe("Analyst");
-      expect(g.selects).toHaveLength(2);
-    });
-  }
-  it("other errors still throw (getLiveJobs) and are not retried", async () => {
-    const f = fake({ otherError: true });
-    await expect(getLiveJobs(f.client, "2026-10-14")).rejects.toMatchObject({ code: "57014" });
-    expect(f.selects).toHaveLength(1);
-  });
+let dir: string;
+const prevDir = process.env.PLACED_DATA_DIR;
+beforeAll(() => {
+  dir = mkdtempSync(path.join(tmpdir(), "placed-jobs-"));
+  process.env.PLACED_DATA_DIR = dir;
+  resetDbForTests();
+});
+afterAll(() => {
+  resetDbForTests();
+  process.env.PLACED_DATA_DIR = prevDir;
+  rmSync(dir, { recursive: true, force: true });
 });
 
-describe("getLiveJobs pages past PostgREST's row cap", () => {
-  it("reads every page until a short one", async () => {
-    const { LIVE_JOBS_PAGE } = await import("@/lib/db/queries");
-    const total = LIVE_JOBS_PAGE * 2 + 7;
-    const ranges: [number, number][] = [];
-    const client = {
-      from: () => ({
-        select: () => {
-          let r: [number, number] = [0, 0];
-          const q = {
-            eq: () => q, or: () => q, order: () => q,
-            range: (a: number, b: number) => { r = [a, b]; ranges.push(r); return q; },
-            then: (ok: (v: unknown) => unknown) => {
-              const n = Math.max(0, Math.min(r[1] + 1, total) - r[0]);
-              return Promise.resolve({ data: Array.from({ length: n }, (_, i) => ({ ...dbRow, id: `j${r[0] + i}`, rolling: false })), error: null }).then(ok);
-            },
-          };
-          return q;
-        },
-      }),
-    } as unknown as SupabaseClient;
-    const jobs = await getLiveJobs(client, "2026-10-14");
-    expect(jobs).toHaveLength(total);
-    expect(new Set(jobs.map((j) => j.id)).size).toBe(total);
-    expect(ranges).toEqual([[0, LIVE_JOBS_PAGE - 1], [LIVE_JOBS_PAGE, 2 * LIVE_JOBS_PAGE - 1], [2 * LIVE_JOBS_PAGE, 3 * LIVE_JOBS_PAGE - 1]]);
+const TODAY = "2026-10-16";
+let companyId: number;
+const job = (over: Partial<NewJob>) =>
+  db.insert(jobs).values({ company_id: companyId, ext_id: crypto.randomUUID(), title: "Analyst", url: "https://x", ...over }).returning().get();
+
+describe("job queries on SQLite", () => {
+  beforeAll(() => {
+    companyId = db.insert(companies).values({ slug: "acme", name: "Acme", ats: "lever" }).returning().get().id;
+  });
+
+  it("getLiveJobs: live, open (deadline today counts), newest first with undated last, id as tiebreak", async () => {
+    const a = job({ title: "A", posted_at: "2026-10-01T09:00:00+00:00" });
+    const b = job({ title: "B", posted_at: "2026-10-10T09:00:00+00:00", deadline: TODAY, rolling: true });
+    const c = job({ title: "C", posted_at: null });
+    job({ title: "closed", deadline: "2026-10-15" });
+    job({ title: "dead", is_live: false });
+    const live = await getLiveJobs(TODAY);
+    expect(live.map((j) => j.title)).toEqual(["B", "A", "C"]);
+    expect(live[0]).toMatchObject({ id: b.id, company: "Acme", rolling: true, deadline: TODAY, extId: b.ext_id, cohortClash: false });
+    expect(live[1]).toMatchObject({ id: a.id, rolling: false, yearEligibility: [], requirements: [], textLines: [] });
+    expect(live[2].id).toBe(c.id);
+  });
+
+  it("getLiveJobs rejects a non-date `today`", async () => {
+    await expect(getLiveJobs("2026-10-16' or 1=1 --")).rejects.toThrow(/YYYY-MM-DD/);
+  });
+
+  it("getJob returns any job by id (live or not), null when missing", async () => {
+    const d = job({ title: "Gone", is_live: false, text_lines: ["## About"] });
+    expect(await getJob(d.id)).toMatchObject({ title: "Gone", company: "Acme", textLines: ["## About"] });
+    expect(await getJob(crypto.randomUUID())).toBeNull();
+  });
+
+  it("getActiveCv / getProfile", async () => {
+    expect(await getActiveCv("u1")).toBeNull();
+    await expect(getProfile("u1")).rejects.toThrow(/not found/);
+    db.insert(profiles).values({ user_id: "u1", skills: ["SQL"] }).run();
+    expect(await getProfile("u1")).toMatchObject({ user_id: "u1", skills: ["SQL"], needs_visa: false });
+    const cv = db.insert(cvs).values({ user_id: "u1", storage_path: "u1/cv.pdf", file_size: 1, page_count: 1, raw_text: "hi", parsed_json: { name: "S" } as never })
+      .returning().get();
+    expect(await getActiveCv("u1")).toEqual({ id: cv.id, parsed: { name: "S" }, rawText: "hi" });
   });
 });
