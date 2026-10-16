@@ -6,6 +6,7 @@ import { extractLinkedInLines } from "@/lib/linkedin/extract";
 import { parseLinkedInExport, type ParsedLinkedIn } from "@/lib/linkedin/parse-export";
 import { fetchPublicProfile, normalizeProfileUrl } from "@/lib/linkedin/fetch-public";
 import { parsePublicProfile } from "@/lib/linkedin/parse-public";
+import { parseCapturedProfile, type CapturePayload } from "@/lib/linkedin/parse-capture";
 import { judgeLinkedIn } from "@/lib/ai/judgeLinkedIn";
 import { scoreLinkedIn, type LiScoreResult } from "./score";
 import type { LiFix } from "./aggregate";
@@ -79,6 +80,27 @@ export async function scoreLinkedInUrl(
   return scoreParsed(supabase, { ...i, li, text, cv, source: "url" });
 }
 
+/** The extension posted a ticket that was already used. */
+export class CaptureUsedError extends Error {}
+
+/**
+ * Profile read by the Placed extension in the student's own logged-in LinkedIn tab → score. `db` is the admin
+ * client (the extension has no Placed session; the signed ticket names the user). One score per ticket nonce.
+ */
+export async function scoreLinkedInCapture(
+  db: SupabaseClient,
+  i: { userId: string; nonce: string; payload: CapturePayload; sector: Archetype; year: Year; today?: Date },
+): Promise<LiPanelData> {
+  const used = await db.from("linkedin_scores").select("id").eq("user_id", i.userId).eq("meta->>captureNonce", i.nonce).limit(1);
+  if (used.data?.length) throw new CaptureUsedError("ticket already used");
+  const cv = await activeCv(db, i.userId);
+  const slug = i.payload.profileUrl.match(/linkedin\.com\/in\/([^/?#]+)/i)?.[1];
+  const { li, text } = parseCapturedProfile(i.payload, slug ? `https://www.linkedin.com/in/${slug}` : "https://www.linkedin.com/in/me");
+  const cvName = cv?.name?.trim();
+  if (cvName && li.name && !sameName(li.name, cvName)) throw new NotYourProfileError("profile name does not match the CV");
+  return scoreParsed(db, { ...i, li, text, cv, source: "extension", extraMeta: { captureNonce: i.nonce } });
+}
+
 /**
  * PDF bytes → parsed profile → score for one sector, compared with the user's active CV when there is one.
  * Persists to linkedin_scores (skipped with a warning while migration 0013 is unapplied). Never stores the PDF.
@@ -97,7 +119,7 @@ export async function scoreLinkedInPdf(
 /** Shared core for both inputs: score, persist (when migration 0013 is applied), return the panel data. */
 async function scoreParsed(
   supabase: SupabaseClient,
-  i: { userId: string; li: ParsedLinkedIn; text: string; cv: ParsedCV | null; sector: Archetype; year: Year; today?: Date; source: "pdf" | "url" },
+  i: { userId: string; li: ParsedLinkedIn; text: string; cv: ParsedCV | null; sector: Archetype; year: Year; today?: Date; source: "pdf" | "url" | "extension"; extraMeta?: Record<string, string> },
 ): Promise<LiPanelData> {
   const { li, text, cv } = i;
   const hash = createHash("sha256").update(text.replace(/\s+/g, " ").trim()).digest("hex");
@@ -119,7 +141,7 @@ async function scoreParsed(
   const ins = await supabase.from("linkedin_scores").insert({
     user_id: i.userId, sector: i.sector, year: i.year, total: data.total, label: data.label, dimensions: data.dimensions,
     caps_applied: data.capsApplied, fixes: data.fixes, rule_results: score.results, tips: data.tips,
-    meta: { source: i.source, assessed: data.assessed, passed: data.passed, notCovered: data.notCovered, couldNotAssess: data.couldNotAssess, aiUnavailable: data.aiUnavailable, hasCv: data.hasCv, parseWarnings: data.parseWarnings, profile: data.profile },
+    meta: { ...i.extraMeta, source: i.source, assessed: data.assessed, passed: data.passed, notCovered: data.notCovered, couldNotAssess: data.couldNotAssess, aiUnavailable: data.aiUnavailable, hasCv: data.hasCv, parseWarnings: data.parseWarnings, profile: data.profile },
     profile_json: profileJson, text_hash: hash,
   });
   if (missingTable(ins.error)) console.warn("linkedin_scores missing: run supabase/migrations/0014_linkedin_scores.sql");

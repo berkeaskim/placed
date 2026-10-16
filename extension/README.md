@@ -41,6 +41,21 @@ link; the extension claims the pack, fills what it can and shows a purple panel 
   selects your saved answer for you.
 - Dashed grey: your call (diversity questions, consent boxes, unapproved drafts and anything Placed doesn't know).
 
+## LinkedIn Score (one click)
+
+On **Profile → LinkedIn** press **Score my LinkedIn in one click**. Placed opens `linkedin.com/in/me` in a new tab;
+the extension reads your own profile there with your LinkedIn sign-in, then `/details/skills/` for the full skills
+list, posts it to Placed and switches you back. LinkedIn blocks other sites from reading profiles, which is why this
+runs in your browser.
+
+- It runs only when Placed handed it a ticket in the last 3 minutes, and only on your own profile
+  (`?isSelfProfile=true`). Browsing LinkedIn normally, it does nothing.
+- Its only clicks expand "… more" text (through `PlacedGuard.safeClick`). It never edits anything and never opens
+  Contact info (email, phone, birthday).
+- The ticket is signed by Placed, lasts 10 minutes and scores once. Placed also refuses a profile whose name doesn't
+  match your CV.
+- Origins allowed to hand out tickets are `PLACED_ORIGINS` in `config.js`; each needs a `host_permissions` entry.
+
 ## What is not supported
 
 - Greenhouse forms **embedded in an employer's own careers site** (an iframe from `boards.greenhouse.io/embed/...`).

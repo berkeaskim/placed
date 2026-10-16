@@ -34,6 +34,7 @@ export function renderLinkedIn(li: ParsedLinkedIn): string {
   }
   const list = (h: string, xs: string[]) => out.push(h, xs.length ? xs.join(", ") : "(none)");
   if (li.warnings.includes("public_view_no_skills")) out.push("TOP SKILLS", "(not visible on the public profile: treat rules about the skills list as not_applicable)");
+  else if (li.warnings.includes("skills_partial")) out.push("TOP SKILLS", `${li.topSkills.join(", ")} (only the first few were read: do not judge how many skills there are)`);
   else list("TOP SKILLS", li.topSkills);
   list("CERTIFICATIONS", li.certifications);
   list("HONORS-AWARDS", li.honors);

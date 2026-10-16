@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Placed Autopilot",
-  "version": "0.1.0",
-  "description": "Fills internship application forms from your Placed Answer Vault. Never presses Submit.",
+  "version": "0.2.0",
+  "description": "Fills internship application forms from your Placed Answer Vault (never presses Submit) and reads your own LinkedIn profile for your Placed LinkedIn Score.",
   "icons": {
     "16": "icons/icon16.png",
     "32": "icons/icon32.png",
@@ -10,10 +10,13 @@
     "128": "icons/icon128.png"
   },
   "permissions": [
-    "debugger"
+    "debugger",
+    "storage"
   ],
   "host_permissions": [
     "http://localhost:3200/*",
+    "http://localhost:3000/*",
+    "https://placed-lovat.vercel.app/*",
     "https://*.supabase.co/*"
   ],
   "background": {
@@ -61,6 +64,28 @@
       ],
       "css": [
         "overlay.css"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "http://localhost:3200/*",
+        "http://localhost:3000/*",
+        "https://placed-lovat.vercel.app/*"
+      ],
+      "js": [
+        "config.js",
+        "placed-bridge.js"
+      ],
+      "run_at": "document_start"
+    },
+    {
+      "matches": [
+        "https://www.linkedin.com/in/*"
+      ],
+      "js": [
+        "lib/guard.js",
+        "linkedin.js"
       ],
       "run_at": "document_idle"
     }
