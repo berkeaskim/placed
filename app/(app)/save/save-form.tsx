@@ -19,9 +19,9 @@ export function SaveForm() {
       }}
       className="space-y-3"
     >
-      <Input aria-label="Your name" name="name" autoComplete="name" placeholder="Your name" className="h-12 text-base" />
-      <Input aria-label="Email address" name="email" type="email" autoComplete="email" placeholder="you@ucl.ac.uk" required className="h-12 text-base" />
-      <Input aria-label="Password" name="password" type="password" autoComplete="new-password" placeholder="Password (8+ characters)" minLength={8} required className="h-12 text-base" />
+      <Input aria-label="Your name" name="name" autoComplete="name" maxLength={80} placeholder="Your name" className="h-12 text-base" />
+      <Input aria-label="Email address" name="email" type="email" autoComplete="email" placeholder="you@ucl.ac.uk" maxLength={254} required className="h-12 text-base" />
+      <Input aria-label="Password" name="password" type="password" autoComplete="new-password" placeholder="Password (8+ characters)" minLength={8} maxLength={72} required className="h-12 text-base" />
       <button type="submit" className="btn-quest h-12 w-full disabled:opacity-50" disabled={pending}>
         {pending ? "Saving…" : "Save my account"}
       </button>

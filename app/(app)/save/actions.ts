@@ -3,19 +3,24 @@ import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { findUserByEmail, isAlreadyRegistered } from "@/lib/demo/admin";
+import { allow, clientIp } from "@/lib/auth/rate-limit";
+import { normalizeEmail, passwordProblem } from "@/lib/auth/validate";
 
 /**
  * Turns the guest (anonymous) user into a real email + password account, keeping the same user id so every row they
  * made stays theirs. Done with the admin API so the email is confirmed straight away (no confirmation mail to wait on).
+ * Limited per client IP: the "already has an account" answer would otherwise let a script test which emails exist.
  */
 export async function saveAccount(formData: FormData): Promise<{ error: string }> {
-  const email = String(formData.get("email") ?? "").trim().toLowerCase();
-  const password = String(formData.get("password") ?? "");
-  const name = String(formData.get("name") ?? "").trim().slice(0, 80);
-  if (!email.includes("@")) return { error: "Enter a valid email." };
-  if (password.length < 8) return { error: "Use at least 8 characters for your password." };
+  const email = normalizeEmail(formData.get("email"));
+  const password = formData.get("password");
+  const name = String(formData.get("name") ?? "").replace(/[\u0000-\u001f\u007f<>]/g, "").trim().slice(0, 80);
+  if (!email) return { error: "Enter a valid email." };
+  const pwProblem = passwordProblem(password);
+  if (pwProblem || typeof password !== "string") return { error: pwProblem ?? "Enter a password." };
   const { supabase, user } = await requireUser();
   if (!user.is_anonymous) redirect("/feed");
+  if (!(await allow("saveIp", await clientIp()))) return { error: "Too many attempts. Wait a while and try again." };
   const admin = createAdminClient();
   const { error } = await admin.auth.admin.updateUserById(user.id, {
     email,
