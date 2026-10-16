@@ -5,6 +5,7 @@ import { db } from "@/lib/db/client";
 import { applications, companies, jobs, outreach as outreachTable } from "@/lib/db/schema";
 import { isAppStatus } from "@/lib/tracker/status";
 import { nudgeFor } from "@/lib/outreach/nudges";
+import { universityFor } from "@/lib/profile/university";
 import { OUTREACH_TARGETS, type OutreachTarget } from "@/lib/outreach/targets";
 import { todayLondon } from "@/lib/scoring/dates";
 import { showDeadline } from "@/components/tracker/deadline-chip";
@@ -41,6 +42,7 @@ export default async function Tracker() {
   const today = todayLondon();
   const apps = loadApplications(user.id);
   const outreach = loadOutreach(user.id);
+  const school = universityFor(user.id);
   // Targets already messaged per job: a nudge toward them is not repeated.
   const sentTargets = new Map<string, Set<OutreachTarget>>();
   for (const o of outreach) {
@@ -53,7 +55,7 @@ export default async function Tracker() {
     id: a.id, jobId: a.job_id, status: a.status, title: a.title ?? "Role", company: a.company ?? "",
     updatedAt: a.updated_at, lastEventAt: a.last_event_at,
     nudge: a.title !== null ? nudgeFor({ status: a.status, company: a.company ?? "this company", lastEventAt: a.last_event_at, updatedAt: a.updated_at }, new Date(),
-      sentTargets.get(a.job_id)) : null,
+      sentTargets.get(a.job_id), school) : null,
     outreach: {
       sent: outreach.filter((o) => o.job_id === a.job_id && o.status !== "drafted").length,
       replied: outreach.filter((o) => o.job_id === a.job_id && o.status === "replied").length,

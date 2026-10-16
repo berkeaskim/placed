@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Strategy tab mockups</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+<style>
+:root{--surface-0:#f6f5f2;--surface-1:#efeee9;--surface-2:#fff;--text-primary:#1f1e1d;--text-secondary:#6b6a64;--border:rgba(31,30,29,.12);--border-strong:rgba(31,30,29,.22);--border-accent:#5B3DF5;--bg-success:#E1F5EE;--text-success:#0F6E56;--text-warning:#854F0B;--radius:8px}
+@media (prefers-color-scheme:dark){:root{--surface-0:#1c1c1b;--surface-1:#262624;--surface-2:#2d2d2b;--text-primary:#ecebe6;--text-secondary:#a8a69e;--border:rgba(255,255,255,.12);--border-strong:rgba(255,255,255,.22);--bg-success:#085041;--text-success:#9FE1CB;--text-warning:#FAC775}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--surface-0);color:var(--text-primary);font:15px/1.6 system-ui,-apple-system,sans-serif}
+main{max-width:760px;margin:0 auto;padding:32px 16px 64px}
+h1{font-size:26px;letter-spacing:-.02em;margin:0 0 4px}
+h2{font-size:18px;margin:40px 0 4px}
+.lead{color:var(--text-secondary);margin:0 0 12px;font-size:14px}
+button,select{font:inherit;font-size:12px;color:var(--text-primary);background:transparent;border:.5px solid var(--border-strong);border-radius:var(--radius);padding:5px 10px}
+.grid2{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:12px}
+@media (max-width:640px){.grid2{grid-template-columns:minmax(0,1fr)}}
+.card{background:var(--surface-2);border:.5px solid var(--border);border-radius:12px;padding:12px}
+.soft{background:var(--surface-1);border-radius:12px;padding:12px}
+svg text{font-family:inherit}
+.t{font-size:14px;fill:var(--text-primary)}.th{font-size:14px;font-weight:500;fill:var(--text-primary)}.ts{font-size:12px;fill:var(--text-secondary)}
+.c-teal>rect,.c-teal>circle{fill:#E1F5EE;stroke:#0F6E56}.c-teal>.th,.c-teal>.t{fill:#085041}.c-teal>.ts{fill:#0F6E56}
+.c-purple>rect,.c-purple>circle{fill:#EEEDFE;stroke:#534AB7}.c-purple>.th,.c-purple>.t{fill:#3C3489}.c-purple>.ts{fill:#534AB7}
+.c-gray>rect,.c-gray>circle{fill:#F1EFE8;stroke:#5F5E5A}.c-gray>.th,.c-gray>.t{fill:#444441}.c-gray>.ts{fill:#5F5E5A}
+@media (prefers-color-scheme:dark){.c-teal>rect,.c-teal>circle{fill:#085041;stroke:#5DCAA5}.c-teal>.th{fill:#E1F5EE}.c-teal>.ts{fill:#9FE1CB}.c-purple>rect,.c-purple>circle{fill:#3C3489;stroke:#AFA9EC}.c-purple>.th{fill:#EEEDFE}.c-purple>.ts{fill:#CECBF6}.c-gray>rect,.c-gray>circle{fill:#444441;stroke:#B4B2A9}.c-gray>.th{fill:#F1EFE8}.c-gray>.ts{fill:#D3D1C7}}
+.msg{background:var(--surface-2);border:.5px solid var(--border);border-radius:var(--radius);padding:8px;font-size:12px;line-height:1.5}
+.muted{color:var(--text-secondary);font-size:12px;margin:0}
+.metric{background:var(--surface-1);border-radius:var(--radius);padding:10px}.metric p{margin:0}.metric .v{font-size:22px;font-weight:500}
+.bar{height:8px;background:var(--surface-1);border-radius:4px}.bar>div{height:8px;border-radius:4px}
+</style>
+</head>
+<body>
+<main>
+<h1>Strategy tab: four directions</h1>
+<p class="lead">Example company: Monzo, data analyst intern. Placed doesn't look people up, so people appear as role types; each links to a LinkedIn search. Names in messages are placeholders.</p>
+
+<h2>1 · Reach map</h2>
+<p class="lead">Paths from you to the people who hire, through warm bridges. Thicker line = warmer path. Pick one and its message appears beside it.</p>
+<div class="grid2">
+<div class="card">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><span style="font-size:14px;font-weight:500">Monzo · Data analyst intern</span><span style="font-size:12px;background:var(--bg-success);color:var(--text-success);padding:2px 8px;border-radius:var(--radius)">3 warm paths</span></div>
+<svg width="100%" viewBox="0 0 400 270" role="img"><title>Reach map</title><desc>Paths from you via bridges to people at Monzo</desc>
+<path d="M70 135 C120 135,120 60,170 60" fill="none" stroke="#1D9E75" stroke-width="4" opacity=".8"/>
+<path d="M70 135 L170 135" fill="none" stroke="#1D9E75" stroke-width="2.5" opacity=".7"/>
+<path d="M70 135 C120 135,120 210,170 210" fill="none" stroke="#888780" stroke-width="1" stroke-dasharray="4 4"/>
+<path d="M240 60 C280 60,280 90,320 95" fill="none" stroke="#7F77DD" stroke-width="3"/>
+<path d="M240 135 C280 135,280 105,320 100" fill="none" stroke="#7F77DD" stroke-width="2"/>
+<path d="M240 210 C280 210,280 180,320 175" fill="none" stroke="#888780" stroke-width="1" stroke-dasharray="4 4"/>
+<g class="c-gray"><circle cx="45" cy="135" r="24" stroke-width=".5"/><text class="th" x="45" y="135" text-anchor="middle" dominant-baseline="central">You</text></g>
+<g class="c-teal"><rect x="170" y="40" width="70" height="40" rx="8" stroke-width=".5"/><text class="th" x="205" y="55" text-anchor="middle" dominant-baseline="central">UCL</text><text class="ts" x="205" y="70" text-anchor="middle" dominant-baseline="central">alumni</text></g>
+<g class="c-teal"><rect x="170" y="115" width="70" height="40" rx="8" stroke-width=".5"/><text class="th" x="205" y="130" text-anchor="middle" dominant-baseline="central">Joiners</text><text class="ts" x="205" y="145" text-anchor="middle" dominant-baseline="central">2025 intake</text></g>
+<g class="c-gray"><rect x="170" y="190" width="70" height="40" rx="8" stroke-width=".5"/><text class="th" x="205" y="205" text-anchor="middle" dominant-baseline="central">Society</text><text class="ts" x="205" y="220" text-anchor="middle" dominant-baseline="central">FinTech soc</text></g>
+<g class="c-purple"><rect x="320" y="78" width="72" height="40" rx="8" stroke-width="1"/><text class="th" x="356" y="93" text-anchor="middle" dominant-baseline="central">Hiring</text><text class="ts" x="356" y="108" text-anchor="middle" dominant-baseline="central">manager</text></g>
+<g class="c-purple"><rect x="320" y="158" width="72" height="40" rx="8" stroke-width=".5"/><text class="th" x="356" y="173" text-anchor="middle" dominant-baseline="central">Recruiter</text><text class="ts" x="356" y="188" text-anchor="middle" dominant-baseline="central">early careers</text></g>
+<text class="ts" x="200" y="258" text-anchor="middle">Thicker line = warmer path</text>
+</svg></div>
+<div class="soft" style="display:flex;flex-direction:column;gap:8px">
+<p class="muted">Selected path</p>
+<div style="display:flex;align-items:center;gap:8px"><div style="width:32px;height:32px;border-radius:50%;background:var(--bg-success);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;color:var(--text-success)">UA</div><div><p style="margin:0;font-size:13px;font-weight:500">UCL alumnus</p><p class="muted">Data team · Economics '23</p></div></div>
+<div class="msg">Hi Sam, I'm a penultimate Economics student at UCL applying to Monzo's data analyst internship. I saw you moved from Economics into the data team. Could I ask two quick questions about how you made the jump?</div>
+<p class="muted">212 / 300 characters</p>
+<div style="display:flex;gap:6px"><button>Copy</button><button>Find on LinkedIn <i class="ti ti-external-link"></i></button></div>
+</div></div>
+
+<h2>2 · Who to message first</h2>
+<p class="lead">Each type of person placed by how likely they are to reply and how much they influence the hire. Top right is where to start.</p>
+<div class="grid2">
+<div class="card">
+<svg width="100%" viewBox="0 0 360 300" role="img"><title>Reach quadrant</title><desc>Contacts by reply likelihood and hiring influence</desc>
+<rect x="190" y="20" width="155" height="120" rx="6" fill="#1D9E75" opacity=".12"/>
+<text class="ts" x="268" y="36" text-anchor="middle">Start here</text>
+<line x1="40" y1="250" x2="345" y2="250" stroke="var(--border-strong)"/>
+<line x1="40" y1="20" x2="40" y2="250" stroke="var(--border-strong)"/>
+<line x1="190" y1="20" x2="190" y2="250" stroke="var(--border-strong)" stroke-dasharray="3 3"/>
+<line x1="40" y1="140" x2="345" y2="140" stroke="var(--border-strong)" stroke-dasharray="3 3"/>
+<text class="ts" x="192" y="272" text-anchor="middle">Likely to reply →</text>
+<text class="ts" x="44" y="14">↑ Influence on hiring</text>
+<g class="c-teal"><circle cx="280" cy="90" r="16" stroke-width=".5"/></g><text class="ts" x="280" y="122" text-anchor="middle">UCL alumni</text>
+<g class="c-purple"><circle cx="110" cy="55" r="14" stroke-width=".5"/></g><text class="ts" x="110" y="85" text-anchor="middle">Hiring manager</text>
+<g class="c-teal"><circle cx="305" cy="185" r="13" stroke-width=".5"/></g><text class="ts" x="305" y="214" text-anchor="middle">Recent joiners</text>
+<g class="c-purple"><circle cx="215" cy="160" r="12" stroke-width=".5"/></g><text class="ts" x="215" y="188" text-anchor="middle">Recruiter</text>
+<g class="c-gray"><circle cx="90" cy="205" r="10" stroke-width=".5"/></g><text class="ts" x="90" y="232" text-anchor="middle">Senior staff</text>
+</svg></div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<span style="font-size:13px;font-weight:500">Your order of play</span>
+<div class="card" style="border:2px solid var(--border-accent)"><div style="display:flex;justify-content:space-between"><span style="font-size:13px;font-weight:500">1 · UCL alumni</span><span style="font-size:12px;color:var(--text-success)">High reply</span></div><p class="muted" style="margin:4px 0 6px">Shared degree is your hook. Ask about the team, not for a referral.</p><button>Write the message <i class="ti ti-sparkles"></i></button></div>
+<div class="card"><div style="display:flex;justify-content:space-between"><span style="font-size:13px;font-weight:500">2 · Recent joiners</span><span style="font-size:12px;color:var(--text-success)">High reply</span></div><p class="muted" style="margin-top:4px">They did this exact process last year.</p></div>
+<div class="card"><div style="display:flex;justify-content:space-between"><span style="font-size:13px;font-weight:500">3 · Hiring manager</span><span style="font-size:12px;color:var(--text-warning)">After you apply</span></div><p class="muted" style="margin-top:4px">Short, specific, one line on fit.</p></div>
+</div></div>
+
+<h2>3 · Four-week plan</h2>
+<p class="lead">The strategy as a timeline before the deadline. Every step has its message ready and is ticked off as you go.</p>
+<div class="card" style="margin-bottom:12px">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><span style="font-size:14px;font-weight:500">Monzo plan · closes in 26 days</span><span class="muted">2 of 5 steps done</span></div>
+<svg width="100%" viewBox="0 0 640 150" role="img"><title>Four-week plan</title><desc>Steps placed on a timeline before the deadline</desc>
+<text class="ts" x="60" y="18" text-anchor="middle">Week 1</text><text class="ts" x="215" y="18" text-anchor="middle">Week 2</text><text class="ts" x="370" y="18" text-anchor="middle">Week 3</text><text class="ts" x="525" y="18" text-anchor="middle">Week 4</text>
+<line x1="138" y1="26" x2="138" y2="140" stroke="var(--border)"/><line x1="293" y1="26" x2="293" y2="140" stroke="var(--border)"/><line x1="448" y1="26" x2="448" y2="140" stroke="var(--border)"/>
+<line x1="610" y1="26" x2="610" y2="140" stroke="#E24B4A" stroke-width="1.5" stroke-dasharray="4 3"/>
+<g class="c-teal"><rect x="10" y="34" width="150" height="26" rx="6" stroke-width=".5"/><text class="ts" x="85" y="47" text-anchor="middle" dominant-baseline="central">Message 3 UCL alumni ✓</text></g>
+<g class="c-teal"><rect x="120" y="68" width="160" height="26" rx="6" stroke-width=".5"/><text class="ts" x="200" y="81" text-anchor="middle" dominant-baseline="central">Coffee chat (15 min) ✓</text></g>
+<g class="c-purple"><rect x="300" y="34" width="140" height="26" rx="6" stroke-width="1"/><text class="ts" x="370" y="47" text-anchor="middle" dominant-baseline="central">Tailor CV + apply</text></g>
+<g class="c-gray"><rect x="390" y="102" width="150" height="26" rx="6" stroke-width=".5"/><text class="ts" x="465" y="115" text-anchor="middle" dominant-baseline="central">Note to hiring manager</text></g>
+<g class="c-gray"><rect x="470" y="68" width="125" height="26" rx="6" stroke-width=".5"/><text class="ts" x="532" y="81" text-anchor="middle" dominant-baseline="central">Thank-you + update</text></g>
+</svg></div>
+<div class="grid2">
+<div class="soft"><p class="muted">Next step · Week 3</p><p style="margin:0 0 8px;font-size:14px;font-weight:500">Note to the hiring manager</p><div class="msg">I've just applied for the data analyst internship. Your team's work on spending insights is why: I built a rent-comparison model on 1,200 London listings in Python and SQL.</div><div style="display:flex;gap:6px;margin-top:8px"><button>Copy</button><button>Mark sent</button></div></div>
+<div class="soft"><p class="muted">Why this order</p><p style="margin:4px 0 0;font-size:13px">Talk to people before you apply, so the application can mention what you learned. Message the manager after, when you have something concrete to point to.</p></div>
+</div>
+
+<h2>4 · Company dossier</h2>
+<p class="lead">One company in charts: who you can reach, how your messages are doing, and a generator with tone options.</p>
+<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:12px">
+<div class="metric"><p class="muted">Reachable</p><p class="v">9</p></div><div class="metric"><p class="muted">Messaged</p><p class="v">5</p></div><div class="metric"><p class="muted">Replied</p><p class="v">2</p></div><div class="metric"><p class="muted">Reply rate</p><p class="v">40%</p></div>
+</div>
+<div class="grid2" style="margin-bottom:12px">
+<div class="card"><p style="margin:0 0 6px;font-size:13px;font-weight:500">Who you can reach</p>
+<svg width="100%" viewBox="0 0 300 150" role="img"><title>Contact mix</title><desc>Share of reachable contacts by type</desc>
+<circle cx="75" cy="75" r="50" fill="none" stroke="#1D9E75" stroke-width="22" stroke-dasharray="139.6 314.2" transform="rotate(-90 75 75)"/>
+<circle cx="75" cy="75" r="50" fill="none" stroke="#5DCAA5" stroke-width="22" stroke-dasharray="69.8 314.2" stroke-dashoffset="-139.6" transform="rotate(-90 75 75)"/>
+<circle cx="75" cy="75" r="50" fill="none" stroke="#7F77DD" stroke-width="22" stroke-dasharray="69.8 314.2" stroke-dashoffset="-209.4" transform="rotate(-90 75 75)"/>
+<circle cx="75" cy="75" r="50" fill="none" stroke="#B4B2A9" stroke-width="22" stroke-dasharray="35 314.2" stroke-dashoffset="-279.2" transform="rotate(-90 75 75)"/>
+<text class="th" x="75" y="75" text-anchor="middle" dominant-baseline="central">9</text>
+<circle cx="160" cy="35" r="5" fill="#1D9E75"/><text class="ts" x="172" y="39">UCL alumni 4</text>
+<circle cx="160" cy="62" r="5" fill="#5DCAA5"/><text class="ts" x="172" y="66">Recent joiners 2</text>
+<circle cx="160" cy="89" r="5" fill="#7F77DD"/><text class="ts" x="172" y="93">Manager, recruiter 2</text>
+<circle cx="160" cy="116" r="5" fill="#B4B2A9"/><text class="ts" x="172" y="120">Society 1</text>
+</svg></div>
+<div class="card"><p style="margin:0 0 10px;font-size:13px;font-weight:500">Outreach funnel</p>
+<div style="display:flex;flex-direction:column;gap:8px;font-size:12px">
+<div><div style="display:flex;justify-content:space-between"><span>Sent</span><span>5</span></div><div class="bar"><div style="width:100%;background:#7F77DD"></div></div></div>
+<div><div style="display:flex;justify-content:space-between"><span>Accepted</span><span>4</span></div><div class="bar"><div style="width:80%;background:#7F77DD"></div></div></div>
+<div><div style="display:flex;justify-content:space-between"><span>Replied</span><span>2</span></div><div class="bar"><div style="width:40%;background:#1D9E75"></div></div></div>
+<div><div style="display:flex;justify-content:space-between"><span>Coffee chat</span><span>1</span></div><div class="bar"><div style="width:20%;background:#1D9E75"></div></div></div>
+</div></div></div>
+<div class="card">
+<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:8px"><span style="font-size:13px;font-weight:500;margin-right:auto">Message generator</span><select><option>To: recent joiner</option></select><select><option>Tone: warm</option><option>Tone: brief</option><option>Tone: formal</option></select></div>
+<div class="soft" style="font-size:13px">Hi Priya, congrats on joining Monzo last year. I'm a UCL Economics student applying to the same internship. What surprised you most about the assessment day? Even one line would help a lot.</div>
+<p class="muted" style="margin-top:6px">Every claim checked against your CV · Placed never sends it for you</p>
+</div>
+</main>
+</body>
+</html>

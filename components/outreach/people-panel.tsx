@@ -2,10 +2,10 @@ import { peopleToReach, type OutreachTarget } from "@/lib/outreach/targets";
 import type { OutreachPurpose } from "@/lib/outreach/draft";
 import { OutreachDrafter } from "./outreach-drafter";
 
-export function PeoplePanel({ company, title, jobId, initialTarget, initialPurpose }: {
-  company: string; title: string; jobId: string; initialTarget?: OutreachTarget; initialPurpose?: OutreachPurpose;
+export function PeoplePanel({ company, title, jobId, initialTarget, initialPurpose, school }: {
+  company: string; title: string; jobId: string; initialTarget?: OutreachTarget; initialPurpose?: OutreachPurpose; school?: string | null;
 }) {
-  const people = peopleToReach(company, title);
+  const people = peopleToReach(company, title, school);
   return (
     <section id="people" aria-label="People to reach" className="flex flex-col gap-3 rounded-[20px] border bg-white p-5">
       <h2 className="text-lg font-bold">People to reach</h2>
@@ -18,7 +18,7 @@ export function PeoplePanel({ company, title, jobId, initialTarget, initialPurpo
           </li>
         ))}
       </ul>
-      <OutreachDrafter jobId={jobId} initialTarget={initialTarget ?? "alumni"} initialPurpose={initialPurpose ?? "intro"} />
+      <OutreachDrafter jobId={jobId} school={school} initialTarget={initialTarget ?? "alumni"} initialPurpose={initialPurpose ?? "intro"} />
     </section>
   );
 }

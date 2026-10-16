@@ -5,9 +5,11 @@ const now = new Date("2026-10-14T12:00:00Z");
 const daysAgo = (n: number) => new Date(now.getTime() - n * 86_400_000).toISOString();
 
 describe("nudgeFor", () => {
-  it("suggests an alumni prep question when there's an interview", () => {
-    expect(nudgeFor({ status: "interview", company: "IMC", lastEventAt: daysAgo(1), updatedAt: daysAgo(1) }, now))
-      .toEqual({ text: "Interview at IMC: ask a UCL alumnus there a prep question.", target: "alumni", purpose: "interview_prep" });
+  it("suggests an alumni prep question when there's an interview, naming the student's university", () => {
+    const a = { status: "interview" as const, company: "IMC", lastEventAt: daysAgo(1), updatedAt: daysAgo(1) };
+    expect(nudgeFor(a, now, undefined, "University of Bristol"))
+      .toEqual({ text: "Interview at IMC: ask an alumnus from Bristol there a prep question.", target: "alumni", purpose: "interview_prep" });
+    expect(nudgeFor(a, now)!.text).toBe("Interview at IMC: ask an alumnus from your university there a prep question.");
   });
   it(`suggests a recruiter follow-up after ${FOLLOW_UP_DAYS} days of silence on an applied card`, () => {
     expect(nudgeFor({ status: "applied", company: "Monzo", lastEventAt: daysAgo(21), updatedAt: daysAgo(30) }, now))

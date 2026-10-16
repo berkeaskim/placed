@@ -1,10 +1,10 @@
 "use client";
 import { useState, useTransition } from "react";
 import { draftOutreachAction, setOutreachStatus } from "@/app/(app)/outreach/actions";
-import { OUTREACH_TARGETS, type OutreachTarget } from "@/lib/outreach/targets";
+import { OUTREACH_TARGETS, alumnusLabel, type OutreachTarget } from "@/lib/outreach/targets";
 import type { OutreachDraft, OutreachPurpose } from "@/lib/outreach/draft";
 
-const LABEL: Record<OutreachTarget, string> = { alumni: "UCL alumnus", recent_joiner: "Recent joiner", team: "Team member", recruiter: "Recruiter" };
+const LABEL: Record<Exclude<OutreachTarget, "alumni">, string> = { recent_joiner: "Recent joiner", team: "Team member", recruiter: "Recruiter" };
 const PURPOSE: Record<OutreachPurpose, string> = { intro: "First message", follow_up: "Follow-up on my application", interview_prep: "Interview prep" };
 
 function Copy({ text, label }: { text: string; label: string }) {
@@ -20,7 +20,9 @@ function Copy({ text, label }: { text: string; label: string }) {
   );
 }
 
-export function OutreachDrafter({ jobId, initialTarget, initialPurpose }: { jobId: string; initialTarget: OutreachTarget; initialPurpose: OutreachPurpose }) {
+export function OutreachDrafter({ jobId, initialTarget, initialPurpose, onMarked, school }: {
+  jobId: string; initialTarget: OutreachTarget; initialPurpose: OutreachPurpose; onMarked?: (s: "sent" | "replied") => void; school?: string | null;
+}) {
   const [target, setTarget] = useState(initialTarget);
   const [purpose, setPurpose] = useState(initialPurpose);
   const [name, setName] = useState("");
@@ -45,7 +47,7 @@ export function OutreachDrafter({ jobId, initialTarget, initialPurpose }: { jobI
       <div className="flex flex-wrap gap-2">
         <label className="flex flex-col text-xs font-semibold">Who
           <select value={target} onChange={(e) => setTarget(e.target.value as OutreachTarget)} className="min-h-11 rounded-lg border px-2 text-sm">
-            {OUTREACH_TARGETS.map((t) => <option key={t} value={t}>{LABEL[t]}</option>)}
+            {OUTREACH_TARGETS.map((t) => <option key={t} value={t}>{t === "alumni" ? alumnusLabel(school) : LABEL[t]}</option>)}
           </select>
         </label>
         <label className="flex flex-col text-xs font-semibold">Why
@@ -58,7 +60,7 @@ export function OutreachDrafter({ jobId, initialTarget, initialPurpose }: { jobI
         </label>
       </div>
       <label className="flex flex-col text-xs font-semibold">Anything you share with them? (optional)
-        <input value={note} onChange={(e) => setNote(e.target.value)} maxLength={200} placeholder="e.g. we both studied Economics at UCL" className="min-h-11 rounded-lg border px-2 text-sm" />
+        <input value={note} onChange={(e) => setNote(e.target.value)} maxLength={200} placeholder="e.g. we both did the same course" className="min-h-11 rounded-lg border px-2 text-sm" />
       </label>
       <button type="button" onClick={write} disabled={pending} className="min-h-11 w-fit rounded-full bg-foreground px-4 text-sm font-bold text-background">
         {pending ? "Writing…" : draft ? "Rewrite" : "Write it"}
@@ -82,7 +84,11 @@ export function OutreachDrafter({ jobId, initialTarget, initialPurpose }: { jobI
             <div className="flex gap-2">
               {(["sent", "replied"] as const).map((s) => (
                 <button key={s} type="button" className="min-h-11 rounded-full border px-3 text-sm font-semibold"
-                  onClick={() => start(async () => { if (await setOutreachStatus(rowId, s)) setStatus(s === "sent" ? "Marked as sent." : "Marked as replied."); })}>
+                  onClick={() => start(async () => {
+                    if (!(await setOutreachStatus(rowId, s))) return;
+                    setStatus(s === "sent" ? "Marked as sent." : "Marked as replied.");
+                    onMarked?.(s);
+                  })}>
                   {s === "sent" ? "I sent it" : "They replied"}
                 </button>
               ))}

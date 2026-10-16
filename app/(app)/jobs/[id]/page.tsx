@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { and, eq } from "drizzle-orm";
 import { requireUser } from "@/lib/auth/local-user";
+import { universityFor } from "@/lib/profile/university";
 import { db } from "@/lib/db/client";
 import { applications } from "@/lib/db/schema";
 import { getActiveCv, getJob, getProfile, toStudent } from "@/lib/db/queries";
@@ -132,7 +133,7 @@ export default async function JobPage({ params, searchParams }: { params: Promis
           </section>
 
           <PeoplePanel
-            company={job.company} title={job.title} jobId={job.id}
+            company={job.company} title={job.title} jobId={job.id} school={universityFor(user.id)}
             initialTarget={OUTREACH_TARGETS.find((t) => t === sp.target)}
             initialPurpose={(["intro", "follow_up", "interview_prep"] as OutreachPurpose[]).find((p) => p === sp.purpose)}
           />

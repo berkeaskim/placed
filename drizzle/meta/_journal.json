@@ -15,6 +15,13 @@
       "when": 1792182279496,
       "tag": "0001_ingest_state_row",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1792193177728,
+      "tag": "0002_profile_university",
+      "breakpoints": true
     }
   ]
 }

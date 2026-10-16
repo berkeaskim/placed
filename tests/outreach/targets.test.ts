@@ -20,14 +20,15 @@ describe("divisionKeyword", () => {
 
 describe("searchKeywords", () => {
   it("builds one query per target type, quoting the company", () => {
-    expect(searchKeywords("alumni", "Lendable", "Credit Analyst Intern")).toBe('"Lendable" UCL');
+    expect(searchKeywords("alumni", "Lendable", "Credit Analyst Intern", "University College London")).toBe('"Lendable" "University College London"');
+    expect(searchKeywords("alumni", "Lendable", "Credit Analyst Intern")).toBe('"Lendable"');
     expect(searchKeywords("team", "Lendable", "Credit Analyst Intern")).toBe('"Lendable" Credit');
     expect(searchKeywords("team", "Lendable", "Summer Analyst")).toBe('"Lendable"');
     expect(searchKeywords("recruiter", "IMC", "x")).toBe('"IMC" ("early careers" OR "campus recruiter" OR "graduate recruitment")');
     expect(searchKeywords("recent_joiner", "IMC", "Software Engineer Intern")).toBe('"IMC" Software Engineer (graduate OR analyst)');
   });
   it("strips quotes from the company name", () => {
-    expect(searchKeywords("alumni", 'A "B" C', "x")).toBe('"A B C" UCL');
+    expect(searchKeywords("alumni", 'A "B" C', "x", 'King\'s "College"')).toBe('"A B C" "King\'s College"');
   });
 });
 
@@ -44,5 +45,15 @@ describe("peopleToReach", () => {
     const p = peopleToReach("Lendable", "Credit Analyst Intern");
     expect(p.map((x) => x.key)).toEqual(["alumni", "recent_joiner", "team", "recruiter"]);
     for (const x of p) { expect(x.why.length).toBeGreaterThan(10); expect(x.url).toMatch(/^https:\/\/www\.linkedin\.com\//); }
+  });
+});
+
+describe("alumni labels", () => {
+  it("name the student's university, or stay generic when unknown", async () => {
+    const { alumniLabel, alumnusLabel, peopleToReach } = await import("@/lib/outreach/targets");
+    expect(alumniLabel("London School of Economics and Political Science")).toBe("LSE alumni");
+    expect(alumniLabel(null)).toBe("Alumni from your university");
+    expect(alumnusLabel("University of Leeds")).toBe("Leeds alumnus");
+    expect(peopleToReach("Monzo", "Data Analyst Intern", "Imperial College London")[0].label).toBe("Imperial alumni at the firm");
   });
 });

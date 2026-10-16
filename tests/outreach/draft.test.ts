@@ -99,3 +99,15 @@ describe("demo fixtures", () => {
       expect(d.questions.length).toBeGreaterThanOrEqual(2);
     });
 });
+
+describe("draftOutreach recipient wording", () => {
+  const ok = { connection_note: "Hi Sam, could I ask you a couple of questions about the team?", coffee_chat: "Hi Sam, thanks for connecting.", questions: ["What does a typical week look like?"] };
+  it("names the student's university for alumni, and stays generic without it", async () => {
+    const gen = vi.fn().mockResolvedValue(ok);
+    await draftOutreach({ ...base, university: "University of Bristol" }, gen);
+    expect(gen.mock.calls[0][0]).toContain("Recipient: a graduate of University of Bristol (the student's university)");
+    await draftOutreach(base, gen);
+    expect(gen.mock.calls[1][0]).toContain("Recipient: a graduate of the student's university");
+    expect(gen.mock.calls.flat().join("\n")).not.toMatch(/\bUCL graduate\b/);
+  });
+});

@@ -1,6 +1,7 @@
 import type { AppStatus } from "@/lib/types";
 import type { OutreachPurpose } from "./draft";
 import type { OutreachTarget } from "./targets";
+import { shortSchool } from "@/lib/profile/school-name";
 
 export const FOLLOW_UP_DAYS = 21;
 export type Nudge = { text: string; target: OutreachTarget; purpose: OutreachPurpose };
@@ -19,13 +20,17 @@ export function nudgeFor(
   a: { status: AppStatus; company: string; lastEventAt: string | null; updatedAt: string },
   now: Date,
   sentTargets?: ReadonlySet<OutreachTarget>,
+  school?: string | null,
 ): Nudge | null {
-  const nudge = pick(a, now);
+  const nudge = pick(a, now, school ? shortSchool(school) : null);
   return nudge && sentTargets?.has(nudge.target) ? null : nudge;
 }
 
-function pick(a: { status: AppStatus; company: string; lastEventAt: string | null; updatedAt: string }, now: Date): Nudge | null {
-  if (a.status === "interview") return { text: `Interview at ${a.company}: ask a UCL alumnus there a prep question.`, target: "alumni", purpose: "interview_prep" };
+function pick(a: { status: AppStatus; company: string; lastEventAt: string | null; updatedAt: string }, now: Date, school: string | null): Nudge | null {
+  if (a.status === "interview") {
+    const who = school ? `an alumnus from ${school}` : "an alumnus from your university";
+    return { text: `Interview at ${a.company}: ask ${who} there a prep question.`, target: "alumni", purpose: "interview_prep" };
+  }
   if (a.status !== "applied") return null;
   const since = (now.getTime() - lastActivity(a.lastEventAt, a.updatedAt)) / 86_400_000;
   return since >= FOLLOW_UP_DAYS

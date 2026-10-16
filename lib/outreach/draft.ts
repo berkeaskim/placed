@@ -11,11 +11,13 @@ export const OutreachDraftOut = z.object({ connection_note: z.string(), coffee_c
 type Raw = z.infer<typeof OutreachDraftOut>;
 
 export type OutreachDraft = { connectionNote: string; coffeeChat: string; questions: string[]; removed: string[] };
-export type DraftInput = GuardSource & { target: OutreachTarget; purpose: OutreachPurpose; recipientName: string | null };
+export type DraftInput = GuardSource & { target: OutreachTarget; purpose: OutreachPurpose; recipientName: string | null; university?: string | null };
 
-const TARGET_TEXT: Record<OutreachTarget, string> = {
-  alumni: "a UCL graduate who works at the company", recent_joiner: "someone who joined the company's programme in the last 1-2 years",
-  team: "someone in the team this role sits in", recruiter: "an early careers recruiter at the company",
+const TARGET_TEXT: Record<OutreachTarget, (university: string | null) => string> = {
+  alumni: (u) => (u ? `a graduate of ${u} (the student's university) who works at the company` : "a graduate of the student's university who works at the company"),
+  recent_joiner: () => "someone who joined the company's programme in the last 1-2 years",
+  team: () => "someone in the team this role sits in",
+  recruiter: () => "an early careers recruiter at the company",
 };
 
 /** Only an interview-prep message may say the student has an interview; the flag comes from the purpose, never the caller. */
@@ -28,7 +30,7 @@ function buildPrompt(i: DraftInput, problems: GuardIssue[] = []): string {
   const fix = problems.length
     ? `\n\nYour previous draft had lines we can't back up. Rewrite without them:\n${problems.map((p) => `- "${oneLine(p.sentence)}": ${oneLine(p.reason)}`).join("\n")}`
     : "";
-  return `Company: ${oneLine(i.company)}\nRole: ${oneLine(i.jobTitle)}\nRecipient: ${TARGET_TEXT[i.target]}` +
+  return `Company: ${oneLine(i.company)}\nRole: ${oneLine(i.jobTitle)}\nRecipient: ${oneLine(TARGET_TEXT[i.target](i.university ?? null))}` +
     `${i.recipientName ? `, first name ${oneLine(i.recipientName)}` : ""}\nPurpose: ${i.purpose}\n\n` +
     `<cv>\n${escapeUntrusted(renderCvContent(stripPii(i.cv)))}\n</cv>\n<facts>\n${escapeUntrusted(i.facts.join("\n"))}\n</facts>\n` +
     `<note>\n${escapeUntrusted(i.note ?? "")}\n</note>${fix}`;
