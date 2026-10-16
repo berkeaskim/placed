@@ -8,6 +8,7 @@ import { fetchPublicProfile, normalizeProfileUrl } from "@/lib/linkedin/fetch-pu
 import { parsePublicProfile } from "@/lib/linkedin/parse-public";
 import { parseCapturedProfile, type CapturePayload } from "@/lib/linkedin/parse-capture";
 import { judgeLinkedIn } from "@/lib/ai/judgeLinkedIn";
+import { presenceTipFor } from "@/lib/linkedin-rules";
 import { scoreLinkedIn, type LiScoreResult } from "./score";
 import type { LiFix } from "./aggregate";
 
@@ -166,7 +167,7 @@ export async function loadLatestLinkedInScore(supabase: SupabaseClient, userId: 
   if (!data) return null;
   return {
     sector: data.sector, year: data.year, total: data.total, label: data.label, dimensions: data.dimensions,
-    capsApplied: data.caps_applied, fixes: data.fixes, tips: data.tips, importance, ...data.meta,
+    capsApplied: data.caps_applied, fixes: data.fixes, tips: data.tips.map((t) => ({ ...t, statement: presenceTipFor(t.ruleId, t.statement) })), importance, ...data.meta,
     scoredAt: data.created_at, saved: true,
   };
 }

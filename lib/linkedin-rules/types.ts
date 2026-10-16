@@ -22,6 +22,8 @@ export type LiRule = {
   sectors: Archetype[] | "all";
   dimension: LiDimension;
   statement: string;
+  /** Advisory rules: the line shown to the student on the presence-tips card (`statement` is written for the scorer). */
+  tip?: string;
   check: LiCheck;
   input: LiInput;
   altInputs?: LiInput[];
