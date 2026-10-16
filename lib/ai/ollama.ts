@@ -139,3 +139,29 @@ export function isInstalled(tag: string, installed: { name: string }[]): boolean
   const norm = (t: string) => (t.includes(":") ? t : `${t}:latest`);
   return installed.some((m) => norm(m.name) === norm(tag));
 }
+
+/** Ollama library tag: "name" or "name:tag", optionally "namespace/name". Rejects anything else before it reaches the host. */
+export const OLLAMA_TAG_RE = /^[a-z0-9][a-z0-9._-]*(\/[a-z0-9][a-z0-9._-]*)?(:[a-z0-9][a-z0-9._-]*)?$/i;
+
+export type PullProgress = { status: string; total?: number; completed?: number; error?: string };
+
+/**
+ * Starts `POST /api/pull` (streamed) and returns its NDJSON body: one PullProgress per line, ending with
+ * `{"status":"success"}` or a line with `error`. Throws AiError(AI_UNAVAILABLE) when Ollama can't be reached.
+ */
+export async function ollamaPull(tag: string, f: FetchLike = fetch, signal?: AbortSignal): Promise<ReadableStream<Uint8Array>> {
+  if (!OLLAMA_TAG_RE.test(tag)) throw new AiError("Not a valid Ollama model tag.");
+  let res: Response;
+  try {
+    res = await f(`${ollamaHost()}/api/pull`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ model: tag, stream: true }),
+      signal,
+    });
+  } catch (cause) {
+    throw new AiError(AI_UNAVAILABLE, { cause });
+  }
+  if (!res.ok || !res.body) throw new AiError(AI_UNAVAILABLE, { cause: new Error(`ollama pull ${res.status}`) });
+  return res.body;
+}
