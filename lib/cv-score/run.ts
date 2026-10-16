@@ -1,12 +1,13 @@
 import "server-only";
-import type { SupabaseClient } from "@supabase/supabase-js";
+import { and, eq } from "drizzle-orm";
 import type { Archetype, ParsedCV, Year } from "@/lib/types";
 import type { SafetyReport } from "@/lib/cv/safety";
 import { isImageOnly } from "@/lib/cv/image-only";
 import { rulesFor } from "@/lib/cv-rules";
 import { countUnevidencedFails, judgeCvRules, PROMPT_VERSION } from "@/lib/ai/judgeCvRules";
 import { currentModelId } from "@/lib/ai/models";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { db } from "@/lib/db/client";
+import { cvs, cvScores } from "@/lib/db/schema";
 import { EMAIL_RE, PHONE_RE } from "@/lib/text/regex";
 import { runCodeChecks } from "./checkers";
 import { aggregateCvScore, type CvScore } from "./aggregate";
@@ -27,33 +28,22 @@ type StoredRuleResults = {
 };
 type CvRow = { raw_text: string; page_texts: string[] | null; page_count: number; file_size: number; parsed_json: ParsedCV & { safety?: SafetyReport } };
 
-/** True when the error is "column does not exist" (migration 0007 not run yet): Postgres 42703 or PostgREST PGRST204. */
-const missingColumn = (e: { code?: string } | null) => !!e && (e.code === "42703" || e.code === "PGRST204");
 /** Foreign key violation: the CV row was deleted (re-upload, data reset) while it was being scored. */
-const cvGone = (e: { code?: string } | null) => !!e && e.code === "23503";
+const cvGone = (e: unknown) => (e as { code?: string } | null)?.code === "SQLITE_CONSTRAINT_FOREIGNKEY";
 
 /**
  * Score one CV for one sector and upsert cv_scores (one row per cv × sector).
  * LLM verdicts are reused whenever a row with the same cache key exists for this user (06 R2):
  * sha256(normalised redacted text) + sector + rules_version + model_id + prompt_version.
  * Code checks and aggregation always re-run (pure and cheap). No XP is awarded here (amendment item 5).
- *
- * `supabase` is the caller's own client: the CV read below is the ownership check (RLS + user_id), and the score is
- * never written unless it returns the row. The write goes through `writer` (service role by default) with that same
- * verified user id and CV id, because the judge call can take ~60 s and a user session that can't be loaded or
- * refreshed by then makes supabase-js fall back to the anon key, which cv_scores RLS rejects and the score is lost.
- * `userId` must come from the authenticated session (requireUser), never from the client.
+ * The CV read is scoped to `userId`, and the score is never written unless it returns the row.
  */
 export async function scoreCv(
-  supabase: SupabaseClient, i: { userId: string; cvId: string; sector: Archetype; year: Year }, writer?: SupabaseClient,
+  i: { userId: string; cvId: string; sector: Archetype; year: Year },
 ): Promise<CvScore & { aiUnavailable: boolean }> {
-  const { data: cv, error } = await supabase
-    .from("cvs")
-    .select("raw_text, page_texts, page_count, file_size, parsed_json")
-    .eq("id", i.cvId)
-    .eq("user_id", i.userId)
-    .single<CvRow>();
-  if (error || !cv) throw new Error(`CV not found: ${error?.message ?? i.cvId}`);
+  const cv = db.select({ raw_text: cvs.raw_text, page_texts: cvs.page_texts, page_count: cvs.page_count, file_size: cvs.file_size, parsed_json: cvs.parsed_json })
+    .from(cvs).where(and(eq(cvs.id, i.cvId), eq(cvs.user_id, i.userId))).get() as CvRow | undefined;
+  if (!cv) throw new Error(`CV not found: ${i.cvId}`);
 
   const parsed = cv.parsed_json;
   const rawText = cv.raw_text ?? "";
@@ -64,18 +54,10 @@ export async function scoreCv(
   const hash = textHash(judgeInput.redactedText);
   const modelId = currentModelId("smart");
 
-  const { data: cached, error: cacheErr } = await supabase
-    .from("cv_scores")
-    .select("rule_results")
-    .eq("user_id", i.userId)
-    .eq("sector", i.sector)
-    .eq("text_hash", hash)
-    .eq("model_id", modelId)
-    .eq("prompt_version", PROMPT_VERSION)
-    .eq("rules_version", RULES_VERSION)
-    .limit(1)
-    .maybeSingle<{ rule_results: StoredRuleResults }>();
-  if (cacheErr && !missingColumn(cacheErr)) console.error("cv_scores cache lookup failed", cacheErr);
+  const cached = db.select({ rule_results: cvScores.rule_results }).from(cvScores).where(and(
+    eq(cvScores.user_id, i.userId), eq(cvScores.sector, i.sector), eq(cvScores.text_hash, hash), eq(cvScores.model_id, modelId),
+    eq(cvScores.prompt_version, PROMPT_VERSION), eq(cvScores.rules_version, RULES_VERSION),
+  )).limit(1).get() as { rule_results: StoredRuleResults } | undefined;
 
   let llm: { results: ScoredRuleResult[]; spellingErrors: string[] | null; cacheable: boolean; aiUnavailable: boolean };
   if (cached?.rule_results && Array.isArray(cached.rule_results.llm)) {
@@ -119,13 +101,12 @@ export async function scoreCv(
   const cacheCols = llm.cacheable
     ? { text_hash: hash, model_id: modelId, prompt_version: PROMPT_VERSION, rules_version: RULES_VERSION }
     : { text_hash: hash, model_id: null, prompt_version: null, rules_version: null };
-  const db = writer ?? createAdminClient();
-  let up = await db.from("cv_scores").upsert({ ...row, ...cacheCols }, { onConflict: "cv_id,sector" });
-  if (up.error && missingColumn(up.error)) {
-    console.warn("cv_scores cache columns missing: run supabase/migrations/0007_cv_score_cache.sql");
-    up = await db.from("cv_scores").upsert(row, { onConflict: "cv_id,sector" });
+  const values = { ...row, ...cacheCols };
+  try {
+    db.insert(cvScores).values(values).onConflictDoUpdate({ target: [cvScores.cv_id, cvScores.sector], set: values }).run();
+  } catch (e) {
+    if (cvGone(e)) throw new Error(`Couldn't save CV score: CV ${i.cvId} was deleted while it was being scored`);
+    throw new Error(`Couldn't save CV score: ${e instanceof Error ? e.message : String(e)}`);
   }
-  if (up.error && cvGone(up.error)) throw new Error(`Couldn't save CV score: CV ${i.cvId} was deleted while it was being scored`);
-  if (up.error) throw new Error(`Couldn't save CV score: ${up.error.message} (${up.error.code ?? "no code"})`);
   return { ...score, aiUnavailable: llm.aiUnavailable };
 }

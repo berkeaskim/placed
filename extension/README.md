@@ -9,23 +9,20 @@ stops. **It never presses Submit.** You check everything and submit yourself.
 2. Click **Load unpacked** and select this `extension/` folder.
 3. Press the reload icon on the extension card whenever you change a file here.
 
-### Pointing it at a deployed Placed
+### Pointing it at your Placed
 
-You don't edit `config.js` by hand. `scripts/pack-extension.mjs` runs before every `next build` / `next dev` and writes
-`public/placed-autopilot.zip` pointed at the origin being built (`PLACED_PUBLIC_ORIGIN`, else Vercel's production
-domain, else `http://localhost:3200`). Students download it from **Autopilot setup → Get the Chrome extension**.
-
-For the Chrome Web Store: `PLACED_PUBLIC_ORIGIN=https://<prod domain> node scripts/pack-extension.mjs --store` writes
-`dist/placed-autopilot-store.zip` (production origin only, files at the zip root). Once the listing is live, set
-`NEXT_PUBLIC_AUTOPILOT_STORE_URL` to its URL and the setup page shows **Add to Chrome** instead of the zip steps.
+Placed runs on your own computer, by default at `http://localhost:3000`, which is what `config.js` points at.
+`scripts/pack-extension.mjs` runs before every `next build` / `next dev` and writes `public/placed-autopilot.zip`
+pointed at `PLACED_PUBLIC_ORIGIN`, else `http://localhost:$PORT` (default 3000). Download it from
+**Autopilot setup → Get the Chrome extension**, or load this folder and edit `config.js` if you use another port.
 
 The claim route only accepts `chrome-extension://` origins (never the employer page's own origin, so a page script
-cannot claim a leftover link); the token is the credential.
+cannot claim a leftover link); the one-time token is the credential. No cookie or API key is involved.
 
 ### Optional hardening: pin the extension id
 
 By default the claim route accepts any well-formed `chrome-extension://<32 letters a-p>` origin. To accept only your
-copy of the extension, set `PLACED_EXTENSION_ID` in the app's environment (`.env.local` or Vercel):
+copy of the extension, set `PLACED_EXTENSION_ID` in the app's environment:
 
 1. Open `chrome://extensions`, switch on **Developer mode**, and find the Placed Autopilot card.
 2. Copy the 32-letter **ID** shown on the card (for an unpacked extension it is stable as long as you load the same folder path).
@@ -78,10 +75,11 @@ dropdowns turn amber instead.
 - The one-time token travels only in the URL fragment (`#placed=…`), which is never sent to the employer. `capture.js`
   removes it from the URL at `document_start`, before the page's scripts run, and keeps it in the extension's
   isolated world, which the page cannot read.
-- The pack is claimed by the extension's service worker (`background.js`), not by the employer page, and the signed
-  CV link is downloaded there too, so neither ever touches the employer's page context. Each link works once and
-  expires after 10 minutes. The token is never logged.
-- `host_permissions` are only the Placed app and Supabase storage (for the CV). The employer sites need no host
+- The pack is claimed by the extension's service worker (`background.js`), not by the employer page, and the CV is
+  downloaded there too (from the Placed app's `/api/files/...`, resolved against `PLACED_ORIGIN` and refused if it points
+  anywhere else), so neither ever touches the employer's page context. Each link works once and expires after
+  10 minutes. The token is never logged.
+- `host_permissions` are only the local Placed app (`http://localhost/*`, `http://127.0.0.1/*`). The employer sites need no host
   permission: the content scripts are injected by their `matches` entries, and the debugger API needs none.
 - Every click goes through `PlacedGuard.safeClick` (`lib/guard.js`), which refuses submit controls, including
   JS-driven ones such as Lever's `#btn-submit` and Ashby's "Submit Application" button.

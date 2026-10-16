@@ -1,8 +1,10 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
-import type { SupabaseClient } from "@supabase/supabase-js";
-import { requireUser } from "@/lib/supabase/server";
+import { and, eq } from "drizzle-orm";
+import { requireUser } from "@/lib/auth/local-user";
+import { db } from "@/lib/db/client";
+import { cvs } from "@/lib/db/schema";
 import { getProfile } from "@/lib/db/queries";
 import { scoreCv } from "@/lib/cv-score/run";
 import { uploadScoringInFlight } from "@/lib/cv-score/defer";
@@ -38,17 +40,17 @@ function RetryScoreForm({ sector }: { sector: Archetype }) {
  * the page waits for it instead of making a second live judge call (lib/cv-score/defer.ts).
  */
 async function ScoreSection(p: {
-  supabase: SupabaseClient; userId: string; cvId: string; sector: Archetype; year: Year; failed: boolean; uploadScoring: boolean;
+  userId: string; cvId: string; sector: Archetype; year: Year; failed: boolean; uploadScoring: boolean;
 }) {
   const base = { userId: p.userId, cvId: p.cvId, sector: p.sector, year: p.year };
-  let data: CvScorePanelData | null = await loadCvScorePanel(p.supabase, base);
+  let data: CvScorePanelData | null = await loadCvScorePanel(base);
   if (!data && p.uploadScoring && !p.failed) {
     return <LiveScoring llmRules={llmRuleCount(p.sector)} />;
   }
   if (!data && !p.failed) {
     try {
-      const score = await scoreCv(p.supabase, base);
-      data = await loadCvScorePanel(p.supabase, { ...base, score });
+      const score = await scoreCv(base);
+      data = await loadCvScorePanel({ ...base, score });
     } catch (e) {
       console.error("profile: scoreCv failed", e);
     }
@@ -83,12 +85,9 @@ function ScoreLoading({ sector }: { sector: Archetype }) {
 
 export default async function ProfilePage({ searchParams }: { searchParams: Promise<{ warn?: string; score?: string }> }) {
   const { warn, score } = await searchParams;
-  const { supabase, user } = await requireUser();
-  const [p, cvRes] = await Promise.all([
-    getProfile(supabase, user.id),
-    supabase.from("cvs").select("id, uploaded_at").eq("user_id", user.id).eq("is_active", true).maybeSingle<{ id: string; uploaded_at: string | null }>(),
-  ]);
-  const cv = cvRes.data;
+  const { user } = await requireUser();
+  const p = await getProfile(user.id);
+  const cv = db.select({ id: cvs.id, uploaded_at: cvs.uploaded_at }).from(cvs).where(and(eq(cvs.user_id, user.id), eq(cvs.is_active, true))).get();
   const roles = roleCards(p.archetypes);
   const target = p.target_archetype && (ARCHETYPES as readonly string[]).includes(p.target_archetype) ? p.target_archetype : null;
   const sector: Archetype = target ?? roles[0]?.key ?? "consulting";
@@ -116,7 +115,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
         </div>
         {cv ? (
           <Suspense key={`${cv.id}-${sector}`} fallback={<ScoreLoading sector={sector} />}>
-            <ScoreSection supabase={supabase} userId={user.id} cvId={cv.id} sector={sector} year={year} failed={score === "failed"} uploadScoring={uploadScoring} />
+            <ScoreSection userId={user.id} cvId={cv.id} sector={sector} year={year} failed={score === "failed"} uploadScoring={uploadScoring} />
           </Suspense>
         ) : (
           <div className="card-quest flex flex-wrap items-center justify-between gap-4 p-5">

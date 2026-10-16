@@ -1,5 +1,5 @@
 // Placed Autopilot service worker.
-//  1. R8: claims the one-time pack and downloads the signed CV, so neither the token nor the CV URL is ever fetched
+//  1. R8: claims the one-time pack and downloads the CV from the local Placed app, so neither the token nor the CV URL is ever fetched
 //     from the employer page. The token is never logged.
 //  2. Trusted input (chrome.debugger) for widgets that ignore synthetic events. Every trusted click is re-verified
 //     here, at the exact point, with CDP before the mouse goes down: the node under the pointer must sit inside the
@@ -110,12 +110,14 @@ async function verifyPoint(tabId, x, y, nonce) {
 }
 
 // ---------- claim ----------
-function cvUrlAllowed(u) {
+// The claim answers with a same-origin path (/api/files/...): resolve it against the Placed origin, and never fetch
+// anything that resolves elsewhere.
+function cvUrl(u) {
   try {
-    const url = new URL(u);
-    return (url.protocol === "https:" && url.hostname.endsWith(".supabase.co")) || ["localhost", "127.0.0.1"].includes(url.hostname);
+    const url = new URL(u, `${placedOrigin()}/`);
+    return url.origin === placedOrigin() && url.pathname.startsWith("/api/files/") ? url.href : null;
   } catch {
-    return false;
+    return null;
   }
 }
 function toBase64(buf) {
@@ -138,16 +140,17 @@ async function claim(token) {
   const body = await res.json().catch(() => null);
   if (!body || !Array.isArray(body.fields)) return { status: 502 };
   let cv = null;
-  if (body.cv && typeof body.cv.url === "string" && cvUrlAllowed(body.cv.url)) {
+  const cvHref = body.cv && typeof body.cv.url === "string" ? cvUrl(body.cv.url) : null;
+  if (cvHref) {
     try {
-      const r = await fetch(body.cv.url, { credentials: "omit", cache: "no-store" });
+      const r = await fetch(cvHref, { credentials: "omit", cache: "no-store" });
       const buf = r.ok ? await r.arrayBuffer() : null;
       if (buf && buf.byteLength > 0 && buf.byteLength <= CV_MAX_BYTES) cv = { name: String(body.cv.filename || "CV.pdf"), type: "application/pdf", base64: toBase64(buf) };
     } catch {
       cv = null; // the CV field is left for the student
     }
   }
-  const plan = { ats: body.ats, url: body.url, fields: body.fields }; // the signed CV URL never reaches the page
+  const plan = { ats: body.ats, url: body.url, fields: body.fields }; // the CV URL never reaches the page
   return { status: 200, plan, cv };
 }
 

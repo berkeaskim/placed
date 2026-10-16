@@ -1,6 +1,8 @@
 import "server-only";
-import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Archetype, ParsedCV, Year } from "@/lib/types";
+import { and, desc, eq } from "drizzle-orm";
+import type { Archetype, Year } from "@/lib/types";
+import { db } from "@/lib/db/client";
+import { cvs, cvScores } from "@/lib/db/schema";
 import type { CvRule, Dimension } from "@/lib/cv-rules/types";
 import { rulesFor } from "@/lib/cv-rules";
 import { aggregateCvScore, type CvScore, type Fix } from "./aggregate";
@@ -51,24 +53,20 @@ const NEUTRAL_FACTS = { imageOnly: false, spellingErrors: 0, hasPhone: true, has
 /**
  * Server-only loader for the profile page (Task 19). Pass `score` straight from scoreCv() to skip the
  * cv_scores read; otherwise the stored row for (cvId, sector) is used. Returns null when nothing is scored yet.
- * Uses the caller's user-scoped client, so RLS applies to every read.
+ * Every read is scoped to `userId`.
  */
 export async function loadCvScorePanel(
-  supabase: SupabaseClient,
   i: { userId: string; cvId: string; sector: Archetype; year: Year; score?: CvScore & { aiUnavailable?: boolean } },
 ): Promise<CvScorePanelData | null> {
-  const [scoreRes, cvRes, histRes] = await Promise.all([
-    i.score
-      ? Promise.resolve({ data: null, error: null })
-      : supabase.from("cv_scores").select("total, dimensions, caps_applied, fixes, rule_results")
-          .eq("user_id", i.userId).eq("cv_id", i.cvId).eq("sector", i.sector).maybeSingle<ScoreRow>(),
-    supabase.from("cvs").select("raw_text, parsed_json").eq("id", i.cvId).eq("user_id", i.userId)
-      .maybeSingle<{ raw_text: string | null; parsed_json: ParsedCV }>(),
-    supabase.from("cv_scores").select("total, created_at, cvs!inner(uploaded_at)")
-      .eq("user_id", i.userId).eq("sector", i.sector).order("created_at", { ascending: false }).limit(20),
-  ]);
-  if (scoreRes.error) console.error("cv score panel: score read failed", scoreRes.error);
-  if (histRes.error) console.error("cv score panel: history read failed", histRes.error);
+  const scoreRow = i.score ? undefined : db.select({
+    total: cvScores.total, dimensions: cvScores.dimensions, caps_applied: cvScores.caps_applied, fixes: cvScores.fixes, rule_results: cvScores.rule_results,
+  }).from(cvScores).where(and(eq(cvScores.user_id, i.userId), eq(cvScores.cv_id, i.cvId), eq(cvScores.sector, i.sector))).get() as ScoreRow | undefined;
+  const cv = db.select({ raw_text: cvs.raw_text, parsed_json: cvs.parsed_json }).from(cvs)
+    .where(and(eq(cvs.id, i.cvId), eq(cvs.user_id, i.userId))).get();
+  const hist: HistoryRow[] = db.select({ total: cvScores.total, created_at: cvScores.created_at, uploaded_at: cvs.uploaded_at })
+    .from(cvScores).innerJoin(cvs, eq(cvs.id, cvScores.cv_id))
+    .where(and(eq(cvScores.user_id, i.userId), eq(cvScores.sector, i.sector))).orderBy(desc(cvScores.created_at)).limit(20).all()
+    .map((r) => ({ total: r.total, created_at: r.created_at, cvs: { uploaded_at: r.uploaded_at } }));
 
   let core: Pick<CvScorePanelData, "total" | "dimensions" | "capsApplied" | "fixes" | "assessed" | "passed" | "couldNotAssess" | "aiUnavailable">;
   if (i.score) {
@@ -78,7 +76,7 @@ export async function loadCvScorePanel(
       couldNotAssess: s.couldNotAssess, aiUnavailable: s.aiUnavailable === true,
     };
   } else {
-    const row = scoreRes.data as ScoreRow | null;
+    const row = scoreRow;
     if (!row) return null;
     // Total, dimensions, caps and fixes stay exactly as stored.
     core = {
@@ -89,12 +87,10 @@ export async function loadCvScorePanel(
   }
 
   let aiSaw: string | null = null;
-  if (cvRes.data?.parsed_json) {
-    try { aiSaw = prepareJudgeInput(cvRes.data.parsed_json, cvRes.data.raw_text ?? "").redactedText; }
+  if (cv?.parsed_json) {
+    try { aiSaw = prepareJudgeInput(cv.parsed_json, cv.raw_text ?? "").redactedText; }
     catch (e) { console.error("cv score panel: redaction failed", e); }
   }
 
-  const rows = ((histRes.data ?? []) as unknown as (Omit<HistoryRow, "cvs"> & { cvs: HistoryRow["cvs"] | HistoryRow["cvs"][] })[])
-    .map((r) => ({ ...r, cvs: Array.isArray(r.cvs) ? (r.cvs[0] ?? null) : r.cvs }));
-  return { cvId: i.cvId, sector: i.sector, ...core, history: historyTotals(rows), aiSaw };
+  return { cvId: i.cvId, sector: i.sector, ...core, history: historyTotals(hist), aiSaw };
 }

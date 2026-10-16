@@ -2,7 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { test, expect, chromium, type Page } from "@playwright/test";
-import { LIVE_DEMO_SKIP, liveDemoSpecsAllowed } from "./fixtures/helpers";
+import Database from "better-sqlite3";
 
 /**
  * Autopilot end to end on the REAL Monzo Greenhouse form (Associate Data Scientist - Intern).
@@ -13,17 +13,30 @@ import { LIVE_DEMO_SKIP, liveDemoSpecsAllowed } from "./fixtures/helpers";
  * Chromium runs with --headless=new (headless:false + that arg): the old headless mode cannot load extensions, and a headed
  * window is not needed in CI/agent shells. Remove the arg to watch it. The extension is a TEMP COPY (see makeExtensionCopy).
  *
- * It signs in as the LIVE demo account and saves its Vault, so it is opt-in (Berke's OK only).
- * Run: PLACED_ALLOW_LIVE_DEMO_WRITE=1 NEXT_PUBLIC_AUTOPILOT=1 AI_MODE=fixture E2E_PORT=3100 npx playwright test e2e/autopilot.spec.ts
- * The extension is loaded from a TEMP COPY whose PLACED_ORIGIN and host_permissions point at the e2e port,
- * so the committed extension/ (default http://localhost:3200) is never edited.
+ * It loads a real employer page, so it is opt-in. It writes the fictional persona into the local Vault of the app it
+ * runs against (no login: Placed is single-user), so point PLACED_DATA_DIR at a scratch data dir that has the Monzo job seeded.
+ * Run: PLACED_E2E_AUTOPILOT=1 NEXT_PUBLIC_AUTOPILOT=1 AI_MODE=fixture E2E_PORT=3100 npx playwright test e2e/autopilot.spec.ts
+ * The extension is loaded from a TEMP COPY whose PLACED_ORIGIN points at the e2e port, so the committed extension/
+ * (default http://localhost:3000) is never edited.
  */
-test.skip(!liveDemoSpecsAllowed, LIVE_DEMO_SKIP);
+test.skip(process.env.PLACED_E2E_AUTOPILOT !== "1", "opt-in: loads the real Monzo Greenhouse form (PLACED_E2E_AUTOPILOT=1)");
 test.skip(process.env.NEXT_PUBLIC_AUTOPILOT !== "1", "needs NEXT_PUBLIC_AUTOPILOT=1");
 
 const PORT = Number(process.env.E2E_PORT ?? 3100);
 const ORIGIN = `http://localhost:${PORT}`;
-const MONZO_JOB_ID = "2993de0d-80fd-4dff-a708-c16fa593df41"; // ext_id 8232726
+const MONZO_EXT_ID = "8232726";
+/** The Monzo job's local id (ids are generated per install), read from the same SQLite file the dev server uses. */
+function monzoJobId(): string | null {
+  const file = path.join(path.resolve(process.env.PLACED_DATA_DIR ?? "data"), "placed.db");
+  if (!fs.existsSync(file)) return null;
+  const sqlite = new Database(file, { readonly: true });
+  try {
+    const r = sqlite.prepare("select j.id from jobs j join companies c on c.id = j.company_id where c.ats = 'greenhouse' and j.ext_id = ?").get(MONZO_EXT_ID) as { id: string } | undefined;
+    return r?.id ?? null;
+  } finally {
+    sqlite.close();
+  }
+}
 // Every request to any greenhouse.io host (job-boards., boards., boards-api., recruiting.cdn. ...) other than a read is aborted.
 const GREENHOUSE_RE = /^https?:\/\/([^/]+\.)?greenhouse\.io\//i;
 const READ_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
@@ -34,11 +47,8 @@ const TELEMETRY_ALLOW = /^https:\/\/c\.spl\.greenhouse\.io\/com\.snowplowanalyti
 function makeExtensionCopy(): string {
   const dest = fs.mkdtempSync(path.join(os.tmpdir(), "placed-ext-"));
   fs.cpSync(path.join(process.cwd(), "extension"), dest, { recursive: true });
-  fs.writeFileSync(path.join(dest, "config.js"), `globalThis.PLACED_ORIGIN = ${JSON.stringify(ORIGIN)};\n`);
-  const mf = JSON.parse(fs.readFileSync(path.join(dest, "manifest.json"), "utf8"));
-  mf.host_permissions = [`${ORIGIN}/*`, "https://*.supabase.co/*"];
-  fs.writeFileSync(path.join(dest, "manifest.json"), JSON.stringify(mf, null, 2));
-  return dest;
+  fs.writeFileSync(path.join(dest, "config.js"), `globalThis.PLACED_ORIGIN = ${JSON.stringify(ORIGIN)};\nglobalThis.PLACED_ORIGINS = ${JSON.stringify([ORIGIN])};\n`);
+  return dest; // manifest host_permissions already cover http://localhost/* on any port
 }
 
 async function pick(page: Page, selector: string, value: string) {
@@ -49,6 +59,8 @@ async function pick(page: Page, selector: string, value: string) {
 
 test("Autopilot fills the real Monzo form and never submits", async () => {
   test.setTimeout(Number(process.env.E2E_TIMEOUT ?? 240_000));
+  const jobId = monzoJobId();
+  test.skip(!jobId, `the Monzo job (ext_id ${MONZO_EXT_ID}) is not in the local database`);
   const extDir = makeExtensionCopy();
   const profileDir = fs.mkdtempSync(path.join(os.tmpdir(), "placed-e2e-ext-profile-"));
   const ctx = await chromium.launchPersistentContext(profileDir, {
@@ -74,9 +86,6 @@ test("Autopilot fills the real Monzo form and never submits", async () => {
     ctx.on("request", (r) => { if (GREENHOUSE_RE.test(r.url()) && !READ_METHODS.has(r.method())) seenWrites.push(`${r.method()} ${r.url()}`); });
 
     const page = await ctx.newPage();
-    await page.goto(`${ORIGIN}/login`);
-    await page.getByRole("button", { name: /Try the demo as Ayşe/ }).click();
-    await page.waitForURL((u) => !u.pathname.startsWith("/login"), { timeout: 30_000 });
 
     // Vault: fictional persona only. Fields that are already saved are simply overwritten with the same persona values.
     await page.goto(`${ORIGIN}/autopilot/setup`);
@@ -94,7 +103,7 @@ test("Autopilot fills the real Monzo form and never submits", async () => {
     await expect(page.getByRole("status").filter({ hasText: /Autopilot unlocked/ })).toBeVisible({ timeout: 30_000 });
 
     // Pack on the real Monzo job
-    await page.goto(`${ORIGIN}/jobs/${MONZO_JOB_ID}`);
+    await page.goto(`${ORIGIN}/jobs/${jobId}`);
     await page.getByRole("button", { name: /Autopilot this application/ }).click();
     await expect(page.getByRole("region", { name: "Application pack" })).toBeVisible({ timeout: 60_000 });
 
@@ -141,9 +150,9 @@ test("Autopilot fills the real Monzo form and never submits", async () => {
     await expect(form.locator("#question_69481992")).toHaveCount(1); // "Why Monzo?" exists; filled only if approved
     if (draftState === "approved") await expect(form.locator("#question_69481992")).not.toHaveValue("");
     else await expect(form.locator("#question_69481992")).toHaveValue("");
-    // CV: Greenhouse swaps the file input for a filename readout once a file is attached. The demo user has an active CV.
+    // CV: Greenhouse swaps the file input for a filename readout once a file is attached. The local user must have an active CV.
     const readCv = () => form.evaluate<string>(`((document.querySelector(".file-upload__filename") || {}).textContent || "").trim()`);
-    await expect.poll(readCv, { timeout: 15_000, message: "Greenhouse shows no CV filename: the CV was not attached (demo user must have an active CV)" }).toMatch(/\.pdf/i);
+    await expect.poll(readCv, { timeout: 15_000, message: "Greenhouse shows no CV filename: the CV was not attached (upload a CV in Placed first)" }).toMatch(/\.pdf/i);
     console.log(`CV_FILENAME=${JSON.stringify(await readCv())}`);
     expect(form.url()).not.toContain("placed=");
 
