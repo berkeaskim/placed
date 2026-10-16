@@ -73,3 +73,36 @@ export function prefillCore(i: { email: string | null; year: Year | null; cv: Pa
   // needsVisa is a hint for the UI only: RTW and sponsorship are never prefilled (spec §2 rule 3).
   return out;
 }
+
+/** Answers the student gave on earlier packs, keyed by normLabel(question). Option answers are stored as their LABEL(s), never ids. */
+export type Extra = Record<string, string | string[]>;
+export type Remembered = { value: string | string[]; exact: boolean };
+
+const STOP = new Set("a an the do does did you your yours are is be been will would can could have has of to in on at for from with and or this that what which any please if we us our currently current".split(" "));
+const NEGATION = /\b(not|no|without|never|dont|doesnt|cannot|cant)\b/;
+const tokens = (k: string) => new Set(k.split(" ").filter((t) => t && !STOP.has(t)));
+
+/**
+ * Finds what the student answered before for this question: an exact (normalised) label first, else the closest
+ * earlier label when the wording is nearly the same (token Jaccard >= 0.75, same negation, same numbers). A near
+ * match is only ever a suggestion the student confirms; it never fills silently.
+ */
+export function findRemembered(extra: Extra, label: string): Remembered | null {
+  const k = normLabel(label);
+  if (!k) return null;
+  if (Object.hasOwn(extra, k)) return { value: extra[k], exact: true };
+  const a = tokens(k);
+  if (a.size < 2) return null;
+  const nums = (s: string) => (s.match(/\d+/g) ?? []).join(",");
+  let best: { key: string; score: number } | null = null;
+  for (const key of Object.keys(extra)) {
+    if (NEGATION.test(key) !== NEGATION.test(k) || nums(key) !== nums(k)) continue;
+    const b = tokens(key);
+    if (b.size < 2) continue;
+    let inter = 0;
+    for (const t of a) if (b.has(t)) inter++;
+    const score = inter / (a.size + b.size - inter);
+    if (score >= 0.75 && (!best || score > best.score)) best = { key, score };
+  }
+  return best ? { value: extra[best.key], exact: false } : null;
+}
