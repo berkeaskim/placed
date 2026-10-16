@@ -213,7 +213,8 @@ describe("performance", () => {
     for (const s of ["R".repeat(50_000), "a".repeat(50_000), ", ".repeat(25_000), "in R ".repeat(10_000), "C+".repeat(25_000)]) {
       const t0 = performance.now();
       extractSkills(s);
-      expect(performance.now() - t0).toBeLessThan(200);
+      // 1s, not 200ms: the full suite runs ~140 files in parallel and this took ~300ms under load. Backtracking would be seconds.
+      expect(performance.now() - t0).toBeLessThan(1000);
     }
   });
 });

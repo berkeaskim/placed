@@ -18,6 +18,8 @@ vi.mock("@/lib/env", () => ({ env: s.env }));
 vi.mock("@/lib/ingest/providers", () => ({ fetchJobs: vi.fn(async () => { throw new Error("network must not be hit"); }) }));
 vi.mock("@/lib/ai/tagJob", () => ({ tagJob: vi.fn() }));
 vi.mock("@/lib/ingest/store", () => ({ supabaseStore: () => ({}) }));
+// The route revalidates the feed cache tag after a run; outside a Next request there is no static generation store.
+vi.mock("next/cache", () => ({ revalidateTag: vi.fn(), unstable_cache: (fn: unknown) => fn }));
 vi.mock("@/lib/ingest/run", () => ({
   ingestCompany: vi.fn(async (c: { slug: string }) => {
     s.ingested.push(c.slug);

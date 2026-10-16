@@ -1,5 +1,6 @@
 import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { env } from "@/lib/env";
 import { fetchJobs } from "@/lib/ingest/providers";
@@ -7,6 +8,7 @@ import { ingestCompany, type CompanyRow } from "@/lib/ingest/run";
 import { supabaseStore } from "@/lib/ingest/store";
 import { batchSlice, parseBatch, shouldStartNext } from "@/lib/ingest/batch";
 import { tagJob } from "@/lib/ai/tagJob";
+import { JOBS_TAG } from "@/lib/feed/jobs-cache";
 
 export const maxDuration = 300;
 
@@ -46,6 +48,7 @@ export async function GET(request: Request) {
       if (!shouldStartNext(Date.now() - started)) { partial = true; break; }
       await run(c);
     }
+    revalidateTag(JOBS_TAG, "max");
     return NextResponse.json({ batch, total: list.length, partial, log });
   }
 
@@ -68,6 +71,7 @@ export async function GET(request: Request) {
     }
   } finally {
     await save();
+    revalidateTag(JOBS_TAG, "max");
   }
   return NextResponse.json({ cursor, partial, log });
 }

@@ -1,13 +1,13 @@
 import { test, expect } from "@playwright/test";
 import { createClient } from "@supabase/supabase-js";
-import { AUTH_FILE, hasDemoCreds, trackConsole, basicA11y } from "./fixtures/helpers";
+import { AUTH_FILE, hasE2eCreds, trackConsole, basicA11y } from "./fixtures/helpers";
 
 test.use({ storageState: AUTH_FILE });
-test.skip(!hasDemoCreds, "DEMO_EMAIL/DEMO_PASSWORD not set");
+test.skip(!hasE2eCreds, "E2E_USER_EMAIL/E2E_USER_PASSWORD not set");
 
 async function alreadyOnboardedXp() {
   const sb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, { auth: { persistSession: false } });
-  const { data } = await sb.auth.signInWithPassword({ email: process.env.DEMO_EMAIL!, password: process.env.DEMO_PASSWORD! });
+  const { data } = await sb.auth.signInWithPassword({ email: process.env.E2E_USER_EMAIL!, password: process.env.E2E_USER_PASSWORD! });
   const { count } = await sb.from("xp_events").select("id", { count: "exact", head: true })
     .eq("user_id", data.user!.id).eq("type", "onboarding_complete");
   return (count ?? 0) > 0;
@@ -18,7 +18,7 @@ test("onboarding: tap-only flow saves and routes to profile/build, XP toast on f
   const repeat = await alreadyOnboardedXp();
   await page.goto("/onboarding");
   await expect(page).toHaveURL(/\/onboarding$/);
-  const next = page.getByRole("button", { name: "Next" });
+  const next = page.getByRole("button", { name: "Next", exact: true });
 
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("What year are you in?");
   await expect(next).toBeDisabled();
@@ -44,7 +44,7 @@ test("onboarding: tap-only flow saves and routes to profile/build, XP toast on f
   // Back keeps prior answers
   await page.getByRole("button", { name: "Back" }).click();
   await expect(page.getByRole("button", { name: "Economics" })).toHaveAttribute("aria-pressed", "true");
-  await page.getByRole("button", { name: "Next" }).click();
+  await page.getByRole("button", { name: "Next", exact: true }).click();
 
   await go.click();
   await expect(page).toHaveURL(/\/profile\/build$/, { timeout: 30_000 });
@@ -64,8 +64,8 @@ test("a11y: onboarding steps", async ({ page }) => {
   await page.goto("/onboarding");
   expect(await basicA11y(page)).toEqual([]);
   await page.getByRole("button", { name: "1st year" }).click();
-  await page.getByRole("button", { name: "Next" }).click();
+  await page.getByRole("button", { name: "Next", exact: true }).click();
   await page.getByRole("button", { name: "Law" }).click();
-  await page.getByRole("button", { name: "Next" }).click();
+  await page.getByRole("button", { name: "Next", exact: true }).click();
   expect(await basicA11y(page)).toEqual([]);
 });

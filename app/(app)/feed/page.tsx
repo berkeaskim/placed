@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/supabase/server";
-import { getActiveCv, getLiveJobs, getProfile, toStudent } from "@/lib/db/queries";
+import { getActiveCv, getProfile, toStudent } from "@/lib/db/queries";
+import { getFeedJobs } from "@/lib/feed/jobs-cache";
 import { rankJobs } from "@/lib/feed/rank";
 import { applyFilters, feedHref, LOCATION_FILTERS, LOCATION_LABELS, parseFilters } from "@/lib/feed/filters";
 import { todayLondon } from "@/lib/scoring/dates";
@@ -16,7 +17,7 @@ export default async function Feed({ searchParams }: { searchParams: Promise<Rec
   const { supabase, user } = await requireUser();
   const today = todayLondon();
   const [profile, cv, jobs, { data: apps }] = await Promise.all([
-    getProfile(supabase, user.id), getActiveCv(supabase, user.id), getLiveJobs(supabase, today),
+    getProfile(supabase, user.id), getActiveCv(supabase, user.id), getFeedJobs(today),
     supabase.from("applications").select("job_id, status").eq("user_id", user.id),
   ]);
   const student = toStudent(profile);

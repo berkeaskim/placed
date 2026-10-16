@@ -1,14 +1,20 @@
 import { execSync } from "node:child_process";
 import { expect, test } from "@playwright/test";
-import { AUTH_FILE, hasDemoCreds } from "./fixtures/helpers";
+import { LIVE_DEMO_SKIP, liveDemoSpecsAllowed } from "./fixtures/helpers";
 
-// Requires: migration 0013 applied, AI_MODE=fixture, demo user signed in via global-setup (storageState).
-test.skip(!hasDemoCreds, "DEMO_EMAIL/DEMO_PASSWORD not set: run npm run demo:user first");
-test.use({ storageState: AUTH_FILE });
+// The fixture inbox only exists for the demo account (lib/demo/is-demo.ts), and demo:tracker wipes its tracker, so this
+// spec writes to the LIVE demo: opt-in only. Requires migration 0013 and AI_MODE=fixture.
+test.skip(!liveDemoSpecsAllowed, LIVE_DEMO_SKIP);
 
-// Self-contained: resets only the demo user's applications/inbox_events/outreach to the plan state.
 test.beforeAll(() => {
-  execSync("npm run demo:tracker", { stdio: "pipe", timeout: 60_000 });
+  execSync("npm run demo:tracker", { stdio: "pipe", timeout: 60_000 }); // inherits PLACED_ALLOW_LIVE_DEMO_WRITE
+});
+
+// Signs in through the "Try the demo" button: the shared storageState is the e2e user, not the demo account.
+test.beforeEach(async ({ page }) => {
+  await page.goto("/login");
+  await page.getByRole("button", { name: /Try the demo as Ayşe/ }).click();
+  await page.waitForURL((u) => !u.pathname.startsWith("/login"), { timeout: 30_000 });
 });
 
 test("demo inbox sync moves cards with evidence, the nudge opens the drafter, undo works", async ({ page }) => {

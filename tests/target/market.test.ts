@@ -85,3 +85,17 @@ describe("readiness", () => {
     expect(r.label).toBe("No live Product roles right now");
   });
 });
+
+describe("readiness counts only recurring skills", () => {
+  it("has no % when every skill comes from a single posting", () => {
+    const one = ["SQL", "Python", "Excel", "Tableau", "Figma"].map((s, n) => job(String(n), [[s, "must"]]));
+    const r = readiness(marketDemand(one, "data_analytics", TODAY), profileSkillSource(["SQL"]));
+    expect(r.pct).toBeNull();
+    expect(r.label).toBe("No skill shows up in more than one live Data & Analytics role yet");
+    expect(r.coverage.items).toHaveLength(5);
+  });
+  it("ignores one-off skills in the %, but still never shows 100% with a gap", () => {
+    const d = marketDemand(jobs, "data_analytics", TODAY);
+    expect(readiness(d, profileSkillSource(["SQL", "Python"])).pct).toBe(99);
+  });
+});

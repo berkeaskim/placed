@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en-GB">
+    <html lang="en-GB" suppressHydrationWarning>
       <body className={`${font.variable} ${quest.variable} font-sans antialiased bg-background text-foreground`}>
         {children}
         <Toaster position="bottom-right" />

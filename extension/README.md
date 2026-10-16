@@ -11,13 +11,16 @@ stops. **It never presses Submit.** You check everything and submit yourself.
 
 ### Pointing it at a deployed Placed
 
-By default the extension talks to `http://localhost:3200`. For a deployed app, e.g. `https://placed-demo.vercel.app`:
+You don't edit `config.js` by hand. `scripts/pack-extension.mjs` runs before every `next build` / `next dev` and writes
+`public/placed-autopilot.zip` pointed at the origin being built (`PLACED_PUBLIC_ORIGIN`, else Vercel's production
+domain, else `http://localhost:3200`). Students download it from **Autopilot setup → Get the Chrome extension**.
 
-1. In `config.js` set `globalThis.PLACED_ORIGIN = "https://placed-demo.vercel.app";` (no trailing slash).
-2. In `manifest.json` add the same origin to `host_permissions`, e.g.
-   `"host_permissions": ["http://localhost:3200/*", "https://placed-demo.vercel.app/*", "https://*.supabase.co/*"]`.
-3. Reload the extension. The claim route only accepts `chrome-extension://` origins (never the employer page's own
-   origin, so a page script cannot claim a leftover link); the token is the credential.
+For the Chrome Web Store: `PLACED_PUBLIC_ORIGIN=https://<prod domain> node scripts/pack-extension.mjs --store` writes
+`dist/placed-autopilot-store.zip` (production origin only, files at the zip root). Once the listing is live, set
+`NEXT_PUBLIC_AUTOPILOT_STORE_URL` to its URL and the setup page shows **Add to Chrome** instead of the zip steps.
+
+The claim route only accepts `chrome-extension://` origins (never the employer page's own origin, so a page script
+cannot claim a leftover link); the token is the credential.
 
 ### Optional hardening: pin the extension id
 

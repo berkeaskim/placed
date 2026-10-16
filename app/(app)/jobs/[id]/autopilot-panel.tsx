@@ -5,6 +5,7 @@ import { Lock, Rocket } from "lucide-react";
 import { canOpen, type Answers, type PackGroup, type PackItem } from "@/lib/autopilot/pack";
 import type { FormField } from "@/lib/autopilot/forms/types";
 import { openAndFill, preparePack, setAnswer } from "./autopilot-actions";
+import { ExtensionHint } from "@/components/autopilot/extension-install";
 
 type Phase =
   | { s: "idle" } | { s: "loading" } | { s: "locked" }
@@ -308,10 +309,7 @@ export function AutopilotPanel({ jobId }: { jobId: string }) {
             Nothing opened? <a href={openedUrl} target="_blank" rel="noopener noreferrer" className="font-semibold text-[#5B3DF5]">Open the form</a>. This link works once.
           </p>
         )}
-        <p className="text-xs text-muted-foreground">
-          Needs the Placed Autopilot Chrome extension. Placed never presses Submit.{" "}
-          <Link href="/autopilot/setup#extension" className="font-semibold text-[#5B3DF5]">Install the extension</Link>
-        </p>
+        <ExtensionHint />
       </div>
     </section>
   );

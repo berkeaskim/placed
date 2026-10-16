@@ -1,19 +1,20 @@
 import path from "node:path";
 import { test, expect } from "@playwright/test";
-import { hasDemoCreds, trackConsole } from "./fixtures/helpers";
+import { LIVE_DEMO_SKIP, liveDemoSpecsAllowed, trackConsole } from "./fixtures/helpers";
 
 /**
  * The 3-minute demo (spec §12, amendments Task 25 demo order) as one run, signed in through the real
  * "Try the demo" button as the FICTIONAL persona Ayşe Demir, in fixture mode.
  *
+ * It onboards, uploads and applies AS THE LIVE DEMO ACCOUNT, so it is opt-in (PLACED_ALLOW_LIVE_DEMO_WRITE=1, Berke's OK).
  * Preconditions (the human runs these; see docs/demo/REHEARSAL.md):
- *   npm run demo:user && npm run demo:reset     (demo account exists and is NOT onboarded)
+ *   PLACED_ALLOW_LIVE_DEMO_WRITE=1 npm run demo:reset     (demo account exists and is NOT onboarded)
  *   the dev server runs with NEXT_PUBLIC_DEMO_MODE=1 and AI_MODE=fixture (playwright.config.ts sets both when it starts it)
  * Selectors follow the rendered UI: onboarding (app/onboarding/page.tsx), upload (profile/build/upload-card.tsx),
  * score panel (components/cv-score-panel.tsx), feed card (components/job-card.tsx), tailor panel
  * (jobs/[id]/tailor-panel.tsx + components/tailor/*), apply (jobs/[id]/apply-button.tsx).
  */
-test.skip(!hasDemoCreds, "DEMO_EMAIL/DEMO_PASSWORD not set: run npm run demo:user first");
+test.skip(!liveDemoSpecsAllowed, LIVE_DEMO_SKIP);
 
 const DEMO_CV = path.join(process.cwd(), "seed", "demo", "ayse-demir-cv.pdf");
 const DEMO_JOB = "Credit Analyst Intern (June 2027)"; // Lendable, ext_id a2214edc-… (lib/demo/fixture-keys.ts)
@@ -39,14 +40,15 @@ test("3-minute demo flow", async ({ page, context }) => {
   await page.waitForURL(/\/profile(\?.*)?$/, { timeout: 60_000 });
   await expect(page.getByRole("img", { name: /CV score \d+ out of 100 for Data & Analytics/ })).toBeVisible({ timeout: 60_000 });
   await expect(page.getByText(/^Source: /).first()).toBeVisible();
-  await expect(page.getByText("Organised weekly society events", { exact: false }).first()).toBeVisible();
+  // The events bullet sits in the collapsed "More fixes" list on Data & Analytics.
+  await expect(page.getByText("Organised weekly society events", { exact: false }).first()).toBeAttached();
 
   // 3. Sector switch: rescored for Consulting, where the events bullet is the next best fix
   await page.getByLabel("Score my CV for").selectOption("consulting");
   await expect(page.getByRole("img", { name: /CV score \d+ out of 100 for Consulting/ })).toBeVisible({ timeout: 60_000 });
   const nextFix = page.locator("section", { has: page.getByRole("heading", { name: "Next best fix" }) });
-  await expect(nextFix.getByText("Organised weekly society events")).toBeVisible();
-  await expect(nextFix.getByText(/\[add your real number\]/)).toBeVisible();
+  await expect(nextFix.getByText("Organised weekly society events").first()).toBeVisible();
+  await expect(nextFix.getByText(/\[add your real number\]/).first()).toBeVisible();
 
   // 4. Feed → the demo job
   await page.getByRole("link", { name: "See my internships" }).click();

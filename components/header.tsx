@@ -4,6 +4,7 @@ import { levelFromXp, type BadgeKey } from "@/lib/gamify/core";
 import { env } from "@/lib/env";
 import { DemoBadge } from "./demo-badge";
 import { BadgesModal } from "./badges-modal";
+import { NavLinks } from "./nav-links";
 
 export async function Header({ userId }: { userId: string }) {
   const supabase = await createClient();
@@ -16,12 +17,9 @@ export async function Header({ userId }: { userId: string }) {
   return (
     <header className="flex min-h-[72px] flex-wrap items-center gap-x-6 gap-y-2 border-b bg-white px-4 sm:px-8">
       <Link href="/feed" className="text-[22px] font-extrabold tracking-tight">placed<span className="text-primary">.</span></Link>
-      <nav className="flex flex-wrap gap-1.5">
-        <Link href="/feed" className="flex min-h-11 items-center rounded-[10px] px-3.5 py-2 text-sm font-semibold hover:bg-[#EFEBFF]">Feed</Link>
-        <Link href="/tracker" className="flex min-h-11 items-center rounded-[10px] px-3.5 py-2 text-sm font-medium text-[#4A4A57] hover:bg-[#EFEBFF]">Tracker</Link>
-        <Link href="/profile" className="flex min-h-11 items-center rounded-[10px] px-3.5 py-2 text-sm font-medium text-[#4A4A57] hover:bg-[#EFEBFF]">Profile</Link>
-        {env.autopilot && <Link href="/autopilot/setup" className="flex min-h-11 items-center rounded-[10px] px-3.5 py-2 text-sm font-medium text-[#4A4A57] hover:bg-[#EFEBFF]">Autopilot</Link>}
-        <Link href="/settings" className="flex min-h-11 items-center rounded-[10px] px-3.5 py-2 text-sm font-medium text-[#4A4A57] hover:bg-[#EFEBFF]">Settings</Link>
+      {/* One scrollable row on phones instead of wrapping into two (the header took ~180px at 390px wide). */}
+      <nav className="order-last -mx-4 flex w-[calc(100%+2rem)] gap-1.5 overflow-x-auto px-4 pb-2 sm:order-none sm:mx-0 sm:w-auto sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0">
+        <NavLinks autopilot={env.autopilot} />
         <BadgesModal earned={(b ?? []).map((x) => x.badge_key as BadgeKey)} />
       </nav>
       <div className="flex-1" />
@@ -36,8 +34,8 @@ export async function Header({ userId }: { userId: string }) {
       </span>
       <div className="flex items-center gap-2.5">
         <div className="num-quest flex h-[38px] w-[38px] items-center justify-center rounded-full bg-primary text-white shadow-[0_3px_0_#3A20C4]" aria-label={`Level ${lvl.level}`}>{lvl.level}</div>
-        <div className="hidden w-[150px] flex-col gap-1 sm:flex">
-          <div className="text-xs font-bold">{lvl.name} · {lvl.needed - lvl.intoLevel} XP to level {lvl.level + 1}</div>
+        <div className="hidden w-[170px] flex-col gap-1 sm:flex">
+          <div className="whitespace-nowrap text-xs font-bold">{lvl.name} · {lvl.needed - lvl.intoLevel} XP to level {lvl.level + 1}</div>
           <div className="h-2.5 rounded-full bg-[#E6E6EF]"><div className="h-2.5 rounded-full bg-primary" style={{ width: `${Math.round((lvl.intoLevel / lvl.needed) * 100)}%` }} /></div>
         </div>
       </div>

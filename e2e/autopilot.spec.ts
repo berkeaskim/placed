@@ -2,7 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { test, expect, chromium, type Page } from "@playwright/test";
-import { hasDemoCreds } from "./fixtures/helpers";
+import { LIVE_DEMO_SKIP, liveDemoSpecsAllowed } from "./fixtures/helpers";
 
 /**
  * Autopilot end to end on the REAL Monzo Greenhouse form (Associate Data Scientist - Intern).
@@ -13,11 +13,13 @@ import { hasDemoCreds } from "./fixtures/helpers";
  * Chromium runs with --headless=new (headless:false + that arg): the old headless mode cannot load extensions, and a headed
  * window is not needed in CI/agent shells. Remove the arg to watch it. The extension is a TEMP COPY (see makeExtensionCopy).
  *
- * Run: NEXT_PUBLIC_AUTOPILOT=1 AI_MODE=fixture E2E_PORT=3100 npx playwright test e2e/autopilot.spec.ts
+ * It signs in as the LIVE demo account and saves its Vault, so it is opt-in (Berke's OK only).
+ * Run: PLACED_ALLOW_LIVE_DEMO_WRITE=1 NEXT_PUBLIC_AUTOPILOT=1 AI_MODE=fixture E2E_PORT=3100 npx playwright test e2e/autopilot.spec.ts
  * The extension is loaded from a TEMP COPY whose PLACED_ORIGIN and host_permissions point at the e2e port,
  * so the committed extension/ (default http://localhost:3200) is never edited.
  */
-test.skip(!hasDemoCreds || process.env.NEXT_PUBLIC_AUTOPILOT !== "1", "needs demo creds and NEXT_PUBLIC_AUTOPILOT=1");
+test.skip(!liveDemoSpecsAllowed, LIVE_DEMO_SKIP);
+test.skip(process.env.NEXT_PUBLIC_AUTOPILOT !== "1", "needs NEXT_PUBLIC_AUTOPILOT=1");
 
 const PORT = Number(process.env.E2E_PORT ?? 3100);
 const ORIGIN = `http://localhost:${PORT}`;

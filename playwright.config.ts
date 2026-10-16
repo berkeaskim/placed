@@ -2,7 +2,8 @@ import os from "node:os";
 import path from "node:path";
 import { defineConfig, devices } from "@playwright/test";
 
-// Load .env.local so global setup can sign in the demo user (values never printed).
+// Load .env.local so global setup can sign in the e2e test user (values never printed). It is the PRODUCTION database.
+// Never the demo account: that is the live public demo (global-setup refuses it; demo specs need PLACED_ALLOW_LIVE_DEMO_WRITE=1).
 try { process.loadEnvFile(".env.local"); } catch { /* optional */ }
 
 const PORT = Number(process.env.E2E_PORT ?? 3100);
@@ -16,7 +17,7 @@ export default defineConfig({
   timeout: 60_000,
   expect: { timeout: 15_000 },
   fullyParallel: false,
-  workers: 1, // one shared demo user in a real Supabase project: keep writes serial
+  workers: 1, // one shared e2e user in a real Supabase project: keep writes serial
   retries: 0,
   reporter: [["list"], ["html", { outputFolder: path.join(OUT, "report"), open: "never" }]],
   globalSetup: "./e2e/global-setup.ts",

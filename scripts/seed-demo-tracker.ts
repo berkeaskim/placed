@@ -2,17 +2,20 @@
 /**
  * Puts the demo persona's tracker in the state the demo inbox expects (lib/gmail/fixtures.ts):
  * Lendable saved, Monzo/IMC/Palantir applied, Jump Trading interview. Celonis stays out (the "add it?" case).
- * Clears the demo user's inbox_events so Sync replays all 8 emails. Run: npm run demo:tracker
+ * Clears the demo user's inbox_events so Sync replays all 8 emails. Only with Berke's OK:
+ *   PLACED_ALLOW_LIVE_DEMO_WRITE=1 npm run demo:tracker
  */
 import { createClient } from "@supabase/supabase-js";
 import { DEMO_JOB_EXT_ID } from "@/lib/demo/constants";
+import { assertLiveDemoWriteAllowed } from "@/lib/demo/guard";
 
-const db = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false } });
 const PLAN: { slug: string; status: "saved" | "applied" | "interview" }[] = [
   { slug: "monzo", status: "applied" }, { slug: "imc", status: "applied" }, { slug: "palantir", status: "applied" }, { slug: "jumptrading", status: "interview" },
 ];
 
 async function main() {
+  assertLiveDemoWriteAllowed(process.env, "demo:tracker");
+  const db = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false } });
   const email = process.env.DEMO_EMAIL?.trim().toLowerCase();
   if (!email) throw new Error("DEMO_EMAIL is not set");
   const { data: users, error } = await db.auth.admin.listUsers({ perPage: 1000 });

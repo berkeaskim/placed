@@ -4,7 +4,9 @@
   "private": true,
   "license": "MIT",
   "scripts": {
+    "predev": "node scripts/pack-extension.mjs",
     "dev": "next dev",
+    "prebuild": "node scripts/pack-extension.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
@@ -57,6 +59,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.4.0",
+    "fflate": "^0.8.3",
     "jiti": "^2.7.0",
     "tailwindcss": "^4",
     "tsx": "^4.23.15",
