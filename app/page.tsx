@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { StartButton } from "@/components/start-button";
 
 export default function Landing() {
   return (
@@ -11,12 +12,12 @@ export default function Landing() {
         Find internships that actually fit you, see how your CV scores against what recruiters really
         look for, and tailor it in one click — without making anything up.
       </p>
-      <Link
-        href="/login"
-        className="btn-quest inline-flex h-12 min-w-44 items-center justify-center px-8 text-base"
-      >
-        Get started
-      </Link>
+      <div className="flex flex-col items-center gap-3">
+        <StartButton className="btn-quest inline-flex h-12 min-w-44 items-center justify-center px-8 text-base" />
+        <Link href="/login" className="text-sm font-semibold text-muted-foreground underline-offset-4 hover:underline">
+          I already have an account
+        </Link>
+      </div>
       <p className="text-sm text-muted-foreground">We never apply on your behalf. You stay in control.</p>
     </main>
   );

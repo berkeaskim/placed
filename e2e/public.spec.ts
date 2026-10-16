@@ -7,25 +7,27 @@ test.describe("public pages (logged out)", () => {
     await page.goto("/");
     await expect(page.getByRole("heading", { level: 1 })).toContainText("placed");
     await expect(page).toHaveTitle(/Placed/);
-    await page.getByRole("link", { name: "Get started" }).click();
+    await page.getByRole("link", { name: "I already have an account" }).click();
     await expect(page).toHaveURL(/\/login$/);
     expect(errors).toEqual([]);
   });
 
-  test("login page renders magic-link + Google options without console errors", async ({ page }) => {
+  test("login page renders password, magic-link + Google options without console errors", async ({ page }) => {
     const errors = trackConsole(page);
     await page.goto("/login");
     await expect(page.getByText("Welcome to Placed")).toBeVisible();
-    await expect(page.getByRole("button", { name: "Email me a magic link" })).toBeEnabled();
+    await expect(page.locator("input[type=password]")).toHaveCount(1);
+    await expect(page.getByRole("button", { name: "Sign in", exact: true })).toBeEnabled();
     await expect(page.getByRole("button", { name: "Continue with Google" })).toBeEnabled();
-    // No password login exists in the UI (actions.ts only has OTP + OAuth); auth for
-    // logged-in specs is done in global-setup via signInWithPassword.
+    await page.getByRole("button", { name: "Email me a magic link instead" }).click();
+    await expect(page.getByRole("button", { name: "Email me a magic link" })).toBeEnabled();
     await expect(page.locator("input[type=password]")).toHaveCount(0);
     expect(errors).toEqual([]);
   });
 
   test("login blocks an invalid email client-side (no request sent)", async ({ page }) => {
     await page.goto("/login");
+    await page.getByRole("button", { name: "Email me a magic link instead" }).click();
     const email = page.locator("input[name=email]");
     await email.fill("not-an-email");
     let posted = false;
