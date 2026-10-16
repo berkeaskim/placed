@@ -15,9 +15,9 @@ import { openVault, sealVault } from "@/lib/autopilot/vault-crypto";
 import { db } from "@/lib/db/client";
 import { autopilotPacks, autopilotVault } from "@/lib/db/schema";
 import { LOCAL_USER_ID as UID } from "@/lib/auth/local-user";
-import { seedJob, useTempDb } from "../cv/temp-db";
+import { seedJob, withTempDb } from "../cv/temp-db";
 
-useTempDb();
+withTempDb();
 
 const field = (key: string, label: string, over: Partial<F> = {}): F => ({ key, target: key, label, type: "select", required: true, options: [{ label: "Yes", value: "1" }, { label: "No", value: "0" }], ...over });
 let JOB = "";

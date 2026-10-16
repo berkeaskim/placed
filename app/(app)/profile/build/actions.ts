@@ -1,4 +1,5 @@
 "use server";
+import { randomBytes } from "node:crypto";
 import { after } from "next/server";
 import { eq } from "drizzle-orm";
 import { requireUser } from "@/lib/auth/local-user";
@@ -57,7 +58,8 @@ export async function uploadCv(formData: FormData): Promise<UploadCvResult> {
     if (flagged) parsed = dropFlaggedContent(parsed, safety.issues.map((i) => i.span));
   } catch { return { error: "We couldn't read this CV right now. Try again in a minute, or take the quiz." }; }
 
-  const path = `${user.id}/${Date.now()}.pdf`;
+  // Unique per upload (two uploads in the same millisecond must not overwrite each other's file).
+  const path = `${user.id}/${Date.now()}-${randomBytes(4).toString("hex")}.pdf`;
   try { await putFile("cvs", path, bytes, "application/pdf"); } catch { return { error: "Upload failed — try again." }; }
 
   // Insert inactive, then swap atomically (activateCv): a failure or a concurrent upload never leaves

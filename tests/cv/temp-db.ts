@@ -8,7 +8,7 @@ import { companies, cvs, jobs } from "@/lib/db/schema";
 import { LOCAL_USER_EMAIL, LOCAL_USER_ID } from "@/lib/auth/local-user";
 
 /** Points PLACED_DATA_DIR at a fresh temp dir for this test file (SQLite + files), with the local profile row. */
-export function useTempDb(): { dir: () => string } {
+export function withTempDb(): { dir: () => string } {
   let dir = "";
   const prev = process.env.PLACED_DATA_DIR;
   beforeAll(() => {

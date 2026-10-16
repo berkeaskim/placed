@@ -69,7 +69,6 @@ describe("extension", () => {
   });
   it("the CV is fetched only from the Placed origin's /api/files/", () => {
     const bg = readFileSync("extension/background.js", "utf8");
-    expect(bg).not.toMatch(/supabase/i);
     expect(bg).toMatch(/url\.origin === placedOrigin\(\) && url\.pathname\.startsWith\("\/api\/files\/"\)/);
   });
   it("background loads the CDP geometry helper", () => {

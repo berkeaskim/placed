@@ -6,9 +6,9 @@ import { sealVault } from "@/lib/autopilot/vault-crypto";
 import { db } from "@/lib/db/client";
 import { applications, autopilotPacks, autopilotVault, cvs } from "@/lib/db/schema";
 import { LOCAL_USER_ID as UID } from "@/lib/auth/local-user";
-import { seedCv, seedJob, useTempDb } from "../cv/temp-db";
+import { seedCv, seedJob, withTempDb } from "../cv/temp-db";
 
-useTempDb();
+withTempDb();
 
 const TOKEN = "a".repeat(43);
 const form = { ats: "greenhouse", url: "https://x/apply", fields: [

@@ -11,9 +11,9 @@ import { isSealed, openVault, sealVault } from "@/lib/autopilot/vault-crypto";
 import { db } from "@/lib/db/client";
 import { autopilotPacks, autopilotVault } from "@/lib/db/schema";
 import { LOCAL_USER_ID as UID } from "@/lib/auth/local-user";
-import { seedJob, useTempDb } from "../cv/temp-db";
+import { seedJob, withTempDb } from "../cv/temp-db";
 
-useTempDb();
+withTempDb();
 
 const row = () => db.select().from(autopilotVault).where(eq(autopilotVault.user_id, UID)).get();
 const savedCore = () => openVault("core", UID, row()?.core) as Record<string, string>;
