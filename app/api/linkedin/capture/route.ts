@@ -35,7 +35,7 @@ export async function POST(req: Request) {
     return Response.json({ ok: true, total: data.total, label: data.label, saved: data.saved }, { headers: { ...cors, "cache-control": "no-store" } });
   } catch (e) {
     if (e instanceof CaptureUsedError) return new Response("Already scored. Press the button in Placed again to rescore.", { status: 410, headers: cors });
-    if (e instanceof NotYourProfileError) return new Response("The name on this profile doesn't match your CV in Placed.", { status: 409, headers: cors });
+    if (e instanceof NotYourProfileError) return new Response("The name on this LinkedIn profile doesn't match the CV in Placed. Score your own profile, or upload your own CV in Profile first.", { status: 409, headers: cors });
     console.error("linkedin capture failed", e);
     return new Response("We couldn't score this profile right now. Try again in a minute.", { status: 500, headers: cors });
   }

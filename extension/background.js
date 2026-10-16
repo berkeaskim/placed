@@ -174,6 +174,15 @@ function fromLinkedInProfile(sender) {
   if (sender.id !== chrome.runtime.id || !sender.tab || sender.frameId !== 0 || senderOrigin(sender) !== "https://www.linkedin.com") return false;
   try { return new URL(sender.url).pathname.startsWith("/in/"); } catch { return false; }
 }
+/** Tells the Placed tab the read failed, so it shows the reason now instead of polling until it times out. */
+async function liFail(s, error) {
+  try {
+    await chrome.tabs.sendMessage(s.placedTabId, { kind: "liFailed", error }, { frameId: 0 });
+    const t = await chrome.tabs.update(s.placedTabId, { active: true });
+    if (t && t.windowId != null) await chrome.windows.update(t.windowId, { focused: true });
+  } catch { /* the Placed tab was closed */ }
+  return { ok: false, error };
+}
 async function liHandle(msg, sender) {
   if (msg.kind === "liArm") {
     if (!fromPlacedPage(sender) || typeof msg.token !== "string" || !LI_TOKEN_RE.test(msg.token)) return { ok: false };
@@ -204,9 +213,9 @@ async function liHandle(msg, sender) {
         method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ token: s.token, profile }), credentials: "omit", cache: "no-store",
       });
     } catch {
-      return { ok: false, error: "Couldn't reach Placed. Check you're online and press the button in Placed again." };
+      return liFail(s, "Couldn't reach Placed. Check you're online and press the button in Placed again.");
     }
-    if (!res.ok) return { ok: false, error: (await res.text().catch(() => "")).slice(0, 200) || `Placed answered ${res.status}.` };
+    if (!res.ok) return liFail(s, (await res.text().catch(() => "")).slice(0, 200) || `Placed answered ${res.status}.`);
     const body = await res.json().catch(() => ({}));
     try {
       const t = await chrome.tabs.update(s.placedTabId, { active: true });

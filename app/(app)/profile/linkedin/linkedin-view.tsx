@@ -64,14 +64,24 @@ export function LinkedInView({ initial, sector: initialSector }: { initial: LiPa
     const r = await startLinkedInCapture(fd);
     if ("error" in r) { setError(r.error); setCapturing(false); return; }
     if (!(await armExtension(r.token))) { setError("The Placed extension didn't answer. Reload this page and try again."); setCapturing(false); return; }
-    const stop = Date.now() + POLL_FOR_MS;
-    while (Date.now() < stop) {
-      await new Promise((res) => setTimeout(res, POLL_MS));
-      setCapStep((s) => Math.min(s + 1, EXT_STEPS.length - 1));
-      const got = await pollLinkedInCapture(sector, r.since).catch(() => null);
-      if (got) { setData(got); setCapturing(false); router.refresh(); return; }
+    // extension/placed-bridge.js relays a failed read (e.g. the profile's name doesn't match the CV), so we stop early.
+    let failed: string | null = null;
+    const onFail = (e: MessageEvent) => { if (e.source === window && e.data?.type === "placed:linkedin-failed") failed = String(e.data.error || "") || "Placed couldn't score that profile."; };
+    window.addEventListener("message", onFail);
+    try {
+      const stop = Date.now() + POLL_FOR_MS;
+      while (Date.now() < stop && !failed) {
+        await new Promise((res) => setTimeout(res, POLL_MS));
+        if (failed) break;
+        setCapStep((s) => Math.min(s + 1, EXT_STEPS.length - 1));
+        const got = await pollLinkedInCapture(sector, r.since).catch(() => null);
+        if (got) { setData(got); setCapturing(false); router.refresh(); return; }
+      }
+    } finally {
+      window.removeEventListener("message", onFail);
     }
     setCapturing(false);
+    if (failed) { setError(failed); setShowPdf(true); return; }
     setError("We didn't get your profile. Check the LinkedIn tab: you need to be signed in. Then press the button again, or upload the PDF below.");
   };
   const busy = pending || capturing;

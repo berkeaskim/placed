@@ -48,3 +48,15 @@ export const LI_SECTOR_IMPORTANCE: Record<Archetype, { level: "low" | "medium-lo
   marketing_growth: { level: "high", note: "Your profile is a sample of how you market yourself." },
   research: { level: "medium-low", note: "Your application, research statement and references carry far more weight." },
 };
+
+/** The student-facing line for an advisory rule. Falls back to the scorer statement minus its "Advisory (weight 0):" prefix. */
+export function presenceTip(rule: Pick<LiRule, "statement" | "tip">): string {
+  return rule.tip ?? rule.statement.replace(/^Advisory( risk check)? \([^)]*\):\s*/i, "");
+}
+
+const RULE_BY_ID = new Map(LI_RULES.map((r) => [r.id, r]));
+/** Re-words a tip saved with an older score, so stored results pick up the current wording. */
+export function presenceTipFor(ruleId: string, saved: string): string {
+  const r = RULE_BY_ID.get(ruleId);
+  return r ? presenceTip(r) : saved;
+}
