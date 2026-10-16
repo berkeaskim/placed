@@ -2,14 +2,22 @@
   "name": "placed",
   "version": "0.1.0",
   "private": true,
+  "description": "Local-first internship co-pilot for UK students: honest CV scoring, tailoring that never fabricates, live jobs and an application tracker.",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/berkeaskim/placed.git"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  },
   "scripts": {
     "predev": "node scripts/pack-extension.mjs",
     "setup": "tsx scripts/setup.ts",
-    "dev": "next dev",
+    "dev": "next dev -H 127.0.0.1",
     "prebuild": "node scripts/pack-extension.mjs",
     "build": "next build",
-    "start": "next start",
+    "start": "next start -H 127.0.0.1",
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -22,12 +30,7 @@
     "e2e": "playwright test",
     "build-playbooks": "tsx scripts/build-playbooks.ts",
     "demo:cv": "node scripts/run-ts.mjs scripts/make-demo-cv.ts",
-    "demo:tracker": "tsx --env-file=.env.local scripts/seed-demo-tracker.ts",
-    "demo:user": "tsx --env-file=.env.local scripts/create-demo-user.ts",
-    "user:add": "tsx --env-file=.env.local scripts/add-user.ts",
-    "demo:reset": "tsx --env-file=.env.local scripts/reset-demo.ts",
-    "reliability": "node --env-file=.env.local scripts/run-ts.mjs scripts/reliability.ts",
-    "vault:encrypt": "tsx --env-file=.env.local scripts/encrypt-vault.ts",
+    "reliability": "node --env-file-if-exists=.env.local scripts/run-ts.mjs scripts/reliability.ts",
     "db:generate": "drizzle-kit generate"
   },
   "dependencies": {
