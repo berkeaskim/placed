@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { desc, eq } from "drizzle-orm";
 import { requireUser } from "@/lib/auth/local-user";
 import { db } from "@/lib/db/client";
@@ -7,6 +8,8 @@ import { nudgeFor } from "@/lib/outreach/nudges";
 import { OUTREACH_TARGETS, type OutreachTarget } from "@/lib/outreach/targets";
 import { todayLondon } from "@/lib/scoring/dates";
 import { showDeadline } from "@/components/tracker/deadline-chip";
+import { needsAttention, summarize } from "@/lib/tracker/summary";
+import { NeedsAttention, TrackerSummaryPanel } from "@/components/tracker/summary";
 import { Board, type Card } from "./board";
 
 function loadApplications(userId: string) {
@@ -58,14 +61,31 @@ export default async function Tracker() {
     // The posting's own closing date, while the student hasn't applied yet.
     deadline: a.status === "saved" && a.deadline && showDeadline(a.deadline, today, a.status) ? { date: a.deadline, label: "Closes", url: null } : null,
   }));
+  const now = new Date();
   return (
-    <div className="flex flex-col gap-4">
-      <h1 className="text-[28px] font-extrabold tracking-tight">Your applications</h1>
+    <div className="flex flex-col gap-5">
+      <div className="flex flex-col gap-1">
+        <h1 className="text-[28px] font-extrabold leading-tight tracking-tight">Your applications</h1>
+        <p className="text-sm text-muted-foreground">Drag a card to move it, or use Move. Placed never applies for you.</p>
+      </div>
       {apps === null
         ? <p role="alert" className="card-quest p-6 font-semibold">Could not load your applications. Refresh to try again.</p>
         : cards.length === 0
-        ? <p className="card-quest p-6 font-semibold">Save a role from your feed to start tracking.</p>
-        : <Board cards={cards} today={today} />}
+        ? (
+          <div className="card-quest flex flex-col items-center gap-3 px-6 py-12 text-center">
+            <span aria-hidden className="text-4xl">🗂️</span>
+            <p className="text-lg font-bold tracking-tight">Nothing tracked yet</p>
+            <p className="max-w-sm text-sm text-muted-foreground">Save a role from your feed and it lands here, ready to move from Saved to Offer.</p>
+            <Link href="/feed" className="btn-quest mt-1 inline-flex min-h-11 items-center px-5 no-underline">Browse your feed</Link>
+          </div>
+        )
+        : (
+          <>
+            <TrackerSummaryPanel summary={summarize(cards, now)} />
+            <NeedsAttention items={needsAttention(cards, today)} />
+            <Board cards={cards} today={today} now={now.toISOString()} />
+          </>
+        )}
     </div>
   );
 }
