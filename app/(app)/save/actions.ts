@@ -2,7 +2,7 @@
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { isAlreadyRegistered } from "@/lib/demo/admin";
+import { findUserByEmail, isAlreadyRegistered } from "@/lib/demo/admin";
 
 /**
  * Turns the guest (anonymous) user into a real email + password account, keeping the same user id so every row they
@@ -16,14 +16,17 @@ export async function saveAccount(formData: FormData): Promise<{ error: string }
   if (password.length < 8) return { error: "Use at least 8 characters for your password." };
   const { supabase, user } = await requireUser();
   if (!user.is_anonymous) redirect("/feed");
-  const { error } = await createAdminClient().auth.admin.updateUserById(user.id, {
+  const admin = createAdminClient();
+  const { error } = await admin.auth.admin.updateUserById(user.id, {
     email,
     password,
     email_confirm: true,
     user_metadata: { ...user.user_metadata, ...(name ? { full_name: name } : {}) },
   });
   if (error) {
-    if (isAlreadyRegistered(error.message) || /email.*(exists|taken|registered)/i.test(error.message)) {
+    // A taken email comes back as a bare "Error updating user", so look it up on the failure path only.
+    const taken = isAlreadyRegistered(error.message) || (await findUserByEmail(admin, email).catch(() => null)) !== null;
+    if (taken) {
       return { error: "That email already has an account. Sign in from the login page instead." };
     }
     console.error("saveAccount: update failed", error.message);
