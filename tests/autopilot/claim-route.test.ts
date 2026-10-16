@@ -5,7 +5,7 @@ import { POST, OPTIONS } from "@/app/api/autopilot/claim/route";
 
 const EXT = "chrome-extension://" + "a".repeat(32);
 const req = (body: unknown, origin = EXT) =>
-  new Request("http://localhost/api/autopilot/claim", { method: "POST", headers: { origin, "content-type": "application/json" }, body: JSON.stringify(body) });
+  new Request("http://localhost:3000/api/autopilot/claim", { method: "POST", headers: { origin, host: "localhost:3000", "content-type": "application/json" }, body: JSON.stringify(body) });
 
 describe("claim route", () => {
   beforeEach(() => claim.impl.mockReset());
@@ -32,6 +32,13 @@ describe("claim route", () => {
     expect((await POST(req({ token: 5 }))).status).toBe(400);
     expect((await POST(req({ token: "t".repeat(43) }, "https://evil.example"))).status).toBe(403);
     expect((await POST(req({ token: "t".repeat(43) }, "https://job-boards.greenhouse.io"))).status).toBe(403); // R9: ATS page origins can't claim
+    expect(claim.impl).not.toHaveBeenCalled();
+  });
+  it("refuses a request addressed to a non-loopback host (DNS rebinding)", async () => {
+    const r = new Request("http://evil.example/api/autopilot/claim", {
+      method: "POST", headers: { origin: EXT, host: "evil.example", "content-type": "application/json" }, body: JSON.stringify({ token: "t".repeat(43) }),
+    });
+    expect((await POST(r)).status).toBe(403);
     expect(claim.impl).not.toHaveBeenCalled();
   });
   it("answers preflight", async () => {

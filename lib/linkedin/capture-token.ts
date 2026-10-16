@@ -1,5 +1,6 @@
 import "server-only";
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
+import { getSecret, setSecret } from "@/lib/settings/store";
 import { ARCHETYPES, YEARS, type Archetype, type Year } from "@/lib/types";
 
 /**
@@ -12,9 +13,16 @@ export type CaptureClaims = { userId: string; sector: Archetype; year: Year; non
 const TTL_MS = 10 * 60_000;
 export const CAPTURE_TOKEN_RE = /^[A-Za-z0-9_-]{20,400}\.[A-Za-z0-9_-]{43}$/;
 
+/** LINKEDIN_CAPTURE_SECRET overrides; otherwise a random local secret, generated on first use and stored sealed in settings. */
+function localSecret(): string {
+  const have = getSecret("capture.hmac");
+  if (have) return have;
+  setSecret("capture.hmac", randomBytes(32).toString("base64url"));
+  return getSecret("capture.hmac")!;
+}
+
 function key(): Buffer {
-  const secret = process.env.LINKEDIN_CAPTURE_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!secret) throw new Error("No secret for LinkedIn capture tokens");
+  const secret = process.env.LINKEDIN_CAPTURE_SECRET || localSecret();
   return createHmac("sha256", secret).update("placed:linkedin-capture:v1").digest();
 }
 const sign = (body: string) => createHmac("sha256", key()).update(body).digest("base64url");

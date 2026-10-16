@@ -62,14 +62,15 @@ describe("extension", () => {
     expect(bg).toMatch(/\/api\/autopilot\/claim/);
     expect(bg).not.toMatch(/console\.\w+\([^)]*token/); // never log the token
   });
-  it("manifest host_permissions cover the Placed app and Supabase storage, with no broad wildcards", () => {
+  it("manifest host_permissions are only the local Placed app, with no wildcards", () => {
     const hp: string[] = JSON.parse(readFileSync("extension/manifest.json", "utf8")).host_permissions;
-    expect(hp).toContain("http://localhost:3200/*");
-    expect(hp).toContain("https://*.supabase.co/*");
-    for (const p of hp) {
-      expect(p).not.toBe("<all_urls>");
-      expect(p, p).not.toMatch(/^\*:\/\/|:\/\/\*\/|:\/\/\*\.(vercel\.app|netlify\.app|com|io|co|app)\//); // supabase.co is the one allowed *.
-    }
+    expect(hp.sort()).toEqual(["http://127.0.0.1/*", "http://localhost/*"]);
+    expect(readFileSync("extension/config.js", "utf8")).toMatch(/PLACED_ORIGIN = "http:\/\/localhost:3000"/);
+  });
+  it("the CV is fetched only from the Placed origin's /api/files/", () => {
+    const bg = readFileSync("extension/background.js", "utf8");
+    expect(bg).not.toMatch(/supabase/i);
+    expect(bg).toMatch(/url\.origin === placedOrigin\(\) && url\.pathname\.startsWith\("\/api\/files\/"\)/);
   });
   it("background loads the CDP geometry helper", () => {
     expect(readFileSync("extension/background.js", "utf8")).toMatch(/importScripts\(["']lib\/geometry\.js["']\)/);
