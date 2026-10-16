@@ -8,7 +8,7 @@ When a student has applied to a job, Placed gives them an interview prep pack fo
 candidates have publicly reported (Reddit, Glassdoor, WallStreetOasis, TheStudentRoom) plus the job description, and tied
 back to stories from their own CV.
 
-Success: on `/jobs/[id]` for an applied job, one click returns within ~30 s a pack with the hiring process, 8–15 likely
+Success: on `/jobs/[id]` for an applied job, one click returns within ~60 s (a cache hit is instant) a pack with the hiring process, 8–15 likely
 questions (each marked as publicly reported or inferred), real source links, and 2–3 CV stories mapped to behavioural
 questions. A second student with the same company and role gets the shared part instantly from cache.
 
@@ -52,8 +52,16 @@ create policy "auth_read" on public.interview_preps for select to authenticated 
 Two functions, both through `runAi` so fixture mode and fallbacks behave like the other AI features.
 
 1. `generatePrepPack({ company, jobTitle, archetype, employmentType, jdText })` → `{ pack, sources, grounded }`
-   - Gemini Flash (`fast` tier), with a `googleSearch` tool and structured output. A `tools` option is added to
-     `StructuredRequest` and passed through in `gemini.ts`.
+   - **Two steps** (probe 2026-10-16: with `googleSearch` and a JSON schema in one call, Gemini 3.8 Flash returned
+     JSON but no `groundingMetadata`, so it had not searched and its "source" domains were unverified):
+     a. Research: a grounded free-text call (`googleSearch` tool, no schema) through a new `generateGrounded` in
+        `provider.ts` / `geminiGrounded` in `gemini.ts`. It returns `{ text, chunks: {uri,title}[] }`. The probe took
+        about 37 s, made 9 searches and returned 22 chunks.
+     b. Source resolution: each chunk uri is a `vertexaisearch…/grounding-api-redirect/…` link. A HEAD request with
+        `redirect: "manual"` reads the `location` header to get the real page URL. Up to 12 sources are resolved in
+        parallel with a 4 s timeout each. If a lookup fails, that source is dropped. Duplicates are removed.
+     c. Structure: a normal `generateStructured` call (fast, thinking low) gets the research text and a numbered list
+        of the resolved sources. Each question returns `sourceIndex` (an index into that list) instead of a URL.
    - The system prompt tells the model to search for "<company> <role> interview" on Reddit (r/FinancialCareers,
      r/cscareerquestionsEU, r/UKJobs, r/UniUK), Glassdoor, WallStreetOasis and TheStudentRoom, and to prefer UK
      graduate and internship reports. The JD is wrapped with the existing `UNTRUSTED_JD_RULE` / `wrapJob`.
@@ -61,9 +69,9 @@ Two functions, both through `runAi` so fixture mode and fallbacks behave like th
      - `process: { stage: string; note: string }[]` — for example online test, HireVue, assessment centre or superday
      - `questions: { question; category: 'behavioural'|'technical'|'motivational'|'case'; reported: boolean; whyTheyAsk; prepTip; sourceUrl?: string }[]`, 8–15 items
      - `tips: string[]`, at most 5
-   - **Source integrity:** `sources` come only from `groundingMetadata.groundingChunks`. Any `sourceUrl` on a question
-     that is not in that set is set to undefined, and that question's `reported` is set to false. The model cannot
-     produce a link that the UI shows.
+   - **Source integrity:** `sources` are only the resolved grounding chunks. A `sourceIndex` that is out of range or
+     missing makes that question `reported=false` and leaves it without a link. The stored question carries
+     `sourceUrl` copied from the list, so the model never writes a URL that the UI shows.
    - Anthropic provider: no grounding. The same prompt runs in "inferred" mode, so `grounded=false`, every
      `reported=false` and there are no sources. The UI labels this mode.
    - Fixture mode: `fixtures/ai/interviewPrep/default.json`.
@@ -118,7 +126,5 @@ Errors are mapped to the existing `AI_UNAVAILABLE` / `AI_BAD_FORMAT` messages.
 
 ## Risks
 
-- Gemini 3 Flash with grounding plus structured output in a single call: if the SDK rejects the combination, fall back
-  to two steps. First a grounded free-text research call, then a structured call over that text, with the sources still
-  taken from step 1's metadata.
-- Latency: grounding adds about 5–15 s. The cache makes repeat views instant.
+- Grounded research takes about 35–45 s and the full first generation about 50 s. Server actions on Vercel Fluid
+  default to a 300 s limit, so `export const maxDuration = 120` is set on the job page to make it explicit.
