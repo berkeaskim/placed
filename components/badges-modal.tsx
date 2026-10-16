@@ -13,7 +13,7 @@ function Mark({ earned }: { earned: boolean }) {
 export function BadgesModal({ earned }: { earned: BadgeKey[] }) {
   return (
     <Dialog>
-      <DialogTrigger className="min-h-11 rounded-[10px] px-3.5 py-2 text-sm font-medium text-[#4A4A57] hover:bg-[#EFEBFF]">
+      <DialogTrigger className="min-h-11 shrink-0 whitespace-nowrap rounded-[10px] px-3.5 py-2 text-sm font-medium text-[#4A4A57] hover:bg-[#EFEBFF]">
         Badges {earned.length}/5
       </DialogTrigger>
       <DialogContent>

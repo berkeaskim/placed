@@ -78,7 +78,7 @@ export default async function JobPage({ params, searchParams }: { params: Promis
           <p className="text-sm font-semibold text-muted-foreground">
             {job.location || "Location not stated"} · <span className="text-[#8A4B00]">{closingLabel(job, today)}</span>
           </p>
-          {job.summary && <p className="rounded-xl bg-[#F6F6FA] p-3 text-[15px] text-[#4A4A57]">{job.summary}</p>}
+          {job.summary && !summaryRepeatsText(job.summary, job.textLines) && <p className="rounded-xl bg-[#F6F6FA] p-3 text-[15px] text-[#4A4A57]">{job.summary}</p>}
           {job.textLines.length ? <JobText lines={job.textLines} /> : <p className="text-muted-foreground">The full description is on the company&apos;s site.</p>}
         </article>
 
@@ -137,4 +137,12 @@ export default async function JobPage({ params, searchParams }: { params: Promis
       </div>
     </div>
   );
+}
+
+/** Many summaries are just the posting's opening words cut short: showing them above the full text repeats it. */
+function summaryRepeatsText(summary: string, lines: string[]): boolean {
+  const norm = (t: string) => t.replace(/\s+/g, " ").trim().toLowerCase();
+  const head = norm(lines.slice(0, 5).join(" "));
+  const s = norm(summary).replace(/[.…\s]+$/, "");
+  return s.length > 0 && head.includes(s);
 }

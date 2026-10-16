@@ -19,7 +19,7 @@ export function InboxSuggestions({ items }: { items: Suggestion[] }) {
       <h2 className="text-sm font-bold">Emails to review</h2>
       {items.map((s) => (
         <div key={s.eventId} className="flex flex-wrap items-center gap-2 rounded-xl border bg-white p-3 text-sm">
-          <span className="min-w-0 flex-1">“{s.subject}”{s.company ? ` · ${s.company}` : ""}</span>
+          <span className="min-w-0 flex-1 basis-full sm:basis-auto">“{s.subject}”{s.company ? ` · ${s.company}` : ""}</span>
           {s.reason === "matched" ? (
             <button type="button" disabled={pending} className="min-h-11 rounded-full border px-3 font-semibold"
               onClick={() => run(s.eventId, "Applied.", "Couldn't apply it.")}>

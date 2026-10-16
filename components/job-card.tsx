@@ -7,9 +7,16 @@ import { FitBadge } from "./fit-badge";
 import { SaveButton } from "./save-button";
 import { MarkAppliedButton } from "./mark-applied";
 
+/** "0/0 must-haves" read like a bug: with no must-haves listed, count the nice-to-haves instead. */
+function mustLabel(c: Ranked["coverage"]): string {
+  if (c.must.total > 0) return `${c.must.matched}/${c.must.total} must-haves`;
+  if (c.nice.total > 0) return `No must-haves listed · ${c.nice.matched}/${c.nice.total} nice-to-haves`;
+  return "No must-haves listed";
+}
+
 export function JobCard({ r, today, saved, applied }: { r: Ranked; today: string; saved: boolean; applied: boolean }) {
   const gate = r.fit.gates.find((g) => !g.passed);
-  const sub = gate?.reason ?? (r.coverage.readable ? `${r.coverage.must.matched}/${r.coverage.must.total} must-haves` : coverageLabel(r.coverage));
+  const sub = gate?.reason ?? (r.coverage.readable ? mustLabel(r.coverage) : coverageLabel(r.coverage));
   return (
     <article className="flex flex-wrap items-center gap-x-4 gap-y-3 rounded-[18px] border bg-white px-5 py-4">
       <div className="flex min-w-0 flex-1 basis-64 flex-col gap-1.5">

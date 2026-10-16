@@ -5,7 +5,7 @@ import type { CvRule } from "@/lib/cv-rules/types";
 import type { ScoredRuleResult } from "@/lib/cv-score/context";
 import { isSpellingVariant } from "@/lib/cv-score/checkers";
 import { aiMode } from "@/lib/env";
-import { escapeRegex } from "@/lib/text/regex";
+import { escapeRegex, stripListMarker } from "@/lib/text/regex";
 import { currentModelId } from "./models";
 import { AiError, generateStructured, runAi } from "./provider";
 import { SYSTEM_JUDGE } from "./prompts";
@@ -87,7 +87,7 @@ export function mapVerdicts(raw: JudgeOutputT, rules: JudgedRule[], redactedText
       const status = mapStatus(v.status, rule);
       if (status === "not_applicable") return { ruleId: rule.id, status, evidenceLine: null, fix: null };
 
-      const quoted = v.evidence_line == null ? "" : norm(unescapeData(v.evidence_line).replace(/^["“'‘]+|["”'’]+$/g, ""));
+      const quoted = v.evidence_line == null ? "" : norm(stripListMarker(unescapeData(v.evidence_line).replace(/^["“'‘]+|["”'’]+$/g, "")));
       const evidenceLine = quoted || null;
       if (!evidenceLine && status !== "fail") {
         return { ruleId: rule.id, status: "could_not_assess", evidenceLine: null, fix: null, detail: `${status} verdict without an evidence line` };
@@ -123,8 +123,27 @@ function hasExactFixture(key: string | undefined): key is string {
   return existsSync(path.join(process.cwd(), "fixtures", "ai", FN, `${key.replace(/[^a-zA-Z0-9_-]/g, "_")}.json`));
 }
 
+/** Rules per parallel judge call. Hand-set: small enough to cut latency, large enough to keep the call count low. */
+export const JUDGE_BATCH_SIZE = 12;
+
+/** Past this a batch counts as failed (Gemini's own timeout is 240s with retries, so a stall could hold the score for minutes). */
+export const JUDGE_BATCH_DEADLINE_MS = 120_000;
+
+function withDeadline<T>(p: Promise<T>, ms: number): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => { timer = setTimeout(() => reject(new AiError(`judge batch timed out after ${ms}ms`)), ms); });
+  return Promise.race([p, timeout]).finally(() => clearTimeout(timer));
+}
+
+/** llm rules split into near-equal batches of at most JUDGE_BATCH_SIZE, in rule order. */
+export function judgeBatches<R>(rules: R[]): R[][] {
+  const n = Math.ceil(rules.length / JUDGE_BATCH_SIZE);
+  // Batch k gets floor(k·len/n)..floor((k+1)·len/n): sizes differ by at most one.
+  return Array.from({ length: n }, (_, k) => rules.slice(Math.floor((k * rules.length) / n), Math.floor(((k + 1) * rules.length) / n)));
+}
+
 /**
- * One smart-tier call judges every llm rule for the sector. Input is already redacted (pii.ts).
+ * Parallel smart-tier calls (judgeBatches) judge every llm rule for the sector. Input is already redacted (pii.ts).
  * Live AiError: every llm rule is not_applicable with `aiUnavailable: true` and `cacheable: false`, so the code-only
  * score is shown (and labelled) but never cached under the live model id. Other errors are bugs and propagate.
  * Fixture mode without an exact fixture: every llm rule is not_applicable (score = code rules only).
@@ -142,21 +161,34 @@ export async function judgeCvRules(i: JudgeInput): Promise<JudgeResult> {
   if (aiMode() === "fixture" && !hasExactFixture(i.fixtureKey)) return none();
 
   let raw: JudgeOutputT | null;
+  let partial = false;
   try {
     raw = await runAi<JudgeOutputT | null, JudgeOutputT>({
       fn: FN,
       fixtureKey: i.fixtureKey,
       schema: JudgeOutput,
       fromFixture: (r) => r,
-      live: () =>
-        generateStructured({
-          tier: "smart",
-          system: SYSTEM_JUDGE,
-          schema: JudgeOutput,
-          // Gemini counts thinking tokens in maxOutputTokens, so a per-rule budget (400 + 180/rule) truncated. Billing is per token used.
-          maxTokens: Math.max(16000, 400 + 180 * llmRules.length),
-          parts: [{ type: "text", text: buildJudgePrompt(i) }],
-        }),
+      // One call for ~46 rules took 80-120s (output length is the latency): judge rule batches in parallel instead.
+      live: async () => {
+        const outs = await Promise.all(judgeBatches(llmRules).map((rules) =>
+          withDeadline(generateStructured({
+            tier: "smart",
+            system: SYSTEM_JUDGE,
+            schema: JudgeOutput,
+            // Gemini counts thinking tokens in maxOutputTokens, so a per-rule budget (400 + 180/rule) truncated. Billing is per token used.
+            maxTokens: Math.max(16000, 400 + 180 * rules.length),
+            parts: [{ type: "text", text: buildJudgePrompt({ ...i, rules }) }],
+          }), JUDGE_BATCH_DEADLINE_MS).catch((err) => {
+            if (!(err instanceof AiError)) throw err;
+            console.error("judgeCvRules: a rule batch failed, its rules are not counted", err.message);
+            return null;
+          })));
+        const ok = outs.filter((o): o is JudgeOutputT => o !== null);
+        if (ok.length === 0) throw new AiError("every judge batch failed");
+        partial = ok.length < outs.length;
+        // Every batch sees the whole CV; spelling comes from the first only, so one read decides it as before.
+        return { verdicts: ok.flatMap((o) => o.verdicts), spelling_errors: outs[0]?.spelling_errors ?? [] };
+      },
       fallback: () => null,
     });
   } catch (err) {
@@ -165,5 +197,6 @@ export async function judgeCvRules(i: JudgeInput): Promise<JudgeResult> {
     return { ...none(), aiUnavailable: true };
   }
   if (!raw) return none();
-  return { results: mapVerdicts(raw, llmRules, i.redactedText), spellingErrors: cleanSpelling(raw.spelling_errors, i.redactedText), modelId, cacheable: true, aiUnavailable: false };
+  // A failed batch leaves its rules not_applicable: show what was judged, labelled as incomplete, and never cache it.
+  return { results: mapVerdicts(raw, llmRules, i.redactedText), spellingErrors: cleanSpelling(raw.spelling_errors, i.redactedText), modelId, cacheable: !partial, aiUnavailable: partial };
 }
