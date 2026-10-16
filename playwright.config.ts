@@ -1,15 +1,21 @@
+import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { defineConfig, devices } from "@playwright/test";
 
-// Load .env.local so global setup can sign in the e2e test user (values never printed). It is the PRODUCTION database.
-// Never the demo account: that is the live public demo (global-setup refuses it; demo specs need PLACED_ALLOW_LIVE_DEMO_WRITE=1).
-try { process.loadEnvFile(".env.local"); } catch { /* optional */ }
-
 const PORT = Number(process.env.E2E_PORT ?? 3100);
-// Artifacts (results, report, auth state) live outside the repo so nothing needs .gitignore entries.
+// Artifacts (results, report) live outside the repo so nothing needs .gitignore entries.
 const OUT = path.join(os.tmpdir(), "placed-e2e");
-const baseURL = `http://localhost:${PORT}`;
+const baseURL = `http://127.0.0.1:${PORT}`;
+
+// A fresh temp data dir per run, never ./data. Playwright re-reads this config in its workers; they inherit the env
+// var, so only the main process creates the dir and removes it on exit.
+if (!process.env.PLACED_E2E_DATA_DIR) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "placed-e2e-data-"));
+  process.env.PLACED_E2E_DATA_DIR = dir;
+  process.on("exit", () => fs.rmSync(dir, { recursive: true, force: true }));
+}
+const DATA_DIR = process.env.PLACED_E2E_DATA_DIR;
 
 export default defineConfig({
   testDir: "./e2e",
@@ -17,7 +23,7 @@ export default defineConfig({
   timeout: 60_000,
   expect: { timeout: 15_000 },
   fullyParallel: false,
-  workers: 1, // one shared e2e user in a real Supabase project: keep writes serial
+  workers: 1, // one local user and one SQLite file: keep writes serial
   retries: 0,
   reporter: [["list"], ["html", { outputFolder: path.join(OUT, "report"), open: "never" }]],
   globalSetup: "./e2e/global-setup.ts",
@@ -28,13 +34,12 @@ export default defineConfig({
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: {
-    command: `npx next dev -p ${PORT}`,
-    // Task 25: the server Playwright starts shows "Try the demo" and replays the recorded AI fixtures
-    // (deterministic, no API spend). Override with AI_MODE=live in the shell to exercise a real model.
-    env: { NEXT_PUBLIC_DEMO_MODE: "1", AI_MODE: process.env.AI_MODE || "fixture" },
+    command: `npm run setup && npm run dev -- -p ${PORT}`,
+    // Replays the recorded AI fixtures (deterministic, no API spend). AI_MODE=live in the shell exercises a real model.
+    env: { PLACED_DATA_DIR: DATA_DIR, AI_MODE: process.env.AI_MODE || "fixture" },
     url: baseURL,
-    reuseExistingServer: true,
-    timeout: 120_000,
+    reuseExistingServer: false, // an already-running server would use someone's real ./data
+    timeout: 180_000,
     stdout: "pipe",
     stderr: "pipe",
   },
