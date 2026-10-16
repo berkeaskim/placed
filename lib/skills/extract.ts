@@ -169,10 +169,13 @@ export function extractSkills(text: string): string[] {
     if (inLanguageList(text, cm.index, cm.index + 1)) found.push({ canonical: "C", index: cm.index, end: cm.index + 1 });
   }
 
+  let lineStart = 0;
   for (const line of text.split("\n")) {
-    if (COMMUNICATION_SIGNALS.some((signal) => signal.test(line))) {
-      found.push({ canonical: "Communication", index: 0, end: 0 });
+    for (const signal of COMMUNICATION_SIGNALS) {
+      const m = signal.exec(line);
+      if (m) found.push({ canonical: "Communication", index: lineStart + m.index, end: lineStart + m.index + m[0].length });
     }
+    lineStart += line.length + 1;
   }
 
   // A term inside a longer matched term is not a separate skill ("search engine optimisation" is SEO, not also

@@ -38,6 +38,9 @@ describe("extractSkills", () => {
     );
     expect(skills).toContain("Communication");
   });
+  it("keeps inferred communication when the text opens with another skill", () => {
+    expect(extractSkills("Python, SQL.\nPresented findings to the client.")).toEqual(expect.arrayContaining(["Python", "SQL", "Communication"]));
+  });
   it("does not infer communication from generic teamwork wording alone", () => {
     expect(extractSkills("Team player with a positive attitude.")).not.toContain("Communication");
   });
