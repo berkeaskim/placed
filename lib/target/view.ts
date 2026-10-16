@@ -44,12 +44,13 @@ export function toDemandJobs(rows: JobRow[]): DemandJob[] {
 }
 
 export function buildTargetView(i: {
-  sector: Archetype; year: Year; today: string; jobs: JobRow[]; cv: ParsedCV | null; profileSkills: string[];
+  /** Raw rows, or jobs whose skills are already parsed (the cached feed jobs). */
+  sector: Archetype; year: Year; today: string; jobs: JobRow[] | DemandJob[]; cv: ParsedCV | null; profileSkills: string[];
   progress: ProgressRow[]; confirmedClaims: string[];
 }): TargetView {
   const pb = PLAYBOOKS[i.sector];
   const src = i.cv ? cvSkillSource(i.cv) : profileSkillSource(i.profileSkills);
-  const demand = marketDemand(toDemandJobs(i.jobs), i.sector, i.today);
+  const demand = marketDemand(i.jobs.length && "skills" in i.jobs[0] ? i.jobs as DemandJob[] : toDemandJobs(i.jobs as JobRow[]), i.sector, i.today);
   const r = readiness(demand, src);
   const plan = strengthenPlan({ cv: i.cv, cvSource: src, coverage: r.coverage, demand, confirmedClaims: i.confirmedClaims, pct: r.pct });
 
