@@ -49,7 +49,7 @@ describe("assemblePack (Monzo)", () => {
 
 const F = (o: Partial<FormField> & Pick<FormField, "key" | "label" | "type">): FormField => ({ required: false, options: [], target: o.key, ...o });
 const mk = (fields: FormField[]): NormalizedForm => ({ ats: "ashby", url: "x", fields });
-const planOf = (fields: FormField[], answers = {}, extra: Record<string, string> = {}, core = AYSE_CORE) => {
+const planOf = (fields: FormField[], answers = {}, extra: Record<string, string | string[]> = {}, core = AYSE_CORE) => {
   const it = assemblePack(mk(fields), core, extra, {});
   return { it, plan: toFillPlan(it, answers) };
 };
@@ -123,5 +123,32 @@ describe("file uploads and inverted sponsorship in the pack", () => {
     expect(p).toMatchObject({ value: ["a", "c"], optionLabels: ["A", "C"] });
     expect(planOf([NOTICE], { n: { value: "b" } }).plan[0]).toMatchObject({ optionLabel: "2 months" });
     expect(planOf([NOTICE], { n: { value: "b" } }).plan[0]).not.toHaveProperty("optionLabels");
+  });
+});
+
+describe("remembered answers", () => {
+  const offices = (label: string) => F({ key: "o", label, type: "multiselect", required: true, options: [{ label: "London", value: "L" }, { label: "Dublin", value: "D" }, { label: "Paris", value: "P" }] });
+  const relocate = (label: string) => F({ key: "r", label, type: "select", required: true, options: [{ label: "Yes", value: "y" }, { label: "No", value: "n" }] });
+  it("fills an exact earlier answer, including multiselect labels, without asking", () => {
+    const { it, plan } = planOf([offices("Which offices would you consider?")], {}, { "which offices would you consider": ["London", "Paris"] });
+    expect(it[0]).toMatchObject({ group: "vault", value: ["L", "P"], sourceLabel: "you answered this before" });
+    expect(plan[0]).toMatchObject({ mode: "fill", value: ["L", "P"] });
+  });
+  it("pre-selects a near-identical question for a one-click confirm", () => {
+    const { it } = planOf([relocate("Would you be willing to relocate to London?")], {}, { "are you willing to relocate to london": "Yes" });
+    expect(it[0]).toMatchObject({ group: "confirm", value: "y", sourceLabel: "you answered a similar question" });
+  });
+  it("does not match a negated or different-number question", () => {
+    expect(planOf([relocate("Are you NOT willing to relocate to London?")], {}, { "are you willing to relocate to london": "Yes" }).it[0].group).toBe("ask");
+    expect(planOf([relocate("Can you work 5 days in the office?")], {}, { "can you work 3 days in the office": "Yes" }).it[0].group).toBe("ask");
+  });
+  it("asks again when the remembered option no longer exists", () => {
+    expect(planOf([relocate("Level of French?")], {}, { "level of french": "Fluent" }).it[0].group).toBe("ask");
+  });
+  it("uses a remembered answer when setup can't decide, but right to work stays confirm", () => {
+    const start = F({ key: "s", label: "When can you start?", type: "select", required: true, options: [{ label: "Summer 2027", value: "a" }, { label: "Autumn 2027", value: "b" }] });
+    expect(planOf([start], {}, { "when can you start": "Autumn 2027" }).it[0]).toMatchObject({ group: "vault", value: "b" });
+    const rtw = F({ key: "w", label: "What is your right to work status?", type: "select", required: true, options: [{ label: "Option A", value: "a" }, { label: "Option B", value: "b" }] });
+    expect(planOf([rtw], {}, { "what is your right to work status": "Option B" }).it[0]).toMatchObject({ group: "confirm", value: "b" });
   });
 });

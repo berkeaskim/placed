@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Archetype, ArchetypeScore, JobForScoring, ParsedCV, Region, StudentProfile, Year } from "@/lib/types";
+import { isoDay } from "@/lib/db/postgrest";
 
 export type ProfileRow = {
   user_id: string; display_name: string | null; year: Year | null; field: string | null; location_pref: Region[];
@@ -65,9 +66,10 @@ export async function getLiveJobs(supabase: SupabaseClient, today: string): Prom
   // Paged: a single capped query (it was .limit(500)) silently dropped the oldest live jobs once the seed list grew
   // past ~1000 live postings, so they never reached ranking.
   const rows: JobDbRow[] = [];
+  const liveFilter = ["deadline.is.null", `deadline.gte.${isoDay(today)}`].join(",");
   for (let from = 0; from < LIVE_JOBS_MAX; from += LIVE_JOBS_PAGE) {
     const { data, error } = await withRollingFallback((cols) => supabase.from("jobs").select(cols).eq("is_live", true)
-      .or(`deadline.is.null,deadline.gte.${today}`)
+      .or(liveFilter)
       .order("posted_at", { ascending: false, nullsFirst: false }).order("id").range(from, from + LIVE_JOBS_PAGE - 1));
     if (error) throw error;
     const page = (data ?? []) as unknown as JobDbRow[];

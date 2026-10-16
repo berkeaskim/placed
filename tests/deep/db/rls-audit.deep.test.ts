@@ -79,14 +79,16 @@ describe("migration parser sanity", () => {
   it("finds the expected tables, policies and functions", () => {
     expect(files.length).toBeGreaterThanOrEqual(2);
     expect(tables.map((t) => t.name).sort()).toEqual(
-      ["applications", "autopilot_packs", "autopilot_vault", "badges", "companies", "confirmed_facts", "cv_feedback", "cv_scores", "cvs", "gmail_connections", "inbox_events", "ingest_state", "jobs", "linkedin_scores", "matches", "outreach", "playbook_progress", "profiles", "xp_events"]);
+      ["applications", "auth_attempts", "autopilot_packs", "autopilot_vault", "badges", "companies", "confirmed_facts", "cv_feedback", "cv_scores", "cvs", "gmail_connections", "inbox_events", "ingest_state", "interview_preps", "jobs", "linkedin_scores", "matches", "outreach", "playbook_progress", "profiles", "xp_events"]);
     expect(userOwned.sort()).toEqual(["applications", "autopilot_packs", "autopilot_vault", "badges", "confirmed_facts", "cv_feedback", "cv_scores", "cvs", "gmail_connections", "inbox_events", "linkedin_scores", "matches", "outreach", "playbook_progress", "profiles", "xp_events"]);
     // 9 user-owned tables × 4 ops + 2 public reads, minus profiles.own_insert and xp_events/badges writes (0003),
     // plus cv_feedback select/insert (0007), autopilot_vault select and autopilot_packs select (0012),
     // linkedin_scores select/insert/delete (0013, rescoring inserts a row),
-    // gmail_connections no policies (0013), inbox_events select only (0013), outreach select/insert/update (0013)
-    expect(policies.length).toBe(9 * 4 + 2 - 7 + 2 + 1 + 1 + 3 + 0 + 1 + 3);
-    expect(functions.map((f) => f.name).sort()).toEqual(["public.activate_cv", "public.award_xp", "public.handle_new_user"]);
+    // gmail_connections no policies (0013), inbox_events select only (0013), outreach select/insert/update (0013),
+    // interview_preps authenticated select only (0015, shared cache written by the service role),
+    // auth_attempts no policies (0016, service role only)
+    expect(policies.length).toBe(9 * 4 + 2 - 7 + 2 + 1 + 1 + 3 + 0 + 1 + 3 + 1);
+    expect(functions.map((f) => f.name).sort()).toEqual(["public.activate_cv", "public.award_xp", "public.handle_new_user", "public.hit_rate_limit"]);
   });
 });
 
@@ -130,7 +132,7 @@ describe("RLS coverage", () => {
     expect(anon.map((p) => p.table).sort()).toEqual(["companies", "jobs"]);
   });
   it("no client role can write companies, jobs or ingest_state (service role only)", () => {
-    const writes = policies.filter((p) => ["companies", "jobs", "ingest_state"].includes(p.table) && p.op !== "select");
+    const writes = policies.filter((p) => ["companies", "jobs", "ingest_state", "interview_preps"].includes(p.table) && p.op !== "select");
     expect(writes).toEqual([]);
     expect(policies.filter((p) => p.table === "ingest_state")).toEqual([]);
   });
@@ -159,6 +161,14 @@ describe("privileges and functions", () => {
     expect(n).toMatch(/revoke execute on function public\.award_xp\(uuid, int\) from public, anon, authenticated/);
     expect(n).toMatch(/grant execute on function public\.award_xp\(uuid, int\) to service_role/);
     expect(n).not.toMatch(/grant execute on function public\.award_xp[^;]*to (anon|authenticated|public)/);
+  });
+  it("auth_attempts and hit_rate_limit are service-role only (0016)", () => {
+    const n = norm(sql);
+    expect(n).toMatch(/revoke all on public\.auth_attempts from anon, authenticated/);
+    expect(policies.filter((p) => p.table === "auth_attempts")).toEqual([]);
+    expect(functions.find((x) => x.name === "public.hit_rate_limit")!.header).toMatch(/security invoker/);
+    expect(n).toMatch(/revoke execute on function public\.hit_rate_limit\(text, int, int\) from public, anon, authenticated/);
+    expect(n).not.toMatch(/grant execute on function public\.hit_rate_limit[^;]*to (anon|authenticated|public)/);
   });
   it("activate_cv swaps the caller's own CVs only, serialised, behind a one-active-CV unique index", () => {
     const f = functions.find((x) => x.name === "public.activate_cv")!;

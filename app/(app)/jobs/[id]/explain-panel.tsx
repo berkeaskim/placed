@@ -5,7 +5,14 @@ import { AgentSteps, useAgentSteps } from "@/components/agent/agent-steps";
 import { CountUp, Stagger, StaggerItem } from "@/components/agent/reveal";
 import { AiWrittenTag } from "@/components/ai-written-tag";
 import { mustHavesLabel, mustHavesMet, type RequirementRow } from "@/lib/scoring/requirements";
-import { getExplanation, type ExplanationView } from "./actions";
+import type { ExplanationResult, ExplanationView } from "./actions";
+
+/** Not a server action call: those run one at a time, and this one can take a while on first open (api/explain). */
+async function fetchExplanation(jobId: string, signal?: AbortSignal): Promise<ExplanationResult> {
+  const res = await fetch(`/api/explain/${encodeURIComponent(jobId)}`, { signal, cache: "no-store" });
+  if (!res.ok && res.status !== 401) throw new Error(`explain ${res.status}`);
+  return (await res.json()) as ExplanationResult;
+}
 
 type State = { status: "loading" } | { status: "error"; message: string } | { status: "ready"; e: ExplanationView };
 
@@ -44,7 +51,7 @@ export function ExplainPanel({ jobId, children }: { jobId: string; children?: Re
 
   const load = useCallback(async () => {
     try {
-      const r = await getExplanation(jobId);
+      const r = await fetchExplanation(jobId);
       setState("error" in r ? { status: "error", message: r.error } : { status: "ready", e: r });
     } catch {
       setState({ status: "error", message: "We couldn't build the explanation right now. Try again in a moment." });
@@ -53,10 +60,11 @@ export function ExplainPanel({ jobId, children }: { jobId: string; children?: Re
 
   useEffect(() => {
     let live = true;
-    getExplanation(jobId)
+    const ctrl = new AbortController();
+    fetchExplanation(jobId, ctrl.signal)
       .then((r) => { if (live) setState("error" in r ? { status: "error", message: r.error } : { status: "ready", e: r }); })
       .catch(() => { if (live) setState({ status: "error", message: "We couldn't build the explanation right now. Try again in a moment." }); });
-    return () => { live = false; };
+    return () => { live = false; ctrl.abort(); };
   }, [jobId]);
 
   const { index, finishing } = useAgentSteps(STEPS.length, state.status === "loading", { stepMs: 2200 });

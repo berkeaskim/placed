@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 type F = { key: string; target: string; label: string; type: string; required: boolean; options: { label: string; value: string }[] };
 const h = vi.hoisted(() => ({
-  items: [] as unknown[], answers: {} as Record<string, unknown>, updates: [] as unknown[], extra: {} as Record<string, string>,
+  items: [] as unknown[], answers: {} as Record<string, unknown>, updates: [] as unknown[], extra: {} as Record<string, string | string[]>,
   completed: true, on: true, failTable: null as string | null, fields: [] as unknown[],
 }));
 vi.mock("@/lib/env", () => ({ env: { get autopilot() { return h.on; } } }));
@@ -25,7 +25,11 @@ import { openAndFill, setAnswer, preparePack } from "@/app/(app)/jobs/[id]/autop
 const field = (key: string, label: string, over: Partial<F> = {}): F => ({ key, target: key, label, type: "select", required: true, options: [{ label: "Yes", value: "1" }, { label: "No", value: "0" }], ...over });
 const JOB = "00000000-0000-4000-8000-000000000001";
 const packRow = () => (h.updates.find((u) => (u as { t: string }).t === "autopilot_packs") as { row: { answers: Record<string, { value: unknown; approved?: boolean }> } }).row;
-const vaultRow = () => h.updates.find((u) => (u as { t: string }).t === "autopilot_vault") as { row: { extra: Record<string, string> } } | undefined;
+import { openVault } from "@/lib/autopilot/vault-crypto";
+const vaultRow = () => {
+  const u = h.updates.find((u) => (u as { t: string }).t === "autopilot_vault") as { row: { extra: unknown } } | undefined;
+  return u && { row: { extra: openVault("extra", "u1", u.row.extra) } };
+};
 
 describe("autopilot actions", () => {
   beforeEach(() => {
@@ -109,6 +113,23 @@ describe("autopilot actions", () => {
     expect(await setAnswer(JOB, "d1", Array(51).fill("a"))).toEqual({ ok: false });
     expect(await setAnswer(JOB, "d1", ["a".repeat(501)])).toEqual({ ok: false });
     expect(h.updates).toEqual([]);
+  });
+  it("remembers by default (confirm rows too), multiselect labels as a list, and skips rewriting an unchanged answer", async () => {
+    h.fields = [field("q1", "Level of German?"), field("m", "Which offices?", { type: "multiselect", options: [{ label: "London", value: "L" }, { label: "Dublin", value: "D" }] })];
+    await setAnswer(JOB, "q1", "0");
+    expect(vaultRow()!.row.extra).toEqual({ "level of german": "No" });
+    h.updates.length = 0;
+    await setAnswer(JOB, "m", ["L", "D"]);
+    expect(vaultRow()!.row.extra).toEqual({ "which offices": ["London", "Dublin"] });
+    h.updates.length = 0; h.extra = { "level of german": "No" };
+    await setAnswer(JOB, "q1", "0");
+    expect(vaultRow()).toBeUndefined();
+    await setAnswer(JOB, "q1", "1", { remember: false });
+    expect(vaultRow()).toBeUndefined();
+  });
+  it("never remembers free-text answers", async () => {
+    await setAnswer(JOB, "d1", "my essay", { approved: true });
+    expect(vaultRow()).toBeUndefined();
   });
   it("stops remembering at 200 saved answers", async () => {
     h.extra = Object.fromEntries(Array.from({ length: 200 }, (_, i) => [`k${i}`, "v"]));

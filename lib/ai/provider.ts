@@ -7,6 +7,10 @@ export type Part = { type: "text"; text: string } | { type: "pdf"; base64: strin
 /** Gemini runs every call at a LOW thinking level (Flash at its default HIGH level took ~2x as long); `thinking: "high"` opts back in. Adapters without the knob ignore it. */
 export type StructuredRequest<T> = { tier: "fast" | "smart"; system: string; parts: Part[]; schema: z.ZodType<T>; maxTokens?: number; temperature?: number; thinking?: "low" | "high" };
 
+export type GroundedChunk = { uri: string; title: string };
+export type GroundedResult = { text: string; chunks: GroundedChunk[] };
+export type GroundedRequest = { system: string; prompt: string };
+
 export class AiError extends Error {}
 
 /** User-readable messages shared by every adapter. */
@@ -29,6 +33,18 @@ export async function generateStructured<T>(req: StructuredRequest<T>): Promise<
   }
   const { geminiStructured } = await (geminiMod ??= import("./gemini"));
   return geminiStructured(req);
+}
+
+/**
+ * Free-text answer researched with web search. Gemini only (Google Search grounding); returns null for a provider
+ * without search (Anthropic), so callers fall back to an inferred, unsourced answer.
+ */
+export async function generateGrounded(req: GroundedRequest): Promise<GroundedResult | null> {
+  const provider = aiProvider();
+  if (!provider) throw new AiError("No AI provider configured");
+  if (provider === "anthropic") return null;
+  const { geminiGrounded } = await (geminiMod ??= import("./gemini"));
+  return geminiGrounded(req);
 }
 
 type RunAiBase<T> = {

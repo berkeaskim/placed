@@ -5,9 +5,11 @@ import { fetchForm } from "./forms";
 import type { Ats, NormalizedForm } from "./forms/types";
 import { classify } from "./classify";
 import { draftAnswer, type DraftResult } from "./drafts";
+import { suggestAnswers } from "./suggest";
 import { assemblePack, toFillPlan, type Answers, type FillInstruction, type PackItem } from "./pack";
 import { hashToken, safeNamePart } from "./handoff";
-import { isComplete, type Core } from "./vault";
+import { isComplete, type Core, type Extra } from "./vault";
+import { openVault } from "./vault-crypto";
 import type { ParsedCV } from "@/lib/types";
 
 export type JobForPack = { id: string; extId: string; url: string; ats: Ats; company: string; textLines: string[] };
@@ -22,9 +24,10 @@ export async function loadJobForPack(db: SupabaseClient, jobId: string): Promise
 }
 
 /** `completed` = Autopilot is unlocked: the saved core is complete right now. `completed_at` alone is only the once-only XP marker, so it never unlocks by itself. */
-export async function getVault(db: SupabaseClient, userId: string): Promise<{ core: Partial<Core>; extra: Record<string, string>; completed: boolean }> {
+export async function getVault(db: SupabaseClient, userId: string): Promise<{ core: Partial<Core>; extra: Extra; completed: boolean }> {
   const { data } = await db.from("autopilot_vault").select("core, extra, completed_at").eq("user_id", userId).maybeSingle();
-  return { core: (data?.core ?? {}) as Partial<Core>, extra: (data?.extra ?? {}) as Record<string, string>, completed: Boolean(data?.completed_at) && isComplete(data?.core) };
+  const core = openVault("core", userId, data?.core) as Partial<Core>;
+  return { core, extra: openVault("extra", userId, data?.extra) as Extra, completed: Boolean(data?.completed_at) && isComplete(core) };
 }
 
 /** Fetches the form, (optionally) drafts free-text answers, upserts autopilot_packs. `withDrafts: false` never calls the LLM. */
@@ -42,16 +45,23 @@ export async function buildPack(userId: string, jobId: string, opts: { withDraft
   const form: NormalizedForm = (existing.data?.form as NormalizedForm | undefined) ?? (await fetchForm(job));
   const cv = (cvRow.data?.parsed_json ?? null) as ParsedCV | null;
   const drafts: Record<string, DraftResult> = {};
+  const answers = (existing.data?.answers ?? {}) as Answers;
+  const base = assemblePack(form, core, extra, {});
+  // Questions nobody answered yet get a CV-backed suggestion, so the student only taps Confirm.
+  const toSuggest = base.filter((i) => i.group === "ask" && answers[i.field.key] === undefined);
+  const suggesting = withDrafts && toSuggest.length ? suggestAnswers({ items: toSuggest, core, extra, cv, fixtureKey: job.extId }) : Promise.resolve({});
   if (withDrafts && cv) {
     for (const f of form.fields) if (classify(f.label, f.type).kind === "freeText") {
       drafts[f.key] = await draftAnswer({ question: f.label, wordLimit: f.wordLimit, company: job.company, jobExtId: job.extId, fieldKey: f.key,
         jdLines: job.textLines, cv, facts: factsRow.data ?? [] });
     }
   }
-  const answers = (existing.data?.answers ?? {}) as Answers;
+  const suggested: Record<string, string | string[]> = await suggesting;
   const { error } = await db.from("autopilot_packs").upsert({ user_id: userId, job_id: jobId, form, answers }, { onConflict: "user_id,job_id" });
   if (error) throw new Error(`buildPack: ${error.message}`);
-  return { items: assemblePack(form, core, extra, drafts), answers };
+  const items = assemblePack(form, core, extra, drafts).map((i) =>
+    i.group === "ask" && suggested[i.field.key] !== undefined ? { ...i, group: "confirm" as const, value: suggested[i.field.key], sourceLabel: "suggested from your CV" } : i);
+  return { items, answers };
 }
 
 export async function claimPack(token: string): Promise<{ status: 200; body: ClaimBody } | { status: 404 | 410 }> {

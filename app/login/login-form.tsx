@@ -48,7 +48,7 @@ export function LoginForm({ initialError = null }: { initialError?: string | nul
               }
               className="space-y-3"
             >
-              <Input aria-label="Email address" name="email" type="email" autoComplete="email" placeholder="you@ucl.ac.uk" required className="h-12 text-base" />
+              <Input aria-label="Email address" name="email" type="email" autoComplete="email" placeholder="you@ucl.ac.uk" maxLength={254} required className="h-12 text-base" />
               <button type="submit" className="btn-quest h-12 w-full disabled:opacity-50" disabled={pending}>
                 Email me a magic link
               </button>
@@ -66,8 +66,8 @@ export function LoginForm({ initialError = null }: { initialError?: string | nul
               }}
               className="space-y-3"
             >
-              <Input aria-label="Email address" name="email" type="email" autoComplete="email" placeholder="you@ucl.ac.uk" required className="h-12 text-base" />
-              <Input aria-label="Password" name="password" type="password" autoComplete="current-password" placeholder="Password" required className="h-12 text-base" />
+              <Input aria-label="Email address" name="email" type="email" autoComplete="email" placeholder="you@ucl.ac.uk" maxLength={254} required className="h-12 text-base" />
+              <Input aria-label="Password" name="password" type="password" autoComplete="current-password" placeholder="Password" maxLength={72} required className="h-12 text-base" />
               <button type="submit" className="btn-quest h-12 w-full disabled:opacity-50" disabled={pending}>
                 {pending ? "Signing in…" : "Sign in"}
               </button>

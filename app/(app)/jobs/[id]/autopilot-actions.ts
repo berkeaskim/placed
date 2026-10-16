@@ -5,6 +5,7 @@ import { buildPack, getVault } from "@/lib/autopilot/server";
 import { canOpen, type Answers, type PackItem } from "@/lib/autopilot/pack";
 import { mintToken } from "@/lib/autopilot/handoff";
 import { isEeoLabel, normLabel } from "@/lib/autopilot/vault";
+import { sealVault } from "@/lib/autopilot/vault-crypto";
 import { FormUnavailableError } from "@/lib/autopilot/forms/types";
 import { isUuid } from "@/lib/feed/save-result";
 import { env } from "@/lib/env";
@@ -21,9 +22,13 @@ function validValue(v: unknown): v is string | string[] {
   return Array.isArray(v) && v.length <= MAX_ITEMS && v.every((x) => typeof x === "string" && x.length <= MAX_ITEM);
 }
 
-/** What to remember for an ask-once field: the chosen option's LABEL (from the stored form), Yes/No for booleans, or short text. */
-function rememberable(field: FormField, value: string | string[]): string | null {
-  if (typeof value !== "string") return null;
+/** What to remember: the chosen option LABEL(s) (from the stored form), Yes/No for booleans, or short text. */
+function rememberable(field: FormField, value: string | string[]): string | string[] | null {
+  if (Array.isArray(value)) {
+    if (!field.options.length) return null;
+    const labels = value.map((v) => field.options.find((o) => o.value === v)?.label);
+    return labels.length && labels.every((l): l is string => Boolean(l)) ? labels : null;
+  }
   if (field.options.length) return field.options.find((o) => o.value === value)?.label ?? null;
   if (field.type === "boolean") return value === "true" ? "Yes" : value === "false" ? "No" : null;
   const t = value.trim();
@@ -50,8 +55,9 @@ export async function preparePack(jobId: string): Promise<Prepared> {
 
 /**
  * Merges one answer into the pack. The field must exist in the stored form. A draft is only approved when the caller
- * says so, so editing text after approval (no `approved`) resets it. With `remember`, an ask-once answer is also stored
- * in the vault; the label and option text come from the stored form, never from the client, and EEO is never stored.
+ * says so, so editing text after approval (no `approved`) resets it. Unless `remember: false`, a short (non-free-text)
+ * answer is also stored in the vault for every later form; the label and option text come from the stored form,
+ * never from the client, and EEO is never stored.
  */
 export async function setAnswer(
   jobId: string, fieldKey: string, value: string | string[],
@@ -66,16 +72,18 @@ export async function setAnswer(
   const field = (pack?.form as NormalizedForm | null)?.fields?.find((f) => f.key === fieldKey);
   if (!pack || !field) return { ok: false };
   // Never store an answer for diversity, consent, "yours" or file fields: those stay the student's own.
-  if (!["vault", "extra", "freeText"].includes(classify(field.label, field.type).kind)) return { ok: false };
+  const kind = classify(field.label, field.type).kind;
+  if (kind !== "vault" && kind !== "extra" && kind !== "freeText") return { ok: false };
   const answers = { ...((pack.answers ?? {}) as Answers), [fieldKey]: { value, approved: opts.approved ?? false } };
   const { error } = await db.from("autopilot_packs").update({ answers, status: "draft" }).eq("user_id", user.id).eq("job_id", jobId);
   if (error) return { ok: false };
-  if (opts.remember && !isEeoLabel(field.label) && classify(field.label, field.type).kind === "extra") {
+  if (opts.remember !== false && !isEeoLabel(field.label) && (kind === "extra" || kind === "vault")) {
     const text = rememberable(field, value);
     const k = normLabel(field.label);
-    if (text && (k in vault.extra || Object.keys(vault.extra).length < MAX_EXTRA_KEYS)) {
+    const same = JSON.stringify(vault.extra[k]) === JSON.stringify(text);
+    if (text && !same && (k in vault.extra || Object.keys(vault.extra).length < MAX_EXTRA_KEYS)) {
       const { error: e2 } = await db.from("autopilot_vault")
-        .update({ extra: { ...vault.extra, [k]: text }, updated_at: new Date().toISOString() }).eq("user_id", user.id);
+        .update({ extra: sealVault("extra", user.id, { ...vault.extra, [k]: text }), updated_at: new Date().toISOString() }).eq("user_id", user.id);
       if (e2) return { ok: false };
     }
   }

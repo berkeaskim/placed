@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { CoreSchema, isComplete, type Core } from "@/lib/autopilot/vault";
+import { sealVault } from "@/lib/autopilot/vault-crypto";
 
 /**
  * The FICTIONAL demo persona Ayşe Demir's Autopilot Answer Vault: the same values e2e/autopilot.spec.ts types into
@@ -18,7 +19,7 @@ export async function seedAyseVault(db: SupabaseClient, userId: string, now = ne
   if (!isComplete(AYSE_VAULT_CORE)) throw new Error("AYSE_VAULT_CORE no longer satisfies CoreSchema");
   const core = CoreSchema.parse(AYSE_VAULT_CORE);
   const { error } = await db.from("autopilot_vault").upsert(
-    { user_id: userId, core, extra: {}, completed_at: now.toISOString(), updated_at: now.toISOString() },
+    { user_id: userId, core: sealVault("core", userId, core), extra: sealVault("extra", userId, {}), completed_at: now.toISOString(), updated_at: now.toISOString() },
     { onConflict: "user_id" },
   );
   if (error) throw new Error(`couldn't seed Ayşe's Autopilot setup: ${error.message}`);
