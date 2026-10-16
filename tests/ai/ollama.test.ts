@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { readFileSync } from "node:fs";
 import { z } from "zod";
 import { ollamaStructured, ollamaStatus, ollamaPull, extractJson, isInstalled } from "@/lib/ai/ollama";
 import { AiError, AI_BAD_FORMAT, AI_UNAVAILABLE } from "@/lib/ai/provider";
@@ -107,6 +108,16 @@ describe("ollamaStructured", () => {
     await ollamaStructured(req, f);
     expect(f.mock.calls[0][0]).toBe("http://10.0.0.5:11434/api/chat");
     expect(JSON.parse(String(f.mock.calls[0][1]!.body)).model).toBe("qwen3.5:9b"); // fast falls back to ai.ollama.model
+  });
+
+  it("sends PDF parts as extracted text (unpdf)", async () => {
+    const base64 = readFileSync("tests/linkedin/fixtures/ayse-synthetic-export.pdf").toString("base64");
+    const f = fetchStub([chatBody('{"a":1}')]);
+    await ollamaStructured({ ...req, parts: [{ type: "pdf", base64 }, { type: "text", text: "Parse it." }] }, f);
+    const user = JSON.parse(String(f.mock.calls[0][1]!.body)).messages[1].content as string;
+    expect(user).toMatch(/^<document type="pdf">\n/);
+    expect(user).toMatch(/Ay/);
+    expect(user.endsWith("Parse it.")).toBe(true);
   });
 
   it("throws AI_UNAVAILABLE when no model is configured", async () => {

@@ -1,10 +1,19 @@
 "use server";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { AI_KEYS, AI_PROVIDERS, type AiProvider } from "@/lib/ai/config";
+import { AI_KEYS, AI_PROVIDERS, aiProvider, type AiProvider } from "@/lib/ai/config";
 import { AiError } from "@/lib/ai/provider";
 import { OLLAMA_TAG_RE } from "@/lib/ai/ollama";
-import { setSecret, setSetting } from "@/lib/settings/store";
+import { getSetting, setSecret, setSetting } from "@/lib/settings/store";
+
+/**
+ * Before configuring a provider: if no provider was ever chosen, pin the one in use now (or, if none, the one being set
+ * up), so adding e.g. a Claude key doesn't silently switch someone away from a working Ollama setup.
+ */
+function pinProvider(configuring: AiProvider) {
+  if (getSetting(AI_KEYS.provider)) return;
+  setSetting(AI_KEYS.provider, aiProvider() ?? configuring);
+}
 
 // Single-user local app: no auth checks. These run server-side only; secrets never travel back to the client.
 
@@ -25,6 +34,7 @@ export async function saveKeyAction(provider: string, key: string): Promise<Acti
   if (!p.success) return { ok: false, error: "Unknown provider." };
   const k = key.trim();
   if (k.length < 10 || k.length > 400 || /\s/.test(k)) return { ok: false, error: "That doesn't look like an API key." };
+  pinProvider(p.data);
   setSecret(p.data === "anthropic" ? AI_KEYS.anthropicKey : AI_KEYS.geminiKey, k);
   revalidatePath(PATH);
   return { ok: true, message: "Key saved." };
@@ -55,6 +65,7 @@ export async function setCloudModelsAction(provider: string, fast: string, smart
 /** Fast/smart Ollama models; also sets ai.ollama.model (the fallback) so the provider counts as configured. */
 export async function setOllamaModelsAction(fast: string, smart: string): Promise<ActionResult> {
   for (const t of [fast, smart]) if (t && !OLLAMA_TAG_RE.test(t)) return { ok: false, error: "Invalid model tag." };
+  if (fast || smart) pinProvider("ollama");
   setSetting("ai.ollama.model.fast", fast || null);
   setSetting("ai.ollama.model.smart", smart || null);
   setSetting(AI_KEYS.ollamaModel, fast || smart || null);
@@ -66,8 +77,9 @@ export async function setOllamaHostAction(host: string): Promise<ActionResult> {
   const h = host.trim();
   if (h) {
     try {
+      if (h.includes("://") && !/^https?:\/\//i.test(h)) throw new Error("scheme");
       const u = new URL(/^https?:\/\//i.test(h) ? h : `http://${h}`);
-      if (u.protocol !== "http:" && u.protocol !== "https:") throw new Error();
+      if (!u.hostname) throw new Error("host");
     } catch {
       return { ok: false, error: "Enter a URL like http://127.0.0.1:11434" };
     }

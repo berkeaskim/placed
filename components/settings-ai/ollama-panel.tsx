@@ -168,8 +168,8 @@ function ModelRow({ model, fits, tooBig, canPull }: { model: LocalModel & { inst
   const installed = model.installed || pull.state === "done";
   return (
     <li className={`flex flex-col gap-2 rounded-[14px] border-2 p-3 ${fits ? "border-[#5B3DF5] bg-[#F3F0FF]" : "border-border bg-white"}`}>
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div className="min-w-0">
+      <div className="flex flex-wrap items-start justify-between gap-2 sm:flex-nowrap">
+        <div className="min-w-0 flex-1">
           <p className="flex flex-wrap items-center gap-x-2 gap-y-1 font-bold">
             {model.label}
             <span className="rounded-full bg-white px-2 py-0.5 text-xs font-semibold text-muted-foreground ring-1 ring-border">
