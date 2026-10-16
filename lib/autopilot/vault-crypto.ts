@@ -10,8 +10,9 @@ import { localSecretKey } from "../settings/secret-key";
 export type VaultColumn = "core" | "extra";
 export type Sealed = { $enc: string };
 
-/** Key: explicit arg → VAULT_ENC_KEY env (32 bytes base64) → the local `data/secret.key`. */
-function key(keyB64 = process.env.VAULT_ENC_KEY): Buffer {
+/** Key: explicit arg (raw or base64) → VAULT_ENC_KEY env (32 bytes base64) → the local `data/secret.key`. */
+function key(keyB64: string | Buffer | undefined = process.env.VAULT_ENC_KEY): Buffer {
+  if (Buffer.isBuffer(keyB64)) return keyB64;
   if (!keyB64) return localSecretKey();
   const k = Buffer.from(keyB64, "base64");
   if (k.length !== 32) throw new Error("VAULT_ENC_KEY must be 32 bytes, base64-encoded");
@@ -19,7 +20,7 @@ function key(keyB64 = process.env.VAULT_ENC_KEY): Buffer {
 }
 
 /** AES-256-GCM over a string, bound to `aad`. Returns "v1.<iv>.<tag>.<ct>" (base64url parts). */
-export function sealText(plain: string, aad: string, keyB64?: string): string {
+export function sealText(plain: string, aad: string, keyB64?: string | Buffer): string {
   const iv = randomBytes(12);
   const c = createCipheriv("aes-256-gcm", key(keyB64), iv);
   c.setAAD(Buffer.from(aad, "utf8"));
@@ -28,7 +29,7 @@ export function sealText(plain: string, aad: string, keyB64?: string): string {
 }
 
 /** Inverse of sealText. Throws on tampering, a wrong key or a different `aad`. */
-export function openText(sealed: string, aad: string, keyB64?: string): string {
+export function openText(sealed: string, aad: string, keyB64?: string | Buffer): string {
   const [v, iv, tag, ct] = sealed.split(".");
   if (v !== "v1" || !iv || !tag || !ct) throw new Error("Unrecognised ciphertext format");
   const d = createDecipheriv("aes-256-gcm", key(keyB64), Buffer.from(iv, "base64url"));
