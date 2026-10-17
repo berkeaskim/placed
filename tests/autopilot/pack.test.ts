@@ -66,6 +66,29 @@ describe("assemblePack (Monzo)", () => {
   });
 });
 
+describe("Greenhouse identity survey (Monzo)", () => {
+  const demo = items.filter((i) => i.field.key.startsWith("demographic_"));
+  it("asks every survey question once, without blocking, and leaves the consent box to the student", () => {
+    expect(demo).toHaveLength(6);
+    for (const i of demo) expect(i.group).toBe("ask");
+    expect(canOpen(demo, {})).toBe(true);
+    expect(by("gdpr_demographic_data_consent_given_1").group).toBe("yours");
+  });
+  it("fills the answered survey selects by option label and never ticks consent", () => {
+    const plan = toFillPlan(items, { demographic_627: { value: ["3317"] }, demographic_632: { value: ["3353"] } });
+    expect(plan.find((p) => p.target === "627")).toMatchObject({ type: "multiselect", mode: "fill", value: ["3317"], optionLabels: ["Woman"] });
+    expect(plan.find((p) => p.target === "632")).toMatchObject({ mode: "fill", optionLabels: ["Prefer not to say"] });
+    expect(plan.find((p) => p.target === "628")).toMatchObject({ mode: "select-yourself", value: null }); // unanswered: the student's call
+    expect(plan.find((p) => p.target === "gdpr_demographic_data_consent_given_1")).toMatchObject({ mode: "yours", value: null });
+  });
+  it("remembers the answers for the next Greenhouse survey", () => {
+    const again = assemblePack(form, AYSE_CORE, { "how would you describe your gender identity": ["Woman"], "do you identify as transgender": ["Prefer not to say"] }, {});
+    const g = again.find((i) => i.field.target === "627")!;
+    expect(g).toMatchObject({ group: "vault", value: ["3317"], sourceLabel: "you answered this before" });
+    expect(toFillPlan(again, {}).find((p) => p.target === "628")).toMatchObject({ mode: "fill", optionLabels: ["Prefer not to say"] });
+  });
+});
+
 const F = (o: Partial<FormField> & Pick<FormField, "key" | "label" | "type">): FormField => ({ required: false, options: [], target: o.key, ...o });
 const mk = (fields: FormField[]): NormalizedForm => ({ ats: "ashby", url: "x", fields });
 const planOf = (fields: FormField[], answers = {}, extra: Record<string, string | string[]> = {}, core = AYSE_CORE) => {

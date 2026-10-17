@@ -2,7 +2,8 @@ import { describe, it, expect } from "vitest";
 import { createRequire } from "node:module";
 import { readFileSync, readdirSync } from "node:fs";
 const require = createRequire(import.meta.url);
-const { summarize, fileFor } = require("../../extension/lib/fill-plan.js");
+const { summarize, fileFor, stillToPick } = require("../../extension/lib/fill-plan.js");
+const { norm } = require("../../extension/lib/dom.js");
 const { wantedJobId, pageMatches } = require("../../extension/lib/job-match.js");
 const { extractToken } = require("../../extension/capture.js");
 
@@ -41,6 +42,21 @@ describe("extension", () => {
     expect(fileFor({ type: "file", asset: "cv" }, ctx)).toBe("CV");
     expect(fileFor({ type: "file" }, ctx)).toBe("CV");
     expect(fileFor({ type: "file", asset: "cover" }, { cvFile: "CV", coverFile: null })).toBeNull();
+  });
+  it("a multi react-select (Greenhouse identity survey) picks only the labels not already chosen", () => {
+    const f = { type: "multiselect", optionLabels: ["Woman", "Prefer not to say"], optionLabel: "Woman" };
+    expect(stillToPick(f, [], norm)).toEqual(["Woman", "Prefer not to say"]);
+    expect(stillToPick(f, ["woman"], norm)).toEqual(["Prefer not to say"]);
+    expect(stillToPick(f, ["Woman", "Prefer not to say"], norm)).toEqual([]);
+    expect(stillToPick({ optionLabel: "I\u2019m fine" }, [], norm)).toEqual(["I\u2019m fine"]);
+    expect(stillToPick({ optionLabels: ["No", "no"] }, [], norm)).toEqual(["No"]);
+    expect(stillToPick({}, [], norm)).toEqual([]);
+  });
+  it("the Greenhouse filler routes survey multiselects through the react-select picker and tags their .select box", () => {
+    const src = readFileSync("extension/fillers/greenhouse.js", "utf8");
+    expect(src).toMatch(/multiselect" && document\.getElementById\(field\.target\)\?\.getAttribute\("role"\) === "combobox"/);
+    expect(src).toMatch(/PlacedFillPlan\.stillToPick/);
+    expect(src).toMatch(/closest\("\.select"\)/);
   });
   it("cover files travel the same capped, same-origin path as the CV, and every filler uses fileFor", () => {
     const bg = readFileSync("extension/background.js", "utf8");
