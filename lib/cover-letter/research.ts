@@ -93,7 +93,7 @@ export async function researchCompany(
       if (pages.length === 0) return NONE;
       provider = "serper";
       allowed = new Set(pages.map((p) => p.url));
-      material = pages.map((p) => `<research_source url="${escapeUntrusted(p.url)}">\nTitle: ${escapeUntrusted(p.title)}\n${escapeUntrusted(p.text)}\n</research_source>`).join("\n");
+      material = pages.map((p) => `<research_source url="${escapeUntrusted(p.url).replace(/"/g, "&quot;")}">\nTitle: ${escapeUntrusted(p.title)}\n${escapeUntrusted(p.text)}\n</research_source>`).join("\n");
     } else {
       return NONE;
     }
