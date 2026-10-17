@@ -32,6 +32,10 @@ describe("sameEntry", () => {
   it("same org, disjoint dates, no title overlap", () => {
     expect(sameEntry(e("Acme", "Analyst", "2020-01", "2020-03"), e("Acme", "Barista", "2022-01", "2022-03"))).toBe(false);
   });
+  it("org containment is on whole tokens", () => {
+    expect(sameEntry(e("EY", "Analyst", "2024-01", "2024-06"), e("Honey Co", "Analyst", "2024-01", "2024-06"))).toBe(false);
+    expect(sameEntry(e("Goldman Sachs", "Analyst", "2024-01", "2024-06"), e("Goldman Sachs Asset Management", "Analyst", "2024-01", "2024-06"))).toBe(true);
+  });
   it("empty org never matches", () => {
     expect(sameEntry(e("", "Analyst", "2020-01", null), e("", "Analyst", "2020-01", null))).toBe(false);
   });
@@ -65,6 +69,7 @@ describe("parseYm", () => {
     ["Jun 2024 – Aug 2024", "2024-06", "2024-08"],
     ["2023 - Present", "2023-01", null],
     ["Summer 2024", "2024-06", "2024-08"],
+    ["2023", "2023-01", "2023-12"],
     ["", null, null],
   ])("%s", (s, a, b) => {
     expect(parseYm(s)).toEqual({ startYm: a, endYm: b });

@@ -49,7 +49,7 @@ export function sameEntry(a: EntryKey, b: EntryKey): boolean {
   const oa = normOrg(a.org);
   const ob = normOrg(b.org);
   if (!oa || !ob) return false;
-  if (!(oa === ob || oa.includes(ob) || ob.includes(oa))) return false;
+  if (!(oa === ob || ` ${oa} `.includes(` ${ob} `) || ` ${ob} `.includes(` ${oa} `))) return false;
   return titleOverlap(a.title, b.title) >= 0.5 || rangesOverlap(a, b);
 }
 
@@ -86,8 +86,8 @@ export function parseYm(dates: string): { startYm: string | null; endYm: string 
   const start = point(parts[0]);
   if (!start) return { startYm: null, endYm: null };
   if (parts.length === 1) {
-    // Single point: a season or month is a bounded span; a bare year is just a start.
-    return { startYm: start[0], endYm: /^\s*\d{4}\s*$/.test(parts[0]) ? null : start[1] };
+    // Single point: a month, season or bare year is a bounded span (bare year = whole year).
+    return { startYm: start[0], endYm: start[1] };
   }
   const last = parts[parts.length - 1].trim();
   if (/^(present|current|now)$/i.test(last)) return { startYm: start[0], endYm: null };
