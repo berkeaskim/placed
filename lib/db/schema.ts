@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import { check, index, integer, primaryKey, sqliteTable, text, unique, uniqueIndex } from "drizzle-orm/sqlite-core";
 import type { Answer, ChatMsg, Fact, Limit, LintHit, OutputStatus, OutputTarget, Span, UndoEntry } from "../cover-letter/types";
+import type { DraftResult } from "../autopilot/drafts";
 import type { Archetype, ArchetypeScore, ParsedCV, Region, Requirement, Year } from "../types";
 
 /**
@@ -263,6 +264,9 @@ export const autopilotPacks = sqliteTable("autopilot_packs", {
   job_id: text("job_id").notNull().references(() => jobs.id, { onDelete: "cascade" }),
   form: json<unknown>("form").notNull(),
   answers: json<Record<string, unknown>>("answers").notNull().default(sql`'{}'`),
+  /** null = not computed yet; `{}` = computed, nothing to suggest. */
+  suggestions: json<Record<string, string | string[]>>("suggestions"),
+  drafts: json<Record<string, DraftResult>>("drafts").notNull().default(sql`'{}'`),
   status: text("status", { enum: PACK_STATUS_VALUES }).notNull().default("draft"),
   token_hash: text("token_hash").unique(),
   token_expires_at: text("token_expires_at"),

@@ -7,7 +7,7 @@ import { fileUrl } from "@/lib/files";
 import { fetchForm } from "./forms";
 import type { Ats, NormalizedForm } from "./forms/types";
 import { classify } from "./classify";
-import { draftAnswer, type DraftResult } from "./drafts";
+import { draftAnswer, type DraftInput, type DraftResult } from "./drafts";
 import { suggestAnswers } from "./suggest";
 import { assemblePack, toFillPlan, type Answers, type Covers, type FillInstruction, type PackItem } from "./pack";
 import { hashToken, safeNamePart } from "./handoff";
@@ -33,40 +33,58 @@ export async function getVault(userId: string): Promise<{ core: Partial<Core>; e
   return { core, extra: openVault("extra", userId, data?.extra) as Extra, completed: Boolean(data?.completed_at) && isComplete(core) };
 }
 
-/** Fetches the form, (optionally) drafts free-text answers, upserts autopilot_packs. `withDrafts: false` never calls the LLM. */
-export async function buildPack(userId: string, jobId: string, opts: { withDrafts?: boolean } = {}): Promise<{ items: PackItem[]; answers: Answers }> {
-  const withDrafts = opts.withDrafts ?? true;
+/** Fetches the form, caches CV-backed suggestions once (a computed `{}` counts), upserts autopilot_packs. Never drafts: see generateDraft. */
+export async function buildPack(userId: string, jobId: string): Promise<{ items: PackItem[]; answers: Answers }> {
   const job = await loadJobForPack(jobId);
   if (!job) throw new Error("Job not found");
   const { core, extra } = await getVault(userId);
   const cvRow = db.select({ parsed_json: cvs.parsed_json }).from(cvs).where(and(eq(cvs.user_id, userId), eq(cvs.is_active, true))).get();
-  const facts = db.select({ id: confirmedFacts.id, claim: confirmedFacts.claim }).from(confirmedFacts).where(eq(confirmedFacts.user_id, userId)).all();
-  const existing = db.select({ form: autopilotPacks.form, answers: autopilotPacks.answers }).from(autopilotPacks)
+  const existing = db.select({ form: autopilotPacks.form, answers: autopilotPacks.answers, suggestions: autopilotPacks.suggestions, drafts: autopilotPacks.drafts }).from(autopilotPacks)
     .where(and(eq(autopilotPacks.user_id, userId), eq(autopilotPacks.job_id, jobId))).get();
   const form: NormalizedForm = (existing?.form as NormalizedForm | undefined) ?? (await fetchForm(job));
   const cv = (cvRow?.parsed_json ?? null) as ParsedCV | null;
-  const drafts: Record<string, DraftResult> = {};
   const answers = (existing?.answers ?? {}) as Answers;
+  const drafts = existing?.drafts ?? {};
   const base = assemblePack(form, core, extra, {});
-  // Questions nobody answered yet get a CV-backed suggestion, so the student only taps Confirm.
+  // Questions nobody answered yet get a CV-backed suggestion, so the student only taps Confirm. Computed once, then reused.
   const toSuggest = base.filter((i) => i.group === "ask" && answers[i.field.key] === undefined);
-  const suggesting = withDrafts && toSuggest.length ? suggestAnswers({ items: toSuggest, core, extra, cv, fixtureKey: job.extId }) : Promise.resolve({});
-  if (withDrafts && cv) {
-    for (const f of form.fields) if (classify(f.label, f.type).kind === "freeText") {
-      drafts[f.key] = await draftAnswer({ question: f.label, wordLimit: f.wordLimit, company: job.company, jobExtId: job.extId, fieldKey: f.key,
-        jdLines: job.textLines, cv, facts });
-    }
-  }
-  const suggested: Record<string, string | string[]> = await suggesting;
+  const suggested = existing?.suggestions ?? (toSuggest.length ? await suggestAnswers({ items: toSuggest, core, extra, cv, fixtureKey: job.extId }) : {});
   try {
-    db.insert(autopilotPacks).values({ user_id: userId, job_id: jobId, form, answers })
-      .onConflictDoUpdate({ target: [autopilotPacks.user_id, autopilotPacks.job_id], set: { form, answers } }).run();
+    db.insert(autopilotPacks).values({ user_id: userId, job_id: jobId, form, answers, suggestions: suggested })
+      .onConflictDoUpdate({ target: [autopilotPacks.user_id, autopilotPacks.job_id], set: { form, answers, suggestions: suggested } }).run();
   } catch (e) {
     throw new Error(`buildPack: ${e instanceof Error ? e.message : String(e)}`);
   }
   const items = assemblePack(form, core, extra, drafts).map((i) =>
     i.group === "ask" && suggested[i.field.key] !== undefined ? { ...i, group: "confirm" as const, value: suggested[i.field.key], sourceLabel: "suggested from your CV" } : i);
   return { items, answers };
+}
+
+/** The input draftAnswer needs for one free-text field, or null when the job, active CV, pack or field is missing. */
+export async function draftInputFor(userId: string, jobId: string, fieldKey: string): Promise<DraftInput | null> {
+  const job = await loadJobForPack(jobId);
+  if (!job) return null;
+  const cvRow = db.select({ parsed_json: cvs.parsed_json }).from(cvs).where(and(eq(cvs.user_id, userId), eq(cvs.is_active, true))).get();
+  const pack = db.select({ form: autopilotPacks.form }).from(autopilotPacks).where(and(eq(autopilotPacks.user_id, userId), eq(autopilotPacks.job_id, jobId))).get();
+  if (!cvRow?.parsed_json || !pack) return null;
+  const field = (pack.form as NormalizedForm).fields.find((f) => f.key === fieldKey);
+  if (!field || classify(field.label, field.type).kind !== "freeText") return null;
+  const facts = db.select({ id: confirmedFacts.id, claim: confirmedFacts.claim }).from(confirmedFacts).where(eq(confirmedFacts.user_id, userId)).all();
+  return { question: field.label, wordLimit: field.wordLimit, company: job.company, jobExtId: job.extId, fieldKey, jdLines: job.textLines, cv: cvRow.parsed_json as ParsedCV, facts };
+}
+
+/** Drafts one free-text answer on demand and stores it on the pack; a stored draft (even an empty one) is returned without calling the AI. */
+export async function generateDraft(userId: string, jobId: string, fieldKey: string): Promise<DraftResult | null> {
+  const where = and(eq(autopilotPacks.user_id, userId), eq(autopilotPacks.job_id, jobId));
+  const stored = db.select({ drafts: autopilotPacks.drafts }).from(autopilotPacks).where(where).get()?.drafts[fieldKey];
+  if (stored) return stored;
+  const input = await draftInputFor(userId, jobId, fieldKey);
+  if (!input) return null;
+  const draft = await draftAnswer(input);
+  // Re-read so a draft stored for another field while the AI ran is not overwritten.
+  const latest = db.select({ drafts: autopilotPacks.drafts }).from(autopilotPacks).where(where).get()?.drafts ?? {};
+  db.update(autopilotPacks).set({ drafts: { ...latest, [fieldKey]: draft } }).where(where).run();
+  return draft;
 }
 
 /**

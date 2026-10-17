@@ -106,7 +106,7 @@ export async function openAndFill(jobId: string): Promise<{ url: string } | { er
   let built;
   try {
     // Drafts never block opening (unapproved ones are simply left for the student), so skip the LLM here.
-    built = await buildPack(user.id, jobId, { withDrafts: false });
+    built = await buildPack(user.id, jobId);
   } catch (e) {
     console.error("autopilot openAndFill:", e instanceof Error ? e.message : "unknown error");
     return { error: "Couldn't read this form. Use the normal Apply link." };
