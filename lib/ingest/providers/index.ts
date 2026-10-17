@@ -5,6 +5,7 @@ import { normalizeAshby } from "./ashby";
 import { fetchWorkday, workdayBase } from "./workday";
 import { fetchSmartRecruiters, srPostingsUrl } from "./smartrecruiters";
 import { fetchOracle, oracleListUrl } from "./oracle";
+import { fetchAmazon, amazonSearchUrl } from "./amazon";
 import type { AtsKind } from "@/lib/db/schema";
 import { passesTitleFilter } from "../filter";
 import { loadProgrammes, programmeToRawJob, visibleProgrammes } from "../curated";
@@ -52,7 +53,11 @@ export function endpointFor(c: CompanySeed): string {
     case "curated":
       return PROGRAMMES_PATH_LABEL;
     case "amazon":
-      throw new ProviderError(`${c.ats}/${c.slug}: provider not implemented yet`);
+      try {
+        return amazonSearchUrl(c.slug, 0);
+      } catch (e) {
+        throw new ProviderError(`amazon/${c.slug}: ${(e as Error).message}`);
+      }
   }
 }
 
@@ -82,6 +87,13 @@ export async function fetchJobs(c: CompanySeed, plainFetch: typeof fetch = fetch
       return (await fetchOracle(c.slug, c.apiHost as string, passesTitleFilter, fetchImpl)).jobs;
     } catch (e) {
       throw new ProviderError(`oracle/${c.slug}: ${(e as Error).message}`);
+    }
+  }
+  if (c.ats === "amazon") {
+    try {
+      return (await fetchAmazon(c.slug, passesTitleFilter, fetchImpl)).jobs;
+    } catch (e) {
+      throw new ProviderError(`amazon/${c.slug}: ${(e as Error).message}`);
     }
   }
   let res: Response;

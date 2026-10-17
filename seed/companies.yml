@@ -175,3 +175,6 @@
 
 # Oracle Recruiting Cloud. slug = "<siteNumber>/<locationId>", apiHost = tenant host. UK locationId 300000000289276 (not 300000000289360, India).
 - { slug: CX_1001/300000000289276, name: JPMorgan, ats: oracle, apiHost: jpmc.fa.oraclecloud.com, employer: jpmorgan, enabled: true }
+
+# amazon.jobs search.json, student-programmes facet. slug = region key (uk -> GBR).
+- { slug: uk, name: Amazon, ats: amazon, employer: amazon, enabled: true }
