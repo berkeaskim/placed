@@ -37,7 +37,7 @@
   opens: 2026-10
   season: 2027
   kind: spring-week
-  description: A paid three-day taster at a PwC office in spring 2027 for first-year undergraduates (second year on a four-year degree). It runs as Advancing Social Mobility, Black Talent in Business and Women in Business, each for an under-represented group. You meet PwC teams, get mentoring and work on business skills.
+  description: A paid three-day taster at a PwC office in spring 2027 for first-year undergraduates (second year on a four-year degree) from groups under-represented at PwC. PwC runs it as three strands - Advancing Social Mobility, Black Talent in Business and Women in Business - and you apply to the one you are eligible for. You meet PwC teams, get mentoring and work on business skills.
 - employer: pwc
   name: PwC
   title: Summer Internship
@@ -133,7 +133,7 @@
   closes: 2026-11-01
   season: 2027
   kind: spring-week
-  description: A three-day insight programme in spring 2027 for students two years from starting full-time work. Tracks cover areas such as trading, advisory and investing, and engineering. The 2027 postings went live on 1 October 2026.
+  description: A three-day insight programme in spring 2027 for students two years from starting full-time work. Tracks cover areas such as trading, advisory and investing, and engineering. The 2027 postings went live on 1 October 2026; 1 November 2026 is the posting end date on JPMorgan's application board.
 - employer: jpmorgan
   name: JPMorgan
   title: Software Engineer Program Summer Internship
@@ -143,7 +143,7 @@
   closes: 2026-11-01
   season: 2027
   kind: internship
-  description: A summer 2027 software engineering internship in London or Glasgow. Interns join agile teams building services, data and infrastructure across the bank's businesses. It is one of many 2027 summer internships the firm runs in the UK.
+  description: A summer 2027 software engineering internship in London or Glasgow. Interns join agile teams building services, data and infrastructure across the bank's businesses. 1 November 2026 is the posting end date on JPMorgan's application board.
 - employer: jpmorgan
   name: JPMorgan
   title: Software Engineer Graduate Program
@@ -153,7 +153,7 @@
   closes: 2026-11-01
   season: 2027
   kind: graduate
-  description: The full-time Software Engineer Program for graduates starting in 2027 in London or Glasgow. New engineers get training and then join teams across the firm's technology organisation.
+  description: The full-time Software Engineer Program for graduates starting in 2027 in London or Glasgow. New engineers get training and then join teams across the firm's technology organisation. 1 November 2026 is the posting end date on JPMorgan's application board.
 
 - employer: goldmansachs
   name: Goldman Sachs
@@ -317,7 +317,7 @@
   opens: 2026-08
   season: 2027
   kind: internship
-  description: Summer internships and academic-year work placements for Bachelor's, Master's and doctoral students in technical and non-technical fields. Current UK roles are mostly hardware and GPU engineering, posted from late August 2026.
+  description: Summer internships and academic-year work placements for Bachelor's, Master's and doctoral students in technical and non-technical fields. UK internship roles have been posted since late August 2026 in London, Cambridge and St Albans.
 
 - employer: amazon
   name: Amazon
@@ -333,13 +333,13 @@
 - employer: mckinsey
   name: McKinsey
   title: Business Analyst Intern
-  url: https://www.mckinsey.com/careers/students/application-deadlines?degree=Undergrad&countryOfGraduation=UK&school=&officeCountry=&roleNames=Business+Analyst%2CBusiness+Analyst+Intern%2CJunior+Associate
+  url: https://www.mckinsey.com/careers/students/application-deadlines?degree=Undergrad&countryOfGraduation=UK&school=&officeCountry=&roleNames=Business+Analyst+Intern
   location: London, UK
   opens: 2026-10
   closes: 2027-01-14
   season: 2027
   kind: internship
-  description: A consulting internship for undergraduates at UK universities, who all follow the UK process whichever office they want to join. McKinsey lists the UK application date as 14 January 2027.
+  description: McKinsey's Business Analyst Intern role for undergraduates at UK universities, who follow the UK process whichever office they want to join. McKinsey's campus deadlines tool gives the UK application date for this role as 14 January 2027, and the role's posting (London among its offices) was open to apply on 17 October 2026.
 
 - employer: bcg
   name: BCG
@@ -360,4 +360,4 @@
   closes: 2026-10-18
   season: 2027
   kind: graduate
-  description: Full-time Associate roles for graduates in BCG's UK offices, mostly working at client sites. The process is an online application and CV, a short numerical test, then case interviews. Applications opened on 9 September 2026 and close on 18 October 2026.
+  description: BCG calls this graduate entry role Associate; it is full time in BCG's UK offices, mostly working at client sites. The process is an online application and CV, a short numerical test, then case interviews. Applications opened on 9 September 2026 and close on 18 October 2026.

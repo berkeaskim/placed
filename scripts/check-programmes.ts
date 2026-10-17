@@ -7,7 +7,16 @@ import { passesLocationFilter, passesTitleFilter } from "@/lib/ingest/filter";
 const UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0 Safari/537.36";
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
+/** One retry after ~3 s on a 5xx or network error: busy career sites throw the odd transient 503. */
 async function status(url: string): Promise<string> {
+  const first = await statusOnce(url);
+  if (!/^(5\d\d|ERR)/.test(first)) return first;
+  await sleep(3_000);
+  const second = await statusOnce(url);
+  return /^[23]\d\d$/.test(second) ? `${second} (retry; first ${first})` : second;
+}
+
+async function statusOnce(url: string): Promise<string> {
   const req = (method: string) =>
     fetch(url, { method, redirect: "follow", signal: AbortSignal.timeout(15_000), headers: { "user-agent": UA, accept: "text/html,*/*" } });
   try {
@@ -38,7 +47,7 @@ async function main() {
   const lines: string[] = [];
   for (const p of rows) {
     const s = await status(p.url);
-    const ok = /^[23]\d\d$/.test(s);
+    const ok = /^[23]\d\d\b/.test(s);
     if (!ok) problems.push(`${p.employer}:${p.kind}: ${p.url} -> ${s}`);
     lines.push(`${ok ? "OK  " : "FAIL"} ${p.employer.padEnd(14)} ${p.kind.padEnd(11)} ${p.opens}  ${(p.closes ?? "-").padEnd(10)} ${s.padEnd(4)} ${p.url}`);
     console.log(lines.at(-1));
