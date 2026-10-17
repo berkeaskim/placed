@@ -13,7 +13,12 @@ import type { Bank, BankBullet, BankEntry, BankSection } from "./types";
 
 // ---------- tunable constants ----------
 
-/** Lines on one A4 page of cv-document. Starting estimate; Task 7 calibrates it against a real render. */
+/**
+ * Lines on one A4 page of cv-document. Calibrated (Task 7) against real renders of a synthetic 10-entry/30-bullet
+ * student bank (two-line bullets, tests/bank/fit.test.ts) and the fixtures/ai/parseCV CV: est 38/42/45 lines filled
+ * 0.81/0.88/0.93 of the page, est 50 spilled to 2 pages, so a page holds about 48 estimated lines. 46 stays under that
+ * with a margin; fitSelection grows by 4 when the page is under 85% full and trims when it overflows.
+ */
 export const DEFAULT_LINE_BUDGET = 46;
 /** Characters per rendered line, used for every line estimate. */
 export const CHARS_PER_LINE = 95;
@@ -52,6 +57,8 @@ export type SelectOpts = {
   pinnedForJob: string[]; excludedForJob: string[]; lineBudget?: number; activeCvSourceId: string | null;
   /** "YYYY-MM" used for recency; defaults to the current month. Tests pass it for determinism. */
   nowYm?: string;
+  /** Internal, set by fitSelection: ids dropped to make the render one page. Excluded like excludedForJob, but still reported as left out. */
+  fitExcluded?: string[];
 };
 export type ScoreParts = { must: string[]; nice: string[]; quantified: boolean; actionVerb: boolean; cliche: boolean; recency: number };
 export type SelItem = { kind: "entry" | "bullet"; id: string; entryId: string; label: string; reason: string };
@@ -61,6 +68,7 @@ export type Selection = { base: ParsedCV; report: SelectionReport; scores: Recor
 const SECTIONS: BankSection[] = ["experience", "projects", "leadership"];
 const LEFT_OUT_REASON = "lower match for this role than the items kept";
 const PINNED_NO_ROOM_REASON = "pinned, but there was no room on one page";
+export const FIT_DROPPED_REASON = "dropped to fit one page";
 
 // ---------- line estimates ----------
 
@@ -180,7 +188,8 @@ export function selectForJob(bank: Bank, activeCv: ParsedCV, job: JobListItem, o
   const lineBudget = opts.lineBudget ?? DEFAULT_LINE_BUDGET;
   const nowYm = opts.nowYm ?? currentYm();
   const pinnedForJob = new Set(opts.pinnedForJob);
-  const excluded = new Set(opts.excludedForJob);
+  const fitExcluded = new Set(opts.fitExcluded ?? []);
+  const excluded = new Set([...opts.excludedForJob, ...fitExcluded]);
   const src = opts.activeCvSourceId;
   const inCv = (ids: string[]) => src !== null && ids.includes(src);
   const reqs = jdRequirementSkills(job.textLines ?? [], job.requirements ?? []);
@@ -298,7 +307,13 @@ export function selectForJob(bank: Bank, activeCv: ParsedCV, job: JobListItem, o
     }
   }
   otherLeftOut.sort((a, b) => b.score - a.score);
-  const leftOut = [...cvLeftOut, ...otherLeftOut.slice(0, LEFT_OUT_EXTRA).map((x) => x.item)];
+  // Items dropped by the render-and-count loop: always reported (an entry drop covers its bullets).
+  const fitDropped: SelItem[] = [];
+  for (const e of bank.entries) {
+    if (fitExcluded.has(e.id)) fitDropped.push({ kind: "entry", id: e.id, entryId: e.id, label: entryLabel(e), reason: FIT_DROPPED_REASON });
+    else for (const b of e.bullets) if (fitExcluded.has(b.id)) fitDropped.push({ kind: "bullet", id: b.id, entryId: e.id, label: bulletLabel(b), reason: FIT_DROPPED_REASON });
+  }
+  const leftOut = [...fitDropped, ...cvLeftOut, ...otherLeftOut.slice(0, LEFT_OUT_EXTRA).map((x) => x.item)];
 
   return { base, report: { added, leftOut, pinnedOverflow }, scores, lineBudget };
 }
