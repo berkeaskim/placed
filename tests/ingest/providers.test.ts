@@ -77,7 +77,7 @@ describe("curated provider", () => {
   afterEach(() => { delete process.env.PLACED_PROGRAMMES_FILE; for (const d of dirs.splice(0)) rmSync(d, { recursive: true, force: true }); });
   const prog = (employer: string, title: string, over: Record<string, unknown> = {}) =>
     `- ${Object.entries({ employer, name: employer, title, url: `https://example.com/${employer}`, location: "London, UK", opens: "2026-12", season: 2027, kind: "graduate", description: "A scheme.", ...over }).map(([k, v]) => `${k}: ${JSON.stringify(v)}`).join("\n  ")}`;
-  const useFile = (yml: string) => {
+  const withProgrammesFile = (yml: string) => {
     const d = mkdtempSync(path.join(tmpdir(), "placed-prog-"));
     dirs.push(d);
     writeFileSync(path.join(d, "programmes.yml"), yml);
@@ -85,7 +85,7 @@ describe("curated provider", () => {
   };
 
   it("curated fetchJobs returns only that employer's visible programmes", async () => {
-    useFile([
+    withProgrammesFile([
       prog("barclays", "Spring Week"),
       prog("barclays", "Old Graduate Programme", { season: 2000 }),
       prog("deloitte", "Graduate Programme"),
@@ -102,14 +102,14 @@ describe("curated provider", () => {
       "employer: barclays",
       "- employer: [unclosed",
     ]) {
-      useFile(yml);
+      withProgrammesFile(yml);
       await expect(fetchJobs({ ats: "curated", slug: "barclays", name: "Barclays" }), yml).rejects.toThrow(ProviderError);
     }
   });
 
   it("curated rows with reasonable titles pass the ingest filters", async () => {
     const titles = ["Spring Week", "Graduate Programme", "Summer Internship"];
-    useFile(titles.map((t, i) => prog("bank", t, { kind: ["spring-week", "graduate", "internship"][i] })).join("\n"));
+    withProgrammesFile(titles.map((t, i) => prog("bank", t, { kind: ["spring-week", "graduate", "internship"][i] })).join("\n"));
     const jobs = await fetchJobs({ ats: "curated", slug: "bank", name: "Bank" });
     expect(jobs).toHaveLength(3);
     for (const j of jobs) {
