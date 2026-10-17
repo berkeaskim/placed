@@ -269,7 +269,8 @@ function pairingHits(text: string, struct: Structure, mode: Mode): RawHit[] {
   return hits;
 }
 
-function identityHits(text: string, struct: Structure, opts: LetterOpts): RawHit[] {
+/** CL-20: letter-level (never scoped by ownSpans). */
+function openingNameHits(text: string, struct: Structure, opts: LetterOpts): RawHit[] {
   const hits: RawHit[] = [];
   const whole = { start: 0, end: text.length };
   const first = struct.body[0];
@@ -284,6 +285,12 @@ function identityHits(text: string, struct: Structure, opts: LetterOpts): RawHit
   if (opts.role.trim() && !roleNamed(firstText, opts.role)) {
     hits.push({ ruleId: "CL-20", severity: "block", label: "Role not named in the opening", ...(first ?? whole) });
   }
+  return hits;
+}
+
+/** CL-21 other-employer names: position-scoped. */
+function otherEmployerHits(text: string, opts: LetterOpts): RawHit[] {
+  const hits: RawHit[] = [];
   const company = norm(opts.company);
   for (const name of opts.otherEmployers) {
     const n = norm(name);
@@ -339,6 +346,7 @@ function rhythmHits(text: string, body: Para[], mode: Mode): RawHit[] {
 
 /** Everything in `lintParagraph`, plus length, identity, structure and rhythm checks over the whole letter. */
 export function lintLetter(text: string, opts: LetterOpts): LintHit[] {
+  if (opts.mode === "skip") return [];
   const struct = splitLetter(text);
   const paras: { p: Para; region: Region }[] = [];
   if (struct.salutation) paras.push({ p: struct.salutation, region: { opening: false, close: false } });
@@ -350,10 +358,11 @@ export function lintLetter(text: string, opts: LetterOpts): LintHit[] {
   for (const { p, region } of paras) {
     for (const h of [...lexiconHits(p.text, region), ...counterHits(p.text)]) local.push({ ...h, start: h.start + p.start, end: h.end + p.start });
   }
-  local.push(...identityHits(text, struct, opts));
+  local.push(...otherEmployerHits(text, opts));
   const scoped = withScope(local, opts.ownSpans);
 
   const letterLevel: RawHit[] = [
+    ...openingNameHits(text, struct, opts),
     ...lengthHits(text, struct, opts),
     ...furnitureHits(text, opts.mode),
     ...pairingHits(text, struct, opts.mode),

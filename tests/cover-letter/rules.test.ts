@@ -156,7 +156,16 @@ describe("lintLetter", () => {
     expect(hits.filter((h) => ["CL-53", "CL-54", "CL-55"].includes(h.ruleId)).every((h) => h.severity === "low")).toBe(true);
   });
 
-  it("skip mode produces no length hits", () => {
+  it("skip mode produces no hits at all", () => {
     expect(lintLetter("", { ...base, mode: "skip", company: "", role: "" })).toEqual([]);
+    expect(lintLetter("Dear Sir/Madam, I am a team player at Goldman Sachs!", { ...base, mode: "skip", otherEmployers: ["Goldman Sachs"] })).toEqual([]);
+  });
+
+  it("keeps CL-20 at scope letter even when ownSpans cover paragraph 1", () => {
+    const letter = "Dear Hiring Manager,\n\nI love finance.\n\nYours faithfully\nA";
+    const hits = lintLetter(letter, { ...base, ownSpans: [{ start: 0, end: letter.length, kind: "theirs", refs: [] }] });
+    const cl20 = hits.filter((h) => h.ruleId === "CL-20");
+    expect(cl20.length).toBeGreaterThan(0);
+    expect(cl20.every((h) => h.scope === "letter")).toBe(true);
   });
 });
