@@ -54,3 +54,6 @@ next-env.d.ts
 
 # local data (SQLite db, files, secret key)
 /data/
+
+# recon tooling venv (scripts/recon/README.md)
+/.venv-recon/
