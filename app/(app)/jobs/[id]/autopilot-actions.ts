@@ -9,7 +9,7 @@ import { reviseAnswer, type ReviseHow } from "@/lib/autopilot/revise";
 import type { DraftResult } from "@/lib/autopilot/drafts";
 import { canOpen, type Answers, type PackItem } from "@/lib/autopilot/pack";
 import { mintToken } from "@/lib/autopilot/handoff";
-import { isEeoLabel, normLabel } from "@/lib/autopilot/vault";
+import { normLabel } from "@/lib/autopilot/vault";
 import { sealVault } from "@/lib/autopilot/vault-crypto";
 import { FormUnavailableError } from "@/lib/autopilot/forms/types";
 import { isUuid } from "@/lib/feed/save-result";
@@ -63,7 +63,7 @@ export async function preparePack(jobId: string): Promise<Prepared> {
  * Merges one answer into the pack. The field must exist in the stored form. A draft is only approved when the caller
  * says so, so editing text after approval (no `approved`) resets it. Unless `remember: false`, a short (non-free-text)
  * answer is also stored in the vault for every later form; the label and option text come from the stored form,
- * never from the client, and EEO is never stored.
+ * never from the client. Diversity (EEO) answers are remembered like any other; consent is never stored.
  */
 export async function setAnswer(
   jobId: string, fieldKey: string, value: string | string[],
@@ -76,16 +76,16 @@ export async function setAnswer(
   const pack = db.select({ answers: autopilotPacks.answers, form: autopilotPacks.form }).from(autopilotPacks).where(ownPack(user.id, jobId)).get();
   const field = (pack?.form as NormalizedForm | null)?.fields?.find((f) => f.key === fieldKey);
   if (!pack || !field) return { ok: false };
-  // Never store an answer for diversity, consent, "yours" or file fields: those stay the student's own.
+  // Never store an answer for consent, "yours" or file fields: those stay the student's own.
   const kind = classify(field.label, field.type).kind;
-  if (kind !== "vault" && kind !== "extra" && kind !== "freeText") return { ok: false };
+  if (kind !== "vault" && kind !== "extra" && kind !== "eeo" && kind !== "freeText") return { ok: false };
   const answers = { ...((pack.answers ?? {}) as Answers), [fieldKey]: { value, approved: opts.approved ?? false } };
   try {
     db.update(autopilotPacks).set({ answers, status: "draft" }).where(ownPack(user.id, jobId)).run();
   } catch {
     return { ok: false };
   }
-  if (opts.remember !== false && !isEeoLabel(field.label) && (kind === "extra" || kind === "vault")) {
+  if (opts.remember !== false && (kind === "extra" || kind === "vault" || kind === "eeo")) {
     const text = rememberable(field, value);
     const k = normLabel(field.label);
     const same = JSON.stringify(vault.extra[k]) === JSON.stringify(text);

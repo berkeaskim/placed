@@ -37,6 +37,16 @@ const row = (jobId: string) => db.select().from(autopilotPacks).where(and(eq(aut
 beforeEach(() => { vi.mocked(suggestAnswers).mockReset(); vi.mocked(draftAnswer).mockReset(); });
 
 describe("pack cache", () => {
+  it("EEO items are never sent to suggestAnswers", async () => {
+    const jobId = seedPack();
+    db.update(autopilotPacks).set({ form: { ...form, fields: [...form.fields, { key: "q_gender", label: "How would you describe your gender identity?", type: "select", required: false, options: [{ label: "Woman", value: "1" }, { label: "Prefer not to say", value: "2" }], target: "q_gender" }] } }).where(eq(autopilotPacks.job_id, jobId)).run();
+    vi.mocked(suggestAnswers).mockResolvedValue({});
+    const built = await buildPack(LOCAL_USER_ID, jobId);
+    expect(built.items.find((i) => i.field.key === "q_gender")!.group).toBe("ask");
+    const sent = vi.mocked(suggestAnswers).mock.calls[0][0].items.map((i) => i.field.key);
+    expect(sent).toEqual(["q_licence"]);
+  });
+
   it("buildPack reuses stored suggestions", async () => {
     const jobId = seedPack();
     vi.mocked(suggestAnswers).mockResolvedValue({ q_licence: "Yes" });

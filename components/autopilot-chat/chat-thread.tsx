@@ -36,7 +36,7 @@ export function ChatThread({ turns, byKey, initial, onShow }: { turns: Turn[]; b
     if (t.kind === "yours") {
       return (
         <div key={id} className="msg bot" {...s}>
-          You&apos;ll fill these yourself on the form: {t.labels.join(", ")}.{"\n"}Diversity, consent and declarations stay yours.
+          You&apos;ll fill these yourself on the form: {t.labels.join(", ")}.{"\n"}Consent and declarations stay yours.
         </div>
       );
     }

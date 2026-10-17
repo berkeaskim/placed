@@ -36,7 +36,7 @@ link; the extension claims the pack, fills what it can and shows a purple panel 
 - Green outline: filled by Placed (the tag says where the answer came from).
 - Amber: please choose this yourself. "Click this box, Autopilot will pick" means: open that dropdown and Autopilot
   selects your saved answer for you.
-- Dashed grey: your call (diversity questions, consent boxes, unapproved drafts and anything Placed doesn't know).
+- Dashed grey: your call (consent boxes, unanswered diversity questions, unapproved drafts and anything Placed doesn't know).
 
 ## LinkedIn Score (one click)
 

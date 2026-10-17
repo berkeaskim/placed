@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import gh from "../fixtures/autopilot/greenhouse-monzo.json";
 import { parseGreenhouse } from "@/lib/autopilot/forms/greenhouse";
-import { assemblePack, canOpen, toFillPlan } from "@/lib/autopilot/pack";
+import { assemblePack, canOpen, toFillPlan, type PackItem } from "@/lib/autopilot/pack";
 import { AYSE_CORE } from "./fixtures";
 import type { NormalizedForm, FormField } from "@/lib/autopilot/forms/types";
 import type { DraftResult } from "@/lib/autopilot/drafts";
@@ -27,8 +27,23 @@ describe("assemblePack (Monzo)", () => {
     const coding = items.find((i) => /prior coding experience/i.test(i.field.label))!;
     expect(coding.group).toBe("draft");
   });
-  it("never puts EEO or consent in vault/draft", () => {
-    for (const i of items) if (/privacy|gender|ethnic/i.test(i.field.label)) expect(["yours"]).toContain(i.group);
+  it("keeps consent out of vault/draft", () => {
+    for (const i of items) if (/privacy/i.test(i.field.label)) expect(i.group).toBe("yours");
+  });
+  it("eeo is asked, and recalled exactly once remembered", () => {
+    const gender = F({ key: "g", label: "How would you describe your gender identity?", type: "select", options: [{ label: "Woman", value: "1" }, { label: "Prefer not to say", value: "2" }] });
+    const ask = (required: boolean) => assemblePack({ ats: "greenhouse", url: "u", fields: [{ ...gender, required }] }, AYSE_CORE, {}, {})[0];
+    expect(ask(false).group).toBe("ask");
+    expect(ask(true).group).toBe("ask");
+    const again = assemblePack({ ats: "greenhouse", url: "u", fields: [gender] }, AYSE_CORE, { "how would you describe your gender identity": "Prefer not to say" }, {});
+    expect(again[0]).toMatchObject({ group: "vault", value: "2", sourceLabel: "you answered this before" });
+  });
+  it("an optional ask item never blocks canOpen", () => {
+    const g = F({ key: "g", label: "Gender?", type: "select", options: [{ label: "Woman", value: "1" }] });
+    const item = (required: boolean): PackItem => ({ field: { ...g, required }, group: "ask", value: null, sourceLabel: null });
+    expect(canOpen([item(false)], {})).toBe(true);
+    expect(canOpen([item(true)], {})).toBe(false);
+    expect(canOpen([item(true)], { g: { value: "1" } })).toBe(true);
   });
   it("opens only when ask/confirm are answered", () => {
     expect(canOpen(items, {})).toBe(false);

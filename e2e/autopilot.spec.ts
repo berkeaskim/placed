@@ -186,7 +186,7 @@ test("Autopilot fills the real Monzo form and never submits", async () => {
       expect(row?.state, `${what} (${id}) filled; tag=${row?.tag} why=${row?.why}`).toBe("filled");
       expect(row?.shown, `${what} shows a chosen option`).not.toBe("");
     }
-    // Autopilot never ticks consent and never fills diversity answers
+    // Autopilot never ticks consent, and leaves diversity answers empty unless the student gave one
     expect(await form.evaluate(`document.querySelectorAll("input[type=checkbox][id*=consent]:checked, input[type=checkbox][name*=consent]:checked").length`)).toBe(0);
     expect(audit.filter((r) => r.state === "yours" && r.shown), "fields left to the student stay empty").toEqual([]);
     await form.waitForTimeout(3000);

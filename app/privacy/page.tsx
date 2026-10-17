@@ -39,7 +39,7 @@ export default function PrivacyPage() {
         <li>On LinkedIn it does nothing unless you press <strong>Score my LinkedIn</strong> in Placed. Then it reads only your own profile and your skills list, once, and sends that text to your local Placed app. It never edits anything on LinkedIn and never reads your contact info, messages or other people&apos;s profiles.</li>
         <li>It does not read your browsing history or any other page, and it does not collect analytics.</li>
         <li>The <code>debugger</code> permission is used only to click dropdowns that ignore ordinary clicks, inside the form field Autopilot marked. It is detached when filling ends.</li>
-        <li>Diversity questions, consent boxes and declarations are always left for you.</li>
+        <li>Consent boxes and declarations are always left for you. Diversity questions are asked once and remembered like any other answer; you can forget them any time.</li>
       </ul>
 
       <h2 className={H2}>Your control</h2>

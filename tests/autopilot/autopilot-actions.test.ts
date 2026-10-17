@@ -104,10 +104,14 @@ describe("autopilot actions", () => {
     expect(await setAnswer(JOB, "q1", "1", { remember: true })).toEqual({ ok: true });
     expect(savedExtra()).toEqual({ "level of german": "Yes" });
   });
-  it("never stores or remembers an answer for EEO, judged by the stored label, whatever the client says", async () => {
-    const before = snapshot();
-    expect(await setAnswer(JOB, "g", "1", { remember: true, rememberLabel: "Favourite colour?" } as never)).toEqual({ ok: false });
-    expect(snapshot()).toBe(before);
+  it("remembers an EEO option label like any other answer", async () => {
+    expect(await setAnswer(JOB, "g", "1", { remember: true, rememberLabel: "Favourite colour?" } as never)).toEqual({ ok: true });
+    expect(packRow()!.answers.g).toMatchObject({ value: "1" });
+    expect(savedExtra()).toEqual({ "what is your gender": "Yes" }); // keyed by the stored label, never a client label
+  });
+  it("does not remember an EEO answer when remember is false", async () => {
+    expect(await setAnswer(JOB, "g", "1", { remember: false })).toEqual({ ok: true });
+    vaultUnchanged();
   });
   it("rejects answers for consent, 'yours' and file fields", async () => {
     h.fields = [
