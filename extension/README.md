@@ -31,12 +31,25 @@ copy of the extension, set `PLACED_EXTENSION_ID` in the app's environment:
 ## Use
 
 In Placed, open a job, review the Application Pack and press **Open & fill**. The employer form opens with a one-time
-link; the extension claims the pack, fills what it can and shows a purple panel bottom-right.
+link; the extension claims the pack and fills what it can, one field at a time. A soft aurora glows at the screen
+edges and a glass card at the bottom centre shows what it is doing ("Reading the form…", "Writing “First name”", n/N).
+Each field scrolls into view, gets a flowing gradient ring while it is filled, and text answers appear word by word.
+It never presses Submit.
 
-- Green outline: filled by Placed (the tag says where the answer came from).
-- Amber: please choose this yourself. "Click this box, Autopilot will pick" means: open that dropdown and Autopilot
+- Green ring + check badge: filled by Placed; the badge says where the answer came from ("from your profile",
+  "you answered this before", "your approved answer").
+- Amber ring + "Your turn" badge: yours to answer (consent boxes, unanswered diversity questions, unapproved drafts
+  and anything Placed doesn't know). "Your turn · open it and Autopilot picks" means: open that dropdown and Autopilot
   selects your saved answer for you.
-- Dashed grey: your call (consent boxes, unanswered diversity questions, unapproved drafts and anything Placed doesn't know).
+- At the end the card says "{filled} of {total} filled" with **{k} left for you** (jumps to each field still yours)
+  and **Review answers** (back to the top). The Submit button gets a calm glow; you press it. The × closes the card.
+- With "reduce motion" on there is no drifting, rotation or word effect, only short fades; with "reduce transparency"
+  the card is solid white.
+
+If the app moved to another port: any open Placed tab tells the extension where the app runs (it renders
+`<meta name="placed-app">`), and Open & fill claims from that origin first, then `PLACED_ORIGIN`, then
+`PLACED_ORIGINS` (loopback only, redirects refused). If the extension is older than the app's copy, the setup page
+and the Open & fill hint say it is out of date and link the new download.
 
 ## LinkedIn Score (one click)
 

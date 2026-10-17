@@ -146,7 +146,7 @@ test("Autopilot fills the real Monzo form and never submits", async () => {
 
     // The form must be the real Monzo posting; the one-time token is stripped from the URL
     await expect(form.locator("#first_name")).toBeVisible({ timeout: 60_000 });
-    await expect(form.locator(".placed-panel")).toContainText(/\d+\/\d+ filled/, { timeout: 120_000 });
+    await expect(form.locator(".placed-panel")).toContainText(/\d+ of \d+ filled/, { timeout: 120_000 });
     console.log(`PANEL=${(await form.locator(".placed-panel").innerText()).replace(/\n/g, " | ")}`);
 
     await expect(form.locator("#first_name")).toHaveValue("Ayşe");
@@ -177,7 +177,7 @@ test("Autopilot fills the real Monzo form and never submits", async () => {
     for (const r of audit) console.log(`AUDIT ${r.state.padEnd(6)} ${r.id.padEnd(30)} ${r.kind.padEnd(12)} shown=${JSON.stringify(r.shown)} tag=${JSON.stringify(r.tag)}${r.why ? ` why=${r.why}` : ""}`);
     const count = (st: string) => audit.filter((r) => r.state === st).length;
     console.log(`AUDIT_TOTAL filled=${count("filled")} select=${count("select")} yours=${count("yours")}`);
-    const panelFilled = Number(((await form.locator(".placed-panel").innerText()).match(/(\d+)\/\d+ filled/) ?? [])[1] ?? 0);
+    const panelFilled = Number(((await form.locator(".placed-panel").innerText()).match(/(\d+) of \d+ filled/) ?? [])[1] ?? 0);
     expect(panelFilled, "panel's filled count (the CV counts too)").toBeGreaterThanOrEqual(10);
     expect(count("filled"), "filled floor").toBeGreaterThanOrEqual(10);
 

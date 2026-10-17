@@ -124,7 +124,7 @@
     if (!box) return;
     box.dataset.placed = "filled";
     const tag = box.querySelector(":scope > .placed-tag");
-    if (tag) tag.textContent = `Placed · ${sourceLabel || "from your setup"}`;
+    if (tag) (tag.querySelector(".placed-tag-text") || tag).textContent = sourceLabel || "from your setup";
   }
 
   /**
