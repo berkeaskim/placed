@@ -1,0 +1,1 @@
+ALTER TABLE `companies` ADD `empty_runs` integer DEFAULT 0 NOT NULL;

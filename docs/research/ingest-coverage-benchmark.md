@@ -83,3 +83,60 @@ Configured but 0 live UK/EU early-career roles today: Morgan Stanley (no campus 
 - Only public job-board APIs: Greenhouse, Lever and Ashby boards; SmartRecruiters Posting API; Workday's candidate-site cxs JSON (already used in production). One GET per employer careers page to fingerprint the ATS from its links. No login, no HTML scraping of job boards, no CAPTCHA or bot-wall bypass. Sites that answered 403 were left alone.
 - Probing used a few slug variants per employer and, for Workday, about 15 requests per tenant, sequential with small delays.
 - Counts are a 2026-10-14 snapshot. Early-careers boards are seasonal, so re-run `npm run coverage -- --live` before quoting numbers.
+
+## Employer coverage update (2026-10-17)
+
+Added providers for the big names that publish no Greenhouse, Lever or Workday feed: Oracle Recruiting Cloud (JPMorgan), Amazon, Goldman Sachs, Morgan Stanley, Bank of America, Deutsche Bank, Eightfold (Microsoft), Phenom (BCG), Apple and McKinsey. Also added PwC's UK campus site and `employer` keys on the Workday banks, plus hand-checked programme cards (`seed/programmes.yml`, 34 cards, 18 employers) for employers whose roles are off-season or have no feed. The 21 employers the product is judged on carry `tier: top` in `seed/coverage-benchmark.yml`.
+
+Method: `npm run coverage -- --live --gaps` on 2026-10-17, benchmark of 159 employers. Counts are postings kept by the real ingest filters. "Live or curated" counts an employer that is live or has a visible curated card today (London date, offline). The overall live figure ignores curated cards.
+
+| sector | employers | configured | live UK/EU | live UK | live or curated |
+|---|---:|---:|---:|---:|---:|
+| banks and IB | 28 | 14 | 14 | 11 | 16 |
+| trading | 19 | 10 | 9 | 7 | 9 |
+| asset mgmt / insurance | 10 | 7 | 6 | 4 | 6 |
+| consulting | 18 | 9 | 9 | 8 | 9 |
+| Big 4 / accounting | 7 | 2 | 2 | 1 | 5 |
+| law | 15 | 6 | 6 | 2 | 6 |
+| FMCG / retail | 21 | 6 | 4 | 3 | 4 |
+| big tech | 31 | 20 | 18 | 13 | 19 |
+| industry / pharma | 10 | 5 | 4 | 3 | 4 |
+| **all** | **159** | **79 (50%)** | **72 (45%)** | **52 (33%)** | **78 (49%)** |
+
+Against the 2026-10-14 snapshot above: live UK/EU 62 to 72, live UK 40 to 52.
+
+Top tier (21 employers): 13 live, 6 curated, 2 missing. 19 of 21 are live or curated.
+
+| employer | status | kept postings |
+|---|---|---:|
+| Goldman Sachs | live | 38 |
+| JPMorgan Chase | live | 41 |
+| Morgan Stanley | live | 33 |
+| Barclays | live | 91 |
+| HSBC | curated | |
+| Citi | live | 34 |
+| Deutsche Bank | live | 29 |
+| UBS | curated | |
+| Bank of America | live | 5 |
+| McKinsey & Company | live | 2 |
+| Boston Consulting Group | live | 2 |
+| Bain & Company | missing | |
+| Deloitte | curated | |
+| PwC | live | 154 |
+| EY | curated | |
+| KPMG | curated | |
+| Google | curated | |
+| Microsoft | live | 2 |
+| Amazon | live | 35 |
+| Meta | missing | |
+| Apple | live | 9 |
+
+What is still missing, and why:
+
+- **Bain**: the careers site sits behind Cloudflare. We do not bypass it, so there is no feed and no curated card.
+- **Meta**: no public feed, and Meta publishes no UK 2027 programme timing, so there is nothing accurate to put on a card.
+- **BCG** failed the first run (before the fix) with `partial list: 104 unique of 112 postings`, so it showed as curated. After the Phenom provider fix (it now re-lists once on a shortfall and fails as partial unless the second listing is complete), a re-measure of that one board on 2026-10-17 returned 2 postings, both kept and both in London (BCG X internships). BCG is live; the table and totals above include that re-measure (the rest of the run is unchanged).
+- Several "live" counts are not UK: Deutsche Bank's Workday board kept 22 postings, none in the UK, and PwC's global boards kept 106, none in the UK. The UK counts come from the new `deutschebank` (7) and `pwc/CRM_Campus_Careers_Site` (29) boards.
+- Morgan Stanley's Workday board still has 0 early-career roles; the 33 come from the new careers-site provider.
+
+Counts are a 2026-10-17 snapshot and seasonal; re-run `npm run coverage -- --live` before quoting them.

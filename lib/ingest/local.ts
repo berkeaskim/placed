@@ -115,7 +115,7 @@ export async function runIngest(o: RunIngestOptions = {}): Promise<IngestSummary
           const r = await ingestCompany(c, deps);
           kept += r.kept;
           dead += r.dead;
-          line = `fetched=${r.fetched} kept=${r.kept} tagged=${r.tagged} pending=${r.pending} failed=${r.failed} dead=${r.dead}`;
+          line = `fetched=${r.fetched} kept=${r.kept} tagged=${r.tagged} pending=${r.pending} failed=${r.failed} dead=${r.dead}${r.heldEmpty ? " (empty listing: jobs held open until it is empty again)" : ""}`;
         } catch (e) {
           failed++;
           error = true;

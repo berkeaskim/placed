@@ -1,0 +1,363 @@
+# Curated programme cards for top-tier employers. A card is hidden while the same employer key
+# has a live posting from a real board (seed/companies.yml), so it mostly shows off-season.
+# One row per employer per kind. UK only. Loaded by lib/ingest/curated.ts;
+# invalid rows are skipped with a warning.
+#
+# Row format:
+#   employer:    lowercase key, matches the employer key on seed/companies.yml
+#   name:        display name
+#   title:       programme title
+#   url:         http(s) link to the programme page
+#   location:    e.g. "London, UK"
+#   opens:       YYYY-MM (month applications open)
+#   closes:      optional YYYY-MM-DD; without it the card hides from ${season}-06-01
+#   season:      year the programme starts
+#   kind:        spring-week | internship | graduate
+#   description: two to four sentences, in our own words
+#
+# - employer: deloitte
+#   name: Deloitte
+#   title: Graduate Programme
+#   url: https://www.deloitte.co.uk/careers/graduates
+#   location: London, UK
+#   opens: 2026-09
+#   season: 2027
+#   kind: graduate
+#   description: Rotational graduate scheme across audit, tax and consulting.
+#
+# Facts below come from each employer's own careers pages or application board, read on 2026-10-17.
+# Dates are written unquoted on purpose: the yaml core schema keeps them as strings.
+
+# --- Big 4 ---
+- employer: pwc
+  name: PwC
+  title: Diversity in Business Insight Programme
+  url: https://www.pwc.co.uk/careers/early-careers/undergraduate/diversity-programmes.html
+  location: Across the UK
+  opens: 2026-10
+  season: 2027
+  kind: spring-week
+  description: A paid three-day taster at a PwC office in spring 2027 for first-year undergraduates (second year on a four-year degree) from groups under-represented at PwC. PwC runs it as three strands - Advancing Social Mobility, Black Talent in Business and Women in Business - and you apply to the one you are eligible for. You meet PwC teams, get mentoring and work on business skills.
+- employer: pwc
+  name: PwC
+  title: Summer Internship
+  url: https://www.pwc.co.uk/careers/early-careers/undergraduate/summer-internship.html
+  location: Across the UK
+  opens: 2026-09
+  season: 2027
+  kind: internship
+  description: A paid four to eight week internship in summer 2027 for penultimate-year students, with more than 400 places across UK offices. Interns work on live client projects in one business area, and a strong internship can end with a graduate job offer.
+- employer: pwc
+  name: PwC
+  title: Graduate Programme
+  url: https://www.pwc.co.uk/careers/early-careers/graduate.html
+  location: Across the UK
+  opens: 2026-10
+  season: 2027
+  kind: graduate
+  description: Graduate roles grouped into five areas - audit, accounting, tax and finance; advisory and consulting; strategy; legal; and technology and AI. You can apply to one graduate programme per recruitment year, and no prior work experience is needed.
+
+- employer: deloitte
+  name: Deloitte
+  title: Spring into Deloitte Insight Programme
+  url: https://www.deloitte.com/uk/en/careers/early-careers/early-careers-programmes.html
+  location: London, Manchester, UK
+  opens: 2026-11
+  season: 2027
+  kind: spring-week
+  description: A paid two-day insight programme in spring 2027. The Advisory strand runs in London on 1-2 April and the Finance (Inspiring Women) strand in Manchester on 30-31 March. Applications open on 9 November 2026 and close once places fill.
+- employer: deloitte
+  name: Deloitte
+  title: Summer Vacation Scheme
+  url: https://www.deloitte.com/uk/en/careers/early-careers/early-careers-programmes.html
+  location: Across the UK
+  opens: 2026-09
+  season: 2027
+  kind: internship
+  description: A four to six week placement in summer 2027, expected to start on 28 June, for penultimate-year students and those going on to a Master's. It starts with a firmwide induction and can lead to a Graduate Programme offer in the same business area and location.
+- employer: deloitte
+  name: Deloitte
+  title: Graduate Programme
+  url: https://www.deloitte.com/uk/en/careers/early-careers/early-careers-programmes.html
+  location: Across the UK
+  opens: 2026-09
+  season: 2027
+  kind: graduate
+  description: Graduate roles across audit, tax, consulting, advisory, technology and other areas, most with a professional qualification. Roles opened from late September 2026 depending on business area, and some close early when demand is high.
+
+- employer: ey
+  name: EY
+  title: Summer Internship
+  url: https://www.ey.com/en_uk/careers/students/undergraduates
+  location: Across the UK
+  opens: 2026-10
+  season: 2027
+  kind: internship
+  description: Summer internships with a July 2027 intake across Assurance, Consulting, EY-Parthenon, Tax and other areas. EY says 2027 applications are open and close once places are filled, with assessment days running from November 2026 to April 2027.
+- employer: ey
+  name: EY
+  title: Graduate Programme
+  url: https://www.ey.com/en_uk/careers/students/graduates
+  location: Across the UK
+  opens: 2026-10
+  season: 2027
+  kind: graduate
+  description: Graduate programmes with 2027 intakes (mostly September) across EY's service lines in offices around the UK. Applications for 2027 are open and close when positions are filled, so applying early helps.
+
+- employer: kpmg
+  name: KPMG
+  title: Vacation Programme (Summer Internship)
+  url: https://www.kpmgcareers.co.uk/undergraduate/vacation-programmes/
+  location: Across the UK
+  opens: 2026-10
+  season: 2027
+  kind: internship
+  description: Four-week audit and tax vacation programmes in July 2027 for penultimate-year students, or those graduating in 2028. You join a specific team, build technical and business skills and get a feel for life at KPMG.
+- employer: kpmg
+  name: KPMG
+  title: Graduate Programme
+  url: https://www.kpmgcareers.co.uk/graduate/
+  location: Across the UK
+  opens: 2026-10
+  season: 2027
+  kind: graduate
+  description: Graduate roles starting in autumn 2027 across audit, consulting, tax and law, and technology and engineering, many with a professional qualification such as the ACA. Roles are listed by office around the UK.
+
+# --- Banks ---
+- employer: jpmorgan
+  name: JPMorgan
+  title: Spring Insights
+  url: https://www.jpmorganchase.com/careers/explore-opportunities/programs/spring-insights
+  location: London, Glasgow, Bournemouth, UK
+  opens: 2026-10
+  closes: 2026-11-01
+  season: 2027
+  kind: spring-week
+  description: A three-day insight programme in spring 2027 for students two years from starting full-time work. Tracks cover areas such as trading, advisory and investing, and engineering. The 2027 postings went live on 1 October 2026; 1 November 2026 is the posting end date on JPMorgan's application board.
+- employer: jpmorgan
+  name: JPMorgan
+  title: Software Engineer Program Summer Internship
+  url: https://www.jpmorganchase.com/careers/explore-opportunities/programs/software-engineer-summer
+  location: London, Glasgow, UK
+  opens: 2026-09
+  closes: 2026-11-01
+  season: 2027
+  kind: internship
+  description: A summer 2027 software engineering internship in London or Glasgow. Interns join agile teams building services, data and infrastructure across the bank's businesses. 1 November 2026 is the posting end date on JPMorgan's application board.
+- employer: jpmorgan
+  name: JPMorgan
+  title: Software Engineer Graduate Program
+  url: https://www.jpmorganchase.com/careers/explore-opportunities/programs/software-engineer-fulltime
+  location: London, Glasgow, UK
+  opens: 2026-09
+  closes: 2026-11-01
+  season: 2027
+  kind: graduate
+  description: The full-time Software Engineer Program for graduates starting in 2027 in London or Glasgow. New engineers get training and then join teams across the firm's technology organisation. 1 November 2026 is the posting end date on JPMorgan's application board.
+
+- employer: goldmansachs
+  name: Goldman Sachs
+  title: Summer Analyst Programme
+  url: https://www.goldmansachs.com/careers/students/programs-and-internships/emea/summer-analyst-programme
+  location: London, Birmingham, UK
+  opens: 2026-10
+  season: 2027
+  kind: internship
+  description: A nine to ten week summer 2027 internship for penultimate or final-year Bachelor's or Master's students. Interns go through orientation and training, then work alongside teams on real responsibilities. Applications are open and reviewed on a rolling basis.
+- employer: goldmansachs
+  name: Goldman Sachs
+  title: New Analyst Programme
+  url: https://www.goldmansachs.com/careers/students/programs-and-internships/emea/new-analyst-programme
+  location: London, Birmingham, UK
+  opens: 2026-08
+  season: 2027
+  kind: graduate
+  description: The full-time analyst programme for final-year students and recent graduates, starting in summer 2027. Analysts learn the firm's businesses, get ongoing training and build a network across divisions. Opportunities were posted from 15 August and timelines vary by business.
+
+- employer: morganstanley
+  name: Morgan Stanley
+  title: Summer Analyst Programme
+  url: https://www.morganstanley.com/careers/career-opportunities-search?opportunity=sg
+  location: London, Glasgow, UK
+  opens: 2026-10
+  season: 2027
+  kind: internship
+  description: Summer 2027 analyst programmes in London and Glasgow across investment banking, capital markets, sales and trading, technology, operations, finance and more. Each programme has its own deadline, the earliest falling on 19 October 2026.
+
+- employer: citi
+  name: Citi
+  title: Spring Insight Program
+  url: https://jobs.citi.com/early-career-programs-pre-internships
+  location: London, UK
+  opens: 2026-10
+  season: 2027
+  kind: spring-week
+  description: An on-site insight programme in London around March or Easter for first-year students (second year on a four-year course). It combines job shadowing in a business of your choice with mentoring and can lead into Citi's summer internships.
+- employer: citi
+  name: Citi
+  title: Summer Analyst Program
+  url: https://jobs.citi.com/early-career-programs-internships
+  location: London, Belfast, UK
+  opens: 2026-09
+  season: 2027
+  kind: internship
+  description: An eight to sixteen week internship starting in May or June 2027 for penultimate-year students, with training, mentoring and a possible full-time offer. Citi says applications typically open in September the year before.
+- employer: citi
+  name: Citi
+  title: Full-Time Analyst Program
+  url: https://jobs.citi.com/early-career-programs-full-time
+  location: London, Belfast, UK
+  opens: 2026-09
+  season: 2027
+  kind: graduate
+  description: A graduate analyst programme, typically two years, starting in July or September 2027 depending on the country, with rotations in some businesses. Applications usually open in September the year before.
+
+- employer: barclays
+  name: Barclays
+  title: Summer Internship Programme
+  url: https://search.jobs.barclays/internships
+  location: London, Glasgow, Manchester, Knutsford, Northampton, UK
+  opens: 2026-09
+  season: 2027
+  kind: internship
+  description: Ten-week summer 2027 internships across investment banking, markets, technology, operations, compliance, finance and retail banking. The UK roles went live in late September 2026 at several Barclays campuses.
+- employer: barclays
+  name: Barclays
+  title: Graduate Programme
+  url: https://search.jobs.barclays/graduates
+  location: London, Glasgow, Manchester, Knutsford, Northampton, UK
+  opens: 2026-09
+  season: 2027
+  kind: graduate
+  description: Graduate programmes starting in 2027 across Barclays' businesses, from banking and markets to technology and operations. Graduates also join a lifelong Barclays graduate community.
+
+- employer: hsbc
+  name: HSBC
+  title: Internship Programme
+  url: https://www.hsbc.com/careers/students-and-graduates/find-a-programme
+  location: London, Sheffield, Manchester, Glasgow, Reading, UK
+  opens: 2026-10
+  season: 2027
+  kind: internship
+  description: Eight to ten week internships starting in June or July 2027 in areas such as commercial banking, cyber and quantitative finance. Most UK roles opened on 1 October 2026, and each role lists its own closing date.
+- employer: hsbc
+  name: HSBC
+  title: Graduate Programme
+  url: https://www.hsbc.com/careers/students-and-graduates/find-a-programme
+  location: London, Sheffield, Glasgow, UK
+  opens: 2026-10
+  season: 2027
+  kind: graduate
+  description: Graduate programmes starting in July 2027 in areas including engineering, cyber and commercial banking relationship management. UK roles opened between 1 and 5 October 2026, with closing dates set per role.
+
+- employer: bankofamerica
+  name: Bank of America
+  title: Summer Analyst Programme
+  url: https://careers.bankofamerica.com/en-us/students/programs
+  location: London, Chester, UK
+  opens: 2026-09
+  season: 2027
+  kind: internship
+  description: Summer 2027 analyst internships in London and Chester across markets, research, technology, operations and other teams. The UK roles were posted from 1 September 2026, with deadlines in late October.
+
+- employer: ubs
+  name: UBS
+  title: Summer Internship Program
+  url: https://www.ubs.com/global/en/careers/early-careers/summer-internship-program.html
+  location: United Kingdom
+  opens: 2026-08
+  season: 2027
+  kind: internship
+  description: Summer internships starting in June 2027. UK roles typically start opening in August, with more posted in September; each is advertised for four weeks and may stay open until filled. You can apply to only one UK programme per academic year.
+- employer: ubs
+  name: UBS
+  title: Graduate Programme (Graduate Talent Program)
+  url: https://www.ubs.com/global/en/careers/early-careers/graduate-talent-program.html
+  location: United Kingdom
+  opens: 2026-08
+  season: 2027
+  kind: graduate
+  description: The UBS Graduate Talent Program for graduates. UK roles typically start opening in August, with more posted in September, and applications are reviewed on a rolling basis. You can apply to only one UK programme per academic year.
+
+- employer: deutschebank
+  name: Deutsche Bank
+  title: Internship Programme
+  url: https://careers.db.com/students-graduates/internship-programme/
+  location: London, Birmingham, UK
+  opens: 2026-09
+  season: 2027
+  kind: internship
+  description: The 2027 Internship Programme for penultimate-year students (graduating in 2028) with no more than 12 months of full-time work experience. Any degree discipline is accepted, and UK roles cover areas such as the Corporate Bank, quant and audit.
+- employer: deutschebank
+  name: Deutsche Bank
+  title: Graduate Programme
+  url: https://careers.db.com/students-graduates/graduate-programme/
+  location: London, Birmingham, UK
+  opens: 2026-10
+  season: 2027
+  kind: graduate
+  description: The 2027 Graduate Programme for students finishing between January 2026 and July 2027 who can start full time in July 2027. UK roles include risk and audit in London and Birmingham.
+
+# --- Tech ---
+- employer: google
+  name: Google
+  title: Student Internship
+  url: https://www.google.com/about/careers/applications/internships
+  location: London, UK
+  opens: 2026-10
+  season: 2027
+  kind: internship
+  description: Google lists 2027 internships in London for Bachelor's, Master's, MBA and PhD students, across product management, engineering, data science and data centre roles. Roles are posted individually on Google's jobs site.
+
+- employer: apple
+  name: Apple
+  title: Student Internship
+  url: https://www.apple.com/careers/uk/work-at-apple/students.html
+  location: London, Cambridge, St Albans, UK
+  opens: 2026-08
+  season: 2027
+  kind: internship
+  description: Summer internships and academic-year work placements for Bachelor's, Master's and doctoral students in technical and non-technical fields. UK internship roles have been posted since late August 2026 in London, Cambridge and St Albans.
+
+- employer: amazon
+  name: Amazon
+  title: Student Internship
+  url: https://www.amazon.jobs/content/en/career-programs/university
+  location: London, Bristol, UK
+  opens: 2026-09
+  season: 2027
+  kind: internship
+  description: Amazon posts 2027 internships for students across software development, business analysis, finance, marketing, operations and HR. UK roles have gone live since mid-September 2026, mostly in London, and range from three months to a year.
+
+# --- Consulting ---
+- employer: mckinsey
+  name: McKinsey
+  title: Business Analyst Intern
+  url: https://www.mckinsey.com/careers/students/application-deadlines?degree=Undergrad&countryOfGraduation=UK&school=&officeCountry=&roleNames=Business+Analyst+Intern
+  location: London, UK
+  opens: 2026-10
+  closes: 2027-01-14
+  season: 2027
+  kind: internship
+  description: McKinsey's Business Analyst Intern role for undergraduates at UK universities, who follow the UK process whichever office they want to join. McKinsey's campus deadlines tool gives the UK application date for this role as 14 January 2027, and the role's posting (London among its offices) was open to apply on 17 October 2026.
+
+- employer: bcg
+  name: BCG
+  title: Summer Internship
+  url: https://careers.bcg.com/global/en/locations/united-kingdom/associate-jobs
+  location: London, UK
+  opens: 2027-01
+  closes: 2027-01-24
+  season: 2027
+  kind: internship
+  description: BCG London's summer consulting internship for penultimate-year students. Applications open on 1 January 2027 and close on 24 January 2027, and all decisions are made after the deadline.
+- employer: bcg
+  name: BCG
+  title: Associate Graduate Programme
+  url: https://careers.bcg.com/global/en/locations/united-kingdom/associate-jobs
+  location: London, UK
+  opens: 2026-09
+  closes: 2026-10-18
+  season: 2027
+  kind: graduate
+  description: BCG calls this graduate entry role Associate; it is full time in BCG's UK offices, mostly working at client sites. The process is an online application and CV, a short numerical test, then case interviews. Applications opened on 9 September 2026 and close on 18 October 2026.

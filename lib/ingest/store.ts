@@ -1,11 +1,11 @@
 import { and, eq, inArray, notInArray, sql } from "drizzle-orm";
 import { db } from "@/lib/db/client";
-import { jobs, type NewJob } from "@/lib/db/schema";
+import { companies, jobs, type NewJob } from "@/lib/db/schema";
 import type { IngestStore, JobRow } from "./run";
 
 /** Every JobRow column is overwritten on conflict; id and first_seen are kept. */
 const UPDATE_COLS = [
-  "title", "url", "location", "remote", "deadline", "deadline_source", "rolling", "closed_at", "posted_at", "archetype", "field_tags",
+  "title", "url", "location", "remote", "deadline", "deadline_source", "rolling", "closed_at", "posted_at", "opens_on", "archetype", "field_tags",
   "year_eligibility", "sponsors_visa", "employment_type", "first_year_friendly", "cohort_clash", "requirements", "skills", "summary",
   "raw_html", "text_lines", "fingerprint", "content_hash", "tag_status", "is_live", "last_seen",
 ] as const satisfies readonly (keyof JobRow & keyof NewJob)[];
@@ -35,6 +35,12 @@ export function sqliteStore(): IngestStore {
       return db.update(jobs).set({ is_live: false, closed_at: new Date().toISOString() })
         .where(and(eq(jobs.company_id, companyId), eq(jobs.is_live, true), liveExtIds.length ? notInArray(jobs.ext_id, liveExtIds) : undefined))
         .run().changes;
+    },
+    async emptyRuns(companyId) {
+      return db.select({ n: companies.empty_runs }).from(companies).where(eq(companies.id, companyId)).get()?.n ?? 0;
+    },
+    async setEmptyRuns(companyId, n) {
+      db.update(companies).set({ empty_runs: n }).where(eq(companies.id, companyId)).run();
     },
   };
 }

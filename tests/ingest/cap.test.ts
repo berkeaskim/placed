@@ -3,7 +3,7 @@ import { ingestCompany, type IngestStore, type JobRow } from "@/lib/ingest/run";
 import type { RawJob } from "@/lib/types";
 import { heuristicTagJob } from "@/lib/ai/heuristics";
 
-const company = { id: 1, slug: "acme", name: "Acme", ats: "lever" as const, api_host: null, enabled: true };
+const company = { id: 1, slug: "acme", name: "Acme", ats: "lever" as const, api_host: null, employer: null, transport: null, enabled: true };
 const raw = (n: number): RawJob => ({
   extId: String(n), title: "Data Analyst Intern", url: `https://jobs.lever.co/acme/${n}`, location: "London",
   remote: false, html: `<h3>Requirements</h3><ul><li>SQL ${n}</li></ul>`, postedAt: null,
@@ -15,6 +15,7 @@ describe("per-company tag cap", () => {
     const store: IngestStore = {
       existing: async () => new Map(), upsert: async (r) => { upserted.push(...r); },
       touch: vi.fn(async () => {}), markDead: vi.fn(async () => 0),
+      emptyRuns: async () => 0, setEmptyRuns: async () => {},
     };
     const tag = vi.fn(async (i: { title: string; textLines: string[] }) => heuristicTagJob(i));
     const r = await ingestCompany(company, { fetchJobs: async () => [1, 2, 3, 4, 5].map(raw), tagJob: tag, store, maxTags: 2 });

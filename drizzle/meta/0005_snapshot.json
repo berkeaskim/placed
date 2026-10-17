@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "e69424ad-53c0-475b-b89b-e83223a1c82f",
+  "id": "577d2431-130d-4f18-836e-3a0c4f88dfdd",
   "prevId": "c4a68231-951b-4de6-b0e8-aeba21c9b014",
   "tables": {
     "app_settings": {
@@ -392,6 +392,20 @@
           "notNull": false,
           "autoincrement": false
         },
+        "employer": {
+          "name": "employer",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "transport": {
+          "name": "transport",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
         "enabled": {
           "name": "enabled",
           "type": "integer",
@@ -432,74 +446,11 @@
       "checkConstraints": {
         "companies_ats_check": {
           "name": "companies_ats_check",
-          "value": "ats in ('greenhouse', 'lever', 'ashby', 'workday', 'smartrecruiters')"
-        }
-      }
-    },
-    "company_research": {
-      "name": "company_research",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false
+          "value": "ats in ('greenhouse', 'lever', 'ashby', 'workday', 'smartrecruiters', 'oracle', 'amazon', 'curated')"
         },
-        "company_key": {
-          "name": "company_key",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "facts": {
-          "name": "facts",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'[]'"
-        },
-        "rivals": {
-          "name": "rivals",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'[]'"
-        },
-        "provider": {
-          "name": "provider",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "fetched_at": {
-          "name": "fetched_at",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        }
-      },
-      "indexes": {
-        "company_research_company_key_key": {
-          "name": "company_research_company_key_key",
-          "columns": [
-            "company_key"
-          ],
-          "isUnique": true
-        }
-      },
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraints": {
-        "company_research_provider_check": {
-          "name": "company_research_provider_check",
-          "value": "provider in ('gemini', 'serper', 'none')"
+        "companies_transport_check": {
+          "name": "companies_transport_check",
+          "value": "transport is null or transport in ('stealth')"
         }
       }
     },
@@ -556,343 +507,6 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "checkConstraints": {}
-    },
-    "cover_letter_outputs": {
-      "name": "cover_letter_outputs",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "letter_id": {
-          "name": "letter_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "target": {
-          "name": "target",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "mode": {
-          "name": "mode",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "limit": {
-          "name": "limit",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "status": {
-          "name": "status",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'draft'"
-        },
-        "text": {
-          "name": "text",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "''"
-        },
-        "spans": {
-          "name": "spans",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'[]'"
-        },
-        "lint": {
-          "name": "lint",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'[]'"
-        },
-        "undo": {
-          "name": "undo",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'[]'"
-        },
-        "pdf_path": {
-          "name": "pdf_path",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        }
-      },
-      "indexes": {
-        "cover_letter_outputs_letter_idx": {
-          "name": "cover_letter_outputs_letter_idx",
-          "columns": [
-            "letter_id"
-          ],
-          "isUnique": false
-        }
-      },
-      "foreignKeys": {
-        "cover_letter_outputs_letter_id_cover_letters_id_fk": {
-          "name": "cover_letter_outputs_letter_id_cover_letters_id_fk",
-          "tableFrom": "cover_letter_outputs",
-          "tableTo": "cover_letters",
-          "columnsFrom": [
-            "letter_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraints": {
-        "cover_letter_outputs_status_check": {
-          "name": "cover_letter_outputs_status_check",
-          "value": "status in ('draft', 'ready')"
-        }
-      }
-    },
-    "cover_letter_stories": {
-      "name": "cover_letter_stories",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "user_id": {
-          "name": "user_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "cv_entry_id": {
-          "name": "cv_entry_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "company": {
-          "name": "company",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "kind": {
-          "name": "kind",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "text": {
-          "name": "text",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "last_used_at": {
-          "name": "last_used_at",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        }
-      },
-      "indexes": {
-        "cover_letter_stories_user_idx": {
-          "name": "cover_letter_stories_user_idx",
-          "columns": [
-            "user_id",
-            "kind"
-          ],
-          "isUnique": false
-        }
-      },
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraints": {
-        "cover_letter_stories_kind_check": {
-          "name": "cover_letter_stories_kind_check",
-          "value": "kind in ('story', 'why_firm')"
-        }
-      }
-    },
-    "cover_letters": {
-      "name": "cover_letters",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "user_id": {
-          "name": "user_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "job_id": {
-          "name": "job_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "chat": {
-          "name": "chat",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'[]'"
-        },
-        "answers": {
-          "name": "answers",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'[]'"
-        },
-        "facts": {
-          "name": "facts",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'[]'"
-        },
-        "evidence": {
-          "name": "evidence",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "research_state": {
-          "name": "research_state",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'idle'"
-        },
-        "draft_state": {
-          "name": "draft_state",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'idle'"
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        }
-      },
-      "indexes": {
-        "cover_letters_user_id_job_id_key": {
-          "name": "cover_letters_user_id_job_id_key",
-          "columns": [
-            "user_id",
-            "job_id"
-          ],
-          "isUnique": true
-        }
-      },
-      "foreignKeys": {
-        "cover_letters_job_id_jobs_id_fk": {
-          "name": "cover_letters_job_id_jobs_id_fk",
-          "tableFrom": "cover_letters",
-          "tableTo": "jobs",
-          "columnsFrom": [
-            "job_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraints": {
-        "cover_letters_research_state_check": {
-          "name": "cover_letters_research_state_check",
-          "value": "research_state in ('idle', 'running', 'done', 'none', 'failed')"
-        },
-        "cover_letters_draft_state_check": {
-          "name": "cover_letters_draft_state_check",
-          "value": "draft_state in ('idle', 'streaming', 'done', 'interrupted')"
-        }
-      }
     },
     "cv_feedback": {
       "name": "cv_feedback",
@@ -1426,6 +1040,13 @@
         },
         "posted_at": {
           "name": "posted_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "opens_on": {
+          "name": "opens_on",
           "type": "text",
           "primaryKey": false,
           "notNull": false,

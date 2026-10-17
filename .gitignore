@@ -54,3 +54,13 @@ next-env.d.ts
 
 # local data (SQLite db, files, secret key)
 /data/
+
+# recon tooling venv (scripts/recon/README.md)
+/.venv-recon/
+
+# Python bytecode
+__pycache__/
+*.pyc
+
+# optional stealth sidecar (npm run scraper:setup)
+scraper/.venv

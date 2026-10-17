@@ -17,7 +17,9 @@ const inList = (col: string, values: readonly string[]) => sql.raw(`${col} in ($
 
 export const YEAR_VALUES = ["1st", "2nd", "penultimate", "final", "masters"] as const;
 export const APP_STATUS_VALUES = ["saved", "applied", "interview", "offer", "rejected"] as const;
-export const ATS_VALUES = ["greenhouse", "lever", "ashby", "workday", "smartrecruiters"] as const;
+export const ATS_VALUES = ["greenhouse", "lever", "ashby", "workday", "smartrecruiters", "oracle", "amazon", "goldmansachs", "morganstanley", "bankofamerica", "deutschebank", "eightfold", "phenom", "apple", "mckinsey", "curated"] as const;
+/** Fetch transports other than plain fetch; null = plain. "stealth" routes through the opt-in recon sidecar. */
+export const TRANSPORT_VALUES = ["stealth"] as const;
 export const SPONSORS_VISA_VALUES = ["yes", "no", "unknown"] as const;
 export const TAG_STATUS_VALUES = ["ok", "failed", "pending"] as const;
 export const DEADLINE_SOURCE_VALUES = ["ats", "text"] as const;
@@ -123,13 +125,19 @@ export const companies = sqliteTable("companies", {
   name: text("name").notNull(),
   ats: text("ats", { enum: ATS_VALUES }).notNull(),
   api_host: text("api_host"),
+  /** Employer key shared by boards of one employer (e.g. a live board and its curated cards); null = the slug is the employer. */
+  employer: text("employer"),
+  transport: text("transport", { enum: TRANSPORT_VALUES }),
   enabled: bool("enabled").notNull().default(true),
   /** "seed" (seed/companies.yml) or "discovered" (added by the AI company search, lib/ingest/discover.ts). */
   source: text("source").notNull().default("seed"),
   added_at: text("added_at"),
+  /** Consecutive ingest runs whose listing came back empty (lib/ingest/run.ts holds jobs open until it reaches 2). */
+  empty_runs: integer("empty_runs").notNull().default(0),
 }, (t) => [
   unique("companies_ats_slug_key").on(t.ats, t.slug),
   check("companies_ats_check", inList("ats", ATS_VALUES)),
+  check("companies_transport_check", sql`transport is null or ${inList("transport", TRANSPORT_VALUES)}`),
 ]);
 
 export const jobs = sqliteTable("jobs", {
@@ -142,6 +150,8 @@ export const jobs = sqliteTable("jobs", {
   remote: bool("remote").notNull().default(false),
   deadline: text("deadline"),
   posted_at: text("posted_at"),
+  /** YYYY-MM-DD the application window opens (curated programme cards); null for live boards. */
+  opens_on: text("opens_on"),
   archetype: text("archetype").$type<Archetype>(),
   field_tags: json<string[]>("field_tags").notNull().default(sql`'[]'`),
   year_eligibility: json<Year[]>("year_eligibility").notNull().default(sql`'[]'`),

@@ -17,6 +17,8 @@ import { isUuid } from "@/lib/feed/save-result";
 import { applyXp } from "@/lib/feed/rank";
 import { safeHttpUrl } from "@/lib/text/url";
 import { CompanyMark } from "@/components/company-mark";
+import { CuratedChip } from "@/components/curated-chip";
+import { curatedDetail } from "@/lib/jobs/detail";
 import { isPastSaved } from "@/lib/tracker/status";
 import { FitBadge } from "@/components/fit-badge";
 import { SaveButton } from "@/components/save-button";
@@ -75,6 +77,7 @@ export default async function JobPage({ params, searchParams }: { params: Promis
   const alreadyApplied = isPastSaved(status);
   const stored = (app?.tailored_json ?? null) as StoredTailoring | null;
   const school = universityFor(user.id);
+  const detail = curatedDetail(job, env.autopilot);
   // Tracker nudges open the drafter on a preset target and purpose (?target=…&purpose=…#people).
   const drafterStart = {
     initialTarget: OUTREACH_TARGETS.find((t) => t === sp.target),
@@ -87,7 +90,10 @@ export default async function JobPage({ params, searchParams }: { params: Promis
       <CoverLetterHost jobId={job.id} />
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_400px]">
         <article className="flex min-w-0 flex-col gap-3 rounded-[20px] border bg-white p-5 sm:p-6">
-          <CompanyMark company={job.company} url={job.url} size="lg" />
+          <div className="flex flex-wrap items-center gap-2">
+            <CompanyMark company={job.company} url={job.url} size="lg" />
+            {detail.curated && <CuratedChip />}
+          </div>
           <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">{job.title}</h1>
           <p className="text-sm font-semibold text-muted-foreground">
             {job.location || "Location not stated"} · <span className="text-[#8A4B00]">{closingLabel(job, today)}</span>
@@ -116,10 +122,10 @@ export default async function JobPage({ params, searchParams }: { params: Promis
                   <span className="text-sm font-bold">Findability</span>
                   {band
                     ? <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${BAND_TONE[band]}`}>{band}</span>
-                    : <span className="text-xs text-muted-foreground">Couldn&apos;t read the requirements</span>}
+                    : !detail.unscoredNote && <span className="text-xs text-muted-foreground">Couldn&apos;t read the requirements</span>}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {band ? FINDABILITY_HINT[band] : "This posting doesn't list skills we can match."} How easily a keyword search would surface your CV for this role.
+                  {band ? FINDABILITY_HINT[band] : detail.unscoredNote ? `${detail.unscoredNote}.` : "This posting doesn't list skills we can match."} How easily a keyword search would surface your CV for this role.
                 </p>
                 {stuffing && (
                   <p className="mt-1 rounded-lg bg-[#FFF1DC] px-2.5 py-2 text-xs font-semibold text-[#7A4100]" role="note">
@@ -137,10 +143,10 @@ export default async function JobPage({ params, searchParams }: { params: Promis
             initial={stored?.v === 1 && stored.outcome ? { outcome: stored.outcome, final: stored.final ?? null } : null}
           />
 
-          {env.autopilot && <AutopilotPanel jobId={job.id} />}
+          {detail.showAutopilot && <AutopilotPanel jobId={job.id} />}
 
           <section className="flex flex-col gap-2 rounded-[20px] border bg-white p-5">
-            <ApplyButton jobId={job.id} url={safeHttpUrl(job.url)} company={job.company} alreadyApplied={alreadyApplied} />
+            <ApplyButton jobId={job.id} url={safeHttpUrl(job.url)} company={job.company} alreadyApplied={alreadyApplied} curated={detail.curated} />
           </section>
 
           {alreadyApplied ? (
