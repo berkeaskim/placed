@@ -381,7 +381,7 @@ docs/research/       Sources behind every CV rule and Role Playbook
 - [x] Strategy tab: reach map and a dated outreach plan per role
 - [x] Local-first: SQLite, no account, Claude / Gemini / Ollama
 - [ ] Autopilot on the Chrome Web Store
-- [x] More employer coverage: 19 of the 21 top employers are live or have a curated programme card (still missing: Meta, Bain)
+- [x] More employer coverage: 19 of the 21 top employers are live (13) or have a curated programme card (still missing: Meta, Bain)
 - [ ] Cover letters that follow the same no-fabrication rules
 
 ## Acknowledgements
