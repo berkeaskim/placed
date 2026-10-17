@@ -563,7 +563,7 @@ describe("round 4: fail closed on the judge, firm words from firm sources", () =
       expect(r.flags.length, body).toBeGreaterThan(0);
       expect(r.ready, body).toBe(false);
     }
-  });
+  }, 30_000);
 
   it("with the judge saying ok, every bypass is still flagged by the firm-word check", () => {
     for (const body of BYPASSES) {
@@ -572,7 +572,7 @@ describe("round 4: fail closed on the judge, firm words from firm sources", () =
       expect(r.flags, body).not.toContain(NO_VERDICT);
       expect(r.ready, body).toBe(false);
     }
-  });
+  }, 30_000);
 
   it("intent passes when the judge says ok, and fails closed (clearably) when it says nothing", () => {
     for (const body of [
@@ -686,7 +686,7 @@ describe("round 5: generic firm references, quoted-answer pieces, the student's 
       expect(r.flags, body).not.toContain(NO_VERDICT);
       expect(r.ready, body).toBe(false);
     }
-  });
+  }, 30_000);
 
   it("the intent sentences still pass with ok", () => {
     for (const body of [

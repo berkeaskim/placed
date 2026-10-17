@@ -56,15 +56,19 @@ export async function generateGrounded(req: GroundedRequest): Promise<GroundedRe
   return geminiGrounded(req);
 }
 
-/** Fixture replay pace: 1-3 words per chunk, 15 ms apart, so the UI animates the same way every run. */
+/**
+ * Fixture replay pace: 1-3 words per chunk, 15 ms apart, so the UI animates the same way every run.
+ * AI_FIXTURE_CHUNK_MS overrides the gap; unit tests set it to 0 (vitest.config.ts) so they don't wait on the pace.
+ */
 async function* replayFixture(text: string, signal?: AbortSignal): AsyncGenerator<string> {
+  const gap = Number(process.env.AI_FIXTURE_CHUNK_MS ?? 15);
   const words = text.match(/\S+\s*/g) ?? [];
   for (let i = 0, k = 0; i < words.length; k++) {
     if (signal?.aborted) return;
     const n = (k % 3) + 1; // deterministic 1-3 word chunks
     yield words.slice(i, i + n).join("");
     i += n;
-    await new Promise((r) => setTimeout(r, 15));
+    await new Promise((r) => setTimeout(r, Number.isFinite(gap) && gap >= 0 ? gap : 15));
   }
 }
 
