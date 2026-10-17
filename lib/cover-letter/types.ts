@@ -1,0 +1,9 @@
+export type Mode = "skip" | "full_letter" | "short_letter" | "field_answer" | "short_note";
+export type Limit = { unit: "words" | "chars"; max: number } | null;
+export type SpanKind = "ai" | "theirs";
+export type Span = { start: number; end: number; kind: SpanKind; refs: string[]; flag?: string };
+export type LintHit = { ruleId: string; label: string; severity: "block" | "high" | "med" | "low"; start: number; end: number; scope: SpanKind | "letter" };
+export type Fact = { id: string; claim: string; url: string; publisher: string; date: string | null };
+export type Answer = { id: string; question: "why_firm" | "facts" | "story" | "touchpoint" | "product"; text: string | null; pickedFactIds?: string[]; cvEntryId?: string };
+export type OutputTarget = { kind: "upload" } | { kind: "field"; fieldKey: string; label: string };
+export type OutputStatus = "draft" | "ready";

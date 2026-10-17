@@ -11,6 +11,8 @@ export default defineConfig({
     env: { VAULT_ENC_KEY: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=" },
   },
   resolve: {
+    // Prefer .ts over .json so "@/lib/cover-letter/rules" is rules.ts, not rules.json.
+    extensions: [".mjs", ".js", ".mts", ".ts", ".jsx", ".tsx", ".json"],
     alias: {
       "@": path.resolve(__dirname, "."),
       "server-only": path.resolve(__dirname, "node_modules/server-only/empty.js"),
