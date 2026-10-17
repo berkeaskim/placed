@@ -20,7 +20,10 @@ export function JobCard({ r, today, saved, applied }: { r: Ranked; today: string
   return (
     <article className="flex flex-wrap items-center gap-x-4 gap-y-3 rounded-[18px] border bg-white px-5 py-4">
       <div className="flex min-w-0 flex-1 basis-64 flex-col gap-1.5">
-        <CompanyMark company={r.job.company} url={r.job.url} />
+        <div className="flex flex-wrap items-center gap-2">
+          <CompanyMark company={r.job.company} url={r.job.url} />
+          {r.job.curated && <span className="chip-curated" title="Curated programme page: we can't read this employer's live postings">Curated</span>}
+        </div>
         <Link href={`/jobs/${r.job.id}`} className="text-base font-bold leading-snug text-foreground no-underline hover:underline">{r.job.title}</Link>
         <div className="text-[13px] text-muted-foreground">{r.job.location || "Location not stated"} · {sub}</div>
       </div>

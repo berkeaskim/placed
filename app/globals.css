@@ -132,6 +132,7 @@
 @layer components {
   .btn-quest { @apply font-extrabold rounded-[14px] text-white bg-[#5B3DF5] border-b-4 border-[#3A20C4] active:border-b-0 active:translate-y-[4px] transition-transform; }
   .chip-xp { @apply inline-flex items-center rounded-full bg-[#FFF4D6] px-2.5 py-1 text-sm font-bold text-[#9A6B00] font-[family-name:var(--font-quest)]; }
+  .chip-curated { @apply inline-flex items-center self-start rounded-full bg-[#F4F1FF] px-2 py-0.5 text-[11px] font-bold text-[#3A20C4]; }
   .card-quest { @apply rounded-[20px] border-2 border-b-[5px] border-[#E6E6EF] bg-white; }
   .num-quest { @apply font-[family-name:var(--font-quest)] font-bold; }
 }

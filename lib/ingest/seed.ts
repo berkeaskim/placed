@@ -1,3 +1,4 @@
+import { curatedEmployers, type Programme } from "./curated";
 import { ATS_VALUES, TRANSPORT_VALUES, type AtsKind, type companies } from "@/lib/db/schema";
 
 export type NewCompany = typeof companies.$inferInsert;
@@ -17,4 +18,9 @@ export function seedCompanyRows(yml: unknown[]): NewCompany[] {
     out.push({ slug: r.slug, name: r.name, ats: r.ats as AtsKind, api_host: str(r.apiHost), employer: str(r.employer), transport, enabled: r.enabled !== false });
   }
   return out;
+}
+
+/** One curated pseudo-board per employer in programmes.yml: `{ats:"curated", slug: employer}`, grouped with live boards by `employer`. */
+export function seedCuratedCompanies(ps: Programme[]): NewCompany[] {
+  return curatedEmployers(ps).map((e) => ({ slug: e.slug, name: e.name, ats: "curated" as const, api_host: null, employer: e.slug, transport: null, enabled: true }));
 }

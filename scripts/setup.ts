@@ -6,7 +6,8 @@ import { dataDir, db, dbFile } from "../lib/db/client";
 import { ensureProfile } from "../lib/db/functions";
 import { companies, jobs, type NewJob } from "../lib/db/schema";
 import { localSecretKey } from "../lib/settings/secret-key";
-import { seedCompanyRows } from "../lib/ingest/seed";
+import { seedCompanyRows, seedCuratedCompanies } from "../lib/ingest/seed";
+import { loadProgrammes } from "../lib/ingest/curated";
 import { runIngest } from "../lib/ingest/local";
 
 /** One-time local setup: data dir, secret key, migrations, the local profile, and the seed companies/jobs. Re-runnable. */
@@ -17,7 +18,9 @@ async function main() {
   console.log(`database: ${dbFile()} (migrated)`);
   ensureProfile(LOCAL_USER_ID, LOCAL_USER_EMAIL);
 
-  const rows = seedCompanyRows(YAML.parse(readFileSync("seed/companies.yml", "utf8")) as unknown[]);
+  const programmesFile = process.env.PLACED_PROGRAMMES_FILE || "seed/programmes.yml";
+  const curated = existsSync(programmesFile) ? seedCuratedCompanies(loadProgrammes(readFileSync(programmesFile, "utf8"))) : [];
+  const rows = [...seedCompanyRows(YAML.parse(readFileSync("seed/companies.yml", "utf8")) as unknown[]), ...curated];
   db.transaction((tx) => {
     for (const r of rows) {
       tx.insert(companies).values(r).onConflictDoUpdate({
@@ -26,7 +29,7 @@ async function main() {
       }).run();
     }
   });
-  console.log(`companies: ${rows.length}`);
+  console.log(`companies: ${rows.length} (${curated.length} curated)`);
 
   const jobCount = db.select({ n: count() }).from(jobs).get()?.n ?? 0;
   if (jobCount === 0 && existsSync("seed/jobs.json")) {

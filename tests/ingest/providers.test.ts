@@ -1,4 +1,9 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
+import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
+import { passesTitleFilter, passesLocationFilter } from "@/lib/ingest/filter";
+import { htmlToLines } from "@/lib/text/jd";
 import gh from "../fixtures/ats/greenhouse.json";
 import lever from "../fixtures/ats/lever.json";
 import ashby from "../fixtures/ats/ashby.json";
@@ -64,5 +69,40 @@ describe("malformed entries are skipped, not thrown on", () => {
   it("ashby", () => {
     const out = normalizeAshby({ jobs: [...ashby.jobs, null, { id: "a" }, { title: "t" }] });
     expect(out).toHaveLength(ashby.jobs.length);
+  });
+});
+
+describe("curated provider", () => {
+  const dirs: string[] = [];
+  afterEach(() => { delete process.env.PLACED_PROGRAMMES_FILE; for (const d of dirs.splice(0)) rmSync(d, { recursive: true, force: true }); });
+  const prog = (employer: string, title: string, over: Record<string, unknown> = {}) =>
+    `- ${Object.entries({ employer, name: employer, title, url: `https://example.com/${employer}`, location: "London, UK", opens: "2026-12", season: 2027, kind: "graduate", description: "A scheme.", ...over }).map(([k, v]) => `${k}: ${JSON.stringify(v)}`).join("\n  ")}`;
+  const useFile = (yml: string) => {
+    const d = mkdtempSync(path.join(tmpdir(), "placed-prog-"));
+    dirs.push(d);
+    writeFileSync(path.join(d, "programmes.yml"), yml);
+    process.env.PLACED_PROGRAMMES_FILE = path.join(d, "programmes.yml");
+  };
+
+  it("curated fetchJobs returns only that employer's visible programmes", async () => {
+    useFile([
+      prog("barclays", "Spring Week"),
+      prog("barclays", "Old Graduate Programme", { season: 2000 }),
+      prog("deloitte", "Graduate Programme"),
+    ].join("\n"));
+    const jobs = await fetchJobs({ ats: "curated", slug: "barclays", name: "Barclays" });
+    expect(jobs.map((j) => j.title)).toEqual(["Spring Week"]);
+    expect(jobs[0]!.opensOn).toBe("2026-12-01");
+  });
+
+  it("curated rows with reasonable titles pass the ingest filters", async () => {
+    const titles = ["Spring Week", "Graduate Programme", "Summer Internship"];
+    useFile(titles.map((t, i) => prog("bank", t, { kind: ["spring-week", "graduate", "internship"][i] })).join("\n"));
+    const jobs = await fetchJobs({ ats: "curated", slug: "bank", name: "Bank" });
+    expect(jobs).toHaveLength(3);
+    for (const j of jobs) {
+      expect(passesTitleFilter(j.title), j.title).toBe(true);
+      expect(passesLocationFilter(j.location, j.remote, htmlToLines(j.html).join("\n")).pass, j.title).toBe(true);
+    }
   });
 });

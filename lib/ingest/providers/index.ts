@@ -7,6 +7,9 @@ import { fetchSmartRecruiters, srPostingsUrl } from "./smartrecruiters";
 import { fetchOracle, oracleListUrl } from "./oracle";
 import type { AtsKind } from "@/lib/db/schema";
 import { passesTitleFilter } from "../filter";
+import { loadProgrammes, programmeToRawJob, visibleProgrammes } from "../curated";
+import { todayLondon } from "@/lib/scoring/dates";
+import { readFileSync } from "node:fs";
 
 export { normalizeGreenhouse, normalizeLever, normalizeAshby };
 
@@ -14,6 +17,20 @@ export type Ats = AtsKind;
 export type CompanySeed = { slug: string; name: string; ats: Ats; apiHost?: string | null; employer?: string | null; transport?: "stealth" | null };
 
 export class ProviderError extends Error {}
+
+const PROGRAMMES_PATH_LABEL = "file:seed/programmes.yml";
+
+/** Curated programmes live in a local file, not behind an endpoint. PLACED_PROGRAMMES_FILE overrides the path (tests). */
+function fetchCurated(slug: string): RawJob[] {
+  const file = process.env.PLACED_PROGRAMMES_FILE || "seed/programmes.yml";
+  let text: string;
+  try {
+    text = readFileSync(file, "utf8");
+  } catch (e) {
+    throw new ProviderError(`curated/${slug}: cannot read ${file} (${(e as Error).message})`);
+  }
+  return visibleProgrammes(loadProgrammes(text), todayLondon()).filter((p) => p.employer === slug).map(programmeToRawJob);
+}
 
 export function endpointFor(c: CompanySeed): string {
   switch (c.ats) {
@@ -31,13 +48,15 @@ export function endpointFor(c: CompanySeed): string {
     case "oracle":
       if (!c.apiHost) throw new ProviderError(`oracle/${c.slug}: apiHost ({tenant}.fa.{region}.oraclecloud.com) is required`);
       return oracleListUrl(c.slug, c.apiHost, 0);
-    case "amazon":
     case "curated":
+      return PROGRAMMES_PATH_LABEL;
+    case "amazon":
       throw new ProviderError(`${c.ats}/${c.slug}: provider not implemented yet`);
   }
 }
 
 export async function fetchJobs(c: CompanySeed, fetchImpl: typeof fetch = fetch): Promise<RawJob[]> {
+  if (c.ats === "curated") return fetchCurated(c.slug);
   const url = endpointFor(c);
   if (c.ats === "workday") {
     // Paged list + per-posting detail; the title filter runs before detail calls to keep request count low.

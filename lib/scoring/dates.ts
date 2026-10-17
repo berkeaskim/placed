@@ -30,7 +30,13 @@ export function deadlineLabel(deadline: string | null, today: string): string {
  * Honest close-date label using deadline provenance. "No closing date published" is the common case
  * (~90% of Greenhouse/Lever/Ashby postings) and must not be presented as a rolling deadline.
  */
-export function closingLabel(job: { deadline: string | null; rolling?: boolean }, today: string): string {
+export function closingLabel(job: { deadline: string | null; rolling?: boolean; opensOn?: string | null }, today: string): string {
   if (isValidDate(job.deadline)) return deadlineLabel(job.deadline, today);
+  if (isValidDate(job.opensOn) && job.opensOn > today) return `Opens ${opensLabel(job.opensOn)}`;
   return job.rolling ? "Rolling: apply early" : "No closing date published";
+}
+
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+function opensLabel(d: string): string {
+  return `${MONTHS[Number(d.slice(5, 7)) - 1]} ${d.slice(0, 4)}`;
 }

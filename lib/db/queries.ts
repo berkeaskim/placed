@@ -26,13 +26,13 @@ export function toStudent(p: ProfileRow): StudentProfile {
 }
 
 /** `rolling`: the posting says it may close early. */
-export type JobListItem = JobForScoring & { company: string; url: string; summary: string; extId: string; rolling?: boolean };
+export type JobListItem = JobForScoring & { company: string; url: string; summary: string; extId: string; rolling?: boolean; opensOn?: string | null; curated?: boolean };
 
 const JOB_COLUMNS = {
   id: jobs.id, ext_id: jobs.ext_id, title: jobs.title, url: jobs.url, location: jobs.location, remote: jobs.remote, deadline: jobs.deadline,
   posted_at: jobs.posted_at, archetype: jobs.archetype, year_eligibility: jobs.year_eligibility, sponsors_visa: jobs.sponsors_visa,
   employment_type: jobs.employment_type, first_year_friendly: jobs.first_year_friendly, cohort_clash: jobs.cohort_clash,
-  requirements: jobs.requirements, text_lines: jobs.text_lines, summary: jobs.summary, rolling: jobs.rolling, company: companies.name,
+  requirements: jobs.requirements, text_lines: jobs.text_lines, summary: jobs.summary, rolling: jobs.rolling, opens_on: jobs.opens_on, company: companies.name, ats: companies.ats, employer: companies.employer,
 };
 
 const jobQuery = () => db.select(JOB_COLUMNS).from(jobs).leftJoin(companies, eq(companies.id, jobs.company_id));
@@ -44,6 +44,7 @@ function toJob(r: JobDbRow): JobListItem {
     archetype: r.archetype as JobForScoring["archetype"], yearEligibility: r.year_eligibility ?? [], sponsorsVisa: r.sponsors_visa,
     employmentType: r.employment_type as JobForScoring["employmentType"], firstYearFriendly: r.first_year_friendly, cohortClash: r.cohort_clash ?? false,
     requirements: r.requirements ?? [], textLines: r.text_lines ?? [], summary: r.summary, company: r.company ?? "", rolling: r.rolling === true,
+    opensOn: r.opens_on ?? null, curated: r.ats === "curated",
   };
 }
 
@@ -54,12 +55,14 @@ const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
 /** Live jobs that have not closed. `today` is the London day; a job closing today is still returned. */
 export async function getLiveJobs(today: string): Promise<JobListItem[]> {
   if (!ISO_DAY.test(today)) throw new Error("expected a YYYY-MM-DD date");
-  return jobQuery()
+  const rows = jobQuery()
     .where(and(eq(jobs.is_live, true), or(isNull(jobs.deadline), gte(jobs.deadline, today))))
     .orderBy(sql`${jobs.posted_at} desc nulls last`, asc(jobs.id))
     .limit(LIVE_JOBS_MAX)
-    .all()
-    .map(toJob);
+    .all();
+  // Curated cards are a stand-in for employers whose postings we can't read; hide them while the same employer has a live one.
+  const covered = new Set(rows.filter((r) => r.ats !== "curated" && r.employer).map((r) => r.employer));
+  return rows.filter((r) => !(r.ats === "curated" && r.employer && covered.has(r.employer))).map(toJob);
 }
 
 export async function getJob(id: string): Promise<JobListItem | null> {
