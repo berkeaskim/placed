@@ -10,6 +10,7 @@ import { passesTitleFilter } from "../filter";
 import { loadProgrammes, programmeToRawJob, visibleProgrammes } from "../curated";
 import { todayLondon } from "@/lib/scoring/dates";
 import { readFileSync } from "node:fs";
+import { stealthFetch } from "../stealth";
 
 export { normalizeGreenhouse, normalizeLever, normalizeAshby };
 
@@ -55,8 +56,10 @@ export function endpointFor(c: CompanySeed): string {
   }
 }
 
-export async function fetchJobs(c: CompanySeed, fetchImpl: typeof fetch = fetch): Promise<RawJob[]> {
+export async function fetchJobs(c: CompanySeed, plainFetch: typeof fetch = fetch): Promise<RawJob[]> {
   if (c.ats === "curated") return fetchCurated(c.slug);
+  // Boards that reject a plain Node fetch go through the optional sidecar (lib/ingest/stealth.ts); it never solves challenges.
+  const fetchImpl = c.transport === "stealth" ? stealthFetch : plainFetch;
   const url = endpointFor(c);
   if (c.ats === "workday") {
     // Paged list + per-posting detail; the title filter runs before detail calls to keep request count low.

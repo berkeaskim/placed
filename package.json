@@ -35,7 +35,8 @@
     "demo:cv": "node scripts/run-ts.mjs scripts/make-demo-cv.ts",
     "reliability": "node --env-file-if-exists=.env.local scripts/run-ts.mjs scripts/reliability.ts",
     "db:generate": "drizzle-kit generate",
-    "recon": "python3 scripts/recon/capture_xhr.py"
+    "recon": "python3 scripts/recon/capture_xhr.py",
+    "scraper:setup": "tsx scripts/scraper-setup.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.133.0",

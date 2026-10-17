@@ -280,6 +280,22 @@ aren't watched yet, checks each one against its live careers board (it must exis
 ones that pass. Nothing the AI makes up gets stored. Run it any time with **Settings → Job search → Find new companies**,
 and remove any company it added from the same place.
 
+### Optional scraper
+
+A few careers sites turn away a plain Node `fetch` because of its TLS or header fingerprint (a bare `403`). Employers marked
+`transport: stealth` in [`seed/companies.yml`](seed/companies.yml) are fetched through a small Python sidecar
+([`scraper/fetch.py`](scraper/fetch.py)) that uses [Scrapling](https://github.com/D4Vinci/Scrapling)'s headless browser instead.
+It is off unless you install it, and everything else works without Python. Without it, those boards fail with a hint to install it.
+
+It never solves Cloudflare, Turnstile or any other CAPTCHA (`solve_cloudflare=False` is hard-coded), uses no proxies and
+never logs in. If a site answers with a challenge page, that board fails as `blocked` and is not retried.
+
+```bash
+npm run scraper:setup   # needs uv or Python 3.10+; creates scraper/.venv and downloads Chromium
+```
+
+**Settings → Job search** shows whether it is installed.
+
 ## The Chrome extension (Autopilot and LinkedIn score)
 
 The extension fills application forms on Greenhouse, Ashby and Lever (it never presses *Submit*) and captures your
@@ -299,6 +315,7 @@ See [`extension/README.md`](extension/README.md) for how it works and what it wi
 | `npm run dev` | Start the app on <http://127.0.0.1:3000> |
 | `npm run build` then `npm start` | Production build, also bound to `127.0.0.1` |
 | `npm run ingest` | Pull fresh jobs from every configured ATS board |
+| `npm run scraper:setup` | Optional: install the stealth sidecar for boards marked `transport: stealth` |
 | `npm run schedule:install` / `schedule:uninstall` | Keep the job refresh running while Placed is closed (macOS LaunchAgent) |
 | `npm test` | Unit tests (Vitest, each file on a temp database) |
 | `npm run e2e` | End-to-end run (Playwright, temp database, recorded AI outputs) |
