@@ -2,7 +2,17 @@ import { z } from "zod";
 import type { ParsedCV, Year } from "@/lib/types";
 import { YEARS } from "@/lib/types";
 
-const url = z.string().url().optional().or(z.literal("").transform(() => undefined));
+/** CVs and students often write "linkedin.com/in/name" with no scheme: add https:// so it is a usable link. Anything else is returned trimmed, unchanged. */
+export function normaliseUrl(raw: string): string {
+  const t = raw.trim();
+  if (!t || /^[a-z][a-z\d+.-]*:/i.test(t)) return t; // empty, or already has a scheme (http:, https:, mailto:...)
+  if (t.startsWith("//")) return `https:${t}`;
+  return /^[^\s/]+\.[^\s/]+/.test(t) ? `https://${t}` : t; // looks like host.tld[/...]
+}
+const url = z.preprocess(
+  (v) => (typeof v === "string" ? normaliseUrl(v) : v),
+  z.string().url().refine((s) => /^https?:\/\//i.test(s), "Must be a web link").optional().or(z.literal("").transform(() => undefined)),
+);
 export const CoreSchema = z.object({
   first_name: z.string().trim().min(1), last_name: z.string().trim().min(1), preferred_name: z.string().trim().optional(),
   email: z.string().trim().email(), phone: z.string().trim().min(5),
@@ -66,9 +76,10 @@ export function prefillCore(i: { email: string | null; year: Year | null; cv: Pa
   }
   if (i.cv?.location) out.city = i.cv.location.split(",")[0].trim();
   for (const l of i.cv?.links ?? []) {
-    if (/linkedin\.com/i.test(l)) out.linkedin = l;
-    else if (/github\.com/i.test(l)) out.github = l;
-    else out.portfolio ??= l;
+    const u = normaliseUrl(l);
+    if (/linkedin\.com/i.test(u)) out.linkedin = u;
+    else if (/github\.com/i.test(u)) out.github = u;
+    else out.portfolio ??= u;
   }
   // needsVisa is a hint for the UI only: RTW and sponsorship are never prefilled (spec §2 rule 3).
   return out;
