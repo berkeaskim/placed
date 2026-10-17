@@ -144,17 +144,18 @@ function firmClausesSupported(text: string, src: Sources): boolean {
     if (FIRST_PERSON.test(clause) || !mentionsFirm(clause, src.company)) continue;
     if (!supported(clause)) return false;
   }
-  // A clause after a conjunction ("…because it offers X", "…since its analysts…", "…analysts there get…", "…the
-  // bonuses it offers") with it / its / they / their / there in it, and no student, is about the firm.
-  for (const clause of text.split(CLAUSE_BREAK).slice(1)) {
-    if (FIRST_PERSON.test(clause) || !FIRM_PRONOUN.test(clause)) continue;
-    if (!supported(clause)) return false;
+  // In a sentence about the firm, a clause after a conjunction or comma with no student in it ("…because it offers X",
+  // "…because bonuses are guaranteed", ", where analysts get…") is about the firm.
+  if (mentionsFirm(text, src.company)) {
+    for (const clause of text.split(CLAUSE_BREAK).slice(1)) {
+      if (FIRST_PERSON.test(clause)) continue;
+      if (!supported(clause)) return false;
+    }
   }
   return true;
 }
 
 const CLAUSE_BREAK = /[,;]|\b(?:because|since|as|so|and|but|when|if|while|given|which|that|where|who|whose)\b/i;
-const FIRM_PRONOUN = /\b(?:it|its|they|their|them|there)\b/i;
 
 /** An epistemic lead-in ("I know", "I have heard that", "I was impressed that"): what follows it is about the firm. */
 const WRAPPER = /^\s*(?:(?:and|but|so|because)\s+)?I(?:'ve|’ve|'m|’m| have| am| was)?\s+(?:(?:also|always|recently)\s+)?(?:know|knew|understand|understood|heard|hear|read|learned|learnt|noticed|seen|saw|admire|admired|excited|impressed|struck)\b(?:\s+(?:that|how|by|to see|to read|to hear|to learn))*\s*/i;
@@ -162,26 +163,19 @@ const WRAPPER = /^\s*(?:(?:and|but|so|because)\s+)?I(?:'ve|’ve|'m|’m| have| 
 const NAME_STOP = new Set("the and for are you our its has have was were who how not can all any but per via with into onto".split(" "));
 /** Head nouns a first-person intent sentence may use for the firm: "your team", "your Markets programme". */
 const FIRM_HEADS = new Set("team teams firm programme programmes program division desk desks role business scheme internship organisation company group people".split(" "));
-/**
- * Prepositions that may follow a firm reference in intent ("apply to your team in London", "join Northbridge as a
- * summer analyst"). A conjunction or a verb starts a clause that may say something about the firm, so it is not intent.
- */
-const INTENT_NEXT = new Set("in at for from with to on during this next".split(" "));
-const CONJUNCTIONS = new Set("because since as so and or but when if while given which that who whose where".split(" "));
-const refEndsOk = (after: string) => {
-  const m = /^\s*([.;:!?…]|$)|^\s*,\s*([\p{L}'’]+)|^\s+([\p{L}'’]+)(?:\s+([\p{L}'’]+))?/u.exec(after);
-  if (!m) return false;
-  if (m[1] !== undefined) return true;
-  if (m[2]) return !CONJUNCTIONS.has(m[2].toLowerCase());
-  const next = m[3].toLowerCase();
-  return INTENT_NEXT.has(next) || (next === "as" && /^(?:a|an)$/i.test(m[4] ?? ""));
-};
+/** Words of plain intent that may sit around a firm reference without being a claim about the firm. */
+const INTENT_VOCAB = new Set(("start starting career analyst analysts summer programme programmes program opportunity opportunities learn " +
+  "learning contribute contributing apply applying application join joining keen hope hoping excited eager reason reasons why " +
+  "fits fit suits suit next step place where why chance part grow growing develop developing build building interest interested " +
+  "position internship placement graduate year").split(" ").map(stemWord));
 
 /**
  * A first-person sentence whose only firm content is the company's name, a role, programme, division or team name
  * from the job post, or a generic "your team / firm / programme" ("That is why I am applying to Northbridge"):
- * intent, not a firm claim. A firm reference followed by a verb or a relative clause ("your desk pays…", "Northbridge
- * offers…", "your team, which…") is a claim and is still checked, as is any epistemic wrapper or a bare "you".
+ * intent, not a firm claim. Structural rule: every content word after the first firm reference (and before it, when
+ * the firm is not the object of the student's verb) must come from the sources (job post, picked facts, CV, answers, role) or a small intent vocabulary. Anything else
+ * ("…for its guaranteed bonuses", "…because it pays generously") is firm talk, checked and shown to the judge, as is
+ * any epistemic wrapper or a bare "you".
  */
 function isIntent(text: string, src: Sources): boolean {
   if (!FIRST_PERSON.test(text) || WRAPPER.test(text) || /\byou\b/i.test(text)) return false;
@@ -191,8 +185,9 @@ function isIntent(text: string, src: Sources): boolean {
   const tokens = companyTokens(src.company);
   const firm = tokens.length ? `|${tokens.map((w) => escapeRe(w)).join("|")}` : "";
   const re = new RegExp(`\\b(?:your${firm})\\b`, "gi");
-  let refs = 0;
+  const refs: { start: number; end: number }[] = [];
   for (const m of text.matchAll(re)) {
+    if (refs.some((r) => m.index < r.end)) continue;
     let end = m.index + m[0].length;
     const isYour = m[0].toLowerCase() === "your";
     if (!isYour) {
@@ -208,10 +203,20 @@ function isIntent(text: string, src: Sources): boolean {
       head = FIRM_HEADS.has(w[1].toLowerCase());
     }
     if (isYour && !head) return false;
-    if (!refEndsOk(text.slice(end))) return false;
-    refs++;
+    refs.push({ start: m.index, end });
   }
-  return refs > 0;
+  if (!refs.length) return false;
+  // The text after the first reference is always checked. The text before it only when the firm is not the object of
+  // the student's verb ("…applying to Northbridge", "…bring X to your team") but a subject or aside ("Northbridge, with…").
+  const lead = text.slice(0, refs[0].start);
+  const object = /[\p{L}]\s*$/u.test(lead) && !/[,;:]\s*$/.test(lead);
+  let rest = object ? "" : lead;
+  let pos = refs[0].end;
+  for (const r of refs.slice(1)) { rest += ` ${text.slice(pos, r.start)}`; pos = r.end; }
+  rest += ` ${text.slice(pos)}`;
+  const known = new Set([...src.sourceWords].map(stemWord));
+  const firmWords = new Set(tokens);
+  return [...contentWords(rest)].every((w) => firmWords.has(w) || known.has(stemWord(w)) || INTENT_VOCAB.has(stemWord(w)));
 }
 
 /** Text that talks about the firm, or is not about the student (no first person): checked like a "them" sentence. */

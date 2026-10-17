@@ -375,6 +375,17 @@ describe("fix round 2: firm talk outside them-sentences", () => {
       "I am applying to Northbridge since its analysts receive guaranteed bonuses.⟦me:⟧",
       "I am applying to Northbridge because analysts there get guaranteed bonuses.⟦me:⟧",
       "I am applying to Northbridge and look forward to the guaranteed bonuses it offers.⟦me:⟧",
+      // Through prepositions, and with no pronoun at all.
+      "I want to join Northbridge for its guaranteed bonuses.⟦me:⟧",
+      "I want to join Northbridge for the guaranteed bonuses.⟦me:⟧",
+      "I am applying to Northbridge for its four-day week and guaranteed bonuses.⟦me:⟧",
+      "I want to join Northbridge with its record trading profits.⟦me:⟧",
+      "I am applying to Northbridge in its record-breaking year.⟦me:⟧",
+      "I am applying to Northbridge as an analyst with guaranteed bonuses.⟦me:⟧",
+      "I hope to join Northbridge to share in guaranteed bonuses.⟦me:⟧",
+      "Northbridge, with its guaranteed bonuses, is where I want to start.⟦me:⟧",
+      "I am applying to Northbridge because bonuses are guaranteed for analysts.⟦me:⟧",
+      "I am applying to Northbridge, where analysts get guaranteed bonuses.⟦me:⟧",
     ];
     for (const body of bodies) {
       const r = full("Dear Hiring Manager,", body);
@@ -387,7 +398,7 @@ describe("fix round 2: firm talk outside them-sentences", () => {
       const { judgeSentences: judge } = await import("@/lib/cover-letter/verify");
       for (const body of bodies) {
         const m = letter(body);
-        const n = m.sentences.findIndex((x) => x.text.startsWith("I am applying to Northbridge"));
+        const n = m.sentences.findIndex((x) => x.about === "me");
         const shown: number[] = [];
         vi.spyOn(await import("@/lib/ai/provider"), "runAi").mockResolvedValue({ items: m.sentences.map((_, index) => ({ index, about: "me", refs: [], verdict: "ok" })) } as never);
         for (const x of await judge({ sentences: m.sentences, input: fixtureDraftInput() })) shown.push(x.index);
@@ -424,11 +435,12 @@ describe("fix round 2: firm talk outside them-sentences", () => {
   });
 
   it("the judge sees firm-talking me sentences, and its verdict applies to them", async () => {
-    // (A sentence that only names "your Markets team" is intent and never goes to the judge: this one says something about the desks.)
-    const m = letter("I would bring the habit of sizing a position to your desks, which rotate summer analysts.⟦me:x1-b0⟧");
+    // (A sentence whose words around "your Markets team" all come from the sources is intent and never goes to the
+    // judge: this one has words after the firm reference that no source has.)
+    const m = letter("I would bring my rates scenario model to your desks, where I could stress-test it.⟦me:x1-b1⟧");
     const n = m.sentences.findIndex((s) => s.text.startsWith("I would bring"));
     expect(flagged(verifyOutput({ ...m, input: fixtureDraftInput(), ownSpans: [] }).spans)).toEqual([]);
-    const v = verifyOutput({ ...m, input: fixtureDraftInput(), ownSpans: [], judged: [{ index: n, about: "me", refs: ["x1-b0"], verdict: "generic" }] });
+    const v = verifyOutput({ ...m, input: fixtureDraftInput(), ownSpans: [], judged: [{ index: n, about: "me", refs: ["x1-b1"], verdict: "generic" }] });
     expect(flagged(v.spans).map((s) => s.flag)).toEqual(["would work for any firm"]);
     const q = letter(`${a1.slice(0, -1)}, and that suits your desk.⟦you:a1⟧`);
     const k = q.sentences.findIndex((s) => s.about === "you");
