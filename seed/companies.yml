@@ -202,3 +202,6 @@
 
 # Apple careers (jobs.apple.com search page's embedded JSON), UK rows; slug = country key. No early-careers filter (UK internship team was empty on 2026-10-17), so the title filter does the work.
 - { slug: uk, name: Apple, ats: apple, employer: apple, enabled: true }
+
+# McKinsey careers search gateway, UK docs; slug = country key. Evergreen global postings, no posted date, full text in the list. Title filter keeps the intern roles.
+- { slug: uk, name: McKinsey, ats: mckinsey, employer: mckinsey, enabled: true }
