@@ -19,7 +19,7 @@ function fakePhenom(total: number, opts: { reportedTotal?: number; dup?: boolean
     const totalHits = b.from > 0 && opts.shrinkAfterFirst ? total - 1 : (opts.reportedTotal ?? total);
     const jobs = Array.from({ length: Math.max(0, Math.min(b.size, total - b.from)) }, (_, k) => {
       let i = opts.dup ? 0 : b.from + k;
-      // repeat: rows 5.. repeat ids 0.. (per-location rows of one job); flaky: only the first listing overlaps; drift: ids change per listing
+      // repeat: the last 8 rows repeat earlier ids flaky: only the first listing overlaps; drift: ids change per listing
       if (opts.repeat && i >= total - 8) i = i - 8;
       if (opts.flaky && listing === 1 && i >= total - 8) i = i - 8;
       if (opts.drift) i += listing * 3;
@@ -113,11 +113,7 @@ describe("phenom", () => {
     expect(bodies.filter((b) => b.from === 0)).toHaveLength(2);
   });
 
-  it("accepts persistent per-location repeats only when two listings give the identical id set, deduping by jobId", async () => {
-    const { impl } = fakePhenom(112, { repeat: true });
-    const r = await fetchPhenom(SLUG, HOST, () => true, impl, async () => {});
-    expect(r.listed).toBe(112);
-    expect(r.jobs).toHaveLength(104);
-    expect(new Set(r.jobs.map((j) => j.extId)).size).toBe(104);
+  it("never accepts a short listing, even when two listings repeat the same ids and miss the same ones", async () => {
+    await expect(fetchPhenom(SLUG, HOST, () => true, fakePhenom(112, { repeat: true }).impl, async () => {})).rejects.toThrow(/partial list: 104 unique of 112/);
   });
 });

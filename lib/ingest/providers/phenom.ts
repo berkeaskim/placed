@@ -55,9 +55,9 @@ export function normalizePhenom(item: unknown, host: string): RawJob | null {
 
 /**
  * Pages the whole UK list and dedupes by jobId. Fails the board (no false closures) unless unique ids cover `totalHits` and it held steady.
- * Live 2026-10-17: one run saw 104 unique of 112 (rows fetched = 112, so some ids repeated and others were missing: paging overlap while the
- * unsorted order shifted, or per-location rows). A shortfall therefore re-lists once: the second listing is used if complete; if both are short,
- * they are accepted only when they have the identical id set and returned at least `totalHits` rows (persistent repeats), else the board fails.
+ * Live 2026-10-17: one run saw 104 unique of 112 (112 rows fetched, so some ids repeated and others were missing: paging overlap while the
+ * unsorted order shifted). A shortfall re-lists once and uses the second listing only if it is complete; if neither listing covers
+ * `totalHits` unique ids the board fails as a partial list. A short listing is never accepted, even when two listings agree.
  */
 export async function fetchPhenom(
   slug: string, host: string, keepTitle: (t: string) => boolean, fetchImpl: typeof fetch = fetch,
@@ -82,13 +82,9 @@ export async function fetchPhenom(
   };
   let run = await listAll();
   if (run.idSet.size < run.total) {
-    const again = await listAll();
-    if (again.total === run.total && again.idSet.size >= again.total) run = again;
-    else {
-      const same = again.total === run.total && again.idSet.size === run.idSet.size && [...run.idSet].every((id) => again.idSet.has(id));
-      if (!same || run.rows.length < run.total || again.rows.length < again.total)
-        throw new Error(`partial list: ${Math.min(run.idSet.size, again.idSet.size)} unique of ${run.total} postings`);
-    }
+    const first = run.idSet.size;
+    run = await listAll();
+    if (run.idSet.size < run.total) throw new Error(`partial list: ${Math.max(first, run.idSet.size)} unique of ${run.total} postings`);
   }
   const uk = run.rows.filter((r) => ukLocation(r));
   if (uk.length === 0) throw new Error("no UK rows in a non-empty listing; refusing to close the board");
