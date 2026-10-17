@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Placed Autopilot",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Fills internship application forms from your Placed Answer Vault (never presses Submit) and reads your own LinkedIn profile for your Placed LinkedIn Score.",
   "icons": {
     "16": "icons/icon16.png",
@@ -56,6 +56,8 @@
         "lib/fill-plan.js",
         "lib/job-match.js",
         "lib/dom.js",
+        "lib/pacing.js",
+        "aurora.js",
         "fillers/greenhouse.js",
         "fillers/ashby.js",
         "fillers/lever.js",

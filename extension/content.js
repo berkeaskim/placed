@@ -10,27 +10,16 @@
   if (!ats) return;
   const Dom = globalThis.PlacedDom;
 
-  // ---------- panel (the student's close button; Autopilot never clicks it) ----------
-  // The panel is mounted lazily, AFTER the page has hydrated: Greenhouse's React app re-renders the whole body when it finds
-  // a node it did not render during hydration (React #418/#425), which silently deleted an early panel. say() also
-  // re-attaches the panel if the page ever removes it.
-  const panel = document.createElement("div");
-  panel.className = "placed-panel";
-  panel.setAttribute("role", "status");
-  const body = document.createElement("div");
-  const close = document.createElement("button");
-  close.type = "button";
-  close.className = "placed-panel-close";
-  close.setAttribute("aria-label", "Close the Placed panel");
-  close.textContent = "×";
-  let dismissed = false;
-  close.addEventListener("click", () => { dismissed = true; panel.remove(); });
-  panel.append(close, body);
-  const say = (...parts) => {
-    body.textContent = "";
-    parts.forEach((p, i) => { if (i) body.appendChild(document.createElement("br")); body.append(p); });
-    if (!dismissed && !panel.isConnected) (document.body || document.documentElement).appendChild(panel);
-  };
+  // ---------- Aurora overlay (aurora.js): presentation only; the student's close button lives in it ----------
+  // Mounted lazily, AFTER the page has hydrated: Greenhouse's React app re-renders the whole body when it finds a node
+  // it did not render during hydration (React #418/#425), which silently deleted an early panel. The overlay sits on
+  // <html> in a shadow root, and every update re-attaches it if the page ever removes it.
+  // Presentation must never stop the fill: every overlay call goes through quiet()/quietly(), so a UI exception cannot
+  // skip a field, the debugger detach or the finish state.
+  const quiet = (fn) => { try { return fn(); } catch { return undefined; } };
+  const quietly = async (fn) => { try { return await fn(); } catch { return undefined; } };
+  const ui = globalThis.PlacedAurora.create();
+  const say = (text) => quiet(() => ui.message(text));
   const settled = async () => {
     if (document.readyState !== "complete") await new Promise((r) => window.addEventListener("load", r, { once: true }));
     await Dom.sleep(1500);
@@ -50,7 +39,8 @@
   }
 
   // ---------- claim (R8: done by the service worker) ----------
-  say("Placed Autopilot is reading your pack…");
+  quiet(() => ui.start()); // "Reading the form…"
+  const readingSince = Date.now();
   const res = await Dom.send({ kind: "claim", token });
   const status = res && typeof res.status === "number" ? res.status : -1;
   if (status !== 200) {
@@ -84,62 +74,62 @@
   const coverFile = toFile(res.cover, "Cover-Letter.pdf");
 
   const fill = globalThis.PlacedFillers[ats];
-  const s = globalThis.PlacedFillPlan.summarize(plan.fields);
   // The CV goes first (Lever re-parses it on upload, which must not overwrite what we fill afterwards), then the cover letter file.
   const rank = (f) => (f.type !== "file" ? 2 : f.asset === "cover" ? 1 : 0);
   const fields = [...plan.fields].sort((a, b) => rank(a) - rank(b));
-  let done = 0, mine = 0, n = 0;
-  say(`Placed Autopilot filling… 0/${fields.length}`, `${s.fill} from your pack · ${s.yours + s.select} for you`);
+  let done = 0, n = 0;
+  const theirs = []; // wrappers left to the student, for "k left for you"
+  const per = globalThis.PlacedPacing.perFieldMs(fields.length);
+  const boxOf = (f) => { try { return fill.box(f); } catch { return null; } };
+  const short = (label) => String(label || "this field").replace(/[\s*:?]+$/, "").replace(/\s+/g, " ").slice(0, 48);
+  const statusFor = (f) => f.mode !== "fill" ? "Leaving this one for you"
+    : f.type === "file" ? (f.asset === "cover" ? "Attaching your cover letter" : "Attaching your CV")
+    : ["select", "location", "boolean", "multiselect"].includes(f.type) ? `Choosing “${short(f.label)}”`
+    : `Writing “${short(f.label)}”`;
+  const wait = 1000 - (Date.now() - readingSince);
+  if (wait > 0) await Dom.sleep(wait);
+  quiet(() => ui.progress(0, fields.length));
 
   const needsTrusted = fields.some((f) => f.mode === "fill" && (f.type === "select" || f.type === "location"));
   try {
     // Attach once, before anything is measured, so the debugger infobar cannot shift the page under a click.
     if (needsTrusted) await Dom.prepareTrusted();
     for (const f of fields) {
+      const began = Date.now();
+      quiet(() => ui.status(statusFor(f)));
+      await quietly(() => ui.activate(boxOf(f), Math.round(per * 0.6))); // scroll to it and light it up
       const ctx = { cvFile, coverFile, sourceLabel: f.sourceLabel, armed: false };
       let out;
       try { out = await fill(f, ctx); } catch { out = "select-yourself"; }
       if (f.type === "file" && out === "filled" && ats === "lever") await Dom.sleep(1500);
-      let box = null;
-      try { box = fill.box(f); } catch { box = null; }
+      const box = boxOf(f);
+      quiet(() => ui.clearActive());
       if (box && out !== "missing") {
         box.dataset.placed = out === "filled" ? "filled" : out === "yours" ? "yours" : "select";
-        const tag = document.createElement("span");
-        tag.className = "placed-tag";
-        tag.textContent = out === "filled" ? `Placed · ${f.sourceLabel || "from your setup"}`
-          : out === "yours" ? "Your call"
-          : ctx.armed ? "Click this box, Autopilot will pick" : "Please select this yourself";
-        box.appendChild(tag);
+        quiet(() => box.appendChild(ui.makeTag(out === "filled" ? f.sourceLabel || "from your setup"
+          : out === "yours" ? "Your turn"
+          : ctx.armed ? "Your turn · open it and Autopilot picks" : "Your turn · please select this")));
+        quiet(() => ui.settle(box));
+        if (out !== "filled") theirs.push(box);
       }
-      if (out === "filled") done++; else mine++;
+      if (out === "filled") done++;
       n++;
-      say(`Placed Autopilot filling… ${n}/${fields.length}`);
+      quiet(() => ui.progress(n, fields.length));
+      if (box && out === "filled") await quietly(() => ui.reveal(globalThis.PlacedAurora.ringTarget(box), Math.max(0, per - (Date.now() - began)), Math.min(1200, per * 2.5)));
+      const rest = per - (Date.now() - began);
+      if (rest > 0) await Dom.sleep(rest);
     }
   } finally {
+    quiet(() => ui.clearActive());
     Dom.send({ kind: "detach" });
   }
 
-  say(`✅ ${done}/${fields.length} filled · ${mine} for you`, "Check everything. You press Submit.");
-  const submit = [...document.querySelectorAll("button, input[type=submit]")].find((b) => b !== close && /submit/i.test(b.textContent || b.value || ""))
+  const submit = [...document.querySelectorAll("button, input[type=submit]")].find((b) => /submit/i.test(b.textContent || b.value || ""))
     || document.querySelector("button[type=submit], input[type=submit], #btn-submit, .ashby-application-form-submit-button");
-  if (submit) {
-    submit.classList.add("placed-submit-hint");
-    submit.scrollIntoView({ block: "center" });
+  if (submit) submit.scrollIntoView({ block: "center", behavior: "smooth" });
+  // "{done} of {fields.length} filled" · "Check everything, then press Submit yourself." · "{k} left for you" · "Review answers"
+  if (!quiet(() => { ui.finish({ filled: done, total: fields.length, theirs, submit }); return true; })) {
+    if (submit) submit.classList.add("placed-submit-hint");
+    say(`${done} of ${fields.length} filled. Check everything, then press Submit yourself.`);
   }
-
-  // Never cover the submit button: move the panel to the top, and collapse it if it still overlaps.
-  const overlaps = (a, b) => a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
-  let queued = false;
-  const place = () => {
-    queued = false;
-    if (!submit || !panel.isConnected) return;
-    panel.classList.remove("placed-panel--top", "placed-panel--min");
-    if (!overlaps(panel.getBoundingClientRect(), submit.getBoundingClientRect())) return;
-    panel.classList.add("placed-panel--top");
-    if (overlaps(panel.getBoundingClientRect(), submit.getBoundingClientRect())) panel.classList.add("placed-panel--min");
-  };
-  const schedule = () => { if (!queued) { queued = true; requestAnimationFrame(place); } };
-  window.addEventListener("scroll", schedule, { passive: true });
-  window.addEventListener("resize", schedule, { passive: true });
-  setTimeout(place, 400);
 })();

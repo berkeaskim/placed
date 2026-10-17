@@ -9,6 +9,9 @@ const quest = Fredoka({ subsets: ["latin"], weight: ["600", "700"], variable: "-
 export const metadata: Metadata = {
   title: "Placed — internships that actually fit you",
   description: "Find UK internships, score your CV, tailor it honestly.",
+  // <meta name="placed-app" content="1">: the Autopilot extension's placed-bridge.js looks for it to learn which
+  // localhost origin the app runs on, so Open & fill still works when the port changes.
+  other: { "placed-app": "1" },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

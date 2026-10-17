@@ -1,13 +1,54 @@
-[data-placed="filled"] { outline: 2px solid #0B6B49; outline-offset: 4px; border-radius: 8px; }
-[data-placed="select"] { outline: 2px solid #E8A33D; outline-offset: 4px; border-radius: 8px; background: #FFF8EC; }
-[data-placed="yours"]  { outline: 1px dashed #9A9AA8; outline-offset: 4px; border-radius: 8px; }
-.placed-tag { display: inline-block; margin-top: 4px; font: 600 12px/1.4 system-ui, sans-serif; color: #4A4A57; background: #F1EEFF; border-radius: 999px; padding: 2px 8px; }
-[data-placed="filled"] > .placed-tag { color: #0B6B49; background: #E3F6EE; }
-[data-placed="select"] > .placed-tag { color: #7A4100; background: #FFF1DC; }
-.placed-panel { position: fixed; right: 16px; bottom: 16px; z-index: 2147483647; max-width: 320px; padding: 12px 14px; border-radius: 14px; background: #5B3DF5; color: #fff; font: 600 14px/1.4 system-ui, sans-serif; box-shadow: 0 8px 24px rgba(0,0,0,.18); }
-.placed-panel--top { bottom: auto; top: 16px; }
-.placed-panel--min > div { display: none; }
-.placed-panel--min::after { content: "Placed"; }
-.placed-panel-close { float: right; margin: -6px -6px 0 8px; padding: 0 6px; border: 0; border-radius: 8px; background: transparent; color: #fff; font: 700 18px/1 system-ui, sans-serif; cursor: pointer; }
-.placed-panel-close:hover, .placed-panel-close:focus-visible { background: rgba(255,255,255,.18); outline: none; }
-.placed-submit-hint { box-shadow: 0 0 0 4px #FFD166 !important; }
+/* Placed Autopilot, page side. Only placed- classes and data-placed-* attributes; box-shadow only, so the ATS layout
+   never moves. The card, edge aurora, flowing ring and words layer live in aurora.js's shadow root. */
+:root { --placed-spring: linear(0, 0.009, 0.035 2.1%, 0.141 4.4%, 0.281 6.7%, 0.723 13.6%, 0.861 16.4%, 0.938 19.2%, 0.981 22.5%, 0.997 26.4%, 1.003 31.1%, 1); }
+
+/* Settled ring, keyed on the wrapper's data-placed so a late auto-pick (amber -> filled) turns it green. */
+[data-placed="filled"] [data-placed-ring], [data-placed="filled"][data-placed-ring] {
+  box-shadow: 0 0 0 1.5px rgba(30,158,98,.55), 0 0 0 5px rgba(30,158,98,.08) !important; transition: box-shadow .5s var(--placed-spring);
+}
+[data-placed="select"] [data-placed-ring], [data-placed="select"][data-placed-ring],
+[data-placed="yours"] [data-placed-ring], [data-placed="yours"][data-placed-ring] {
+  box-shadow: 0 0 0 1.5px rgba(255,159,69,.7), 0 0 0 5px rgba(255,159,69,.10) !important; transition: box-shadow .5s var(--placed-spring);
+}
+[data-placed="filled"][data-placed-ring], [data-placed="select"][data-placed-ring], [data-placed="yours"][data-placed-ring] { border-radius: 10px; }
+
+/* Active field: soft aurora halo (the flowing gradient ring itself is drawn by the overlay). Driven by an animation,
+   which beats the ATS's own (non-important) box-shadow; aurora.js lifts data-placed-ring while a field glows. */
+[data-placed-glow] { animation: placed-halo 2.4s ease-in-out infinite alternate; }
+@keyframes placed-halo {
+  from { box-shadow: 0 0 0 4px rgba(123,97,255,.10), -14px 0 28px 0 rgba(123,97,255,.24), 14px 0 28px 0 rgba(255,107,214,.20); }
+  to { box-shadow: 0 0 0 4px rgba(60,200,255,.10), -14px 0 28px 0 rgba(255,159,69,.20), 14px 0 28px 0 rgba(60,200,255,.24); }
+}
+
+/* While the words layer draws the value, the real text is invisible (the value itself is already set). */
+[data-placed-typing] { color: transparent !important; -webkit-text-fill-color: transparent !important; caret-color: transparent !important; }
+
+/* Badge under a settled field. */
+.placed-tag {
+  display: inline-flex !important; align-items: center; gap: 5px; margin-top: 6px; padding: 0; background: none;
+  font: 500 11.5px/1.25 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; letter-spacing: 0; color: #6e6e73;
+  animation: placed-badge-in .5s var(--placed-spring) both;
+}
+.placed-tag svg { width: 12px; height: 12px; flex: none; }
+.placed-tag .placed-ck path { stroke-dasharray: 14; stroke-dashoffset: 14; animation: placed-draw .45s .1s var(--placed-spring) forwards; }
+[data-placed="filled"] > .placed-tag { color: #1E9E62; }
+[data-placed="select"] > .placed-tag, [data-placed="yours"] > .placed-tag { color: #B4610C; }
+[data-placed="filled"] > .placed-tag .placed-hand, [data-placed="select"] > .placed-tag .placed-ck, [data-placed="yours"] > .placed-tag .placed-ck { display: none; }
+@keyframes placed-badge-in { from { opacity: 0; filter: blur(3px); transform: translateY(-3px); } }
+@keyframes placed-draw { to { stroke-dashoffset: 0; } }
+
+/* Submit: a calm breathing glow, never a click. */
+.placed-submit-hint { animation: placed-breathe 2.8s ease-in-out infinite; }
+@keyframes placed-breathe {
+  0%, 100% { box-shadow: 0 0 14px 4px rgba(123,97,255,.30), 0 0 30px 10px rgba(60,200,255,.12); }
+  50% { box-shadow: 0 0 20px 7px rgba(123,97,255,.18), 0 0 40px 14px rgba(60,200,255,.07); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-placed-glow], .placed-submit-hint { animation: none; }
+  [data-placed-glow] { box-shadow: 0 0 0 4px rgba(123,97,255,.14), 0 0 24px 2px rgba(123,97,255,.22) !important; }
+  .placed-submit-hint { box-shadow: 0 0 14px 4px rgba(123,97,255,.28), 0 0 30px 10px rgba(60,200,255,.12); }
+  .placed-tag { animation: placed-fade .15s linear both; }
+  .placed-tag .placed-ck path { stroke-dashoffset: 0; animation: none; }
+  @keyframes placed-fade { from { opacity: 0; } }
+}

@@ -81,9 +81,10 @@ describe("extension", () => {
     expect(hp.sort()).toEqual(["http://127.0.0.1/*", "http://localhost/*"]);
     expect(readFileSync("extension/config.js", "utf8")).toMatch(/PLACED_ORIGIN = "http:\/\/localhost:3000"/);
   });
-  it("the CV is fetched only from the Placed origin's /api/files/", () => {
+  it("the CV is fetched only from /api/files/ on the Placed origin that answered the claim", () => {
     const bg = readFileSync("extension/background.js", "utf8");
-    expect(bg).toMatch(/url\.origin === placedOrigin\(\) && url\.pathname\.startsWith\("\/api\/files\/"\)/);
+    expect(bg).toMatch(/url\.origin === origin && url\.pathname\.startsWith\("\/api\/files\/"\)/);
+    expect(bg).toMatch(/fetchPdf\(body\.cv, "CV\.pdf", origin\)/);
   });
   it("background loads the CDP geometry helper", () => {
     expect(readFileSync("extension/background.js", "utf8")).toMatch(/importScripts\(["']lib\/geometry\.js["']\)/);
