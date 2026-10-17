@@ -48,7 +48,7 @@
 .glass.on { opacity: 1; scale: 1; filter: none; pointer-events: auto; }
 .glass.wide { width: 400px; }
 .glass.top { bottom: auto; top: 16px; }
-.glass.min .t2, .glass.min .track, .glass.min .acts { display: none; }
+.glass.min .t2, .glass.min .track { display: none; } /* the finish actions stay: they are the student's next step */
 .hd { display: flex; align-items: center; gap: 11px; }
 .tx { flex: 1; min-width: 0; }
 .orb { width: 30px; height: 30px; flex: none; border-radius: 50%; position: relative; background: conic-gradient(#7B61FF, #FF6BD6, #FF9F45, #3CC8FF, #7B61FF); animation: rot 3s linear infinite; transition: background .4s; }

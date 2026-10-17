@@ -13,15 +13,18 @@
   const FAILED = "placed:linkedin-failed";
   const TOKEN_RE = /^[A-Za-z0-9_-]{20,400}\.[A-Za-z0-9_-]{43}$/;
   const MARKER = 'meta[name="placed-app"]';
-  let reported = false;
+  // Reported on load AND whenever this tab becomes visible or focused: with two Placed apps on loopback (another
+  // worktree on :3001), the tab the student is using, where Open & fill gets pressed, must be the one remembered.
+  // The worker skips unchanged writes.
   const report = () => {
-    if (reported || !document.querySelector(MARKER)) return;
-    reported = true;
+    if (!document.querySelector(MARKER)) return;
     try { chrome.runtime.sendMessage({ kind: "placedSeen" }, () => void chrome.runtime.lastError); } catch { /* extension reloaded */ }
   };
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", report, { once: true });
   else report();
   window.addEventListener("load", report, { once: true });
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") report(); });
+  window.addEventListener("focus", report);
 
   const origins = globalThis.PLACED_ORIGINS || [];
   if (!origins.includes(location.origin)) return;

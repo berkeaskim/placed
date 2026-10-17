@@ -64,7 +64,7 @@ describe("fetchFirst", () => {
     expect(r.origin).toBe("http://127.0.0.1:3000");
     expect(r.res.status).toBe(200);
     expect(f.mock.calls.map((c) => c[0])).toEqual(["http://localhost:3200/api/autopilot/claim", "http://127.0.0.1:3000/api/autopilot/claim"]);
-    expect(f.mock.calls[1][1]).toEqual({ method: "POST" });
+    expect(f.mock.calls[1][1]).toEqual({ method: "POST", redirect: "error" });
   });
   it("treats any HTTP response as final, including 403/404/410", async () => {
     for (const status of [403, 404, 410, 500]) {
@@ -74,6 +74,11 @@ describe("fetchFirst", () => {
       expect(r.res.status).toBe(status);
       expect(f).toHaveBeenCalledTimes(1);
     }
+  });
+  it("never follows redirects: a loopback server cannot bounce the token (307/308 keep the POST body) elsewhere", async () => {
+    const f = vi.fn(async (url: string, init?: unknown) => { void url; void init; return ok(200); });
+    await fetchFirst(["http://localhost:3000"], "/x", { method: "POST", redirect: "follow" }, f);
+    expect(f.mock.calls[0][1]).toMatchObject({ method: "POST", redirect: "error" });
   });
   it("is null when every origin fails at the network level, or there are none", async () => {
     const f = vi.fn(async () => { throw new TypeError("Failed to fetch"); });
@@ -93,6 +98,19 @@ describe("background wiring", () => {
   it("only remembers an origin the bridge reported from a top-level Placed tab, and only a loopback one", () => {
     expect(bg).toMatch(/placedLastOrigin/);
     expect(bg).toMatch(/rememberableOrigin\(/);
+  });
+  it("every token-bearing or CV fetch in the worker refuses redirects", () => {
+    const fetches = bg.match(/fetch\([^;]*?\{[^}]*\}/g) ?? [];
+    expect(bg).toMatch(/fetch\(href, \{[^}]*redirect: "error"/); // CV / cover PDF
+    expect(bg).toMatch(/\/api\/linkedin\/capture`, \{[\s\S]*?redirect: "error"/);
+    expect(fetches.length).toBeGreaterThan(0);
+  });
+  it("the bridge re-reports whenever a Placed tab becomes visible or focused, so the tab in use wins", () => {
+    const bridge = readFileSync("extension/placed-bridge.js", "utf8");
+    expect(bridge).not.toMatch(/reported = true/);
+    expect(bridge).toMatch(/visibilitychange/);
+    expect(bridge).toMatch(/visibilityState === "visible"/);
+    expect(bridge).toMatch(/addEventListener\("focus", report/);
   });
   it("the bridge reports the origin only when the page carries the Placed app marker", () => {
     const bridge = readFileSync("extension/placed-bridge.js", "utf8");

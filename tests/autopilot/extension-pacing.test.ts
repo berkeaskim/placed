@@ -51,4 +51,15 @@ describe("Aurora wiring", () => {
     expect(content).toMatch(/total: fields\.length/);
     expect(readFileSync("extension/aurora.js", "utf8")).toMatch(/`\$\{filled\} of \$\{total\} filled`/);
   });
+  it("a UI exception can never stop the fill: every overlay call in content.js is guarded", () => {
+    const content = readFileSync("extension/content.js", "utf8");
+    const calls = content.split("\n").filter((l) => /\bui\.\w+\(/.test(l));
+    expect(calls.length).toBeGreaterThan(5);
+    for (const l of calls) expect(l, l.trim()).toMatch(/quiet(ly)?\(\(\) =>/);
+  });
+  it("a collapsed card keeps the finish actions visible", () => {
+    const css = readFileSync("extension/aurora.js", "utf8").match(/\.glass\.min[^{]*\{/g) ?? [];
+    expect(css.length).toBeGreaterThan(0);
+    for (const sel of css) expect(sel).not.toMatch(/\.acts/);
+  });
 });

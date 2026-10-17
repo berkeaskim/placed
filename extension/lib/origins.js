@@ -41,13 +41,18 @@
     return out;
   }
 
-  /** fetch(origin + path) for each origin until one answers. Resolves { origin, res }, or null if none was reachable. */
+  /**
+   * fetch(origin + path) for each origin until one answers. Resolves { origin, res }, or null if none was reachable.
+   * Redirects are refused (a redirect is a network error, so the next origin is tried): 307/308 keep the POST body, so
+   * following one could carry the token off loopback.
+   */
   async function fetchFirst(origins, path, init, fetchFn) {
     const f = fetchFn || root.fetch.bind(root);
+    const opts = { ...(init || {}), redirect: "error" };
     for (const origin of origins || []) {
       let res;
       try {
-        res = await f(`${origin}${path}`, init);
+        res = await f(`${origin}${path}`, opts);
       } catch {
         continue; // network error: this origin is not where Placed runs
       }

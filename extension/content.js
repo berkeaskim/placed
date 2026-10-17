@@ -14,8 +14,12 @@
   // Mounted lazily, AFTER the page has hydrated: Greenhouse's React app re-renders the whole body when it finds a node
   // it did not render during hydration (React #418/#425), which silently deleted an early panel. The overlay sits on
   // <html> in a shadow root, and every update re-attaches it if the page ever removes it.
+  // Presentation must never stop the fill: every overlay call goes through quiet()/quietly(), so a UI exception cannot
+  // skip a field, the debugger detach or the finish state.
+  const quiet = (fn) => { try { return fn(); } catch { return undefined; } };
+  const quietly = async (fn) => { try { return await fn(); } catch { return undefined; } };
   const ui = globalThis.PlacedAurora.create();
-  const say = (text) => ui.message(text);
+  const say = (text) => quiet(() => ui.message(text));
   const settled = async () => {
     if (document.readyState !== "complete") await new Promise((r) => window.addEventListener("load", r, { once: true }));
     await Dom.sleep(1500);
@@ -35,7 +39,7 @@
   }
 
   // ---------- claim (R8: done by the service worker) ----------
-  ui.start(); // "Reading the form…"
+  quiet(() => ui.start()); // "Reading the form…"
   const readingSince = Date.now();
   const res = await Dom.send({ kind: "claim", token });
   const status = res && typeof res.status === "number" ? res.status : -1;
@@ -84,7 +88,7 @@
     : `Writing “${short(f.label)}”`;
   const wait = 1000 - (Date.now() - readingSince);
   if (wait > 0) await Dom.sleep(wait);
-  ui.progress(0, fields.length);
+  quiet(() => ui.progress(0, fields.length));
 
   const needsTrusted = fields.some((f) => f.mode === "fill" && (f.type === "select" || f.type === "location"));
   try {
@@ -92,31 +96,31 @@
     if (needsTrusted) await Dom.prepareTrusted();
     for (const f of fields) {
       const began = Date.now();
-      ui.status(statusFor(f));
-      await ui.activate(boxOf(f), Math.round(per * 0.6)); // scroll to it and light it up
+      quiet(() => ui.status(statusFor(f)));
+      await quietly(() => ui.activate(boxOf(f), Math.round(per * 0.6))); // scroll to it and light it up
       const ctx = { cvFile, coverFile, sourceLabel: f.sourceLabel, armed: false };
       let out;
       try { out = await fill(f, ctx); } catch { out = "select-yourself"; }
       if (f.type === "file" && out === "filled" && ats === "lever") await Dom.sleep(1500);
       const box = boxOf(f);
-      ui.clearActive();
+      quiet(() => ui.clearActive());
       if (box && out !== "missing") {
         box.dataset.placed = out === "filled" ? "filled" : out === "yours" ? "yours" : "select";
-        box.appendChild(ui.makeTag(out === "filled" ? f.sourceLabel || "from your setup"
+        quiet(() => box.appendChild(ui.makeTag(out === "filled" ? f.sourceLabel || "from your setup"
           : out === "yours" ? "Your turn"
-          : ctx.armed ? "Your turn · open it and Autopilot picks" : "Your turn · please select this"));
-        ui.settle(box);
+          : ctx.armed ? "Your turn · open it and Autopilot picks" : "Your turn · please select this")));
+        quiet(() => ui.settle(box));
         if (out !== "filled") theirs.push(box);
       }
       if (out === "filled") done++;
       n++;
-      ui.progress(n, fields.length);
-      if (box && out === "filled") await ui.reveal(globalThis.PlacedAurora.ringTarget(box), Math.max(0, per - (Date.now() - began)), Math.min(1200, per * 2.5));
+      quiet(() => ui.progress(n, fields.length));
+      if (box && out === "filled") await quietly(() => ui.reveal(globalThis.PlacedAurora.ringTarget(box), Math.max(0, per - (Date.now() - began)), Math.min(1200, per * 2.5)));
       const rest = per - (Date.now() - began);
       if (rest > 0) await Dom.sleep(rest);
     }
   } finally {
-    ui.clearActive();
+    quiet(() => ui.clearActive());
     Dom.send({ kind: "detach" });
   }
 
@@ -124,5 +128,8 @@
     || document.querySelector("button[type=submit], input[type=submit], #btn-submit, .ashby-application-form-submit-button");
   if (submit) submit.scrollIntoView({ block: "center", behavior: "smooth" });
   // "{done} of {fields.length} filled" · "Check everything, then press Submit yourself." · "{k} left for you" · "Review answers"
-  ui.finish({ filled: done, total: fields.length, theirs, submit });
+  if (!quiet(() => { ui.finish({ filled: done, total: fields.length, theirs, submit }); return true; })) {
+    if (submit) submit.classList.add("placed-submit-hint");
+    say(`${done} of ${fields.length} filled. Check everything, then press Submit yourself.`);
+  }
 })();

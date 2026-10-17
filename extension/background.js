@@ -147,7 +147,7 @@ async function fetchPdf(ref, fallbackName, origin) {
   const href = ref && typeof ref.url === "string" ? cvUrl(ref.url, origin) : null;
   if (!href) return null;
   try {
-    const r = await fetch(href, { credentials: "omit", cache: "no-store" });
+    const r = await fetch(href, { credentials: "omit", cache: "no-store", redirect: "error" });
     const buf = r.ok ? await r.arrayBuffer() : null;
     if (buf && buf.byteLength > 0 && buf.byteLength <= CV_MAX_BYTES) return { name: String(ref.filename || fallbackName), type: "application/pdf", base64: toBase64(buf) };
   } catch {
@@ -160,7 +160,7 @@ async function claim(token) {
   const O = globalThis.PlacedOrigins;
   const origins = O.claimOrigins({ last: await lastOrigin(), primary: placedOrigin(), list: placedOrigins() });
   const hit = await O.fetchFirst(origins, "/api/autopilot/claim", {
-    method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ token }), credentials: "omit", cache: "no-store",
+    method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ token }), credentials: "omit", cache: "no-store", redirect: "error",
   });
   if (!hit) return { status: 0 };
   const { origin, res } = hit;
@@ -231,7 +231,7 @@ async function liHandle(msg, sender) {
     let res;
     try {
       res = await fetch(`${s.origin}/api/linkedin/capture`, {
-        method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ token: s.token, profile }), credentials: "omit", cache: "no-store",
+        method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ token: s.token, profile }), credentials: "omit", cache: "no-store", redirect: "error",
       });
     } catch {
       return liFail(s, "Couldn't reach Placed. Check you're online and press the button in Placed again.");
