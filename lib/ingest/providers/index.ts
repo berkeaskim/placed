@@ -12,6 +12,7 @@ import { fetchBankOfAmerica, bankOfAmericaUrl } from "./bankofamerica";
 import { fetchDeutscheBank, deutscheBankUrl } from "./deutschebank";
 import { fetchEightfold, eightfoldSearchUrl } from "./eightfold";
 import { fetchPhenom, phenomUrl } from "./phenom";
+import { fetchApple, appleSearchUrl } from "./apple";
 import type { AtsKind } from "@/lib/db/schema";
 import { passesTitleFilter } from "../filter";
 import { loadProgrammes, programmeToRawJob, visibleProgrammes } from "../curated";
@@ -85,8 +86,13 @@ export function endpointFor(c: CompanySeed): string {
       if (!c.apiHost) throw new ProviderError(`phenom/${c.slug}: apiHost (careers host, e.g. careers.bcg.com) is required`);
       return phenomUrl(c.apiHost);
     case "apple":
+      try {
+        return appleSearchUrl(c.slug, 1);
+      } catch (e) {
+        throw new ProviderError(`apple/${c.slug}: ${(e as Error).message}`);
+      }
     case "mckinsey":
-      throw new ProviderError(`${c.ats}/${c.slug}: provider not implemented yet`);
+      throw new ProviderError(`mckinsey/${c.slug}: provider not implemented yet`);
     case "amazon":
       try {
         return amazonSearchUrl(c.slug, 0);
@@ -164,6 +170,13 @@ export async function fetchJobs(c: CompanySeed, plainFetch: typeof fetch = fetch
       return (await fetchPhenom(c.slug, c.apiHost as string, passesTitleFilter, fetchImpl)).jobs;
     } catch (e) {
       throw new ProviderError(`phenom/${c.slug}: ${(e as Error).message}`);
+    }
+  }
+  if (c.ats === "apple") {
+    try {
+      return (await fetchApple(c.slug, passesTitleFilter, fetchImpl)).jobs;
+    } catch (e) {
+      throw new ProviderError(`apple/${c.slug}: ${(e as Error).message}`);
     }
   }
   if (c.ats === "amazon") {

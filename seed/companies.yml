@@ -199,3 +199,6 @@
 
 # PwC UK student site (Workday, mixes PwC firms worldwide; the ingest location filter keeps UK and Europe, so Netherlands roles currently pass).
 - { slug: pwc/CRM_Campus_Careers_Site, name: PwC, ats: workday, apiHost: pwc.wd3.myworkdayjobs.com, employer: pwc, enabled: true }
+
+# Apple careers (jobs.apple.com search page's embedded JSON), UK rows; slug = country key. No early-careers filter (UK internship team was empty on 2026-10-17), so the title filter does the work.
+- { slug: uk, name: Apple, ats: apple, employer: apple, enabled: true }
