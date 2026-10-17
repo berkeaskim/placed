@@ -48,13 +48,12 @@ export function ChatThread({ turns, byKey, initial, onShow }: { turns: Turn[]; b
 }
 
 /** The question being asked now, with its answer control. */
-export function LiveQuestion({ jobId, item, answer, reasked, pendingConfirms, save, onKeep, onSkipCover }: {
+export function LiveQuestion({ jobId, item, answer, reasked, pendingConfirms, save, onKeep, onSkipCover, onConfirmAll }: {
   jobId: string; item: PackItem; answer: Answer | undefined; reasked: boolean; pendingConfirms: PackItem[];
-  save: SaveAnswer; onKeep: () => void; onSkipCover: (item: PackItem) => void;
+  save: SaveAnswer; onKeep: () => void; onSkipCover: (item: PackItem) => void; onConfirmAll: (items: PackItem[]) => void;
 }) {
   const labelId = useId();
   const [changing, setChanging] = useState(false);
-  const all = useSaver();
   const { field } = item;
   const key = field.key;
   const keep = reasked ? <button type="button" className={`${CHIP} quiet`} onClick={onKeep}>Keep my answer</button> : null;
@@ -89,26 +88,28 @@ export function LiveQuestion({ jobId, item, answer, reasked, pendingConfirms, sa
   if (suggested) {
     const shown = displayValue(field, item.value);
     const others = pendingConfirms.length >= 2 ? pendingConfirms : [];
-    const confirmAll = () => void all.run(async () => {
-      let ok = true;
-      for (const i of others) ok = (await save(i.field.key, i.value!)) && ok;
-      return ok;
-    });
     return (
       <>
         <div id={labelId} className="msg bot">
           {item.sourceLabel ? `${capitalise(item.sourceLabel)}: ` : ""}{asQuestion(field.label)} I&apos;ve put <strong>{shown}</strong>.
         </div>
+        {others.length > 0 && (
+          // Every value confirm-all would save is on screen first, so nothing is confirmed unseen.
+          <div className="msg bot">
+            Or confirm all {others.length} at once:
+            <ul className="mt-1 flex flex-col gap-0.5">
+              {others.map((i) => <li key={i.field.key}>{i.field.label} → <strong>{displayValue(i.field, i.value)}</strong></li>)}
+            </ul>
+          </div>
+        )}
         <div data-autopilot-live="" className="flex flex-col gap-1.5 self-stretch">
           <div className="actchips">
-            <ConfirmChip label={shown} onSave={() => save(key, item.value!)} disabled={all.pending} />
-            <button type="button" className={CHIP} disabled={all.pending} onClick={() => setChanging(true)}>Change</button>
+            <ConfirmChip label={shown} onSave={() => save(key, item.value!)} />
+            <button type="button" className={CHIP} onClick={() => setChanging(true)}>Change</button>
             {others.length > 0 && (
-              <button type="button" className={`${CHIP} quiet`} disabled={all.pending} onClick={confirmAll}>Looks right, confirm all {others.length}</button>
+              <button type="button" className={`${CHIP} quiet`} onClick={() => onConfirmAll(others)}>Looks right, confirm all {others.length}</button>
             )}
           </div>
-          {all.pending && <p className="text-xs text-muted-foreground">Saving…</p>}
-          <SaveError on={all.failed} />
         </div>
       </>
     );
@@ -121,11 +122,11 @@ export function LiveQuestion({ jobId, item, answer, reasked, pendingConfirms, sa
   );
 }
 
-function ConfirmChip({ label, onSave, disabled }: { label: string; onSave: () => Promise<boolean>; disabled: boolean }) {
+function ConfirmChip({ label, onSave }: { label: string; onSave: () => Promise<boolean> }) {
   const { pending, failed, run } = useSaver();
   return (
     <>
-      <button type="button" className={`${CHIP} bg-[#5B3DF5]! text-white!`} disabled={disabled || pending} onClick={() => void run(onSave)}>{label}</button>
+      <button type="button" className={`${CHIP} bg-[#5B3DF5]! text-white!`} disabled={pending} onClick={() => void run(onSave)}>{label}</button>
       {failed && <SaveError on />}
     </>
   );

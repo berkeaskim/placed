@@ -77,6 +77,7 @@ function ReadyChat({ jobId, items, saved }: { jobId: string; items: PackItem[]; 
   const [reask, setReask] = useState<string | null>(null);
   const [highlight, setHighlight] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const [bulk, setBulk] = useState<"idle" | "saving" | "failed">("idle");
   // Turns already there when the chat opened don't animate in again.
   const [initial] = useState(() => new Set(transcript(items, saved, new Set()).map(turnId)));
   const reduced = useReducedMotion();
@@ -144,12 +145,23 @@ function ReadyChat({ jobId, items, saved }: { jobId: string; items: PackItem[]; 
   const save: SaveAnswer = async (key, value, approved) => {
     const r = await setAnswer(jobId, key, value, approved === undefined ? {} : { approved });
     if (!r.ok) return false;
+    setBulk((b) => (b === "failed" ? "idle" : b));
     const next = { ...answers, [key]: { value, approved: approved ?? false } };
     setAnswers((a) => ({ ...a, [key]: { value, approved: approved ?? false } }));
     const item = byKey.get(key);
     // An unapproved edit keeps the question open, so "This is my answer" stays one tap away.
     if (item && (item.group === "vault" || isDone(item, next, coverReady) || isSkipped(item, next))) setReask((k) => (k === key ? null : k));
     return true;
+  };
+  // Confirm-all runs here, not in the live question (which remounts after each save), with the question held back meanwhile.
+  const confirmAll = async (list: PackItem[]) => {
+    if (bulk === "saving") return;
+    setBulk("saving");
+    let ok = true;
+    for (const i of list) {
+      try { ok = (await save(i.field.key, i.value!)) && ok; } catch { ok = false; }
+    }
+    setBulk(ok ? "idle" : "failed");
   };
   const show = () => { setHighlight(true); setExpanded(true); setTimeout(() => setHighlight(false), 3000); };
   const pick = (key: string) => { setReask(key); setExpanded(false); };
@@ -163,10 +175,12 @@ function ReadyChat({ jobId, items, saved }: { jobId: string; items: PackItem[]; 
       <div className="order-2 flex min-w-0 flex-col bg-[#FCFCFE] lg:order-1">
         <div ref={logRef} role="log" aria-live="polite" aria-label="Autopilot chat" className="chat min-h-[320px]">
           <ChatThread turns={turns} byKey={byKey} initial={initial} onShow={show} />
-          {current && !showLive && <div className="msg bot typing" aria-label="Writing"><span /><span /><span /></div>}
-          {current && showLive && (
+          {bulk === "saving" && <div className="msg bot">Saving…</div>}
+          {bulk !== "saving" && current && !showLive && <div className="msg bot typing" aria-label="Writing"><span /><span /><span /></div>}
+          {bulk === "failed" && <div className="msg bot err" role="alert">Some didn&apos;t save. Try again.</div>}
+          {bulk !== "saving" && current && showLive && (
             <LiveQuestion key={liveKey} jobId={jobId} item={current} answer={answers[current.field.key]} reasked={revisiting}
-              pendingConfirms={pendingConfirms} save={save} onKeep={() => setReask(null)} onSkipCover={skipCover} />
+              pendingConfirms={pendingConfirms} save={save} onKeep={() => setReask(null)} onSkipCover={skipCover} onConfirmAll={(list) => void confirmAll(list)} />
           )}
           {!current && <div className="msg bot">All answered. You&apos;re ready to fill the form.</div>}
         </div>
