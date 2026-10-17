@@ -12,10 +12,11 @@ import type { ParsedCV, TailoredCV, TailoredEntry } from "@/lib/types";
  */
 const FONT_DIR = path.join(process.cwd(), "public", "fonts");
 export const CV_FONT_FILES = [path.join(FONT_DIR, "NotoSans-Regular.ttf"), path.join(FONT_DIR, "NotoSans-Bold.ttf")] as const;
-const FAMILY = "NotoSans";
+export const FONT_FAMILY = "NotoSans";
+const FAMILY = FONT_FAMILY;
 
 let registered = false;
-function registerFonts() {
+export function registerFonts() {
   if (registered) return;
   Font.register({ family: FAMILY, fonts: [{ src: CV_FONT_FILES[0], fontWeight: 400 }, { src: CV_FONT_FILES[1], fontWeight: 700 }] });
   // never hyphenate: a split keyword ("Ex-cel") is a lost keyword for a parser

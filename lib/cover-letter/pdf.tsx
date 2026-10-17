@@ -1,5 +1,5 @@
-import { Document, Font, Page, StyleSheet, Text, View, renderToBuffer } from "@react-pdf/renderer";
-import { CV_FONT_FILES, pdfSafe } from "@/lib/pdf/cv-document";
+import { Document, Page, StyleSheet, Text, View, renderToBuffer } from "@react-pdf/renderer";
+import { FONT_FAMILY, pdfSafe, registerFonts } from "@/lib/pdf/cv-document";
 import { safeNamePart } from "@/lib/autopilot/handoff";
 
 /**
@@ -7,18 +7,8 @@ import { safeNamePart } from "@/lib/autopilot/handoff";
  * `body` already holds the salutation, paragraphs and sign-off (the service appends the student's name), so it is
  * rendered as given; the header is built from the other fields and the name is not repeated at the bottom.
  */
-const FAMILY = "NotoSans"; // same family and files as the CV renderer, so a repeat registration is identical
-
-let registered = false;
-function registerFonts() {
-  if (registered) return;
-  Font.register({ family: FAMILY, fonts: [{ src: CV_FONT_FILES[0], fontWeight: 400 }, { src: CV_FONT_FILES[1], fontWeight: 700 }] });
-  Font.registerHyphenationCallback((word) => [word]);
-  registered = true;
-}
-
 const s = StyleSheet.create({
-  page: { paddingVertical: 54, paddingHorizontal: 60, fontSize: 11, fontFamily: FAMILY, lineHeight: 1.4, color: "#111111" },
+  page: { paddingVertical: 54, paddingHorizontal: 60, fontSize: 11, fontFamily: FONT_FAMILY, lineHeight: 1.4, color: "#111111" },
   name: { fontSize: 16, fontWeight: 700 },
   contact: { marginTop: 2 },
   date: { marginTop: 22 },

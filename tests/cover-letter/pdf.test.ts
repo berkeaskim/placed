@@ -43,6 +43,16 @@ describe("renderLetterPdf", () => {
   });
 });
 
+describe("renderLetterPdf length", () => {
+  it("keeps a 450-word body with a long role and ref on one page", async () => {
+    const sentence = "I have followed your rates desk closely and would bring the same care to every client brief I handle.";
+    const para = Array(5).fill(sentence).join(" "); // 90 words
+    const long = ["Dear Hiring Team,", para, para, para, para, para, "Yours faithfully,\nAlex Morgan"].join("\n\n");
+    const buf = await renderLetterPdf({ ...input, role: "Spring Insight Analyst, Global Markets Sales and Trading, London", ref: "REQ-1234567890-LONDON-2027", body: long });
+    expect((await parse(buf)).pages).toBe(1);
+  });
+});
+
 describe("letterFilename", () => {
   it("applies safeNamePart to each part with the fixed pattern", () => {
     const d = new Date("2026-10-17");
