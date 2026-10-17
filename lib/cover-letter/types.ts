@@ -7,3 +7,4 @@ export type Fact = { id: string; claim: string; url: string; publisher: string; 
 export type Answer = { id: string; question: "why_firm" | "facts" | "story" | "touchpoint" | "product"; text: string | null; pickedFactIds?: string[]; cvEntryId?: string };
 export type OutputTarget = { kind: "upload" } | { kind: "field"; fieldKey: string; label: string };
 export type OutputStatus = "draft" | "ready";
+export type ChatMsg = { id: string; from: "bot" | "me"; text: string; kind?: "question" | "research" | "facts" | "done" | "error"; questionId?: Answer["question"] };
