@@ -20,7 +20,8 @@ import {
   type DefendQuestion, type DefendSource, type Decision, type Decisions, type OriginalParts, type TailorOutcome,
 } from "@/lib/tailor/view";
 import type { TailoredCV } from "@/lib/types";
-import { tailorForJob } from "./actions";
+import { swapBankItem, tailorForJob, type BankView, type OverflowResult, type TailorResult } from "./actions";
+import { BankBlock, OverflowRemove, untailoredIdsOf } from "./bank-block";
 import { confirmNumberWithXp, getDefendQuestions, previewTailoring, saveTailoredVersion, type PreviewResult } from "./tailor-actions";
 
 type Preview = Exclude<PreviewResult, { error: string }>;
@@ -59,7 +60,7 @@ function Section({ id, title, children, aside }: { id: string; title: string; ch
  * same gate before a PDF can be made.
  */
 export function TailorPanel({ jobId, hasCv, original, initial }: {
-  jobId: string; hasCv: boolean; original: OriginalParts; initial: { outcome: TailorOutcome; final: TailoredCV | null } | null;
+  jobId: string; hasCv: boolean; original: OriginalParts; initial: { outcome: TailorOutcome; final: TailoredCV | null; bank: BankView | null } | null;
 }) {
   const [outcome, setOutcome] = useState<TailorOutcome | null>(initial?.outcome ?? null);
   const [pdfUrl, setPdfUrl] = useState(`/api/tailored/${jobId}`);
@@ -73,6 +74,9 @@ export function TailorPanel({ jobId, hasCv, original, initial }: {
   const [previewErr, setPreviewErr] = useState<string | null>(null);
   const [retry, setRetry] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [bank, setBank] = useState<BankView | null>(initial?.bank ?? null);
+  // A one-page overflow: which call the removal buttons make depends on where it came from (a tailor stored nothing).
+  const [overflow, setOverflow] = useState<{ o: Pick<OverflowResult, "message" | "remove">; source: "tailor" | "swap" } | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [ask, setAsk] = useState<NumberAsk | null>(null);
   const [askError, setAskError] = useState<string | null>(null);
@@ -109,15 +113,28 @@ export function TailorPanel({ jobId, hasCv, original, initial }: {
     return () => clearTimeout(t);
   }, [jobId, key, final, retry]);
 
-  const run = () => startTailor(async () => {
-    setError(null); setNotice(null);
-    const r = await tailorForJob(jobId);
-    if ("error" in r) { setError("message" in r ? r.message : r.error); return; } // Task 9 renders the overflow removal buttons
-    setOutcome(r.outcome); setPdfUrl(r.pdfUrl); setDecisions({}); setHistory([]); setPreview(null); setPreviewErr(null); setDefend({ status: "idle" });
-    setSavedKey(JSON.stringify(buildFinal(r.outcome.tailored, r.outcome.changes, {}, original)));
-    setAnimateIn(true);
-    celebrate(r.award);
+  /** One place for every tailor / re-select / swap result: overflow shows removal buttons, success replaces the outcome. */
+  const applyResult = (r: TailorResult, source: "tailor" | "swap") => {
+    if ("remove" in r) { setOverflow({ o: r, source }); return; }
+    if ("error" in r) { setError(r.error); return; }
+    setOverflow(null);
+    // After a swap the student's kept edits come back as `final`; a fresh tailor starts from the suggestions.
+    const next = r.final ? decisionsFromFinal(r.outcome, r.final, original) : {};
+    setOutcome(r.outcome); setPdfUrl(r.pdfUrl); setDecisions(next); setHistory([]); setPreview(null); setPreviewErr(null); setDefend({ status: "idle" });
+    setSavedKey(JSON.stringify(buildFinal(r.outcome.tailored, r.outcome.changes, next, original)));
+    setBank(r.bank);
+    if (source === "tailor") { setAnimateIn(true); celebrate(r.award); }
+  };
+
+  const run = (extraExcluded?: string[]) => startTailor(async () => {
+    setError(null); setNotice(null); setOverflow(null);
+    applyResult(await tailorForJob(jobId, extraExcluded ? { extraExcluded } : undefined), "tailor");
   });
+
+  const removeForOverflow = (bulletId: string) => {
+    if (overflow?.source === "tailor") { run([bulletId]); return; }
+    startBusy(async () => { setError(null); applyResult(await swapBankItem(jobId, bulletId, "remove"), "swap"); });
+  };
 
   const decide = (id: string, d: Decision) => {
     setHistory((h) => [...h.slice(-30), decisions]);
@@ -162,9 +179,10 @@ export function TailorPanel({ jobId, hasCv, original, initial }: {
     startBusy(async () => {
       setError(null);
       const r = await saveTailoredVersion(jobId, final);
+      if ("remove" in r) { setOverflow({ o: r, source: "swap" }); return; }
       if ("error" in r) {
         if ("report" in r && r.report) { const rep = r.report; setDecisions((d) => applyGateBlocks(d, rep)); }
-        setError("message" in r ? r.message : r.error);
+        setError(r.error);
         return;
       }
       setSavedKey(key); setPdfUrl(r.pdfUrl);
@@ -191,9 +209,10 @@ export function TailorPanel({ jobId, hasCv, original, initial }: {
         {showSteps ? (
           <AgentSteps steps={TAILOR_STEPS} index={steps.index} label="Tailoring agent" />
         ) : (
-          <button type="button" onClick={run} className="btn-quest min-h-12 py-3">Tailor my CV for this role</button>
+          <button type="button" onClick={() => run()} className="btn-quest min-h-12 py-3">Tailor my CV for this role</button>
         )}
         {error && <p className="rounded-xl bg-[#FFF1DC] px-3 py-2 text-sm font-semibold text-[#7A4100]" role="alert">{error}</p>}
+        {overflow && !showSteps && <OverflowRemove overflow={overflow.o} pending={tailoring || busy} onRemove={removeForOverflow} />}
       </section>
     );
   }
@@ -231,7 +250,7 @@ export function TailorPanel({ jobId, hasCv, original, initial }: {
       <div className="flex flex-col gap-1.5">
         <div className="flex items-center justify-between gap-2">
           <h2 className="text-lg font-extrabold tracking-tight">What we tailored for, and why</h2>
-          <button type="button" onClick={run} disabled={tailoring} className="inline-flex min-h-11 shrink-0 items-center px-1 text-xs font-semibold text-[#5B3DF5] hover:underline disabled:opacity-50">
+          <button type="button" onClick={() => run()} disabled={tailoring} className="inline-flex min-h-11 shrink-0 items-center px-1 text-xs font-semibold text-[#5B3DF5] hover:underline disabled:opacity-50">
             {tailoring ? "Tailoring…" : "Tailor again"}
           </button>
         </div>
@@ -257,6 +276,16 @@ export function TailorPanel({ jobId, hasCv, original, initial }: {
             <TailoredForList items={outcome.tailoredFor} />
           </Section>
         </StaggerItem>
+
+        {bank && (
+          <StaggerItem>
+            <Section id="from-bank" title="From your bank">
+              <BankBlock report={bank.report} stale={bank.stale} newCvSuggestions={bank.newCvSuggestions} jobId={jobId}
+                untailoredIds={untailoredIdsOf(outcome.tailored)} disabled={tailoring || busy}
+                onResult={(r) => applyResult(r, "swap")} />
+            </Section>
+          </StaggerItem>
+        )}
 
         {outcome.reverted.length > 0 && (
           <StaggerItem>
@@ -333,6 +362,7 @@ export function TailorPanel({ jobId, hasCv, original, initial }: {
             </p>
           )}
           {error && <p className="rounded-xl bg-[#FFF1DC] px-3 py-2 text-sm font-semibold text-[#7A4100]" role="alert">{error}</p>}
+          {overflow && <OverflowRemove overflow={overflow.o} pending={tailoring || busy} onRemove={removeForOverflow} />}
         </StaggerItem>
 
         <StaggerItem>

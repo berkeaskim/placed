@@ -119,6 +119,8 @@ describe("tailoring from the bank (server actions)", () => {
     expect(entryIds(s.base)).not.toContain(projectId);
     expect(s.final?.experience[0].bullets[0].text).toBe("Served 150 customers per shift");
     expect(s.final?.projects).toHaveLength(0);
+    // the swap response carries the same final, so the panel keeps the edit without a reload
+    expect("final" in r ? r.final : null).toEqual(s.final);
     expect(s.outcome.tailored.experience[0].bullets[0].text).not.toBe("Served 150 customers per shift"); // outcome stays the AI version
     expect((await pdfText(stored().tailored_cv_path!)).replace(/\s+/g, " ")).toContain("Served 150 customers per shift");
   });

@@ -80,7 +80,9 @@ export type BankView = { report: SelectionReport; stale: boolean; newCvSuggestio
 /** The rendered version is over one page: nothing was stored; the UI offers the 3 lowest-scoring bullets to remove. */
 export type OverflowResult = { error: "overflow"; message: string; pages: number; remove: { bulletId: string; text: string }[] };
 export type TailorResult =
-  | { outcome: TailorOutcome; award: AwardResult | null; pdfUrl: string; signedUrl: string | null; bank: BankView | null }
+  | { outcome: TailorOutcome; award: AwardResult | null; pdfUrl: string; signedUrl: string | null; bank: BankView | null;
+    /** Swaps only: the student's saved version carried onto the new selection, so the panel keeps their edits without a reload. */
+    final?: TailoredCV }
   | OverflowResult
   | { error: string };
 export type FinalizeResult = { report: VerifyReport; pdfUrl: string; signedUrl: string | null } | OverflowResult | { error: string; report?: VerifyReport };
@@ -311,7 +313,7 @@ export async function swapBankItem(jobId: string, itemId: string, op: "add" | "r
     const final = prev.final ? recheck(ctx, carryTailored(ctx.cv.parsed, prev.final)).r.tailored : outcome.tailored;
     const res = await renderAndStore(ctx, final, () => storedFresh(ctx, outcome, final));
     if ("overflow" in res) return res.overflow;
-    return { outcome, award: null, pdfUrl: `/api/tailored/${jobId}`, signedUrl: res.signedUrl, bank: bankView(ctx) };
+    return { outcome, award: null, pdfUrl: `/api/tailored/${jobId}`, signedUrl: res.signedUrl, bank: bankView(ctx), final };
   } catch (e) {
     if (e instanceof BlockedCvError) return { error: BLOCKED };
     console.error("swapBankItem: failed", e instanceof Error ? e.message : e);
