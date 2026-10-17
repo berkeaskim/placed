@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { ARCHETYPES, YEARS } from "@/lib/types";
+import { FIELDS } from "@/lib/validation/onboarding";
 
 export const RequirementOut = z.object({
   text: z.string(),
@@ -110,3 +111,6 @@ export const DiscoverCompaniesOutput = z.object({
   })),
 });
 export type DiscoverCompaniesOutputT = z.infer<typeof DiscoverCompaniesOutput>;
+
+export const CourseFieldOutput = z.object({ field: z.enum(FIELDS) });
+export type CourseFieldOutputT = z.infer<typeof CourseFieldOutput>;

@@ -18,22 +18,35 @@ test("landing sends a fresh install straight to onboarding (no login)", async ({
   await expect(page).toHaveURL(/\/(onboarding|feed)$/);
 });
 
-test("onboarding: tap-only flow saves and routes to profile/build, XP toast on first completion", async ({ page }) => {
+test("onboarding: school and course search, then tap-only steps, saves and routes to profile/build, XP toast on first completion", async ({ page }) => {
   const errors = trackConsole(page);
   const repeat = alreadyOnboardedXp();
   await page.goto("/onboarding");
   await expect(page).toHaveURL(/\/onboarding$/);
   const next = page.getByRole("button", { name: "Next", exact: true });
 
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("What year are you in?");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Where do you study?");
   await expect(next).toBeDisabled();
-  await page.getByRole("button", { name: "Penultimate" }).click();
-  await expect(page.getByRole("button", { name: "Penultimate" })).toHaveAttribute("aria-pressed", "true");
+  const school = page.getByRole("combobox", { name: "Your university" });
+  await school.fill("ucl");
+  await page.getByRole("option", { name: "University College London" }).click();
+  await expect(school).toHaveValue("University College London");
   await next.click();
 
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("What do you study?");
   await expect(next).toBeDisabled();
-  await page.getByRole("button", { name: "Economics" }).click();
+  const course = page.getByRole("combobox", { name: "Your course" });
+  await course.fill("econ and stat");
+  await course.press("ArrowDown");
+  await course.press("Enter");
+  await expect(course).toHaveValue("Economics and Statistics");
+  await expect(page.getByText("Placed will read this as Economics.")).toBeVisible();
+  await next.click();
+
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("What year are you in?");
+  await expect(next).toBeDisabled();
+  await page.getByRole("button", { name: "Penultimate" }).click();
+  await expect(page.getByRole("button", { name: "Penultimate" })).toHaveAttribute("aria-pressed", "true");
   await next.click();
 
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Where do you want to work?");
@@ -48,7 +61,7 @@ test("onboarding: tap-only flow saves and routes to profile/build, XP toast on f
 
   // Back keeps prior answers
   await page.getByRole("button", { name: "Back" }).click();
-  await expect(page.getByRole("button", { name: "Economics" })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("button", { name: "Penultimate" })).toHaveAttribute("aria-pressed", "true");
   await page.getByRole("button", { name: "Next", exact: true }).click();
 
   await go.click();
@@ -68,9 +81,13 @@ test("onboarding: tap-only flow saves and routes to profile/build, XP toast on f
 test("a11y: onboarding steps", async ({ page }) => {
   await page.goto("/onboarding");
   expect(await basicA11y(page)).toEqual([]);
-  await page.getByRole("button", { name: "1st year" }).click();
+  await page.getByRole("combobox", { name: "Your university" }).fill("Univ");
+  expect(await basicA11y(page)).toEqual([]); // with the suggestion list open
+  await page.getByRole("combobox", { name: "Your university" }).fill("Sorbonne Université");
   await page.getByRole("button", { name: "Next", exact: true }).click();
-  await page.getByRole("button", { name: "Law" }).click();
+  await page.getByRole("combobox", { name: "Your course" }).fill("Law (LLB)");
+  await page.getByRole("button", { name: "Next", exact: true }).click();
+  await page.getByRole("button", { name: "1st year" }).click();
   await page.getByRole("button", { name: "Next", exact: true }).click();
   expect(await basicA11y(page)).toEqual([]);
 });

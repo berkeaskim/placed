@@ -36,7 +36,10 @@ export const profiles = sqliteTable("profiles", {
   user_id: text("user_id").primaryKey(),
   display_name: text("display_name"),
   year: text("year", { enum: YEAR_VALUES }).$type<Year>(),
+  /** Broad field (one of FIELDS), derived from `course`; drives grouping and anywhere a category is enough. */
   field: text("field"),
+  /** The course as the student named it ("BSc Economics and Statistics"); what AI prompts get. */
+  course: text("course"),
   /** The student's university as they want it named (Settings); null = read it from the active CV. */
   university: text("university"),
   location_pref: json<Region[]>("location_pref").notNull().default(sql`'[]'`),
