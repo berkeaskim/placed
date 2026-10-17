@@ -2,10 +2,10 @@ import { existsSync } from "node:fs";
 import { and, eq } from "drizzle-orm";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import { db } from "@/lib/db/client";
-import { confirmedFacts, coverLetters, xpEvents } from "@/lib/db/schema";
+import { companyResearch, confirmedFacts, coverLetters, xpEvents } from "@/lib/db/schema";
 import { resolveFile } from "@/lib/files";
 import { buildDraftPrompt } from "@/lib/cover-letter/draft";
-import { draftInputFor, openCard, researchSettled, type CardView } from "@/lib/cover-letter/service";
+import { draftInputFor, openCard, researchSettled, retryResearch, type CardView } from "@/lib/cover-letter/service";
 import { runGeneration } from "@/lib/cover-letter/generate";
 import * as actions from "@/app/(app)/jobs/[id]/cover-letter-actions";
 import { FIXTURE_ANSWERS, FIXTURE_FACTS } from "./fixtures";
@@ -86,6 +86,36 @@ describe("openCard", () => {
     await researchSettled();
     expect(w.noLetter).toBe(true);
     expect(w.outputs[0].mode).toBe("skip");
+  });
+});
+
+describe("research failure", () => {
+  it("saves a lookup that threw as failed (not 'needs a key'), and retryResearch runs it again", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    db.delete(companyResearch).run();
+    const jobId = seedNorthbridgeJob(undefined, "fail");
+    await openCard(U, jobId);
+    await researchSettled();
+    const v = await openCard(U, jobId);
+    expect(v.researchState).toBe("failed");
+    const notes = () => v2.chat.filter((m) => m.kind === "research");
+    let v2 = v;
+    expect(notes()).toHaveLength(1);
+    expect(notes()[0].text).toMatch(/didn't work this time/);
+    const again = await retryResearch(U, jobId);
+    expect(again.researchState).toBe("running");
+    await researchSettled();
+    v2 = await openCard(U, jobId);
+    expect(v2.researchState).toBe("failed");
+    expect(notes()).toHaveLength(2);
+    vi.restoreAllMocks();
+  });
+
+  it("retryResearch leaves finished research alone", async () => {
+    const jobId = seedNorthbridgeJob();
+    await openCard(U, jobId);
+    await researchSettled();
+    expect((await retryResearch(U, jobId)).researchState).toBe("done");
   });
 });
 

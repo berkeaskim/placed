@@ -32,6 +32,11 @@ export async function openCoverLetter(jobId: string, target?: OutputTarget): Pro
   return run(jobId, (u, j) => svc.openCard(u, j, target));
 }
 
+/** Retry on a failed company lookup. */
+export async function retryResearch(jobId: string): Promise<CardResult> {
+  return run(jobId, (u, j) => svc.retryResearch(u, j));
+}
+
 export async function answerQuestion(jobId: string, questionId: Answer["question"], text: string | null): Promise<CardResult> {
   return run(jobId, (u, j) => svc.answerQuestion(u, j, questionId, text));
 }

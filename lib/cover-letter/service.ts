@@ -148,7 +148,7 @@ function startResearch(ctx: Ctx, letter: LetterRow): void {
     let facts: Fact[] = [];
     try {
       const r = await researchCompany({ company, division: null, jdText: jdText(ctx) }, defaultResearchDeps(ctx.job.extId));
-      state = r.provider === "none" ? "none" : "done";
+      state = r.failed ? "failed" : r.provider === "none" ? "none" : "done";
       facts = r.facts;
     } catch (e) {
       console.error("[cover-letter] research:", e instanceof Error ? e.message : "unknown error");
@@ -166,6 +166,14 @@ function startResearch(ctx: Ctx, letter: LetterRow): void {
     .catch((e) => console.error("[cover-letter] saving research:", e instanceof Error ? e.message : "unknown error"))
     .finally(() => running.delete(letter.id));
   running.set(letter.id, p);
+}
+
+/** The Retry on a failed lookup: research runs again in the background (a no-op in any other state). */
+export async function retryResearch(userId: string, jobId: string): Promise<CardView> {
+  const ctx = loadCtx(userId, jobId);
+  const letter = getOrCreateLetter(userId, jobId);
+  if (letter.research_state === "failed" && !feedbackOnly(ctx) && !running.has(letter.id)) startResearch(ctx, letter);
+  return view(ctx, getOrCreateLetter(userId, jobId));
 }
 
 /** Resolves once every background research run has saved its result (tests and scripts). */

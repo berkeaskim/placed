@@ -3,7 +3,7 @@ import "./motion.css";
 import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import {
   addFieldOutput, answerQuestion, applySavedStory, confirmPersonAction, confirmTrue, markReady, openCoverLetter, pickFacts,
-  saveText, setMode, undoEdit, type CardResult,
+  retryResearch, saveText, setMode, undoEdit, type CardResult,
 } from "@/app/(app)/jobs/[id]/cover-letter-actions";
 import type { CardView } from "@/lib/cover-letter/service";
 import type { Mode, OutputTarget } from "@/lib/cover-letter/types";
@@ -26,6 +26,7 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 function call(jobId: string, target: OutputTarget, a: Exclude<UserAction, { kind: "draft" } | { kind: "edit" }>): Promise<CardResult> {
   switch (a.kind) {
     case "open": return openCoverLetter(jobId, target);
+    case "research": return retryResearch(jobId);
     case "answer": return answerQuestion(jobId, a.questionId, a.text);
     case "pick": return pickFacts(jobId, a.factIds);
     case "savedStory": return applySavedStory(jobId, a.storyId);
@@ -126,7 +127,7 @@ export function CoverLetterCard({ jobId, target, autopilot = false, onClose }: {
       if (my !== seq.current) return;
       return stream(a, my, interrupted);
     }
-    if (a.kind === "open") polls.current = 0;
+    if (a.kind === "open" || a.kind === "research") polls.current = 0;
     const t0 = performance.now();
     let r: CardResult;
     const p = call(jobId, target, a);
@@ -209,6 +210,7 @@ export function CoverLetterCard({ jobId, target, autopilot = false, onClose }: {
     onRetry: () => s.retry && void run(s.retry),
     onUndo: (id, outputId, paragraph) => { dispatch({ type: "undoUsed", id }); void run({ kind: "undo", outputId, paragraph }); },
     onSkipResearch: () => void run({ kind: "pick", factIds: [] }),
+    onRetryResearch: () => void run({ kind: "research" }),
   };
   const letter: LetterHandlers = {
     onSelect: (outputId) => dispatch({ type: "select", outputId }),

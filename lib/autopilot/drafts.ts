@@ -4,6 +4,7 @@ import { generateStructured, runAi } from "@/lib/ai/provider";
 import { authorshipEscalation, qualifierDrop, scopedMetrics, siblingContamination, type Issue, type SourceBullet, type TailoredBullet } from "@/lib/verify/checks-extra";
 import { toTailored, verifyTailoring } from "@/lib/verify/tailoring";
 import type { ParsedCV } from "@/lib/types";
+import { lintParagraph } from "@/lib/cover-letter/rules";
 
 export type DraftSentence = { text: string; about: "me" | "them"; refs: string[] };
 export type DraftCaught = { text: string; reason: string };
@@ -84,6 +85,12 @@ export function meBlock(text: string, resolved: string[], i: DraftInput, bullets
   return VERIFY_REASON[hit[0].type];
 }
 
+/** Hard-lexicon reason a sentence must go (placeholder / chatbot leakage first), or null. */
+export function lexiconBlock(text: string): string | null {
+  const ids = new Set(lintParagraph(text).map((h) => h.ruleId));
+  return ids.has("CL-21") ? "placeholder" : ids.has("CL-50") ? "sounds like AI" : null;
+}
+
 export function gateDraft(raw: DraftSentence[], i: DraftInput): Omit<DraftResult, "source"> {
   const bullets = cvBulletIndex(i.cv);
   const facts = new Map(i.facts.map((f) => [`fact:${f.id}`, f.claim]));
@@ -94,6 +101,8 @@ export function gateDraft(raw: DraftSentence[], i: DraftInput): Omit<DraftResult
     if (!s.refs.length) { caught.push({ text: s.text, reason: "no source" }); continue; }
     const ok = (r: string) => (s.about === "me" ? bullets.has(r) || facts.has(r) : /^jd:\d+$/.test(r) && i.jdLines[Number(r.slice(3))] !== undefined);
     if (!s.refs.every(ok)) { caught.push({ text: s.text, reason: "bad source" }); continue; }
+    const lex = lexiconBlock(s.text);
+    if (lex) { caught.push({ text: s.text, reason: lex }); continue; }
     const resolved = s.refs;
     if (s.about === "them") {
       if (FIRST_PERSON.test(s.text)) {

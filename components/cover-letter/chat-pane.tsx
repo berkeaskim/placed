@@ -19,6 +19,8 @@ export type ChatHandlers = {
   onUndo: (localId: string, outputId: string, paragraph: number | null) => void;
   /** Research outlasted its wait: skip the facts question and go on. */
   onSkipResearch: () => void;
+  /** The company lookup failed: run it again. */
+  onRetryResearch: () => void;
 };
 
 /** A typed request in plain words, mapped to the edit it most likely means (the words go along as the instruction). */
@@ -70,10 +72,17 @@ export function ChatPane({ s, view, output, initial, h }: { s: CardState; view: 
   const anchor = view.chat.findIndex((m) => m.from === "me" && m.questionId === "why_firm");
   // The echoed answer already popped in; its saved copy replaces it without animating again.
   const lastMe = view.chat.findLastIndex((m) => m.from === "me");
+  // A failed lookup's note carries Retry (spec: the step that failed shows Retry).
+  const failedNote = view.researchState === "failed" ? view.chat.findLastIndex((m) => m.kind === "research") : -1;
   const rows: ReactNode[] = [];
   view.chat.forEach((m, i) => {
     const echoed = !s.pending && i === lastMe && s.echo !== null && m.text === s.echo;
-    rows.push(<div key={m.id} className={`msg ${m.from === "bot" ? "bot" : "me"}`} {...staticProps(initial.has(m.id) || echoed)}>{m.text}</div>);
+    rows.push(
+      <div key={m.id} className={`msg ${m.from === "bot" ? "bot" : "me"}`} {...staticProps(initial.has(m.id) || echoed)}>
+        {m.text}
+        {i === failedNote && <button type="button" className="act" disabled={busy || streaming} onClick={h.onRetryResearch}>Retry</button>}
+      </div>,
+    );
     if (i === anchor && research) rows.push(research);
   });
   if (anchor < 0 && research) rows.push(research);

@@ -100,7 +100,7 @@ type RunAiBase<T> = {
 };
 
 /**
- * Fixture mode: load `fixtures/ai/<fn>/<fixtureKey|default>.json`, validate with `schema`,
+ * Fixture mode: load `fixtures/ai/<fn>/<fixtureKey|default>.json` (waiting its optional `delayMs`), validate with `schema`,
  * then (optionally) post-process with `fromFixture` — so a fixture recorded in the model's raw
  * output shape becomes `T` exactly like the live branch's output. No fixture -> `fallback()`.
  * Live mode: `live()` (its output is never passed through `fromFixture`).
@@ -113,6 +113,9 @@ export async function runAi<T, S>(
   if (aiMode() === "fixture") {
     const raw = loadFixture(o.fn, o.fixtureKey);
     if (raw == null) return o.fallback();
+    // An optional numeric `delayMs` in the fixture holds the reply back, so the e2e test can see a slow step.
+    const delay = (raw as { delayMs?: unknown }).delayMs;
+    if (typeof delay === "number" && delay > 0) await new Promise((r) => setTimeout(r, Math.min(delay, 30_000)));
     const parsed = o.schema.parse(raw);
     return o.fromFixture ? o.fromFixture(parsed as S) : (parsed as T);
   }

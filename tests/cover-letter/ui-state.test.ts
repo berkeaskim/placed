@@ -142,6 +142,15 @@ describe("cardReducer", () => {
     expect(cardReducer(done, { type: "swept" }).sweep).toBe(false);
   });
 
+  it("Retry on a failed lookup waits on the server without typing dots, then shows research running", () => {
+    const failed = opened(view({ researchState: "failed", next: QUESTION }));
+    const start = cardReducer(failed, { type: "start", action: { kind: "research" } });
+    expect(start).toMatchObject({ pending: true, state: "asking" });
+    expect(showsTyping(start)).toBe(false);
+    const back = cardReducer(start, { type: "view", view: view({ researchState: "running", next: { id: "wait_research" } }) });
+    expect(back).toMatchObject({ pending: false, state: "researching" });
+  });
+
   it("research that outlasts the polling cap becomes an error with retry, cleared by reopening", () => {
     const running = opened(view({ researchState: "running", next: { id: "wait_research" } }));
     const stalled = cardReducer(running, { type: "stalled" });

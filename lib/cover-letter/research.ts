@@ -16,7 +16,8 @@ export type ResearchDeps = {
   fetchPage: (url: string) => Promise<string>;
   now: () => number;
 };
-export type ResearchResult = { facts: Fact[]; rivals: string[]; provider: "gemini" | "serper" | "none" };
+/** `failed`: the lookup threw (a network or model error), as opposed to there being no research provider. */
+export type ResearchResult = { facts: Fact[]; rivals: string[]; provider: "gemini" | "serper" | "none"; failed?: true };
 
 const NONE: ResearchResult = { facts: [], rivals: [], provider: "none" };
 const PAGE_CAP = 6000;
@@ -110,25 +111,29 @@ export async function researchCompany(
     return { ...out, provider };
   } catch (e) {
     console.error("[cover-letter] research failed:", e);
-    return NONE;
+    return { ...NONE, failed: true };
   }
 }
 
 const FIXTURE_NOW = Date.parse("2026-10-17T12:00:00Z");
 
-/** Fixture mode replays fixtures/ai/coverLetterResearch/<fixtureKey|default>.json ({facts, rivals} or {fail: true}); no network. */
+/**
+ * Fixture mode replays fixtures/ai/coverLetterResearch/<fixtureKey|default>.json ({facts, rivals} or {fail: true}); no
+ * network. An optional `delayMs` holds the search back, so the e2e test can see research still running.
+ */
 function fixtureDeps(fixtureKey?: string): ResearchDeps {
   const load = () => {
-    const fx = loadFixture("coverLetterResearch", fixtureKey) as { fail?: boolean; facts?: z.infer<typeof schema>["facts"]; rivals?: string[] } | null;
+    const fx = loadFixture("coverLetterResearch", fixtureKey) as { fail?: boolean; delayMs?: number; facts?: z.infer<typeof schema>["facts"]; rivals?: string[] } | null;
     if (!fx || fx.fail) throw new Error("research fixture: simulated failure");
-    return { facts: fx.facts ?? [], rivals: fx.rivals ?? [] };
+    return { facts: fx.facts ?? [], rivals: fx.rivals ?? [], delayMs: Math.min(Math.max(fx.delayMs ?? 0, 0), 30_000) };
   };
   return {
     grounded: async () => {
       const fx = load();
+      if (fx.delayMs) await new Promise((r) => setTimeout(r, fx.delayMs));
       return { text: fx.facts.map((f) => f.claim).join("\n"), chunks: fx.facts.map((f) => ({ uri: f.url, title: f.publisher })) };
     },
-    structured: (async () => load()) as unknown as typeof generateStructured,
+    structured: (async () => { const { facts, rivals } = load(); return { facts, rivals }; }) as unknown as typeof generateStructured,
     search: null,
     fetchPage: async () => "",
     now: () => FIXTURE_NOW,

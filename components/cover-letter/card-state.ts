@@ -7,6 +7,8 @@ export type ClState = "idle" | "thinking" | "researching" | "asking" | "picking"
 
 export type UserAction =
   | { kind: "open" }
+  /** Retry on a failed company lookup. */
+  | { kind: "research" }
   | { kind: "answer"; questionId: Answer["question"]; text: string | null }
   | { kind: "pick"; factIds: string[] }
   | { kind: "savedStory"; storyId: string }

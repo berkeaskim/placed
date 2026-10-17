@@ -131,11 +131,11 @@ describe("researchCompany", () => {
     expect(await researchCompany(input("NoneCo"), deps())).toEqual({ facts: [], rivals: [], provider: "none" });
   });
 
-  it("research failure returns none and caches nothing", async () => {
+  it("research failure returns none, marked failed, and caches nothing", async () => {
     const err = vi.spyOn(console, "error").mockImplementation(() => {});
     const d = deps({ grounded: vi.fn(async () => { throw new Error("boom"); }) });
     const r = await researchCompany(input("FailCo"), d);
-    expect(r).toEqual({ facts: [], rivals: [], provider: "none" });
+    expect(r).toEqual({ facts: [], rivals: [], provider: "none", failed: true });
     expect(getResearch(key("FailCo"), NOW)).toBeNull();
     expect(err).toHaveBeenCalled();
     err.mockRestore();
@@ -151,5 +151,29 @@ describe("fixture mode", () => {
     expect(ok.rivals).toHaveLength(3);
     const err = vi.spyOn(console, "error").mockImplementation(() => {});
     expect((await researchCompany(input("FixtureFailCo"), defaultResearchDeps("fail"))).provider).toBe("none");
+  });
+  it("marks a lookup that threw as failed, unlike having no provider", async () => {
+    vi.stubEnv("AI_MODE", "fixture");
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    expect(await researchCompany(input("FailedCo"), defaultResearchDeps("fail"))).toMatchObject({ provider: "none", failed: true });
+    const none = await researchCompany(input("NoKeyCo"), deps());
+    expect(none.provider).toBe("none");
+    expect(none.failed).toBeUndefined();
+  });
+  it("holds the e2e fixture back by its delayMs, then returns its facts", async () => {
+    vi.stubEnv("AI_MODE", "fixture");
+    vi.useFakeTimers();
+    try {
+      let settled = false;
+      const p = researchCompany(input("DelayCo"), defaultResearchDeps("e2e-cl")).then((r) => { settled = true; return r; });
+      await vi.advanceTimersByTimeAsync(3000);
+      expect(settled).toBe(false);
+      await vi.advanceTimersByTimeAsync(600);
+      const r = await p;
+      expect(r.provider).toBe("gemini");
+      expect(r.facts).toHaveLength(3);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
