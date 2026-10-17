@@ -1,18 +1,18 @@
 import "server-only";
-import { and, eq, gt, isNull } from "drizzle-orm";
+import { and, desc, eq, gt, isNull, ne } from "drizzle-orm";
 import { db } from "@/lib/db/client";
-import { applications, autopilotPacks, autopilotVault, companies, confirmedFacts, coverLetterOutputs, coverLetters, cvs, jobs } from "@/lib/db/schema";
+import { applications, autopilotLongAnswers, autopilotPacks, autopilotVault, companies, confirmedFacts, coverLetterOutputs, coverLetters, cvs, jobs } from "@/lib/db/schema";
 import { letterFilename } from "@/lib/cover-letter/filename";
 import { fileUrl } from "@/lib/files";
 import { fetchForm } from "./forms";
 import type { Ats, NormalizedForm } from "./forms/types";
 import { classify } from "./classify";
-import { draftAnswer, type DraftResult } from "./drafts";
+import { draftAnswer, type DraftInput, type DraftResult } from "./drafts";
 import { suggestAnswers } from "./suggest";
 import { assemblePack, toFillPlan, type Answers, type Covers, type FillInstruction, type PackItem } from "./pack";
 import { hashToken, safeNamePart } from "./handoff";
-import { isComplete, type Core, type Extra } from "./vault";
-import { openVault } from "./vault-crypto";
+import { findRemembered, isComplete, normLabel, type Core, type Extra } from "./vault";
+import { openAnswers, openLongAnswer, openVault } from "./vault-crypto";
 import type { ParsedCV } from "@/lib/types";
 
 export type JobForPack = { id: string; extId: string; url: string; ats: Ats; company: string; textLines: string[] };
@@ -33,40 +33,112 @@ export async function getVault(userId: string): Promise<{ core: Partial<Core>; e
   return { core, extra: openVault("extra", userId, data?.extra) as Extra, completed: Boolean(data?.completed_at) && isComplete(core) };
 }
 
-/** Fetches the form, (optionally) drafts free-text answers, upserts autopilot_packs. `withDrafts: false` never calls the LLM. */
-export async function buildPack(userId: string, jobId: string, opts: { withDrafts?: boolean } = {}): Promise<{ items: PackItem[]; answers: Answers }> {
-  const withDrafts = opts.withDrafts ?? true;
+/**
+ * Looks up kept long answers from the student's OTHER jobs with the remembered-answer matching (exact normalised label,
+ * else a near-identical one). The most recent answer wins per label; a row that no longer decrypts is skipped.
+ */
+function previousAnswers(userId: string, jobId: string): (label: string) => { text: string; company: string } | null {
+  const rows = db.select().from(autopilotLongAnswers)
+    .where(and(eq(autopilotLongAnswers.user_id, userId), ne(autopilotLongAnswers.job_id, jobId))).orderBy(desc(autopilotLongAnswers.updated_at)).all();
+  const byLabel: Extra = {};
+  const byId = new Map(rows.map((r) => [r.id, r]));
+  for (const r of rows) byLabel[normLabel(r.field_label)] ??= r.id;
+  return (label) => {
+    const hit = findRemembered(byLabel, label);
+    const r = hit && typeof hit.value === "string" ? byId.get(hit.value) : undefined;
+    if (!r) return null;
+    try {
+      return { text: openLongAnswer(userId, r.job_id, r.field_label, r.text), company: r.company };
+    } catch {
+      return null;
+    }
+  };
+}
+
+export function findPreviousAnswer(userId: string, jobId: string, label: string): { text: string; company: string } | null {
+  return previousAnswers(userId, jobId)(label);
+}
+
+export type LongAnswerRow = { id: string; label: string; company: string; preview: string };
+
+/** The student's kept long answers, newest first, with only the first 140 characters for the setup page. */
+export function listLongAnswers(userId: string): LongAnswerRow[] {
+  return db.select().from(autopilotLongAnswers).where(eq(autopilotLongAnswers.user_id, userId)).orderBy(desc(autopilotLongAnswers.updated_at)).all()
+    .flatMap((r) => {
+      try {
+        return [{ id: r.id, label: r.field_label, company: r.company, preview: openLongAnswer(userId, r.job_id, r.field_label, r.text).slice(0, 140) }];
+      } catch {
+        return [{ id: r.id, label: r.field_label, company: r.company, preview: "" }];
+      }
+    });
+}
+
+const words = (s: string) => (s.trim() ? s.trim().split(/\s+/).length : 0);
+
+/**
+ * Fetches the form, caches CV-backed suggestions once (a computed `{}` counts), upserts autopilot_packs. Never drafts: see generateDraft.
+ * Suggestions are only cached when an active CV existed and the AI call succeeded, so a later build retries.
+ */
+export async function buildPack(userId: string, jobId: string): Promise<{ items: PackItem[]; answers: Answers }> {
   const job = await loadJobForPack(jobId);
   if (!job) throw new Error("Job not found");
   const { core, extra } = await getVault(userId);
   const cvRow = db.select({ parsed_json: cvs.parsed_json }).from(cvs).where(and(eq(cvs.user_id, userId), eq(cvs.is_active, true))).get();
-  const facts = db.select({ id: confirmedFacts.id, claim: confirmedFacts.claim }).from(confirmedFacts).where(eq(confirmedFacts.user_id, userId)).all();
-  const existing = db.select({ form: autopilotPacks.form, answers: autopilotPacks.answers }).from(autopilotPacks)
+  const existing = db.select({ form: autopilotPacks.form, answers: autopilotPacks.answers, suggestions: autopilotPacks.suggestions, drafts: autopilotPacks.drafts }).from(autopilotPacks)
     .where(and(eq(autopilotPacks.user_id, userId), eq(autopilotPacks.job_id, jobId))).get();
   const form: NormalizedForm = (existing?.form as NormalizedForm | undefined) ?? (await fetchForm(job));
   const cv = (cvRow?.parsed_json ?? null) as ParsedCV | null;
-  const drafts: Record<string, DraftResult> = {};
-  const answers = (existing?.answers ?? {}) as Answers;
+  // The row keeps EEO answers sealed (setAnswer): they are written back as stored and only opened for this call.
+  const stored = existing?.answers ?? {};
+  const answers = openAnswers(userId, jobId, stored);
+  const drafts = existing?.drafts ?? {};
   const base = assemblePack(form, core, extra, {});
-  // Questions nobody answered yet get a CV-backed suggestion, so the student only taps Confirm.
-  const toSuggest = base.filter((i) => i.group === "ask" && answers[i.field.key] === undefined);
-  const suggesting = withDrafts && toSuggest.length ? suggestAnswers({ items: toSuggest, core, extra, cv, fixtureKey: job.extId }) : Promise.resolve({});
-  if (withDrafts && cv) {
-    for (const f of form.fields) if (classify(f.label, f.type).kind === "freeText") {
-      drafts[f.key] = await draftAnswer({ question: f.label, wordLimit: f.wordLimit, company: job.company, jobExtId: job.extId, fieldKey: f.key,
-        jdLines: job.textLines, cv, facts });
-    }
-  }
-  const suggested: Record<string, string | string[]> = await suggesting;
+  // Questions nobody answered yet get a CV-backed suggestion, so the student only taps Confirm. Computed once, then reused.
+  const toSuggest = base.filter((i) => i.group === "ask" && answers[i.field.key] === undefined && classify(i.field.label, i.field.type).kind !== "eeo");
+  const computed = existing?.suggestions ?? (toSuggest.length ? await suggestAnswers({ items: toSuggest, core, extra, cv, fixtureKey: job.extId }) : {});
+  const suggested = computed ?? {};
+  const suggestions = existing?.suggestions ?? (cv && computed ? computed : null);
   try {
-    db.insert(autopilotPacks).values({ user_id: userId, job_id: jobId, form, answers })
-      .onConflictDoUpdate({ target: [autopilotPacks.user_id, autopilotPacks.job_id], set: { form, answers } }).run();
+    db.insert(autopilotPacks).values({ user_id: userId, job_id: jobId, form, answers: stored, suggestions })
+      .onConflictDoUpdate({ target: [autopilotPacks.user_id, autopilotPacks.job_id], set: { form, answers: stored, suggestions } }).run();
   } catch (e) {
     throw new Error(`buildPack: ${e instanceof Error ? e.message : String(e)}`);
   }
-  const items = assemblePack(form, core, extra, drafts).map((i) =>
-    i.group === "ask" && suggested[i.field.key] !== undefined ? { ...i, group: "confirm" as const, value: suggested[i.field.key], sourceLabel: "suggested from your CV" } : i);
+  const previous = previousAnswers(userId, jobId);
+  const items = assemblePack(form, core, extra, drafts).map((i): PackItem => {
+    if (i.group === "ask" && suggested[i.field.key] !== undefined) return { ...i, group: "confirm", value: suggested[i.field.key], sourceLabel: "suggested from your CV" };
+    const p = i.group === "draft" ? previous(i.field.label) : null;
+    return p ? { ...i, previous: { ...p, words: words(p.text) } } : i;
+  });
   return { items, answers };
+}
+
+/** The input draftAnswer needs for one free-text field, or null when the job, active CV, pack or field is missing. */
+export async function draftInputFor(userId: string, jobId: string, fieldKey: string): Promise<DraftInput | null> {
+  const job = await loadJobForPack(jobId);
+  if (!job) return null;
+  const cvRow = db.select({ parsed_json: cvs.parsed_json }).from(cvs).where(and(eq(cvs.user_id, userId), eq(cvs.is_active, true))).get();
+  const pack = db.select({ form: autopilotPacks.form }).from(autopilotPacks).where(and(eq(autopilotPacks.user_id, userId), eq(autopilotPacks.job_id, jobId))).get();
+  if (!cvRow?.parsed_json || !pack) return null;
+  const field = (pack.form as NormalizedForm).fields.find((f) => f.key === fieldKey);
+  if (!field || classify(field.label, field.type).kind !== "freeText") return null;
+  const facts = db.select({ id: confirmedFacts.id, claim: confirmedFacts.claim }).from(confirmedFacts).where(eq(confirmedFacts.user_id, userId)).all();
+  return { question: field.label, wordLimit: field.wordLimit, company: job.company, jobExtId: job.extId, fieldKey, jdLines: job.textLines, cv: cvRow.parsed_json as ParsedCV, facts };
+}
+
+/** Drafts one free-text answer on demand and stores it on the pack; a stored draft (even an empty one) is returned without calling the AI. A failed draft (source "none") is returned but never stored. */
+export async function generateDraft(userId: string, jobId: string, fieldKey: string): Promise<DraftResult | null> {
+  const where = and(eq(autopilotPacks.user_id, userId), eq(autopilotPacks.job_id, jobId));
+  const stored = db.select({ drafts: autopilotPacks.drafts }).from(autopilotPacks).where(where).get()?.drafts[fieldKey];
+  if (stored) return stored;
+  const input = await draftInputFor(userId, jobId, fieldKey);
+  if (!input) return null;
+  const draft = await draftAnswer(input);
+  if (draft.source === "none") return draft;
+  // Re-read so a draft stored for another field while the AI ran is not overwritten.
+  const latest = db.select({ drafts: autopilotPacks.drafts }).from(autopilotPacks).where(where).get()?.drafts ?? {};
+  db.update(autopilotPacks).set({ drafts: { ...latest, [fieldKey]: draft } }).where(where).run();
+  return draft;
 }
 
 /**
@@ -100,7 +172,7 @@ export async function claimPack(token: string): Promise<{ status: 200; body: Cla
       if (own(o.pdf_path)) { covers.upload = { file: true }; coverPath = o.pdf_path; coverDate = new Date(o.updated_at); }
     } else if (o.text.trim()) covers[o.target.fieldKey] = { text: o.text };
   }
-  const fields = toFillPlan(items, pack.answers as Answers, covers);
+  const fields = toFillPlan(items, openAnswers(pack.user_id, pack.job_id, pack.answers), covers);
   const app = db.select({ tailored_cv_path: applications.tailored_cv_path }).from(applications)
     .where(and(eq(applications.user_id, pack.user_id), eq(applications.job_id, pack.job_id))).get();
   const cvRow = db.select({ storage_path: cvs.storage_path }).from(cvs).where(and(eq(cvs.user_id, pack.user_id), eq(cvs.is_active, true))).get();

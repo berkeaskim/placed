@@ -1,0 +1,8 @@
+{
+  "sentences": [
+    { "text": "I ran the trading desk of a £50k student investment fund at UCL Investment Society, sizing positions across rates and FX.", "about": "me", "refs": ["x1-b0"] },
+    { "text": "I built a rates scenario model in Python that the fund used in weekly investment committee meetings.", "about": "me", "refs": ["x1-b1"] },
+    { "text": "At the Warwick Trading Challenge I presented the downside case for our team's rates position to the judging panel.", "about": "me", "refs": ["p1-b0"] },
+    { "text": "I ran the trading desk and built the rates scenario model, which taught me to size positions carefully.", "about": "me", "refs": ["x1-b0", "x1-b1"] }
+  ]
+}

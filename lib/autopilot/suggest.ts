@@ -69,8 +69,8 @@ export function gateSuggestions(raw: SuggestOutput, fields: FormField[], lines: 
   return out;
 }
 
-/** Suggests answers for the questions still to ask. Never throws: no AI, no suggestions. */
-export async function suggestAnswers(i: { items: PackItem[]; core: Partial<Core>; extra: Extra; cv: ParsedCV | null; fixtureKey: string }): Promise<Record<string, string | string[]>> {
+/** Suggests answers for the questions still to ask. Never throws: null when the AI call failed (so nothing is cached), `{}` when there was nothing to suggest. */
+export async function suggestAnswers(i: { items: PackItem[]; core: Partial<Core>; extra: Extra; cv: ParsedCV | null; fixtureKey: string }): Promise<Record<string, string | string[]> | null> {
   const fields = i.items.filter((x) => x.group === "ask" && x.field.type !== "file" && !isEeoLabel(x.field.label)).map((x) => x.field).slice(0, MAX_QUESTIONS);
   if (!fields.length) return {};
   const lines = contextLines(i.core, i.extra, i.cv);
@@ -84,6 +84,6 @@ export async function suggestAnswers(i: { items: PackItem[]; core: Partial<Core>
     return gateSuggestions(raw, fields, lines);
   } catch (e) {
     console.error("autopilot suggest:", e instanceof Error ? e.message : "unknown error");
-    return {};
+    return null;
   }
 }

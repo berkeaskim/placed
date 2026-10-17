@@ -1,0 +1,7 @@
+{
+  "ideas": [
+    { "text": "The rent analysis where you collected and cleaned 1,200 listings with Python and SQL.", "refs": ["p0-b0"] },
+    { "text": "Charting rents across 12 boroughs, and what that taught you about telling a story with data.", "refs": ["p0-b1"] },
+    { "text": "Why Monzo's Data team, which shapes the product and app design, appeals to you.", "refs": ["jd:17"] }
+  ]
+}

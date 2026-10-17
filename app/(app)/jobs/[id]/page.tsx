@@ -25,9 +25,10 @@ import { SaveButton } from "@/components/save-button";
 import { ExplainPanel } from "./explain-panel";
 import { ApplyButton } from "./apply-button";
 import { TailorPanel } from "./tailor-panel";
-import { AutopilotPanel } from "./autopilot-panel";
 import { InterviewPrepPanel } from "./interview-prep-panel";
 import { CoverLetterButton, CoverLetterHost } from "@/components/cover-letter/cover-letter-host";
+import { AutopilotHost } from "@/components/autopilot-chat/autopilot-host";
+import { AutopilotStartCard } from "@/components/autopilot-chat/autopilot-start-card";
 import type { StoredTailoring } from "./actions";
 import { PeoplePanel } from "@/components/outreach/people-panel";
 import { InsideTrack, WriteToSomeoneElse } from "@/components/inside-track/inside-track";
@@ -87,6 +88,7 @@ export default async function JobPage({ params, searchParams }: { params: Promis
   return (
     <div className="flex flex-col gap-4">
       <Link href="/feed" className="self-start text-sm font-semibold text-[#5B3DF5] no-underline hover:underline">← Back to your feed</Link>
+      {detail.showAutopilot && <AutopilotHost jobId={job.id} />}
       <CoverLetterHost jobId={job.id} />
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_400px]">
         <article className="flex min-w-0 flex-col gap-3 rounded-[20px] border bg-white p-5 sm:p-6">
@@ -143,7 +145,7 @@ export default async function JobPage({ params, searchParams }: { params: Promis
             initial={stored?.v === 1 && stored.outcome ? { outcome: stored.outcome, final: stored.final ?? null } : null}
           />
 
-          {detail.showAutopilot && <AutopilotPanel jobId={job.id} />}
+          {detail.showAutopilot && <AutopilotStartCard />}
 
           <section className="flex flex-col gap-2 rounded-[20px] border bg-white p-5">
             <ApplyButton jobId={job.id} url={safeHttpUrl(job.url)} company={job.company} alreadyApplied={alreadyApplied} curated={detail.curated} />

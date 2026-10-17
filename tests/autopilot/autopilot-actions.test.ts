@@ -3,17 +3,26 @@ import { eq } from "drizzle-orm";
 type F = { key: string; target: string; label: string; type: string; required: boolean; options: { label: string; value: string }[] };
 const h = vi.hoisted(() => ({
   items: [] as unknown[], answers: {} as Record<string, unknown>, extra: {} as Record<string, string | string[]>,
-  completed: true, on: true, fields: [] as unknown[] | null,
+  completed: true, on: true, fields: [] as unknown[] | null, input: {} as unknown, draft: { text: "d" } as unknown, aiOff: false,
 }));
+const offOr = async <T,>(v: T): Promise<T> => {
+  if (!h.aiOff) return v;
+  const { AiError, AI_NOT_SET_UP } = await import("@/lib/ai/provider");
+  throw new AiError(AI_NOT_SET_UP);
+};
 vi.mock("@/lib/env", () => ({ env: { get autopilot() { return h.on; } } }));
 vi.mock("@/lib/autopilot/server", () => ({
   getVault: async () => ({ core: {}, extra: h.extra, completed: h.completed }),
   buildPack: async () => ({ items: h.items, answers: h.answers }),
+  draftInputFor: async () => h.input,
+  generateDraft: async () => offOr(h.draft),
 }));
-import { openAndFill, setAnswer, preparePack } from "@/app/(app)/jobs/[id]/autopilot-actions";
-import { openVault, sealVault } from "@/lib/autopilot/vault-crypto";
+vi.mock("@/lib/autopilot/ideas", () => ({ suggestIdeas: async () => offOr([{ text: "an angle", refs: ["x"] }]) }));
+vi.mock("@/lib/autopilot/revise", () => ({ reviseAnswer: async () => offOr(h.draft) }));
+import { openAndFill, setAnswer, preparePack, draftFor, ideasFor, reviseFor, coverReadyKeys } from "@/app/(app)/jobs/[id]/autopilot-actions";
+import { openAnswers, openVault, sealVault } from "@/lib/autopilot/vault-crypto";
 import { db } from "@/lib/db/client";
-import { autopilotPacks, autopilotVault } from "@/lib/db/schema";
+import { autopilotPacks, autopilotVault, coverLetterOutputs, coverLetters } from "@/lib/db/schema";
 import { LOCAL_USER_ID as UID } from "@/lib/auth/local-user";
 import { seedJob, withTempDb } from "../cv/temp-db";
 
@@ -39,7 +48,7 @@ const snapshot = () => JSON.stringify([db.select().from(autopilotPacks).all(), s
 describe("autopilot actions", () => {
   beforeEach(() => {
     JOB ||= seedJob().id;
-    h.answers = {}; h.extra = {}; h.completed = true; h.on = true;
+    h.answers = {}; h.extra = {}; h.completed = true; h.on = true; h.input = {}; h.draft = { text: "d" }; h.aiOff = false;
     h.fields = [field("q1", "Level of German?"), field("g", "What is your gender?"), field("d1", "Describe a project you are proud of", { type: "textarea", options: [] })];
     db.delete(autopilotVault).run();
     db.insert(autopilotVault).values({ user_id: UID, core: {}, extra: SEALED_EMPTY() }).run();
@@ -100,10 +109,22 @@ describe("autopilot actions", () => {
     expect(await setAnswer(JOB, "q1", "1", { remember: true })).toEqual({ ok: true });
     expect(savedExtra()).toEqual({ "level of german": "Yes" });
   });
-  it("never stores or remembers an answer for EEO, judged by the stored label, whatever the client says", async () => {
+  it("remembers an EEO option label like any other answer", async () => {
+    expect(await setAnswer(JOB, "g", "1", { remember: true, rememberLabel: "Favourite colour?" } as never)).toEqual({ ok: true });
+    expect(packRow()!.answers.g.value).toMatchObject({ $enc: expect.any(String) }); // EEO is sealed in the pack row
+    expect(openAnswers(UID, JOB, packRow()!.answers).g).toMatchObject({ value: "1" });
+    expect(savedExtra()).toEqual({ "what is your gender": "Yes" }); // keyed by the stored label, never a client label
+  });
+  it("rejects consent labels that mention diversity or equal opportunities", async () => {
+    h.fields = [field("c1", "I consent to the processing of my diversity data"), field("c2", "I have read the Equal Opportunities policy")];
+    writePack();
     const before = snapshot();
-    expect(await setAnswer(JOB, "g", "1", { remember: true, rememberLabel: "Favourite colour?" } as never)).toEqual({ ok: false });
+    for (const k of ["c1", "c2"]) expect(await setAnswer(JOB, k, "1")).toEqual({ ok: false });
     expect(snapshot()).toBe(before);
+  });
+  it("does not remember an EEO answer when remember is false", async () => {
+    expect(await setAnswer(JOB, "g", "1", { remember: false })).toEqual({ ok: true });
+    vaultUnchanged();
   });
   it("rejects answers for consent, 'yours' and file fields", async () => {
     h.fields = [
@@ -171,5 +192,50 @@ describe("autopilot actions", () => {
   it("rejects an unknown job id", async () => {
     expect(await setAnswer("nope", "q1", "x")).toEqual({ ok: false });
     expect(await openAndFill("nope")).toEqual({ error: "Unknown job" });
+  });
+  it("draftFor/ideasFor/reviseFor refuse when the feature is off or the vault is incomplete", async () => {
+    for (const state of [{ on: false, completed: true }, { on: true, completed: false }]) {
+      h.on = state.on; h.completed = state.completed;
+      expect(await draftFor(JOB, "d1")).toEqual({ ok: false });
+      expect(await ideasFor(JOB, "d1")).toEqual({ ok: false });
+      expect(await reviseFor(JOB, "d1", "text", "tidy")).toEqual({ ok: false });
+    }
+    expect(await draftFor("nope", "d1")).toEqual({ ok: false });
+  });
+  it("draftFor/ideasFor/reviseFor say when AI isn't set up", async () => {
+    h.aiOff = true;
+    expect(await draftFor(JOB, "d1")).toEqual({ ok: false, reason: "ai-off" });
+    expect(await ideasFor(JOB, "d1")).toEqual({ ok: false, reason: "ai-off" });
+    expect(await reviseFor(JOB, "d1", "text", "tidy")).toEqual({ ok: false, reason: "ai-off" });
+  });
+  it("draftFor/ideasFor/reviseFor return results when allowed, and { ok: false } without a draft input", async () => {
+    expect(await draftFor(JOB, "d1")).toEqual({ ok: true, draft: { text: "d" } });
+    expect(await ideasFor(JOB, "d1")).toEqual({ ok: true, ideas: [{ text: "an angle", refs: ["x"] }] });
+    expect(await reviseFor(JOB, "d1", "text", "warmer")).toEqual({ ok: true, draft: { text: "d" } });
+    h.input = null; h.draft = null;
+    expect(await draftFor(JOB, "d1")).toEqual({ ok: false });
+    expect(await ideasFor(JOB, "d1")).toEqual({ ok: false });
+    expect(await reviseFor(JOB, "d1", "text", "tidy")).toEqual({ ok: false });
+  });
+  it("reviseFor rejects oversize text and unknown how, and never stores the revision", async () => {
+    const before = snapshot();
+    expect(await reviseFor(JOB, "d1", "x".repeat(5001), "tidy")).toEqual({ ok: false });
+    expect(await reviseFor(JOB, "d1", "text", "louder" as never)).toEqual({ ok: false });
+    expect(await reviseFor(JOB, "d1", "  ", "tidy")).toEqual({ ok: false });
+    await reviseFor(JOB, "d1", "text", "tidy");
+    expect(snapshot()).toBe(before);
+  });
+  it("coverReadyKeys lists ready outputs only", async () => {
+    const letter = db.insert(coverLetters).values({ user_id: UID, job_id: JOB }).returning().get();
+    const out = (target: unknown, status: "draft" | "ready") => ({ letter_id: letter.id, target: target as never, mode: "full_letter", status });
+    db.insert(coverLetterOutputs).values([out({ kind: "upload" }, "ready"), out({ kind: "field", fieldKey: "d1", label: "Why us?" }, "draft")]).run();
+    expect(await coverReadyKeys(JOB)).toEqual(["upload"]);
+    db.update(coverLetterOutputs).set({ status: "ready" }).run();
+    expect((await coverReadyKeys(JOB)).sort()).toEqual(["d1", "upload"]);
+    h.on = false;
+    expect(await coverReadyKeys(JOB)).toEqual([]);
+    h.on = true;
+    expect(await coverReadyKeys("nope")).toEqual([]);
+    db.delete(coverLetters).run();
   });
 });

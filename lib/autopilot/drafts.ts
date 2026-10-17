@@ -1,6 +1,6 @@
 import "server-only";
 import { z } from "zod";
-import { generateStructured, runAi } from "@/lib/ai/provider";
+import { generateStructured, isAiNotSetUp, runAi } from "@/lib/ai/provider";
 import { authorshipEscalation, qualifierDrop, scopedMetrics, siblingContamination, type Issue, type SourceBullet, type TailoredBullet } from "@/lib/verify/checks-extra";
 import { toTailored, verifyTailoring } from "@/lib/verify/tailoring";
 import type { ParsedCV } from "@/lib/types";
@@ -123,7 +123,7 @@ export function gateDraft(raw: DraftSentence[], i: DraftInput): Omit<DraftResult
   return { text, sentences: kept, caught, words: words(text), limit, thin: words(text) < 0.4 * limit };
 }
 
-const SYSTEM = `You draft a student's answer to one job application question.
+export const SYSTEM = `You draft a student's answer to one job application question.
 Rules:
 - Use ONLY facts from <cv> bullets and <facts>; cite their ids in refs. Sentences about the employer must cite jd:<line index> from <job_posting> and use only facts in those lines.
 - Never invent numbers, tools, titles, employers or outcomes. Never mention a skill that is not in <cv>.
@@ -133,7 +133,7 @@ Return JSON {sentences:[{text, about:"me"|"them", refs:[...]}]}.`;
 
 const clean = (t: string) => t.replace(/[<>]/g, "");
 
-function promptParts(i: DraftInput) {
+export function promptParts(i: DraftInput) {
   const cvLines = [...cvBulletIndex(i.cv)].map(([id, t]) => `${id}: ${clean(t)}`).join("\n");
   const facts = i.facts.map((f) => `fact:${f.id}: ${clean(f.claim)}`).join("\n");
   const jd = i.jdLines.map((l, n) => `jd:${n}: ${clean(l)}`).join("\n");
@@ -152,7 +152,8 @@ export async function draftAnswer(i: DraftInput): Promise<DraftResult> {
     });
     if (!raw.sentences.length) return empty;
     return { ...gateDraft(raw.sentences, i), source };
-  } catch {
+  } catch (e) {
+    if (isAiNotSetUp(e)) throw e; // the chat says "AI isn't set up" instead of a thin result
     return empty;
   }
 }

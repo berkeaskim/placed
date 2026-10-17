@@ -1,9 +1,9 @@
 "use server";
 import { revalidatePath } from "next/cache";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { requireUser } from "@/lib/auth/local-user";
 import { db } from "@/lib/db/client";
-import { autopilotPacks, autopilotVault } from "@/lib/db/schema";
+import { autopilotLongAnswers, autopilotPacks, autopilotVault } from "@/lib/db/schema";
 import { awardXP } from "@/lib/gamify/award";
 import { CoreSchema } from "@/lib/autopilot/vault";
 import { openVault, sealVault } from "@/lib/autopilot/vault-crypto";
@@ -69,6 +69,7 @@ export async function deleteVault(): Promise<DeleteResult> {
   try {
     db.transaction((tx) => {
       tx.delete(autopilotPacks).where(eq(autopilotPacks.user_id, user.id)).run();
+      tx.delete(autopilotLongAnswers).where(eq(autopilotLongAnswers.user_id, user.id)).run();
       tx.delete(autopilotVault).where(eq(autopilotVault.user_id, user.id)).run();
     });
   } catch {
@@ -88,6 +89,19 @@ export async function forgetAnswer(key: string): Promise<{ ok: boolean }> {
   delete extra[key];
   try {
     db.update(autopilotVault).set({ extra: sealVault("extra", user.id, extra), updated_at: new Date().toISOString() }).where(eq(autopilotVault.user_id, user.id)).run();
+  } catch {
+    return { ok: false };
+  }
+  revalidatePath("/autopilot/setup");
+  return { ok: true };
+}
+
+/** Forgets one kept long answer; later forms stop offering it. */
+export async function forgetLongAnswer(id: string): Promise<{ ok: boolean }> {
+  const { user } = await requireUser();
+  if (!env.autopilot || typeof id !== "string" || id.length > 100) return { ok: false };
+  try {
+    db.delete(autopilotLongAnswers).where(and(eq(autopilotLongAnswers.id, id), eq(autopilotLongAnswers.user_id, user.id))).run();
   } catch {
     return { ok: false };
   }

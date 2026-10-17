@@ -15,12 +15,12 @@ import Database from "better-sqlite3";
  *
  * It loads a real employer page, so it is opt-in. It writes the fictional persona into the local Vault of the app it
  * runs against (no login: Placed is single-user), so point PLACED_DATA_DIR at a scratch data dir that has the Monzo job seeded.
- * Run: PLACED_E2E_AUTOPILOT=1 NEXT_PUBLIC_AUTOPILOT=1 AI_MODE=fixture E2E_PORT=3100 npx playwright test e2e/autopilot.spec.ts
+ * Run: PLACED_E2E_AUTOPILOT=1 AI_MODE=fixture E2E_PORT=3100 npx playwright test e2e/autopilot.spec.ts
  * The extension is loaded from a TEMP COPY whose PLACED_ORIGIN points at the e2e port, so the committed extension/
  * (default http://localhost:3000) is never edited.
  */
 test.skip(process.env.PLACED_E2E_AUTOPILOT !== "1", "opt-in: loads the real Monzo Greenhouse form (PLACED_E2E_AUTOPILOT=1)");
-test.skip(process.env.NEXT_PUBLIC_AUTOPILOT !== "1", "needs NEXT_PUBLIC_AUTOPILOT=1");
+test.skip(process.env.NEXT_PUBLIC_AUTOPILOT === "0", "Autopilot is switched off (NEXT_PUBLIC_AUTOPILOT=0)");
 
 const PORT = Number(process.env.E2E_PORT ?? 3100);
 const ORIGIN = `http://localhost:${PORT}`;
@@ -102,37 +102,42 @@ test("Autopilot fills the real Monzo form and never submits", async () => {
     await page.getByRole("button", { name: "Save my answers" }).click();
     await expect(page.getByRole("status").filter({ hasText: /Autopilot unlocked/ })).toBeVisible({ timeout: 30_000 });
 
-    // Pack on the real Monzo job
+    // Chat on the real Monzo job: answer whatever Autopilot asks until nothing is left (the progress list has no current row)
     await page.goto(`${ORIGIN}/jobs/${jobId}`);
     await page.getByRole("button", { name: /Autopilot this application/ }).click();
-    await expect(page.getByRole("region", { name: "Application pack" })).toBeVisible({ timeout: 60_000 });
-
-    // ask + confirm rows: choose a value where empty, then Save/Confirm/Update
-    for (const group of ["ask", "confirm"]) {
-      const rows = page.locator(`[data-autopilot-group=${group}] > div`);
-      const n = await rows.count();
-      for (let i = 0; i < n; i++) {
-        const row = rows.nth(i);
-        const sel = row.locator("select");
-        if (await sel.count()) {
-          if (!(await sel.first().inputValue())) await sel.first().selectOption({ index: 1 });
-        } else if (await row.locator('input[type=checkbox]').count()) {
-          if (!(await row.locator("input[type=checkbox]:checked").count())) await row.locator("input[type=checkbox]").first().check();
-        } else {
-          const t = row.locator("input").first();
-          if (!(await t.inputValue())) await t.fill("Placed");
-        }
-        const btn = row.getByRole("button", { name: /^(Save|Confirm)$/ });
-        if (await btn.count()) { await btn.click(); await expect(row.getByText(/^(Saved|Confirmed)$/)).toBeVisible({ timeout: 15_000 }); }
+    const chat = page.getByRole("region", { name: "Autopilot" });
+    await expect(chat.getByRole("log").getByText(/I filled \d+ answers/)).toBeVisible({ timeout: 60_000 });
+    const currentRow = chat.locator('li[data-autopilot-row="current"]');
+    const live = chat.locator("[data-autopilot-live]");
+    const asking = () => currentRow.first().innerText().catch(() => "");
+    let draftState: "approved" | "write-yourself" = "write-yourself";
+    for (let n = 0; n < 40 && (await currentRow.count()); n++) {
+      const before = await asking();
+      await expect(live).toBeVisible({ timeout: 15_000 });
+      const btn = (name: string | RegExp) => live.getByRole("button", { name, exact: typeof name === "string" });
+      if (await btn("Write it for me").count()) {
+        // long answer: approve a draft if Autopilot wrote one, otherwise leave it to the student
+        await btn("Write it for me").click();
+        const use = btn("Use this");
+        if (await use.waitFor({ timeout: 30_000 }).then(() => true, () => false)) { await use.click(); draftState = "approved"; }
+        else await btn("Skip, I'll write it on the form").click();
+      } else if (await btn("Skip for now").count()) {
+        await btn("Skip for now").click(); // cover letter questions: not part of this test
+      } else if (await live.getByRole("combobox").count()) {
+        await live.getByRole("combobox").selectOption({ index: 1 });
+      } else if (await live.getByRole("textbox").count()) {
+        await live.getByRole("textbox").fill("Placed");
+        await live.getByRole("textbox").press("Enter");
+      } else if (await btn("Done").count()) {
+        await live.locator("button[aria-pressed]").first().click(); // multi-select: first option, then Done
+        await btn("Done").click();
+      } else {
+        await live.getByRole("button").first().click(); // confirm chip (the suggested value) or the first option
       }
+      await expect.poll(async () => (await currentRow.count()) === 0 || (await asking()) !== before, { timeout: 30_000, message: `still asking "${before}"` }).toBe(true);
     }
-    // drafts: approve if Autopilot wrote one; otherwise the "Write this one yourself" state is accepted
-    const approve = page.getByRole("button", { name: "This is my answer" });
-    if ((await approve.count()) && (await approve.first().isEnabled())) await approve.first().click();
-    // a draft approved in an earlier run stays approved, so judge by the page, not by whether the button was clickable
-    const approvedNote = page.getByText(/Approved\. Autopilot will fill this/);
-    await approvedNote.first().waitFor({ timeout: 5_000 }).catch(() => undefined);
-    const draftState = (await approvedNote.count()) > 0 ? "approved" : "write-yourself";
+    await expect(currentRow).toHaveCount(0);
+    await expect(chat.getByRole("log").getByText("All answered. You're ready to fill the form.")).toBeVisible();
     console.log(`DRAFT_STATE=${draftState}`);
 
     const openBtn = page.getByRole("button", { name: /Open & fill/ });
@@ -186,7 +191,7 @@ test("Autopilot fills the real Monzo form and never submits", async () => {
       expect(row?.state, `${what} (${id}) filled; tag=${row?.tag} why=${row?.why}`).toBe("filled");
       expect(row?.shown, `${what} shows a chosen option`).not.toBe("");
     }
-    // Autopilot never ticks consent and never fills diversity answers
+    // Autopilot never ticks consent, and leaves diversity answers empty unless the student gave one
     expect(await form.evaluate(`document.querySelectorAll("input[type=checkbox][id*=consent]:checked, input[type=checkbox][name*=consent]:checked").length`)).toBe(0);
     expect(audit.filter((r) => r.state === "yours" && r.shown), "fields left to the student stay empty").toEqual([]);
     await form.waitForTimeout(3000);

@@ -44,6 +44,8 @@ describe("classify", () => {
     ["Alternate Email", "text", { kind: "extra" }],
     ["Which university do you currently attend?", "select", { kind: "vault", key: "university" }],
     ["Terms & Conditions", "select", { kind: "consent" }],
+    ["I consent to the processing of my diversity data", "select", { kind: "consent" }],
+    ["I have read the Equal Opportunities policy", "select", { kind: "consent" }],
     ["Will you now or in the future require an employer to sponsor you for a visa to work in the UK?", "textarea", { kind: "vault", key: "needs_sponsorship" }],
     ["Do you now, or will you in the future, need sponsorship from an employer in order to obtain, extend or renew your right to work in the UK?", "textarea", { kind: "vault", key: "needs_sponsorship" }],
     ["🛂 Do you have the right to work in the UK without restrictions for the full 12-week internship?", "textarea", { kind: "vault", key: "rtw_uk" }],

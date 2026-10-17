@@ -5,7 +5,9 @@ import type { FormField, NormalizedForm } from "./forms/types";
 import type { DraftResult } from "./drafts";
 
 export type PackGroup = "vault" | "ask" | "confirm" | "draft" | "cover" | "yours";
-export type PackItem = { field: FormField; group: PackGroup; value: string | string[] | null; sourceLabel: string | null; draft?: DraftResult };
+export type PackItem = { field: FormField; group: PackGroup; value: string | string[] | null; sourceLabel: string | null; draft?: DraftResult;
+  /** An approved long answer to a matching question on another job, offered as "Use my answer from {company}". */
+  previous?: { text: string; company: string; words: number } };
 export type Answer = { value: string | string[]; approved?: boolean };
 export type Answers = Record<string, Answer>;
 export type FillMode = "fill" | "yours" | "select-yourself";
@@ -49,7 +51,8 @@ export function assemblePack(form: NormalizedForm, core: Partial<Core>, extra: E
       return item(mustConfirm ? "confirm" : "vault", v, r.exact ? BEFORE : SIMILAR);
     };
     switch (c.kind) {
-      case "eeo": case "consent": case "yours": return item("yours");
+      case "consent": case "yours": return item("yours");
+      case "eeo": return recall() ?? item("ask"); // asked once whether required or not, then remembered like any short answer
       case "file": return c.which === "cv" ? item("vault", null, "your tailored CV") : c.which === "cover" ? item("cover") : item("yours");
       case "motivation": return item("cover");
       case "freeText": return { ...item("draft"), draft: drafts[field.key] };
@@ -75,7 +78,7 @@ export function assemblePack(form: NormalizedForm, core: Partial<Core>, extra: E
 }
 
 export function canOpen(items: PackItem[], answers: Answers): boolean {
-  return items.every((i) => (i.group !== "ask" && i.group !== "confirm") || answers[i.field.key] !== undefined);
+  return items.every((i) => (i.group !== "ask" && i.group !== "confirm") || (i.group === "ask" && !i.field.required) || answers[i.field.key] !== undefined);
 }
 
 function labelsFor(f: FormField, v: string[]): string[] {
