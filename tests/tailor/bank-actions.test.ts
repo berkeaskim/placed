@@ -107,6 +107,33 @@ describe("tailoring from the bank (server actions)", () => {
     expect(s.overrides).toEqual({ pinned: [projectId], excluded: [] });
   });
 
+  it("a removed item is listed in the stored report.leftOut and Add back restores it", async () => {
+    expect("error" in (await swapBankItem(jobId, projectId, "remove"))).toBe(false);
+    const s = v2();
+    const item = s.report.leftOut.find((i) => i.id === projectId);
+    expect(item?.reason).toBe("you removed this for this role");
+    expect(entryIds(s.base)).not.toContain(projectId);
+    const r = await swapBankItem(jobId, projectId, "add");
+    expect("error" in r ? r.error : null).toBeNull();
+    const after = v2();
+    expect(entryIds(after.base)).toContain(projectId);
+    expect(after.overrides.excluded).not.toContain(projectId);
+    expect(after.report.leftOut.some((i) => i.id === projectId)).toBe(false);
+  });
+
+  it("a removed item is listed in the stored report.leftOut and Add back restores it", async () => {
+    expect("error" in (await swapBankItem(jobId, projectId, "remove"))).toBe(false);
+    const s = v2();
+    expect(s.report.leftOut.find((i) => i.id === projectId)?.reason).toBe("you removed this for this role");
+    expect(entryIds(s.base)).not.toContain(projectId);
+    const r = await swapBankItem(jobId, projectId, "add");
+    expect("error" in r ? r.error : null).toBeNull();
+    const after = v2();
+    expect(entryIds(after.base)).toContain(projectId);
+    expect(after.overrides.excluded).not.toContain(projectId);
+    expect(after.report.leftOut.some((i) => i.id === projectId)).toBe(false);
+  });
+
   it("a swap keeps the student's saved edits in the stored final and the PDF", async () => {
     const t = v2().outcome.tailored;
     const edited: TailoredCV = { ...t, experience: t.experience.map((e, i) => (i ? e : { ...e, bullets: e.bullets.map((b, k) => (k ? b : { ...b, text: "Served 150 customers per shift" })) })) };

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cvLines, DEFAULT_LINE_BUDGET, estimateLines, fixedLines, selectForJob, type SelectOpts } from "@/lib/bank/select";
+import { cvLines, DEFAULT_LINE_BUDGET, estimateLines, fixedLines, REMOVED_FOR_JOB_REASON, selectForJob, type SelectOpts } from "@/lib/bank/select";
 import type { Bank, BankBullet, BankEntry } from "@/lib/bank/types";
 import type { CvEntry, ParsedCV } from "@/lib/types";
 import type { JobListItem } from "@/lib/db/queries";
@@ -121,6 +121,19 @@ describe("selectForJob", () => {
     const noQ2 = selectForJob(bank, cv(), job, opts({ lineBudget: 200, excludedForJob: ["q2"] }));
     expect(allEntryIds(noQ2.base)).toContain("e-quant");
     expect(allBulletIds(noQ2.base)).not.toContain("q2");
+  });
+
+  it("items removed for this role are listed first in leftOut with the removed reason, outside the extra cap", () => {
+    const bank = quantBank();
+    const sel = selectForJob(bank, cv(), job, opts({ lineBudget: 200, excludedForJob: ["e-quant", "q2"] }));
+    expect(sel.report.leftOut[0]).toMatchObject({ id: "e-quant", kind: "entry", reason: REMOVED_FOR_JOB_REASON });
+    const noBullet = selectForJob(bank, cv(), job, opts({ lineBudget: 200, excludedForJob: ["q2"] }));
+    expect(noBullet.report.leftOut[0]).toMatchObject({ id: "q2", kind: "bullet", reason: REMOVED_FOR_JOB_REASON });
+    expect(allBulletIds(noBullet.base)).not.toContain("q2");
+    // hidden items and ids that no longer exist are not listed
+    bank.entries.find((e) => e.id === "e-quant")!.hidden = true;
+    const hidden = selectForJob(bank, cv(), job, opts({ lineBudget: 200, excludedForJob: ["e-quant", "gone"] }));
+    expect(hidden.report.leftOut.some((i) => i.reason === REMOVED_FOR_JOB_REASON)).toBe(false);
   });
 
   it("every included entry has ≥2 bullets when it has ≥2", () => {

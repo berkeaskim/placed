@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { entryLabel } from "@/lib/bank/label";
 import { addManualBullet, addManualEntry, deleteBulletAction, editBullet, moveBullet, toggleBullet, toggleEntry, type BankActionResult } from "./actions";
 
 export type BadgeLabel = "CV" | "LinkedIn" | "Post" | "Manual";
@@ -63,7 +64,7 @@ export function BankView({ entries }: { entries: ViewEntry[] }) {
                 <li key={e.id} className={`rounded-2xl border-2 border-[#E6E6EF] bg-white p-4 ${e.hidden ? "opacity-60" : ""}`}>
                   <div className="flex flex-wrap items-start justify-between gap-2">
                     <div>
-                      <h3 className="font-bold">{e.org}{e.title ? `, ${e.title}` : ""}</h3>
+                      <h3 className="font-bold">{entryLabel(e) || "Untitled entry"}</h3>
                       <p className="text-sm text-[#5B5B6B]">{[e.dates, e.location].filter(Boolean).join(" · ")}</p>
                       <div className="mt-1 flex gap-1"><Badges labels={e.badges} /></div>
                     </div>
@@ -125,8 +126,8 @@ export function BankView({ entries }: { entries: ViewEntry[] }) {
       {showEntryForm ? (
         <form action={submitEntry} className="space-y-3 rounded-2xl border-2 border-[#E6E6EF] bg-white p-4">
           <h2 className="font-extrabold">Add an entry</h2>
-          <label className="block text-sm font-bold">Section
-            <select name="section" className={input} defaultValue="experience">
+          <label htmlFor="entry-section" className="block text-sm font-bold">Section
+            <select id="entry-section" name="section" className={input} defaultValue="experience">
               {SECTIONS.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
             </select>
           </label>

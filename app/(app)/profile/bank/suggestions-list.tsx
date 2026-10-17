@@ -1,13 +1,14 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { entryLabel } from "@/lib/bank/label";
 import { acceptAction, acceptAllAction, rejectAction, type BankActionResult } from "./actions";
 
 export type SuggestionView = {
   id: string;
   kind: "new_entry" | "new_bullet" | "merge_into";
-  entry?: { section: string; org: string; title: string; dates: string; location: string; bullets: string[] };
-  /** new_bullet: the entry it joins, as "org — title". */
+  entry?: { section: string; org: string; title: string; dates: string; location: string; bullets: string[]; /** Post-derived only: verbatim excerpt per bullet, same order. */ excerpts?: string[] };
+  /** new_bullet: the entry it joins, as "title · org". */
   target?: string;
   text?: string;
   /** Verbatim post excerpt, shown under the bullet. */
@@ -40,9 +41,9 @@ function Card({ s, run, busy }: { s: SuggestionView; run: (fn: () => Promise<Ban
       {s.kind !== "new_bullet" && s.entry && (
         <>
           <p className="text-xs font-bold uppercase tracking-wide text-[#555]">{s.kind === "new_entry" ? "New entry" : "Looks like one you have"} · {s.entry.section}</p>
-          <p className="mt-1 text-sm font-extrabold">{s.entry.org} — {s.entry.title}</p>
+          <p className="mt-1 text-sm font-extrabold">{entryLabel(s.entry) || "Untitled entry"}</p>
           <p className="text-xs text-[#555]">{[s.entry.dates, s.entry.location].filter(Boolean).join(" · ")}</p>
-          <ul className="mt-2 list-disc pl-5 text-sm">{s.entry.bullets.map((b, i) => <li key={i}>{b}</li>)}</ul>
+          <ul className="mt-2 list-disc pl-5 text-sm">{s.entry.bullets.map((b, i) => <li key={i}>{b}{s.entry?.excerpts?.[i] && <blockquote className="mt-1 list-none border-l-4 border-[#E6E6EF] pl-3 text-xs text-[#555]">&ldquo;{s.entry.excerpts[i]}&rdquo;</blockquote>}</li>)}</ul>
         </>
       )}
       {s.kind === "merge_into" && s.targets && (

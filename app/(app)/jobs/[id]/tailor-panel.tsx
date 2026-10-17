@@ -345,7 +345,7 @@ export function TailorPanel({ jobId, hasCv, original, initial }: {
 
         <StaggerItem><RulesGainedPanel rules={fresh?.rules ?? preview?.data.rules ?? null} /></StaggerItem>
 
-        <StaggerItem><VerificationBadge state={vstate} text={verificationCopy(vstate, anyConfirmed(outcome, decisions))} /></StaggerItem>
+        <StaggerItem><VerificationBadge state={vstate} text={verificationCopy(vstate, anyConfirmed(outcome, decisions), (bank?.report.added.length ?? 0) > 0)} /></StaggerItem>
 
         <StaggerItem className="flex flex-col gap-1.5">
           <button type="button" onClick={download} disabled={blocked || busy || checking}

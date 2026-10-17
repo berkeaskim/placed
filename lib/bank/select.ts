@@ -10,6 +10,7 @@ import type { JobListItem } from "@/lib/db/queries";
 import { computeCoverage, jdRequirementSkills, type JdSkill } from "@/lib/scoring/coverage";
 import { clicheDensity } from "@/lib/cv/cliches";
 import type { Bank, BankBullet, BankEntry, BankSection } from "./types";
+import { entryLabel } from "./label";
 
 // ---------- tunable constants ----------
 
@@ -69,6 +70,7 @@ const SECTIONS: BankSection[] = ["experience", "projects", "leadership"];
 const LEFT_OUT_REASON = "lower match for this role than the items kept";
 export const PINNED_NO_ROOM_REASON = "pinned, but there was no room on one page";
 export const FIT_DROPPED_REASON = "dropped to fit one page";
+export const REMOVED_FOR_JOB_REASON = "you removed this for this role";
 
 // ---------- line estimates ----------
 
@@ -174,7 +176,7 @@ function reasonFor(parts: ScoreParts[], pinned: boolean): string {
   return "adds to a full page";
 }
 
-const entryLabel = (e: BankEntry) => [e.title, e.org].filter((s) => s.trim()).join(" · ") || "Untitled entry";
+const entryLabelOf = (e: BankEntry) => entryLabel(e) || "Untitled entry";
 const bulletLabel = (b: BankBullet) => (b.text.length > 80 ? `${b.text.slice(0, 77).trimEnd()}...` : b.text);
 
 // ---------- selection ----------
@@ -190,6 +192,7 @@ export function selectForJob(bank: Bank, activeCv: ParsedCV, job: JobListItem, o
   const pinnedForJob = new Set(opts.pinnedForJob);
   const fitExcluded = new Set(opts.fitExcluded ?? []);
   const excluded = new Set([...opts.excludedForJob, ...fitExcluded]);
+  const removedForJob = new Set(opts.excludedForJob.filter((id) => !fitExcluded.has(id)));
   const src = opts.activeCvSourceId;
   const inCv = (ids: string[]) => src !== null && ids.includes(src);
   const reqs = jdRequirementSkills(job.textLines ?? [], job.requirements ?? []);
@@ -288,7 +291,7 @@ export function selectForJob(bank: Bank, activeCv: ParsedCV, job: JobListItem, o
     if (sel) {
       if (!inCv(e.sourceIds)) {
         const ps = c.bullets.filter((b) => sel.has(b.id)).map((b) => parts.get(b.id)!);
-        added.push({ kind: "entry", id: e.id, entryId: e.id, label: entryLabel(e), reason: reasonFor(ps, isPinned(e.id) || [...sel].some(isPinned)) });
+        added.push({ kind: "entry", id: e.id, entryId: e.id, label: entryLabelOf(e), reason: reasonFor(ps, isPinned(e.id) || [...sel].some(isPinned)) });
       } else {
         for (const b of c.bullets) {
           if (sel.has(b.id) && !inCv(b.sourceIds)) added.push({ kind: "bullet", id: b.id, entryId: e.id, label: bulletLabel(b), reason: reasonFor([parts.get(b.id)!], isPinned(b.id)) });
@@ -301,7 +304,7 @@ export function selectForJob(bank: Bank, activeCv: ParsedCV, job: JobListItem, o
         else otherLeftOut.push({ item, score: scores[b.id] });
       }
     } else {
-      const item: SelItem = { kind: "entry", id: e.id, entryId: e.id, label: entryLabel(e), reason: c.forced ? PINNED_NO_ROOM_REASON : LEFT_OUT_REASON };
+      const item: SelItem = { kind: "entry", id: e.id, entryId: e.id, label: entryLabelOf(e), reason: c.forced ? PINNED_NO_ROOM_REASON : LEFT_OUT_REASON };
       if (inCv(e.sourceIds)) cvLeftOut.push(item);
       else otherLeftOut.push({ item, score: c.score });
     }
@@ -311,10 +314,17 @@ export function selectForJob(bank: Bank, activeCv: ParsedCV, job: JobListItem, o
   // A dropped pin is reported with the pinned reason, not the generic fit one.
   const fitDropped: SelItem[] = [];
   for (const e of bank.entries) {
-    if (fitExcluded.has(e.id)) fitDropped.push({ kind: "entry", id: e.id, entryId: e.id, label: entryLabel(e), reason: e.pinned || pinnedForJob.has(e.id) ? PINNED_NO_ROOM_REASON : FIT_DROPPED_REASON });
+    if (fitExcluded.has(e.id)) fitDropped.push({ kind: "entry", id: e.id, entryId: e.id, label: entryLabelOf(e), reason: e.pinned || pinnedForJob.has(e.id) ? PINNED_NO_ROOM_REASON : FIT_DROPPED_REASON });
     else for (const b of e.bullets) if (fitExcluded.has(b.id)) fitDropped.push({ kind: "bullet", id: b.id, entryId: e.id, label: bulletLabel(b), reason: b.pinned || pinnedForJob.has(b.id) ? PINNED_NO_ROOM_REASON : FIT_DROPPED_REASON });
   }
-  const leftOut = [...fitDropped, ...cvLeftOut, ...otherLeftOut.slice(0, LEFT_OUT_EXTRA).map((x) => x.item)];
+  // Items the student removed for this role stay listed first so "Add back" is possible. They don't count against LEFT_OUT_EXTRA.
+  const removed: SelItem[] = [];
+  for (const e of bank.entries) {
+    if (e.hidden || !SECTIONS.includes(e.section)) continue;
+    if (removedForJob.has(e.id)) { removed.push({ kind: "entry", id: e.id, entryId: e.id, label: entryLabelOf(e), reason: REMOVED_FOR_JOB_REASON }); continue; }
+    for (const b of e.bullets) if (!b.hidden && removedForJob.has(b.id)) removed.push({ kind: "bullet", id: b.id, entryId: e.id, label: bulletLabel(b), reason: REMOVED_FOR_JOB_REASON });
+  }
+  const leftOut = [...removed, ...fitDropped, ...cvLeftOut, ...otherLeftOut.slice(0, LEFT_OUT_EXTRA).map((x) => x.item)];
 
   return { base, report: { added, leftOut, pinnedOverflow }, scores, lineBudget };
 }
