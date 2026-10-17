@@ -110,4 +110,22 @@ describe("eightfold", () => {
     expect(() => endpointFor({ ats: "eightfold", slug: SLUG, name: "Microsoft" })).toThrow(/apiHost/);
     expect(endpointFor({ ats: "eightfold", slug: SLUG, name: "Microsoft", apiHost: HOST })).toContain(HOST);
   });
+
+  it("fails the board when a detail answers HTTP 200 with a soft error and no data", async () => {
+    const base = fakeEf(4).impl;
+    const impl = vi.fn(async (url: string, init?: RequestInit) =>
+      url.includes("position_details") ? Response.json({ status: 429, error: "Please try again later" }) : base(url, init)) as unknown as typeof fetch;
+    await expect(fetchEightfold(SLUG, HOST, (t) => /intern/i.test(t), impl, async () => {})).rejects.toThrow(/no data/);
+  });
+
+  it("fails the board on a persistent 429 after the backoffs (no-op sleep)", async () => {
+    const { impl, calls } = fakeEf(10, { status: 429 });
+    await expect(fetchEightfold(SLUG, HOST, () => true, impl, async () => {})).rejects.toThrow(/HTTP 429/);
+    expect(calls).toHaveLength(4);
+  });
+
+  it("rejects a positionUrl that is not a site-relative path", () => {
+    expect(normalizeEightfold({ ...items[0], positionUrl: "https://evil.example/x" }, HOST, "")).toBeNull();
+    expect(normalizeEightfold({ ...items[0], positionUrl: "//evil.example/x" }, HOST, "")).toBeNull();
+  });
 });

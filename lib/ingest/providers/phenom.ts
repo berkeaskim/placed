@@ -9,6 +9,7 @@ import { defaultSleep, getJson } from "./http";
 // `from`/`size` page against `totalHits`. Multi-location rows can have a non-UK primary `location`, so the UK entry of `multi_location` is used.
 // The body's language/country are BCG's ("en_global"/"global"); another Phenom tenant needs them lifted into the slug. PwC's Phenom site
 // uses the same API but is covered via Workday, so it is not seeded here. Most UK rows are experienced hires, so the title filter matters.
+// The job URL path `/global/en/job/<jobId>` is BCG's (locale "global/en"); another Phenom tenant needs its own path.
 // The list only carries `descriptionTeaser` (a short summary); there is no per-posting call, so `html` is that teaser.
 // Rows can carry a hiring-manager contact object: it is never read or stored. Recorded 2026-10-17, see docs/research/employer-coverage-recon.md.
 
@@ -43,7 +44,7 @@ export function normalizePhenom(item: unknown, host: string): RawJob | null {
   return {
     extId: String(r.jobId),
     title: r.title,
-    url: `https://${host}/global/en/job/${r.jobId}`,
+    url: `https://${host}/global/en/job/${encodeURIComponent(String(r.jobId))}`,
     location: ukLocation(r) ?? r.location ?? "",
     remote: false,
     html: r.descriptionTeaser ?? "",

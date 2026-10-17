@@ -41,7 +41,8 @@ function ukLocation(locations: string[] | null | undefined): string | null {
 
 export function normalizeEightfold(item: unknown, host: string, html: string): RawJob | null {
   const p = item as EfPosition | null;
-  if (!p?.id || !p.name || !p.positionUrl) return null;
+  // positionUrl comes from the response: only a site-relative path may be joined onto our own host.
+  if (!p?.id || !p.name || !p.positionUrl || !p.positionUrl.startsWith("/") || p.positionUrl.startsWith("//")) return null;
   return {
     extId: String(p.id),
     title: p.name,
@@ -104,8 +105,11 @@ export async function fetchEightfold(
     await sleep(EF_PAUSE_MS);
     // A failed detail fails the board: a silently skipped posting would be marked dead.
     const det = (await getJson(detailUrl(slug, host, String(r.id)), fetchImpl, { method: "GET" }, sleep)) as EfDetail;
-    const j = normalizeEightfold(r, host, det?.data?.jobDescription ?? "");
-    if (j) jobs.push(j);
+    // HTTP 200 with no `data` is a soft error ({status: 429, error: ...}); storing it would publish a job with empty text.
+    if (!det?.data) throw new Error(`detail for ${r.id} has no data (soft error); refusing to store an empty posting`);
+    const j = normalizeEightfold(r, host, det.data.jobDescription ?? "");
+    if (!j) throw new Error(`position ${r.id} has no usable positionUrl; refusing to drop it silently`);
+    jobs.push(j);
   }
   return { jobs, listed: run.rows.length };
 }
