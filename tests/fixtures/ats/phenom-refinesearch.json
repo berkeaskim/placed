@@ -1,0 +1,391 @@
+{
+ "refineSearch": {
+  "status": 200,
+  "hits": 4,
+  "totalHits": 112,
+  "data": {
+   "jobs": [
+    {
+     "country": "United Kingdom",
+     "subCategory": "Knowledge Management",
+     "type": "Full-Time",
+     "descriptionTeaser": "Join us as a Senior Analyst \u2013 BCG Vantage, focusing on Airline Commercial & Operations. Apply your hands-on expertise in the airline or airport industry to support case teams, identify real-world gaps, and deliver actionable recommendations. Ideal for candidates with significant industry experience and a strong understanding of airline operations.",
+     "state": "",
+     "longitude": "-0.12574",
+     "siteType": "external",
+     "multi_category": [
+      "Expertise and Insights"
+     ],
+     "reqId": "56760",
+     "jobId": "56760",
+     "city": "London",
+     "latitude": "51.50853",
+     "industry": "",
+     "locale": "en_GLOBAL",
+     "multi_location": [
+      "London, United Kingdom",
+      "Madrid, Spain",
+      "Paris, France",
+      "Frankfurt, Hessen, Germany"
+     ],
+     "title": "Senior Analyst - BCG Vantage, Airline Commercial & Operations",
+     "jobSeqNo": "BCG1US56760EXTERNALENGLOBAL",
+     "postedDate": "2026-02-05T00:00:00.000+0000",
+     "dateCreated": "2026-02-06T11:03:28.082+0000",
+     "jobVisibility": [
+      "external"
+     ],
+     "applyUrl": "https://experiencedtalent.bcg.com/careerhub/explore/jobs/790313923999?post_onboarding_pid=790313923999&amp;show_apply=1&amp;profile_type=candidate&amp;customredirect=1&utm_source=Phenom",
+     "location": "London, United Kingdom",
+     "category": "Expertise and Insights",
+     "externalApply": true,
+     "isMultiLocation": true,
+     "multi_location_array": [
+      {
+       "cityState": "London",
+       "country": "United Kingdom",
+       "city": "London",
+       "latlong": {
+        "lon": -0.12574,
+        "lat": 51.50853
+       },
+       "latitude": "51.50853",
+       "location": "London, United Kingdom",
+       "cityCountry": "London, United Kingdom",
+       "cityStateCountry": "London, United Kingdom",
+       "state": "",
+       "mapQueryLocation": "London, United Kingdom",
+       "stateCountry": " United Kingdom",
+       "longitude": "-0.12574"
+      },
+      {
+       "cityState": " Madrid",
+       "country": "Spain",
+       "city": "Madrid",
+       "latlong": {
+        "lon": -3.70256,
+        "lat": 40.4165
+       },
+       "latitude": "40.4165",
+       "location": "Madrid, Spain",
+       "cityCountry": " Madrid, Spain",
+       "cityStateCountry": "Madrid, Spain",
+       "state": "",
+       "mapQueryLocation": "Madrid, Spain",
+       "stateCountry": " Spain",
+       "longitude": "-3.70256"
+      },
+      {
+       "cityState": " Paris",
+       "country": "France",
+       "city": "Paris",
+       "latlong": {
+        "lon": 2.3488,
+        "lat": 48.85341
+       },
+       "latitude": "48.85341",
+       "location": "Paris, France",
+       "cityCountry": " Paris, France",
+       "cityStateCountry": "Paris, France",
+       "state": "",
+       "mapQueryLocation": "Paris, France",
+       "stateCountry": " France",
+       "longitude": "2.3488"
+      },
+      {
+       "cityState": " Frankfurt, Hessen",
+       "country": "Germany",
+       "city": "Frankfurt",
+       "latlong": {
+        "lon": 8.68417,
+        "lat": 50.11552
+       },
+       "latitude": "50.11552",
+       "location": "Frankfurt, Hessen, Germany",
+       "cityCountry": " Frankfurt, Germany",
+       "cityStateCountry": "Frankfurt, Hessen, Germany",
+       "state": "Hessen",
+       "mapQueryLocation": "Frankfurt, Hessen, Germany",
+       "stateCountry": " Hessen, Germany",
+       "longitude": "8.68417"
+      }
+     ],
+     "isMultiCategory": true,
+     "multi_category_array": [
+      {
+       "category": "Expertise and Insights"
+      }
+     ],
+     "badge": ""
+    },
+    {
+     "country": "United Kingdom",
+     "subCategory": "Co-op/Intern/Temporary",
+     "type": "Full-Time",
+     "descriptionTeaser": "Become part of our team as a Forward Deployed AI Engineer, supporting the development of innovative AI solutions for diverse industries. Collaborate with clients and internal teams, applying software development practices and optimising algorithms. Ideal for recent Master's or PhD graduates in Computer Science or related fields with a passion for software and data analytics.",
+     "state": "",
+     "longitude": "-0.12574",
+     "siteType": "external",
+     "multi_category": [
+      "Consulting"
+     ],
+     "reqId": "56635",
+     "jobId": "56635",
+     "city": "London",
+     "latitude": "51.50853",
+     "industry": "",
+     "locale": "en_GLOBAL",
+     "multi_location": [
+      "London, United Kingdom"
+     ],
+     "title": "Forward Deployed AI Engineer, Internship, United Kingdom - BCG X",
+     "jobSeqNo": "BCG1US56635EXTERNALENGLOBAL",
+     "postedDate": "2026-01-23T00:00:00.000+0000",
+     "dateCreated": "2026-01-24T11:02:53.396+0000",
+     "jobVisibility": [
+      "external"
+     ],
+     "applyUrl": "https://experiencedtalent.bcg.com/careerhub/explore/jobs/790313699534?post_onboarding_pid=790313699534&amp;show_apply=1&amp;profile_type=candidate&amp;customredirect=1&utm_source=Phenom",
+     "location": "London, United Kingdom",
+     "category": "Consulting",
+     "externalApply": true,
+     "isMultiLocation": true,
+     "multi_location_array": [
+      {
+       "cityState": "London",
+       "country": "United Kingdom",
+       "city": "London",
+       "latlong": {
+        "lon": -0.12574,
+        "lat": 51.50853
+       },
+       "latitude": "51.50853",
+       "location": "London, United Kingdom",
+       "cityCountry": "London, United Kingdom",
+       "cityStateCountry": "London, United Kingdom",
+       "state": "",
+       "mapQueryLocation": "London, United Kingdom",
+       "stateCountry": " United Kingdom",
+       "longitude": "-0.12574"
+      }
+     ],
+     "isMultiCategory": true,
+     "multi_category_array": [
+      {
+       "category": "Consulting"
+      }
+     ],
+     "badge": ""
+    },
+    {
+     "country": "Spain",
+     "subCategory": "Knowledge Management",
+     "type": "Full-Time",
+     "descriptionTeaser": "We are looking for a Director \u2013 Operations; Supply Chain to shape strategic priorities and drive innovation at BCG Vantage. Join us in delivering value-added solutions and leading a team of experts to enhance supply chain performance and capabilities.",
+     "state": "",
+     "longitude": "-3.70256",
+     "siteType": "external",
+     "multi_category": [
+      "Expertise and Insights"
+     ],
+     "reqId": "59048",
+     "jobId": "59048",
+     "city": "Madrid",
+     "latitude": "40.4165",
+     "industry": "",
+     "locale": "en_GLOBAL",
+     "multi_location": [
+      "Madrid, Spain",
+      "Chicago, Illinois, United States of America",
+      "Boston, Massachusetts, United States of America",
+      "London, United Kingdom",
+      "M\u00fcnchen, Germany",
+      "D\u00fcsseldorf, Nordrhein-Westfalen, Germany"
+     ],
+     "title": "Director - BCG Vantage, Operations; Supply Chain",
+     "jobSeqNo": "BCG1US59048EXTERNALENGLOBAL",
+     "postedDate": "2026-08-10T00:00:00.000+0000",
+     "dateCreated": "2026-08-10T17:04:15.557+0000",
+     "jobVisibility": [
+      "external"
+     ],
+     "applyUrl": "https://experiencedtalent.bcg.com/careerhub/explore/jobs/790317734108?post_onboarding_pid=790317734108&amp;show_apply=1&amp;profile_type=candidate&amp;customredirect=1&utm_source=Phenom",
+     "location": "Madrid, Spain",
+     "category": "Expertise and Insights",
+     "externalApply": true,
+     "isMultiLocation": true,
+     "multi_location_array": [
+      {
+       "cityState": "Madrid",
+       "country": "Spain",
+       "city": "Madrid",
+       "latlong": {
+        "lon": -3.70256,
+        "lat": 40.4165
+       },
+       "latitude": "40.4165",
+       "location": "Madrid, Spain",
+       "cityCountry": "Madrid, Spain",
+       "cityStateCountry": "Madrid, Spain",
+       "state": "",
+       "mapQueryLocation": "Madrid, Spain",
+       "stateCountry": " Spain",
+       "longitude": "-3.70256"
+      },
+      {
+       "cityState": " Chicago, Illinois",
+       "country": "United States of America",
+       "city": "Chicago",
+       "latlong": {
+        "lon": -87.65005,
+        "lat": 41.85003
+       },
+       "latitude": "41.85003",
+       "location": "Chicago, Illinois, United States of America",
+       "cityCountry": " Chicago, United States of America",
+       "cityStateCountry": "Chicago, Illinois, United States of America",
+       "state": "Illinois",
+       "mapQueryLocation": "Chicago, Illinois, United States of America",
+       "stateCountry": " Illinois, United States of America",
+       "longitude": "-87.65005"
+      },
+      {
+       "cityState": " Boston, Massachusetts",
+       "country": "United States of America",
+       "city": "Boston",
+       "latlong": {
+        "lon": -71.05977,
+        "lat": 42.35843
+       },
+       "latitude": "42.35843",
+       "location": "Boston, Massachusetts, United States of America",
+       "cityCountry": " Boston, United States of America",
+       "cityStateCountry": "Boston, Massachusetts, United States of America",
+       "state": "Massachusetts",
+       "mapQueryLocation": "Boston, Massachusetts, United States of America",
+       "stateCountry": " Massachusetts, United States of America",
+       "longitude": "-71.05977"
+      },
+      {
+       "cityState": " London",
+       "country": "United Kingdom",
+       "city": "London",
+       "latlong": {
+        "lon": -0.12574,
+        "lat": 51.50853
+       },
+       "latitude": "51.50853",
+       "location": "London, United Kingdom",
+       "cityCountry": " London, United Kingdom",
+       "cityStateCountry": "London, United Kingdom",
+       "state": "",
+       "mapQueryLocation": "London, United Kingdom",
+       "stateCountry": " United Kingdom",
+       "longitude": "-0.12574"
+      },
+      {
+       "cityState": " M\u00fcnchen",
+       "country": "Germany",
+       "city": "M\u00fcnchen",
+       "latlong": {
+        "lon": 11.57549,
+        "lat": 48.13743
+       },
+       "latitude": "48.13743",
+       "location": "M\u00fcnchen, Germany",
+       "cityCountry": " M\u00fcnchen, Germany",
+       "cityStateCountry": "M\u00fcnchen, Germany",
+       "state": "",
+       "mapQueryLocation": "M\u00fcnchen, Germany",
+       "stateCountry": " Germany",
+       "longitude": "11.57549"
+      },
+      {
+       "cityState": " D\u00fcsseldorf, Nordrhein-Westfalen",
+       "country": "Germany",
+       "city": "D\u00fcsseldorf",
+       "latlong": {
+        "lon": 6.77616,
+        "lat": 51.22172
+       },
+       "latitude": "51.22172",
+       "location": "D\u00fcsseldorf, Nordrhein-Westfalen, Germany",
+       "cityCountry": " D\u00fcsseldorf, Germany",
+       "cityStateCountry": "D\u00fcsseldorf, Nordrhein-Westfalen, Germany",
+       "state": "Nordrhein-Westfalen",
+       "mapQueryLocation": "D\u00fcsseldorf, Nordrhein-Westfalen, Germany",
+       "stateCountry": " Nordrhein-Westfalen, Germany",
+       "longitude": "6.77616"
+      }
+     ],
+     "isMultiCategory": true,
+     "multi_category_array": [
+      {
+       "category": "Expertise and Insights"
+      }
+     ],
+     "badge": ""
+    },
+    {
+     "country": "United Kingdom",
+     "subCategory": "Co-op/Intern/Temporary",
+     "type": "Full-Time",
+     "descriptionTeaser": "We are looking for an Associate Consultant to join our London team, where you will collaborate on client challenges and develop innovative solutions. You will analyse data, formulate recommendations, and communicate findings. Ideal for university students with strong analytical skills and a passion for problem-solving.",
+     "state": "",
+     "siteType": "external",
+     "longitude": "-0.12574",
+     "multi_category": [
+      "Consulting"
+     ],
+     "reqId": "59245",
+     "jobId": "59245",
+     "city": "London",
+     "latitude": "51.50853",
+     "industry": "",
+     "locale": "en_GLOBAL",
+     "multi_location": [
+      "London, United Kingdom"
+     ],
+     "title": "Associate/Senior Associate, Full-Time, London",
+     "jobSeqNo": "BCG1US59245EXTERNALENGLOBAL",
+     "postedDate": "2026-09-09T00:00:00.000+0000",
+     "dateCreated": "2026-09-09T09:01:34.474+0000",
+     "jobVisibility": [
+      "external"
+     ],
+     "applyUrl": "https://studenttalent.bcg.com/careerhub/explore/jobs/790318174078?post_onboarding_pid=790318174078&amp;show_apply=1&amp;profile_type=candidate&amp;customredirect=1&utm_source=Phenom",
+     "location": "London, United Kingdom",
+     "category": "Consulting",
+     "externalApply": true,
+     "isMultiLocation": true,
+     "multi_location_array": [
+      {
+       "cityState": "London",
+       "country": "United Kingdom",
+       "city": "London",
+       "latlong": {
+        "lon": -0.12574,
+        "lat": 51.50853
+       },
+       "latitude": "51.50853",
+       "location": "London, United Kingdom",
+       "cityCountry": "London, United Kingdom",
+       "cityStateCountry": "London, United Kingdom",
+       "state": "",
+       "mapQueryLocation": "London, United Kingdom",
+       "stateCountry": " United Kingdom",
+       "longitude": "-0.12574"
+      }
+     ],
+     "isMultiCategory": true,
+     "multi_category_array": [
+      {
+       "category": "Consulting"
+      }
+     ],
+     "badge": ""
+    }
+   ]
+  }
+ }
+}

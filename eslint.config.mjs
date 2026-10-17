@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Local tooling (git-ignored): plan/review notes and the recon Python venv.
+    ".superpowers/**",
+    "**/.venv*/**",
   ]),
 ]);
 

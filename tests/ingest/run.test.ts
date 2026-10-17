@@ -3,7 +3,7 @@ import { ingestCompany, jobContentHash, type IngestStore, type JobRow } from "@/
 import type { RawJob } from "@/lib/types";
 import { heuristicTagJob } from "@/lib/ai/heuristics";
 
-const company = { id: 1, slug: "acme", name: "Acme", ats: "lever" as const, api_host: null, enabled: true };
+const company = { id: 1, slug: "acme", name: "Acme", ats: "lever" as const, api_host: null, enabled: true, employer: null, transport: null };
 const raw = (over: Partial<RawJob>): RawJob => ({
   extId: "1", title: "Data Analyst Intern", url: "https://jobs.lever.co/acme/1?utm_source=x", location: "London",
   remote: false, html: "<h3>Requirements</h3><ul><li>SQL</li></ul>", postedAt: null, ...over,
@@ -85,5 +85,50 @@ describe("ingestCompany", () => {
     await ingestCompany(company, { fetchJobs: async () => [job], tagJob: async (i) => heuristicTagJob(i), store });
     expect(upserted).toHaveLength(1);
     expect(upserted[0].deadline).toBe("2026-10-31");
+  });
+
+  it("stores opensOn as opens_on", async () => {
+    const { store, upserted } = fakeStore();
+    await ingestCompany(company, {
+      fetchJobs: async () => [raw({ extId: "1", opensOn: "2026-09-01" }), raw({ extId: "2" })],
+      tagJob: async (i) => heuristicTagJob(i), store,
+    });
+    expect(upserted.find((r) => r.ext_id === "1")?.opens_on).toBe("2026-09-01");
+    expect(upserted.find((r) => r.ext_id === "2")?.opens_on).toBeNull();
+  });
+
+  it("passes employer and transport to fetchJobs and re-processes when opensOn changes", async () => {
+    const { htmlToLines } = await import("@/lib/text/jd");
+    const job = raw({ opensOn: "2026-09-01" });
+    const old = jobContentHash({ ...job, opensOn: "2026-08-01" }, htmlToLines(job.html).join("\n"));
+    const { store, upserted } = fakeStore(new Map([["1", { content_hash: old, tag_status: "ok" }]]));
+    const fetchJobs = vi.fn(async () => [job]);
+    await ingestCompany({ ...company, employer: "acme-corp", transport: "stealth" }, { fetchJobs, tagJob: async (i) => heuristicTagJob(i), store });
+    expect(fetchJobs).toHaveBeenCalledWith(expect.objectContaining({ employer: "acme-corp", transport: "stealth" }));
+    expect(upserted).toHaveLength(1);
+  });
+
+  it("curated cards keep closes exactly: no ATS minus-one shift and no date pulled from the description", async () => {
+    const { store, upserted } = fakeStore();
+    const curated = { ...company, slug: "morganstanley", ats: "curated" as const };
+    await ingestCompany(curated, {
+      fetchJobs: async () => [
+        raw({ extId: "c1", title: "Summer Analyst Programme", deadline: "2026-11-01", html: "<p>Closing date: 31 October 2026. Each programme closes on a rolling basis.</p>" }),
+        raw({ extId: "c2", title: "Summer Analyst Programme", deadline: null, html: "<p>Each programme has its own deadline, the earliest falling on 19 October 2026. Closing date: 19 October 2026.</p>" }),
+      ],
+      tagJob: async (i) => heuristicTagJob(i), store, now: () => new Date("2026-10-17T08:00:00Z"),
+    });
+    const by = (id: string) => upserted.find((r) => r.ext_id === id)!;
+    expect(by("c1")).toMatchObject({ deadline: "2026-11-01", deadline_source: "ats", rolling: true });
+    expect(by("c2")).toMatchObject({ deadline: null, deadline_source: null });
+  });
+
+  it("jobContentHash is unchanged from before opensOn existed for jobs without opensOn", async () => {
+    const { contentHash } = await import("@/lib/ingest/fingerprint");
+    const j = { title: "Data Analyst Intern", deadline: "2026-11-01" };
+    // Pre-branch formula: no opensOn segment at all. Changing it would re-tag every stored job on the next ingest.
+    expect(jobContentHash(j, "text")).toBe(contentHash(`v2\nData Analyst Intern\n2026-11-01\ntext`));
+    expect(jobContentHash({ ...j, opensOn: null }, "text")).toBe(contentHash(`v2\nData Analyst Intern\n2026-11-01\ntext`));
+    expect(jobContentHash({ ...j, opensOn: "2026-09-01" }, "text")).not.toBe(jobContentHash(j, "text"));
   });
 });

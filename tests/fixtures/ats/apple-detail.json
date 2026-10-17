@@ -1,0 +1,28 @@
+{
+ "loaderData": {
+  "jobDetails": {
+   "jobsData": {
+    "id": "PIPE-200687224",
+    "jobNumber": "200687224",
+    "postingTitle": "Early Career - GPU Physical Design Engineer",
+    "transformedPostingTitle": "early-career-gpu-physical-design-engineer",
+    "jobSummary": "Do you love creating elegant solutions to highly complex challenges? Do you intrinsically see the importance in every detail? As part of our Silicon Technologies group, you will help design and manufacture our next-generation, high-performance, power-efficient Graphics processors (GPUs). You will ensure Apple products and services can seamlessly and expertly handle the tasks that make them beloved by millions. Joining this group means you will be crafting and building the technology that fuels Apple\u2019s devices. Together, we enable our customers to do all the things they love with their devices. This role requires a mix of strategic engineering along with hands-on, technical work. You will be responsible for implementing complete chip designs from RTL to tape-out. \nJoin us!",
+    "description": "Are you a confident problem solver who thrives under pressure to find new, creative solutions? Are you ready to help chart the future of Apple\u2019s ecosystem? If so, we are excited to hear from you.",
+    "responsibilities": "Work closely with the Front-End team to understand chip architecture and drive physical aspects early in design cycle.\nDrive best in class Physical Design construction and optimization recipes for performance, power and Area (PPA).\nCollaborate to drive methodologies and \u201cbest known methods\u201d to streamline PD work, come up with guidelines and checklists, drive execution and track progress.\nBe focal point for place and route drive the work among place and route engineers, set goals and breakthroughs, plan short and long-term work, understand dependencies between different domains like top, STA, block Place & Route.\nManage and resolve design and flow issues related to physical design, identify potential solutions and drive execution.",
+    "minimumQualifications": "BSc/MSEE/MEng/PhD or equivalent is required\nExposure in any aspects of ASIC implementation including Synthesis, DFT insertion, Floorplanning, Clock and Power distribution, Place & Route and all aspects of timing, electrical and physical signoff.",
+    "preferredQualifications": "Experience with multi-voltage, power gated and power retention will be an advantage.\nKnowledge with hierarchical design approach, top-down design, budgeting, timing and physical convergence will be an asset.\nFamiliar with various process-related design issues including Design for Yield and Manufacturability, multi Vt strategies and thermal management.",
+    "locations": [
+     {
+      "id": "postLocation-CMA",
+      "name": "Cambridge",
+      "city": "Cambridge",
+      "countryName": "United Kingdom"
+     }
+    ],
+    "postDateInGMT": "2026-10-05T15:53:42.580+00:00",
+    "homeOffice": false,
+    "positionId": "200687224"
+   }
+  }
+ }
+}

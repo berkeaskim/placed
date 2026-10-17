@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { applyFilters, parseFilters, type FeedFilters } from "@/lib/feed/filters";
 import type { Ranked } from "@/lib/feed/rank";
 
-const r = (id: string, over: { location?: string; remote?: boolean; archetype?: string | null; deadline?: string | null } = {}) =>
+const r = (id: string, over: { location?: string; remote?: boolean; archetype?: string | null; deadline?: string | null; curated?: boolean } = {}) =>
   ({ job: { id, location: "London", remote: false, archetype: "data_analytics", deadline: null, ...over } }) as unknown as Ranked;
 const ids = (xs: Ranked[]) => xs.map((x) => x.job.id);
 const none: FeedFilters = { a: null, loc: null, soon: false };
@@ -29,6 +29,10 @@ describe("applyFilters", () => {
   it("closing soon = valid deadline within 7 London days, including today; excludes missing deadlines", () => {
     const xs = [r("today", { deadline: "2026-10-13" }), r("d7", { deadline: "2026-10-20" }), r("d8", { deadline: "2026-10-21" }), r("none"), r("junk", { deadline: "TBC" })];
     expect(ids(applyFilters(xs, { ...none, soon: true }, today))).toEqual(["today", "d7"]);
+  });
+  it("closing soon never includes curated cards, even with a near deadline", () => {
+    const xs = [r("live", { deadline: "2026-10-16" }), r("cur", { deadline: "2026-10-16", curated: true })];
+    expect(ids(applyFilters(xs, { ...none, soon: true }, today))).toEqual(["live"]);
   });
   it("combines filters", () => {
     const xs = [r("a", { location: "London", deadline: "2026-10-14" }), r("b", { location: "Paris, France", deadline: "2026-10-14" })];

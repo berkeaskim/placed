@@ -32,6 +32,8 @@ export interface RawJob {
   postedAt: string | null;
   /** YYYY-MM-DD close date from a structured ATS field (e.g. Workday endDate); wins over text extraction. */
   deadline?: string | null;
+  /** YYYY-MM-DD the application window opens (curated programme cards). */
+  opensOn?: string | null;
 }
 
 export type Importance = "critical" | "high" | "meaningful" | "preferred" | "low_signal";

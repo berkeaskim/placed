@@ -27,7 +27,7 @@ export function applyFilters(ranked: Ranked[], f: FeedFilters, today: string): R
   return ranked.filter(({ job }) =>
     (!f.a || job.archetype === f.a) &&
     (!f.loc || classifyRegion(job.location, job.remote) === f.loc) &&
-    (!f.soon || (isValidDate(job.deadline) && daysUntil(job.deadline, today) <= CLOSING_SOON_DAYS)));
+    (!f.soon || (!job.curated && isValidDate(job.deadline) && daysUntil(job.deadline, today) <= CLOSING_SOON_DAYS)));
 }
 
 /** Builds a /feed href that keeps the other filters, toggling one param. */

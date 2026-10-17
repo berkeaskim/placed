@@ -99,12 +99,12 @@
 
 # Workday (public cxs JSON). slug = "{tenant}/{site}", apiHost = "{tenant}.wdN.myworkdayjobs.com".
 # Validated live 2026-10-13; counts = UK/Europe early-career postings kept / with exact endDate.
-- { slug: barclays/External_Career_Site_Barclays, name: Barclays, ats: workday, apiHost: barclays.wd3.myworkdayjobs.com, enabled: true } # 94 / 44
-- { slug: citi/2, name: Citi, ats: workday, apiHost: citi.wd5.myworkdayjobs.com, enabled: true } # 34 / 9; 2000-posting board, ~45s
-- { slug: ms/External, name: Morgan Stanley, ats: workday, apiHost: ms.wd5.myworkdayjobs.com, enabled: true } # 0 today: MS site says no campus roles open yet
-- { slug: db/DBWebSite, name: Deutsche Bank, ats: workday, apiHost: db.wd3.myworkdayjobs.com, enabled: true } # 15 / 0
+- { slug: barclays/External_Career_Site_Barclays, name: Barclays, ats: workday, apiHost: barclays.wd3.myworkdayjobs.com, employer: barclays, enabled: true } # 94 / 44
+- { slug: citi/2, name: Citi, ats: workday, apiHost: citi.wd5.myworkdayjobs.com, employer: citi, enabled: true } # 34 / 9; 2000-posting board, ~45s
+- { slug: ms/External, name: Morgan Stanley, ats: workday, apiHost: ms.wd5.myworkdayjobs.com, employer: morganstanley, enabled: true } # 0 today: MS site says no campus roles open yet
+- { slug: db/DBWebSite, name: Deutsche Bank, ats: workday, apiHost: db.wd3.myworkdayjobs.com, employer: deutschebank, enabled: true } # 15 / 0
 - { slug: blackrock/BlackRock_Professional, name: BlackRock, ats: workday, apiHost: blackrock.wd1.myworkdayjobs.com, enabled: true } # 2 / 2
-- { slug: pwc/Global_Experienced_Careers, name: PwC, ats: workday, apiHost: pwc.wd3.myworkdayjobs.com, enabled: true } # 12 / 1; global board truncated at 3000; UK student site not found yet
+- { slug: pwc/Global_Experienced_Careers, name: PwC, ats: workday, apiHost: pwc.wd3.myworkdayjobs.com, employer: pwc, enabled: true } # 12 / 1; global board truncated at 3000; UK student site not found yet
 - { slug: lbg/LBG_Careers, name: Lloyds Banking Group, ats: workday, apiHost: lbg.wd3.myworkdayjobs.com, enabled: false } # 0 early-career; grad schemes live elsewhere
 - { slug: hl/Campus, name: Houlihan Lokey, ats: workday, apiHost: hl.wd1.myworkdayjobs.com, enabled: true } # 10 / 1
 - { slug: guggenheim/Guggenheim_Careers_Campus, name: Guggenheim Securities, ats: workday, apiHost: guggenheim.wd1.myworkdayjobs.com, enabled: true } # 1 / 0
@@ -130,7 +130,7 @@
 - { slug: jll/jllcareers, name: JLL, ats: workday, apiHost: jll.wd1.myworkdayjobs.com, enabled: true } # 8 / 8; 2000-posting board, ~65s
 - { slug: fca/FCA_earlycareers, name: Financial Conduct Authority, ats: workday, apiHost: fca.wd3.myworkdayjobs.com, enabled: true } # 3 / 3
 # Added 2026-10-14 (coverage audit, docs/research/ingest-coverage-benchmark.md). Counts = UK/Europe early-career postings kept on 2026-10-14.
-- { slug: pwc/Global_Campus_Careers, name: PwC, ats: workday, apiHost: pwc.wd3.myworkdayjobs.com, enabled: true } # 83; no overlap with Global_Experienced_Careers
+- { slug: pwc/Global_Campus_Careers, name: PwC, ats: workday, apiHost: pwc.wd3.myworkdayjobs.com, employer: pwc, enabled: true } # 83; no overlap with Global_Experienced_Careers
 - { slug: lbg/undergraduate_careers, name: Lloyds Banking Group, ats: workday, apiHost: lbg.wd3.myworkdayjobs.com, enabled: true } # 24
 - { slug: lbg/graduate_careers, name: Lloyds Banking Group, ats: workday, apiHost: lbg.wd3.myworkdayjobs.com, enabled: true } # 33
 - { slug: rbs/Rbs, name: NatWest Group, ats: workday, apiHost: rbs.wd3.myworkdayjobs.com, enabled: true } # 10
@@ -172,3 +172,36 @@
 - { slug: mazars, name: Forvis Mazars, ats: smartrecruiters, enabled: true } # 0 today
 - { slug: legalandgeneral, name: Legal & General, ats: smartrecruiters, enabled: true } # 0 today
 - { slug: asos, name: ASOS, ats: smartrecruiters, enabled: true } # 0 today
+
+# Oracle Recruiting Cloud. slug = "<siteNumber>/<locationId>", apiHost = tenant host. UK locationId 300000000289276 (not 300000000289360, India).
+- { slug: CX_1001/300000000289276, name: JPMorgan, ats: oracle, apiHost: jpmc.fa.oraclecloud.com, employer: jpmorgan, enabled: true }
+
+# amazon.jobs search.json, student-programmes facet. slug = region key (uk -> GBR).
+- { slug: uk, name: Amazon, ats: amazon, employer: amazon, enabled: true }
+
+# Goldman Sachs campus GraphQL (api-higher.gs.com); slug = country key.
+- { slug: uk, name: Goldman Sachs, ats: goldmansachs, employer: goldmansachs, enabled: true }
+
+# Morgan Stanley students & graduates resultset.json, UK rows only. Workday ms/External (above) has no campus roles.
+- { slug: uk, name: Morgan Stanley, ats: morganstanley, employer: morganstanley, enabled: true }
+
+# Bank of America campus search servlet, UK rows only; slug = country key.
+- { slug: uk, name: Bank of America, ats: bankofamerica, employer: bankofamerica, enabled: true }
+
+# Deutsche Bank graduate search (beesite), country id 71 = UK. Workday db/DBWebSite (above) has no early-careers roles. No descriptions available (list text only).
+- { slug: uk, name: Deutsche Bank, ats: deutschebank, employer: deutschebank, enabled: true }
+
+# Microsoft careers (Eightfold PCSX), UK rows; slug = Eightfold `domain`, apiHost = careers host. No early-careers filter exists, so the title filter does the work.
+- { slug: microsoft.com, name: Microsoft, ats: eightfold, apiHost: apply.careers.microsoft.com, employer: microsoft, enabled: true }
+
+# BCG careers (Phenom refineSearch), UK rows; slug = <siteType>/<pageId> of the search page, apiHost = careers host. Teaser text only; title filter does the work.
+- { slug: external/page11, name: BCG, ats: phenom, apiHost: careers.bcg.com, employer: bcg, enabled: true }
+
+# PwC UK student site (Workday, mixes PwC firms worldwide; the ingest location filter keeps UK and Europe, so Netherlands roles currently pass).
+- { slug: pwc/CRM_Campus_Careers_Site, name: PwC, ats: workday, apiHost: pwc.wd3.myworkdayjobs.com, employer: pwc, enabled: true }
+
+# Apple careers (jobs.apple.com search page's embedded JSON), UK rows; slug = country key. Reads all UK rows without a team filter, so the title filter does the work (the UK internships team, team=internships-STDNT-INTRN, listed 13 roles on 2026-10-17).
+- { slug: uk, name: Apple, ats: apple, employer: apple, enabled: true }
+
+# McKinsey careers search gateway, UK docs; slug = country key. Evergreen global postings, no posted date, full text in the list. Title filter keeps the intern roles.
+- { slug: uk, name: McKinsey, ats: mckinsey, employer: mckinsey, enabled: true }

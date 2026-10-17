@@ -26,3 +26,19 @@ describe("closingLabel", () => {
     expect(closingLabel({ deadline: "2026-10-18", rolling: true }, "2026-10-13")).toBe("5 days left");
   });
 });
+
+describe("closingLabel with opensOn", () => {
+  it("shows Opens <Mon YYYY> while the programme has not opened", () => {
+    expect(closingLabel({ deadline: null, opensOn: "2026-12-01" }, "2026-10-17")).toBe("Opens Dec 2026");
+  });
+  it("an opens date in the past with no deadline reads as a normal job", () => {
+    expect(closingLabel({ deadline: null, opensOn: "2026-09-01" }, "2026-10-17")).toBe("No closing date published");
+  });
+  it("a future opensOn wins over the deadline, which is shown as the close date", () => {
+    expect(closingLabel({ deadline: "2027-01-24", opensOn: "2027-01-01" }, "2026-10-17")).toBe("Opens Jan 2027 · closes 24 Jan");
+  });
+  it("once open, the deadline countdown applies", () => {
+    expect(closingLabel({ deadline: "2026-10-20", opensOn: "2026-09-01" }, "2026-10-17")).toBe("3 days left");
+  });
+});
+

@@ -1,0 +1,136 @@
+{
+  "SearchResult": {
+    "SearchResultCount": 4,
+    "SearchResultCountAll": 4,
+    "SearchResultItems": [
+      {
+        "MatchedObjectId": "76024",
+        "MatchedObjectDescriptor": {
+          "PublicationEndDate": "2026-10-18",
+          "PublicationChannel": [
+            {
+              "StartDate": "2026-10-05"
+            }
+          ],
+          "PositionTitle": "Deutsche Bank Internship Programme - Deutsche Bank Management Consulting - London – 2027",
+          "PositionLocation": [
+            {
+              "CityName": "London",
+              "CountryName": "Großbritannien und Nordirland"
+            }
+          ],
+          "PositionURI": "https://db.recsolu.com/external/requisitions/Vq30AE7D2mRPIkPvX-1lCQ",
+          "PositionID": "76024",
+          "PositionHiringYear": "2027",
+          "JobCategory": [
+            {
+              "Name": "Deutsche Bank Management Consulting"
+            }
+          ],
+          "CareerLevel": [
+            {
+              "Name": "Analyst Internship Programme"
+            }
+          ],
+          "PublicationStartDate": "2026-10-05"
+        }
+      },
+      {
+        "MatchedObjectId": "76023",
+        "MatchedObjectDescriptor": {
+          "PublicationEndDate": "2026-10-18",
+          "PublicationChannel": [
+            {
+              "StartDate": "2026-10-05"
+            }
+          ],
+          "PositionTitle": "Deutsche Bank Graduate Programme - Chief Risk Office - London 2027",
+          "PositionLocation": [
+            {
+              "CityName": "London",
+              "CountryName": "Großbritannien und Nordirland"
+            }
+          ],
+          "PositionURI": "https://db.recsolu.com/external/requisitions/wPkxWntNQUbHi1hCr4r_KQ",
+          "PositionID": "76023",
+          "PositionHiringYear": "2027",
+          "JobCategory": [
+            {
+              "Name": "Chief Risk Office"
+            }
+          ],
+          "CareerLevel": [
+            {
+              "Name": "Analyst Graduate Programme"
+            }
+          ],
+          "PublicationStartDate": "2026-10-05"
+        }
+      },
+      {
+        "MatchedObjectId": "76026",
+        "MatchedObjectDescriptor": {
+          "PublicationEndDate": "2026-10-18",
+          "PublicationChannel": [
+            {
+              "StartDate": "2026-10-05"
+            }
+          ],
+          "PositionTitle": "Deutsche Bank Internship Programme - Corporate Bank - London - 2027",
+          "PositionLocation": [
+            {
+              "CityName": "London",
+              "CountryName": "Großbritannien und Nordirland"
+            }
+          ],
+          "PositionURI": "https://db.recsolu.com/external/requisitions/EsNVDtpgpUFW6Cv3PaCmFQ",
+          "PositionID": "76026",
+          "PositionHiringYear": "2027",
+          "JobCategory": [
+            {
+              "Name": "Corporate Bank"
+            }
+          ],
+          "CareerLevel": [
+            {
+              "Name": "Analyst Internship Programme"
+            }
+          ],
+          "PublicationStartDate": "2026-10-05"
+        }
+      },
+      {
+        "MatchedObjectId": "76022",
+        "MatchedObjectDescriptor": {
+          "PublicationEndDate": "2026-10-18",
+          "PublicationChannel": [
+            {
+              "StartDate": "2026-10-05"
+            }
+          ],
+          "PositionTitle": "Deutsche Bank Internship Programme - Group Audit - Birmingham - 2027",
+          "PositionLocation": [
+            {
+              "CityName": "Birmingham",
+              "CountryName": "Großbritannien und Nordirland"
+            }
+          ],
+          "PositionURI": "https://db.recsolu.com/external/requisitions/3_RnwiSaN9XXeBjoxUZlzA",
+          "PositionID": "76022",
+          "PositionHiringYear": "2027",
+          "JobCategory": [
+            {
+              "Name": "Group Audit"
+            }
+          ],
+          "CareerLevel": [
+            {
+              "Name": "Analyst Internship Programme"
+            }
+          ],
+          "PublicationStartDate": "2026-10-05"
+        }
+      }
+    ]
+  }
+}

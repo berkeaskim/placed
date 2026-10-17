@@ -4,14 +4,47 @@ import { normalizeLever } from "./lever";
 import { normalizeAshby } from "./ashby";
 import { fetchWorkday, workdayBase } from "./workday";
 import { fetchSmartRecruiters, srPostingsUrl } from "./smartrecruiters";
+import { fetchOracle, oracleListUrl } from "./oracle";
+import { fetchAmazon, amazonSearchUrl } from "./amazon";
+import { fetchGoldman, goldmanEndpoint } from "./goldmansachs";
+import { fetchMorganStanley, morganStanleyUrl } from "./morganstanley";
+import { fetchBankOfAmerica, bankOfAmericaUrl } from "./bankofamerica";
+import { fetchDeutscheBank, deutscheBankUrl } from "./deutschebank";
+import { fetchEightfold, eightfoldSearchUrl } from "./eightfold";
+import { fetchPhenom, phenomUrl } from "./phenom";
+import { fetchApple, appleSearchUrl } from "./apple";
+import { fetchMckinsey, mckinseySearchUrl } from "./mckinsey";
+import type { AtsKind } from "@/lib/db/schema";
 import { passesTitleFilter } from "../filter";
+import { loadProgrammes, programmeToRawJob, visibleProgrammes } from "../curated";
+import { todayLondon } from "@/lib/scoring/dates";
+import { readFileSync } from "node:fs";
+import { stealthFetch } from "../stealth";
 
 export { normalizeGreenhouse, normalizeLever, normalizeAshby };
 
-export type Ats = "greenhouse" | "lever" | "ashby" | "workday" | "smartrecruiters";
-export type CompanySeed = { slug: string; name: string; ats: Ats; apiHost?: string | null };
+export type Ats = AtsKind;
+export type CompanySeed = { slug: string; name: string; ats: Ats; apiHost?: string | null; employer?: string | null; transport?: "stealth" | null };
 
 export class ProviderError extends Error {}
+
+const PROGRAMMES_PATH_LABEL = "file:seed/programmes.yml";
+
+/** Curated programmes live in a local file, not behind an endpoint. PLACED_PROGRAMMES_FILE overrides the path (tests). */
+function fetchCurated(slug: string): RawJob[] {
+  const file = process.env.PLACED_PROGRAMMES_FILE || "seed/programmes.yml";
+  let text: string;
+  try {
+    text = readFileSync(file, "utf8");
+  } catch (e) {
+    throw new ProviderError(`curated/${slug}: cannot read ${file} (${(e as Error).message})`);
+  }
+  // Any dropped row (or an unreadable file) fails the board: returning fewer cards would let markDead close them.
+  const problems: string[] = [];
+  const programmes = loadProgrammes(text, (m) => problems.push(m));
+  if (problems.length) throw new ProviderError(`curated/${slug}: ${file} is invalid: ${problems.join("; ")}`);
+  return visibleProgrammes(programmes, todayLondon()).filter((p) => p.employer === slug).map(programmeToRawJob);
+}
 
 export function endpointFor(c: CompanySeed): string {
   switch (c.ats) {
@@ -26,10 +59,62 @@ export function endpointFor(c: CompanySeed): string {
       return `${workdayBase(c.slug, c.apiHost)}/jobs`;
     case "smartrecruiters":
       return srPostingsUrl(c.slug);
+    case "oracle":
+      if (!c.apiHost) throw new ProviderError(`oracle/${c.slug}: apiHost ({tenant}.fa.{region}.oraclecloud.com) is required`);
+      return oracleListUrl(c.slug, c.apiHost, 0);
+    case "curated":
+      return PROGRAMMES_PATH_LABEL;
+    case "goldmansachs":
+      return goldmanEndpoint();
+    case "morganstanley":
+      try {
+        return morganStanleyUrl(c.slug);
+      } catch (e) {
+        throw new ProviderError(`morganstanley/${c.slug}: ${(e as Error).message}`);
+      }
+    case "bankofamerica":
+      try {
+        return bankOfAmericaUrl(c.slug);
+      } catch (e) {
+        throw new ProviderError(`bankofamerica/${c.slug}: ${(e as Error).message}`);
+      }
+    case "deutschebank":
+      try {
+        return deutscheBankUrl(c.slug, 1);
+      } catch (e) {
+        throw new ProviderError(`deutschebank/${c.slug}: ${(e as Error).message}`);
+      }
+    case "eightfold":
+      if (!c.apiHost) throw new ProviderError(`eightfold/${c.slug}: apiHost (careers host, e.g. apply.careers.microsoft.com) is required`);
+      return eightfoldSearchUrl(c.slug, c.apiHost, 0);
+    case "phenom":
+      if (!c.apiHost) throw new ProviderError(`phenom/${c.slug}: apiHost (careers host, e.g. careers.bcg.com) is required`);
+      return phenomUrl(c.apiHost);
+    case "apple":
+      try {
+        return appleSearchUrl(c.slug, 1);
+      } catch (e) {
+        throw new ProviderError(`apple/${c.slug}: ${(e as Error).message}`);
+      }
+    case "mckinsey":
+      try {
+        return mckinseySearchUrl(c.slug, 1);
+      } catch (e) {
+        throw new ProviderError(`mckinsey/${c.slug}: ${(e as Error).message}`);
+      }
+    case "amazon":
+      try {
+        return amazonSearchUrl(c.slug, 0);
+      } catch (e) {
+        throw new ProviderError(`amazon/${c.slug}: ${(e as Error).message}`);
+      }
   }
 }
 
-export async function fetchJobs(c: CompanySeed, fetchImpl: typeof fetch = fetch): Promise<RawJob[]> {
+export async function fetchJobs(c: CompanySeed, plainFetch: typeof fetch = fetch): Promise<RawJob[]> {
+  if (c.ats === "curated") return fetchCurated(c.slug);
+  // Boards that reject a plain Node fetch go through the optional sidecar (lib/ingest/stealth.ts); it never solves challenges.
+  const fetchImpl = c.transport === "stealth" ? stealthFetch : plainFetch;
   const url = endpointFor(c);
   if (c.ats === "workday") {
     // Paged list + per-posting detail; the title filter runs before detail calls to keep request count low.
@@ -45,6 +130,76 @@ export async function fetchJobs(c: CompanySeed, fetchImpl: typeof fetch = fetch)
       return (await fetchSmartRecruiters(c.slug, passesTitleFilter, fetchImpl)).jobs;
     } catch (e) {
       throw new ProviderError(`smartrecruiters/${c.slug}: ${(e as Error).message}`);
+    }
+  }
+  if (c.ats === "oracle") {
+    try {
+      return (await fetchOracle(c.slug, c.apiHost as string, passesTitleFilter, fetchImpl)).jobs;
+    } catch (e) {
+      throw new ProviderError(`oracle/${c.slug}: ${(e as Error).message}`);
+    }
+  }
+  if (c.ats === "goldmansachs") {
+    try {
+      return (await fetchGoldman(c.slug, passesTitleFilter, fetchImpl)).jobs;
+    } catch (e) {
+      throw new ProviderError(`goldmansachs/${c.slug}: ${(e as Error).message}`);
+    }
+  }
+  if (c.ats === "morganstanley") {
+    try {
+      return (await fetchMorganStanley(c.slug, passesTitleFilter, fetchImpl)).jobs;
+    } catch (e) {
+      throw new ProviderError(`morganstanley/${c.slug}: ${(e as Error).message}`);
+    }
+  }
+  if (c.ats === "bankofamerica") {
+    try {
+      return (await fetchBankOfAmerica(c.slug, passesTitleFilter, fetchImpl)).jobs;
+    } catch (e) {
+      throw new ProviderError(`bankofamerica/${c.slug}: ${(e as Error).message}`);
+    }
+  }
+  if (c.ats === "deutschebank") {
+    try {
+      return (await fetchDeutscheBank(c.slug, passesTitleFilter, fetchImpl)).jobs;
+    } catch (e) {
+      throw new ProviderError(`deutschebank/${c.slug}: ${(e as Error).message}`);
+    }
+  }
+  if (c.ats === "eightfold") {
+    try {
+      return (await fetchEightfold(c.slug, c.apiHost as string, passesTitleFilter, fetchImpl)).jobs;
+    } catch (e) {
+      throw new ProviderError(`eightfold/${c.slug}: ${(e as Error).message}`);
+    }
+  }
+  if (c.ats === "phenom") {
+    try {
+      return (await fetchPhenom(c.slug, c.apiHost as string, passesTitleFilter, fetchImpl)).jobs;
+    } catch (e) {
+      throw new ProviderError(`phenom/${c.slug}: ${(e as Error).message}`);
+    }
+  }
+  if (c.ats === "apple") {
+    try {
+      return (await fetchApple(c.slug, passesTitleFilter, fetchImpl)).jobs;
+    } catch (e) {
+      throw new ProviderError(`apple/${c.slug}: ${(e as Error).message}`);
+    }
+  }
+  if (c.ats === "mckinsey") {
+    try {
+      return (await fetchMckinsey(c.slug, passesTitleFilter, fetchImpl)).jobs;
+    } catch (e) {
+      throw new ProviderError(`mckinsey/${c.slug}: ${(e as Error).message}`);
+    }
+  }
+  if (c.ats === "amazon") {
+    try {
+      return (await fetchAmazon(c.slug, passesTitleFilter, fetchImpl)).jobs;
+    } catch (e) {
+      throw new ProviderError(`amazon/${c.slug}: ${(e as Error).message}`);
     }
   }
   let res: Response;

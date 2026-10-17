@@ -265,6 +265,10 @@ npm run ingest
 
 New jobs are tagged by your AI backend once, then cached. No key is needed to fetch jobs.
 
+**After pulling an update**, run `npm run seed` once (then refresh jobs). It loads any employer boards newly added to
+[`seed/companies.yml`](seed/companies.yml) and the curated programme cards from [`seed/programmes.yml`](seed/programmes.yml);
+without it, new boards and curated cards don't appear. It keeps your jobs, CVs and tracker, and is safe to re-run.
+
 **On a schedule.** While Placed is open it also refreshes on its own: every few hours, or **every morning** at a time
 you pick in **Settings → Job search**. To keep that going while the app is closed (macOS), install the background agent once:
 
@@ -279,6 +283,22 @@ schedule says a run is due. `npm run schedule:uninstall` removes it. On Linux, t
 aren't watched yet, checks each one against its live careers board (it must exist and have open postings), and adds the
 ones that pass. Nothing the AI makes up gets stored. Run it any time with **Settings → Job search → Find new companies**,
 and remove any company it added from the same place.
+
+### Optional scraper
+
+A few careers sites turn away a plain Node `fetch` because of its TLS or header fingerprint (a bare `403`). Employers marked
+`transport: stealth` in [`seed/companies.yml`](seed/companies.yml) are fetched through a small Python sidecar
+([`scraper/fetch.py`](scraper/fetch.py)) that uses [Scrapling](https://github.com/D4Vinci/Scrapling)'s headless browser instead.
+It is off unless you install it, and everything else works without Python. Without it, those boards fail with a hint to install it.
+
+It never solves Cloudflare, Turnstile or any other CAPTCHA (`solve_cloudflare=False` is hard-coded), uses no proxies and
+never logs in. If a site answers with a challenge page, that board fails as `blocked` and is not retried.
+
+```bash
+npm run scraper:setup   # needs uv or Python 3.10+; creates scraper/.venv and downloads Chromium
+```
+
+**Settings → Job search** shows whether it is installed.
 
 ## The Chrome extension (Autopilot and LinkedIn score)
 
@@ -298,7 +318,9 @@ See [`extension/README.md`](extension/README.md) for how it works and what it wi
 | `npm run setup` | Create `data/`, run migrations, load the seed jobs (re-runnable) |
 | `npm run dev` | Start the app on <http://127.0.0.1:3000> |
 | `npm run build` then `npm start` | Production build, also bound to `127.0.0.1` |
+| `npm run seed` | Load newly added boards and curated programme cards after pulling an update (no ingest) |
 | `npm run ingest` | Pull fresh jobs from every configured ATS board |
+| `npm run scraper:setup` | Optional: install the stealth sidecar for boards marked `transport: stealth` |
 | `npm run schedule:install` / `schedule:uninstall` | Keep the job refresh running while Placed is closed (macOS LaunchAgent) |
 | `npm test` | Unit tests (Vitest, each file on a temp database) |
 | `npm run e2e` | End-to-end run (Playwright, temp database, recorded AI outputs) |
@@ -364,7 +386,7 @@ docs/research/       Sources behind every CV rule and Role Playbook
 - [x] Strategy tab: reach map and a dated outreach plan per role
 - [x] Local-first: SQLite, no account, Claude / Gemini / Ollama
 - [ ] Autopilot on the Chrome Web Store
-- [ ] More employer coverage (JPMorgan, Goldman Sachs, the Big Four and other bank and Workday portals)
+- [x] More employer coverage: 19 of the 21 top employers are live (13) or have a curated programme card (still missing: Meta, Bain)
 - [ ] Cover letters that follow the same no-fabrication rules
 
 ## Acknowledgements

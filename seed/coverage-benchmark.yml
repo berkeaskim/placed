@@ -5,19 +5,21 @@
 # counts as covered when at least one of them is enabled. List old and new boards, so a before/after compare works.
 # `ats` is where the student roles actually live; `why` explains a gap or a non-obvious source.
 # ATS findings come from probing public board APIs and the employer's careers page (2026-10-14).
+# `tier: top` marks the 21 employers the product is judged on (see the top-tier table in `npm run coverage -- --live`).
+# A `curated:<employer key>` source is a card in seed/programmes.yml, not a board: it counts only for the "live or curated" figure.
 # Coverage: `npm run coverage` (offline) or `npm run coverage -- --live` (fetches every board, no DB writes).
 
 # bank
-- { name: "Goldman Sachs", sector: bank, ats: custom, sources: [], why: "Custom portal (higher.gs.com), no public JSON feed; hand-curated programme rows needed" }
-- { name: "JPMorgan Chase", sector: bank, ats: oracle, sources: [], why: "Oracle Recruiting Cloud (jpmc.fa.oraclecloud.com); needs a new provider" }
-- { name: "Morgan Stanley", sector: bank, ats: workday, sources: ["workday:ms/External"], why: "Configured; no UK campus roles open on 2026-10-14" }
-- { name: "Barclays", sector: bank, ats: workday, sources: ["workday:barclays/External_Career_Site_Barclays"] }
-- { name: "HSBC", sector: bank, ats: custom, sources: [], why: "No Workday tenant found (hsbc/*: 422 on wd1-wd501); student roles via hsbc.com careers, ATS not identified" }
-- { name: "Citi", sector: bank, ats: workday, sources: ["workday:citi/2"] }
-- { name: "Deutsche Bank", sector: bank, ats: workday, sources: ["workday:db/DBWebSite"] }
+- { name: "Goldman Sachs", sector: bank, ats: goldmansachs, tier: top, sources: ["goldmansachs:uk", "curated:goldmansachs"], why: "higher.gs.com provider; curated card off-season" }
+- { name: "JPMorgan Chase", sector: bank, ats: oracle, tier: top, sources: ["oracle:CX_1001/300000000289276", "curated:jpmorgan"], why: "Oracle Recruiting Cloud provider" }
+- { name: "Morgan Stanley", sector: bank, ats: workday, tier: top, sources: ["workday:ms/External", "morganstanley:uk", "curated:morganstanley"], why: "Workday board plus careers-site provider; curated card off-season" }
+- { name: "Barclays", sector: bank, ats: workday, tier: top, sources: ["workday:barclays/External_Career_Site_Barclays", "curated:barclays"] }
+- { name: "HSBC", sector: bank, ats: custom, tier: top, sources: ["curated:hsbc"], why: "No public feed; curated programme card only" }
+- { name: "Citi", sector: bank, ats: workday, tier: top, sources: ["workday:citi/2", "curated:citi"] }
+- { name: "Deutsche Bank", sector: bank, ats: workday, tier: top, sources: ["workday:db/DBWebSite", "deutschebank:uk", "curated:deutschebank"] }
 - { name: "BNP Paribas", sector: bank, ats: custom, sources: [], why: "Own careers site (group.bnpparibas); no public ATS feed found" }
-- { name: "UBS", sector: bank, ats: custom, sources: [], why: "Own job search + Beamery talent community; no public feed found" }
-- { name: "Bank of America", sector: bank, ats: oleeo, sources: [], why: "EMEA campus on Oleeo (bankcampuscareers.tal.net); HTML only" }
+- { name: "UBS", sector: bank, ats: custom, tier: top, sources: ["curated:ubs"], why: "No public feed found; curated programme card only" }
+- { name: "Bank of America", sector: bank, ats: bankofamerica, tier: top, sources: ["bankofamerica:uk", "curated:bankofamerica"], why: "Careers-site provider; curated card off-season" }
 - { name: "Lloyds Banking Group", sector: bank, ats: workday, sources: ["workday:lbg/LBG_Careers", "workday:lbg/undergraduate_careers", "workday:lbg/graduate_careers"], why: "Was 'not covered': the seeded site LBG_Careers has no student roles; undergraduate_careers and graduate_careers do" }
 - { name: "NatWest Group", sector: bank, ats: workday, sources: ["workday:rbs/Rbs"], why: "Tenant is 'rbs', not 'natwest'" }
 - { name: "Santander UK", sector: bank, ats: workday, sources: ["workday:santander/SantanderCareers"], why: "Group board; UK student roles thin today" }
@@ -71,9 +73,9 @@
 - { name: "LSEG", sector: asset_mgmt, ats: workday, sources: ["workday:lseg/Graduate_Careers"] }
 
 # consulting
-- { name: "McKinsey & Company", sector: consulting, ats: custom, sources: [], why: "Own job search, no public feed" }
-- { name: "Boston Consulting Group", sector: consulting, ats: phenom, sources: [], why: "Phenom (careers.bcg.com); backing ATS not identified" }
-- { name: "Bain & Company", sector: consulting, ats: custom, sources: [], why: "Own job search, no public feed" }
+- { name: "McKinsey & Company", sector: consulting, ats: mckinsey, tier: top, sources: ["mckinsey:uk", "curated:mckinsey"], why: "Careers-site provider; curated card off-season" }
+- { name: "Boston Consulting Group", sector: consulting, ats: phenom, tier: top, sources: ["phenom:external/page11", "curated:bcg"], why: "Phenom provider (careers.bcg.com)" }
+- { name: "Bain & Company", sector: consulting, ats: custom, tier: top, sources: [], why: "Cloudflare-protected careers site; deliberately not bypassed, no curated card" }
 - { name: "Oliver Wyman", sector: consulting, ats: workday, sources: ["workday:mmc/Careers"], why: "Posted on the Marsh McLennan (mmc) Workday tenant" }
 - { name: "Accenture", sector: consulting, ats: workday, sources: ["workday:accenture/AccentureCareers"] }
 - { name: "Kearney", sector: consulting, ats: custom, sources: [], why: "Careers page blocks automated fetch (403)" }
@@ -91,10 +93,10 @@
 - { name: "Marsh McLennan", sector: consulting, ats: workday, sources: ["workday:mmc/Careers"] }
 
 # big4
-- { name: "Deloitte", sector: big4, ats: avature, sources: [], why: "Avature (per ingest-coverage.md); HTML only" }
-- { name: "PwC", sector: big4, ats: workday, sources: ["workday:pwc/Global_Experienced_Careers", "workday:pwc/Global_Campus_Careers"], why: "Seeded only the experienced site; the campus site has 4x more early-career roles" }
-- { name: "EY", sector: big4, ats: custom, sources: [], why: "Own job search + Beamery; no public feed found" }
-- { name: "KPMG", sector: big4, ats: custom, sources: [], why: "kpmgcareers.co.uk, ATS not identified (lever/kpmg is empty)" }
+- { name: "Deloitte", sector: big4, ats: avature, tier: top, sources: ["curated:deloitte"], why: "Avature, HTML only; curated programme card" }
+- { name: "PwC", sector: big4, ats: workday, tier: top, sources: ["workday:pwc/Global_Experienced_Careers", "workday:pwc/Global_Campus_Careers", "workday:pwc/CRM_Campus_Careers_Site", "curated:pwc"], why: "Experienced + global campus + UK CRM campus sites; curated card off-season" }
+- { name: "EY", sector: big4, ats: custom, tier: top, sources: ["curated:ey"], why: "Own job search + Beamery; curated programme card" }
+- { name: "KPMG", sector: big4, ats: custom, tier: top, sources: ["curated:kpmg"], why: "kpmgcareers.co.uk, ATS not identified; curated programme card" }
 - { name: "BDO", sector: big4, ats: workday, sources: [], why: "bdo/Bdo Workday tenant is BDO Canada; BDO UK not found" }
 - { name: "Grant Thornton", sector: big4, ats: custom, sources: [], why: "ATS not identified" }
 - { name: "Forvis Mazars", sector: big4, ats: smartrecruiters, sources: ["smartrecruiters:mazars", "greenhouse:forvismazars"] }
@@ -140,11 +142,11 @@
 - { name: "ASOS", sector: fmcg, ats: smartrecruiters, sources: ["smartrecruiters:asos"] }
 
 # tech
-- { name: "Google", sector: tech, ats: custom, sources: [], why: "Own careers search, no public feed" }
-- { name: "Microsoft", sector: tech, ats: custom, sources: [], why: "Own careers search (apply.careers.microsoft.com)" }
-- { name: "Amazon", sector: tech, ats: amazon, sources: [], why: "amazon.jobs search.json (see ingest-coverage.md); needs a provider" }
-- { name: "Meta", sector: tech, ats: custom, sources: [], why: "Own careers search" }
-- { name: "Apple", sector: tech, ats: custom, sources: [], why: "Own careers search" }
+- { name: "Google", sector: tech, ats: custom, tier: top, sources: ["curated:google"], why: "No public feed; curated programme card only" }
+- { name: "Microsoft", sector: tech, ats: eightfold, tier: top, sources: ["eightfold:microsoft.com"], why: "Eightfold provider (apply.careers.microsoft.com); no curated card" }
+- { name: "Amazon", sector: tech, ats: amazon, tier: top, sources: ["amazon:uk", "curated:amazon"], why: "amazon.jobs provider" }
+- { name: "Meta", sector: tech, ats: custom, tier: top, sources: [], why: "Own careers search; publishes no UK 2027 timing, so no curated card either" }
+- { name: "Apple", sector: tech, ats: apple, tier: top, sources: ["apple:uk", "curated:apple"], why: "jobs.apple.com provider" }
 - { name: "Bloomberg", sector: tech, ats: avature, sources: [], why: "Avature (bloomberg.avature.net)" }
 - { name: "Salesforce", sector: tech, ats: workday, sources: ["workday:salesforce/External_Career_Site"] }
 - { name: "Oracle", sector: tech, ats: oracle, sources: [], why: "Oracle Recruiting Cloud" }

@@ -5,11 +5,12 @@
 //   npm run coverage -- --live --json <out.json>   save per-board counts so later runs can reuse them with --counts
 import { readFileSync, writeFileSync } from "node:fs";
 import YAML from "yaml";
+import { loadProgrammes, visibleProgrammes } from "@/lib/ingest/curated";
 import { fetchJobs, type CompanySeed } from "@/lib/ingest/providers";
 import { classifyRegion, passesLocationFilter, passesTitleFilter } from "@/lib/ingest/filter";
 import { htmlToLines } from "@/lib/text/jd";
 import {
-  employerCoverage, enabledSources, sourceKey, summarize, unknownSources,
+  employerCoverage, enabledSources, sourceKey, summarize, topTier, unknownSources,
   type BenchmarkEmployer, type BoardCount,
 } from "@/lib/ingest/coverage";
 
@@ -56,12 +57,20 @@ async function main() {
     if (out) writeFileSync(out, JSON.stringify(Object.fromEntries(live), null, 1));
   }
 
-  const rows = employerCoverage(bench, companies, live);
-  console.log("sector       employers  configured" + (live ? "  live(UK/EU)  live(UK)" : ""));
+  // Curated cards visible today (London day), offline.
+  const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/London" }).format(new Date());
+  const curatedKeys = new Set(visibleProgrammes(loadProgrammes(readFileSync("seed/programmes.yml", "utf8")), today).map((p) => p.employer));
+  const rows = employerCoverage(bench, companies, live, curatedKeys);
+  console.log("sector       employers  configured" + (live ? "  live(UK/EU)  live(UK)  live or curated" : ""));
   for (const s of summarize(rows)) {
     const pct = (n: number) => `${n}`.padStart(3) + ` (${Math.round((100 * n) / s.total)}%)`.padEnd(7);
     console.log(`${s.sector.padEnd(12)} ${String(s.total).padStart(9)}  ${pct(s.configured)}` +
-      (s.live !== undefined ? `  ${pct(s.live)}     ${pct(s.liveUk!)}` : ""));
+      (s.live !== undefined ? `  ${pct(s.live)}     ${pct(s.liveUk!)}     ${pct(s.liveOrCurated!)}` : ""));
+  }
+  if (live) {
+    const t = topTier(rows);
+    console.log(`\ntop tier (${today}): ${t.filter((x) => x.status === "live").length} live, ${t.filter((x) => x.status === "curated").length} curated, ${t.filter((x) => x.status === "missing").length} missing`);
+    for (const x of t) console.log(`  ${x.name.padEnd(26)} ${x.status}${x.kept !== undefined ? ` (${x.kept} kept)` : ""}`);
   }
   if (process.argv.includes("--gaps")) {
     console.log("\nnot covered:");

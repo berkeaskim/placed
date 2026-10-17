@@ -1,0 +1,69 @@
+{
+  "data": {
+    "roleSearch": {
+      "totalCount": 3,
+      "items": [
+        {
+          "roleId": "175424_GS_CAMPUS",
+          "jobTitle": "2027 | EMEA | London | FICC and Equities (Sales and Trading) Quantitative Strats | Internship",
+          "locations": [
+            {
+              "primary": true,
+              "state": "Greater London, England",
+              "country": "United Kingdom",
+              "city": "London"
+            }
+          ],
+          "status": "POSTED",
+          "externalSource": {
+            "sourceId": "175424"
+          },
+          "descriptionHtml": "\n<p><b><u>About the program</u></b></p>\n<p>Our Off-Cycle Program varies in length based on program/university for undergraduate students. You will be fully immersed in our day-to-day activities.</p>\n<p>As a participant, you will:</p>\n<ul><li>Receive training designed to help you succeed</li><li>Have the opportunity to work on real responsibilities alongside fellow interns and our people</li></ul><b><u>Submitting Your Application</u></b>\n<div>\n <div>\n  <ul><li>Each applicant has the opportunity to apply to up to 4 separate business / location combinations in any given recruiting year. Any additional application will be auto withdrawn. In order to apply to an additional opportunity, you must w",
+          "lastPostedDate": "2026-10-06T10:36:15.341Z",
+          "startDate": "2026-10-07T10:45:15.746184159Z",
+          "endDate": null
+        },
+        {
+          "roleId": "174814_GS_CAMPUS",
+          "jobTitle": "2027 | EMEA | London | Engineering | Apprentice Programme",
+          "locations": [
+            {
+              "primary": true,
+              "state": "Greater London, England",
+              "country": "United Kingdom",
+              "city": "London"
+            }
+          ],
+          "status": "POSTED",
+          "externalSource": {
+            "sourceId": "174814"
+          },
+          "descriptionHtml": "\n<div>\n <i><b><u>About the programme</u></b></i>\n</div>\n<div>\n <i> Our Apprentice Programme offers a unique opportunity to kick-start your career while earning a competitive salary and working towards a fully funded degree or professional qualification. You will be fully immersed in our day-to-day activities, applying academic concepts directly to real-world business, operational, or technical challenges.</i>\n</div>\n<div>\n <i><b>As an apprentice you will:</b> </i>\n</div>\n<ul><li><i>Receive structured training and mentorship designed to support both your academic studies and professional growth.</i></li><li><i>Take on meaningful responsibilities and contribute to impactful projects alongside ",
+          "lastPostedDate": "2026-10-05T14:31:18.275Z",
+          "startDate": "2026-09-30T23:00:00Z",
+          "endDate": null
+        },
+        {
+          "roleId": "174815_GS_CAMPUS",
+          "jobTitle": "2027 | EMEA | Birmingham | Engineering | Apprentice Programme",
+          "locations": [
+            {
+              "primary": true,
+              "state": "West Midlands, England",
+              "country": "United Kingdom",
+              "city": "Birmingham"
+            }
+          ],
+          "status": "POSTED",
+          "externalSource": {
+            "sourceId": "174815"
+          },
+          "descriptionHtml": "\n<div>\n <i><b><u>About the programme</u></b></i>\n</div>\n<div>\n <i> Our Apprentice Programme offers a unique opportunity to kick-start your career while earning a competitive salary and working towards a fully funded degree or professional qualification. You will be fully immersed in our day-to-day activities, applying academic concepts directly to real-world business, operational, or technical challenges.</i>\n</div>\n<div>\n <i><b>As an apprentice you will:</b> </i>\n</div>\n<ul><li><i>Receive structured training and mentorship designed to support both your academic studies and professional growth.</i></li><li><i>Take on meaningful responsibilities and contribute to impactful projects alongside ",
+          "lastPostedDate": "2026-10-05T14:31:00.200Z",
+          "startDate": "2026-09-30T23:00:00Z",
+          "endDate": null
+        }
+      ]
+    }
+  }
+}
