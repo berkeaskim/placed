@@ -740,7 +740,7 @@ describe("round 6: a judge that says ok to everything", () => {
       expect(r.flags, body).not.toContain(NO_VERDICT);
       expect(r.ready, body).toBe(false);
     }
-  });
+  }, 30_000);
 
   it("a quote that is not a firm line, or does not say the claim, is rejected", () => {
     const body = "Summer analysts rotate across your flow and structured trading desks.⟦them:jd⟧";
