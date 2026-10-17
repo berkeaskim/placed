@@ -144,3 +144,19 @@ builder.
 - Exact bot wording, as long as it is short, English, and names where a suggestion came from.
 - Animation and typing-indicator details, following `motion.css`.
 - Tests: unit tests for the "next item to ask" logic and transcript rebuild; a Playwright run of a full pack in fixture mode.
+
+## Addendum (2026-10-17, Berke during the build)
+
+Two requests that change the "no change to remembered-answer rules" non-goal:
+
+1. **Diversity answers are remembered.** Gender, ethnicity, disability and other EEO questions are no longer left
+   "yours". The bot asks them once (with the form's own options, which usually include "Prefer not to say"), the
+   answer is stored like any other remembered answer (encrypted vault, listed under Remembered answers with Forget),
+   and later forms fill it automatically. EEO answers are never AI-suggested. Optional EEO questions are asked but never
+   block Open & fill. **Consent and declaration checkboxes stay the user's own** (Claude's call: they are legal
+   attestations; Berke can override).
+2. **Long answers are reused.** An approved long answer is kept per job. On a later form, a long-answer question that
+   matches an earlier one (same matching as remembered answers: exact normalised label, or ≥0.75 word overlap) gets an
+   extra first chip: **Use my answer from {company}**. It shows that answer with the usual Use this / Shorter / Warmer /
+   Edit chips and the word counter (red when over the limit). Previous long answers are listed under Remembered answers
+   with Forget. Goal: the second application takes clearly less time than the first.

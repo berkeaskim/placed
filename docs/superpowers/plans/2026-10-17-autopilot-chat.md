@@ -243,3 +243,54 @@ Behaviour (copy is exact where quoted):
 - [ ] **Step 2: Run** `NEXT_PUBLIC_AUTOPILOT=1 npx playwright test e2e/autopilot-chat.spec.ts` — expect PASS.
 - [ ] **Step 3: Update** `e2e/autopilot.spec.ts` selectors to the chat; run it only if the Monzo job is seeded locally (it is opt-in; note in the PR if not run).
 - [ ] **Step 4: Commit** `test(autopilot): e2e for the chat`
+
+---
+
+## Addendum tasks (spec addendum, 2026-10-17)
+
+### Task 7: Remember diversity (EEO) answers
+
+**Files:**
+- Modify: `lib/autopilot/pack.ts` (`assemblePack` `case "eeo"`; `canOpen`)
+- Modify: `app/(app)/jobs/[id]/autopilot-actions.ts` (`setAnswer`)
+- Modify: `lib/autopilot/server.ts` (exclude EEO from `toSuggest`)
+- Modify: tests that assert EEO is never stored (`tests/autopilot/autopilot-actions.test.ts` "never stores or remembers an answer for EEO…", any in `pack.test.ts`)
+- Test: `tests/autopilot/pack.test.ts`, `tests/autopilot/autopilot-actions.test.ts`
+
+**Interfaces:**
+- `assemblePack`: `case "eeo"` → `recall() ?? item("ask")` (asked whether required or optional). `consent` and `yours` unchanged.
+- `canOpen(items, answers)`: an `ask` item whose field is not `required` never blocks.
+- `setAnswer`: accepts `kind === "eeo"` and remembers it like `extra` (same `rememberable`, same 200-key cap). Remove the `isEeoLabel` exclusion from the remember branch.
+- `buildPack`: `toSuggest` excludes EEO items (`classify(...).kind === "eeo"` or `isEeoLabel`), so they are never AI-suggested. `suggestAnswers` keeps its own EEO filter.
+- `lib/autopilot/chat-flow.ts` needs no change (EEO items are plain `ask` items); the chat's closing "yours" note text "Diversity, consent and declarations stay yours." becomes "Consent and declarations stay yours."
+
+- [ ] **Step 1: Update/replace tests:** `eeo is asked, and recalled exactly once remembered` (pack); `an optional ask item never blocks canOpen` (pack); `remembers an EEO option label like any other answer` (actions, replacing the old never-store test); `EEO items are never sent to suggestAnswers` (build-pack-cache test, mock asserts the items passed).
+- [ ] **Step 2: Run** `npx vitest run tests/autopilot` — expect the new tests to FAIL.
+- [ ] **Step 3: Implement** the four changes above plus the copy change in `components/autopilot-chat/chat-thread.tsx`.
+- [ ] **Step 4: Run** `npx vitest run tests/autopilot && npm run typecheck` — expect PASS.
+- [ ] **Step 5: Commit** `feat(autopilot): remember diversity answers`
+
+### Task 8: Reuse earlier long answers
+
+**Files:**
+- Modify: `lib/db/schema.ts` (new table `autopilotLongAnswers`), `npm run db:generate`
+- Modify: `app/(app)/jobs/[id]/autopilot-actions.ts` (`setAnswer` stores approved long answers)
+- Modify: `lib/autopilot/server.ts` (`buildPack` attaches `previous`)
+- Modify: `lib/autopilot/pack.ts` (`PackItem.previous`)
+- Modify: `components/autopilot-chat/long-answer.tsx` (new first chip)
+- Modify: `app/(app)/autopilot/setup/remembered-answers.tsx`, its page and `actions.ts` (list + forget long answers)
+- Test: `tests/autopilot/long-answers.test.ts`
+
+**Interfaces:**
+- Table `autopilot_long_answers`: `id uuid pk`, `user_id text not null`, `job_id text not null references jobs(id) on delete cascade`, `field_label text not null`, `company text not null`, `text text not null` (sealed with `sealVault("extra", userId, …)`-style encryption via a new `sealText`/`openText` pair in `lib/autopilot/vault-crypto.ts` if no text helper exists), `updated_at`; unique `(user_id, job_id, field_label)`.
+- `setAnswer`: when `kind === "freeText"`, `opts.approved === true` and the value is a non-empty string, upsert the row (company from the job). An unapproved or empty save deletes nothing.
+- `PackItem.previous?: { text: string; company: string; words: number }`.
+- `findPreviousAnswer(userId: string, jobId: string, label: string): { text: string; company: string } | null` in `lib/autopilot/server.ts`: rows for this user from OTHER jobs, matched with `findRemembered` over a `{ normLabel(field_label): … }` map (most recent row wins per label); `buildPack` sets `previous` on `draft` items.
+- Chat: for a draft item with `previous`, the first chip is "Use my answer from {company}". Tapping it shows the text with "{words} / {limit} words" (warn colour when over), and chips "Use this" / "Shorter" / "Warmer" / "Edit" — the same handlers as the "Write it for me" result. The other chips stay.
+- Remembered answers page: a second list "Long answers ({n})" showing label, company and the first 140 chars, each with Forget (`forgetLongAnswer(id: string): Promise<{ ok: boolean }>`).
+
+- [ ] **Step 1: Write failing tests** in `tests/autopilot/long-answers.test.ts`: `an approved long answer is stored per job and encrypted at rest` (raw column ≠ plain text); `an unapproved save stores nothing`; `findPreviousAnswer matches a similar label on another job and ignores the same job`; `buildPack attaches previous to the matching draft item`; `forgetLongAnswer removes only the user's row`.
+- [ ] **Step 2: Run** them — expect FAIL.
+- [ ] **Step 3: Implement** schema + migration, storage, matching, the chip, and the Remembered answers list.
+- [ ] **Step 4: Run** `npx vitest run tests/autopilot && npm run typecheck && npm run lint` — expect PASS.
+- [ ] **Step 5: Commit** `feat(autopilot): reuse earlier long answers`
