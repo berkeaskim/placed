@@ -1,6 +1,9 @@
 import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
 import { localSecretKey } from "../settings/secret-key";
 import { normLabel } from "./vault";
+import { classify } from "./classify";
+import type { Answer, Answers } from "./pack";
+import type { FormField } from "./forms/types";
 
 /**
  * At-rest encryption for autopilot_vault.core / .extra (email, phone, right-to-work, remembered answers).
@@ -65,4 +68,29 @@ export function sealLongAnswer(userId: string, jobId: string, label: string, pla
 
 export function openLongAnswer(userId: string, jobId: string, label: string, sealed: string, keyB64?: string): string {
   return openText(sealed, longAad(userId, jobId, label), keyB64);
+}
+
+/** A diversity (EEO) answer in autopilot_packs.answers is bound to its user, job and field key. */
+const answerAad = (userId: string, jobId: string, fieldKey: string) => `pack-answer:${userId}:${jobId}:${fieldKey}`;
+export type StoredAnswer = Omit<Answer, "value"> & { value: Answer["value"] | Sealed };
+
+/** Seals the value of every EEO answer (by the stored form's field) before the pack is written; other answers stay as they are. */
+export function sealAnswers(userId: string, jobId: string, fields: FormField[], answers: Record<string, StoredAnswer>, keyB64?: string): Record<string, StoredAnswer> {
+  const eeo = new Set(fields.filter((f) => classify(f.label, f.type).kind === "eeo").map((f) => f.key));
+  return Object.fromEntries(Object.entries(answers).map(([k, a]) => [k,
+    eeo.has(k) && !isSealed(a.value) ? { ...a, value: { $enc: sealText(JSON.stringify(a.value), answerAad(userId, jobId, k), keyB64) } } : a]));
+}
+
+/** Inverse of sealAnswers for every read of pack answers. A sealed answer that no longer opens is dropped, so it is simply asked again. */
+export function openAnswers(userId: string, jobId: string, stored: unknown, keyB64?: string): Answers {
+  const out: Answers = {};
+  for (const [k, a] of Object.entries((stored ?? {}) as Record<string, StoredAnswer>)) {
+    if (!isSealed(a.value)) { out[k] = a as Answer; continue; }
+    try {
+      out[k] = { ...a, value: JSON.parse(openText(a.value.$enc, answerAad(userId, jobId, k), keyB64)) };
+    } catch {
+      // tampered, moved or sealed with another key
+    }
+  }
+  return out;
 }

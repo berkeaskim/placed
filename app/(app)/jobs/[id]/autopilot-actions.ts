@@ -10,7 +10,7 @@ import type { DraftResult } from "@/lib/autopilot/drafts";
 import { canOpen, type Answers, type PackItem } from "@/lib/autopilot/pack";
 import { mintToken } from "@/lib/autopilot/handoff";
 import { normLabel } from "@/lib/autopilot/vault";
-import { sealLongAnswer, sealVault } from "@/lib/autopilot/vault-crypto";
+import { sealAnswers, sealLongAnswer, sealVault, type StoredAnswer } from "@/lib/autopilot/vault-crypto";
 import { FormUnavailableError } from "@/lib/autopilot/forms/types";
 import { isUuid } from "@/lib/feed/save-result";
 import { env } from "@/lib/env";
@@ -63,7 +63,7 @@ export async function preparePack(jobId: string): Promise<Prepared> {
  * Merges one answer into the pack. The field must exist in the stored form. A draft is only approved when the caller
  * says so, so editing text after approval (no `approved`) resets it. Unless `remember: false`, a short (non-free-text)
  * answer is also stored in the vault for every later form; the label and option text come from the stored form,
- * never from the client. Diversity (EEO) answers are remembered like any other; consent is never stored. An approved,
+ * never from the client. Diversity (EEO) answers are remembered like any other (and sealed in the pack row); consent is never stored. An approved,
  * non-empty long answer is kept (encrypted) for this job so later forms can offer it again.
  */
 export async function setAnswer(
@@ -80,7 +80,8 @@ export async function setAnswer(
   // Never store an answer for consent, "yours" or file fields: those stay the student's own.
   const kind = classify(field.label, field.type).kind;
   if (kind !== "vault" && kind !== "extra" && kind !== "eeo" && kind !== "freeText") return { ok: false };
-  const answers = { ...((pack.answers ?? {}) as Answers), [fieldKey]: { value, approved: opts.approved ?? false } };
+  const form = pack.form as NormalizedForm;
+  const answers = sealAnswers(user.id, jobId, form.fields, { ...((pack.answers ?? {}) as Record<string, StoredAnswer>), [fieldKey]: { value, approved: opts.approved ?? false } });
   try {
     db.update(autopilotPacks).set({ answers, status: "draft" }).where(ownPack(user.id, jobId)).run();
   } catch {

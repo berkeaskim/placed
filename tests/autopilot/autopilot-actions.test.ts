@@ -15,7 +15,7 @@ vi.mock("@/lib/autopilot/server", () => ({
 vi.mock("@/lib/autopilot/ideas", () => ({ suggestIdeas: async () => [{ text: "an angle", refs: ["x"] }] }));
 vi.mock("@/lib/autopilot/revise", () => ({ reviseAnswer: async () => h.draft }));
 import { openAndFill, setAnswer, preparePack, draftFor, ideasFor, reviseFor, coverReadyKeys } from "@/app/(app)/jobs/[id]/autopilot-actions";
-import { openVault, sealVault } from "@/lib/autopilot/vault-crypto";
+import { openAnswers, openVault, sealVault } from "@/lib/autopilot/vault-crypto";
 import { db } from "@/lib/db/client";
 import { autopilotPacks, autopilotVault, coverLetterOutputs, coverLetters } from "@/lib/db/schema";
 import { LOCAL_USER_ID as UID } from "@/lib/auth/local-user";
@@ -106,7 +106,8 @@ describe("autopilot actions", () => {
   });
   it("remembers an EEO option label like any other answer", async () => {
     expect(await setAnswer(JOB, "g", "1", { remember: true, rememberLabel: "Favourite colour?" } as never)).toEqual({ ok: true });
-    expect(packRow()!.answers.g).toMatchObject({ value: "1" });
+    expect(packRow()!.answers.g.value).toMatchObject({ $enc: expect.any(String) }); // EEO is sealed in the pack row
+    expect(openAnswers(UID, JOB, packRow()!.answers).g).toMatchObject({ value: "1" });
     expect(savedExtra()).toEqual({ "what is your gender": "Yes" }); // keyed by the stored label, never a client label
   });
   it("rejects consent labels that mention diversity or equal opportunities", async () => {

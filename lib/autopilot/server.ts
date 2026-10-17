@@ -12,7 +12,7 @@ import { suggestAnswers } from "./suggest";
 import { assemblePack, toFillPlan, type Answers, type Covers, type FillInstruction, type PackItem } from "./pack";
 import { hashToken, safeNamePart } from "./handoff";
 import { findRemembered, isComplete, normLabel, type Core, type Extra } from "./vault";
-import { openLongAnswer, openVault } from "./vault-crypto";
+import { openAnswers, openLongAnswer, openVault } from "./vault-crypto";
 import type { ParsedCV } from "@/lib/types";
 
 export type JobForPack = { id: string; extId: string; url: string; ats: Ats; company: string; textLines: string[] };
@@ -88,7 +88,9 @@ export async function buildPack(userId: string, jobId: string): Promise<{ items:
     .where(and(eq(autopilotPacks.user_id, userId), eq(autopilotPacks.job_id, jobId))).get();
   const form: NormalizedForm = (existing?.form as NormalizedForm | undefined) ?? (await fetchForm(job));
   const cv = (cvRow?.parsed_json ?? null) as ParsedCV | null;
-  const answers = (existing?.answers ?? {}) as Answers;
+  // The row keeps EEO answers sealed (setAnswer): they are written back as stored and only opened for this call.
+  const stored = existing?.answers ?? {};
+  const answers = openAnswers(userId, jobId, stored);
   const drafts = existing?.drafts ?? {};
   const base = assemblePack(form, core, extra, {});
   // Questions nobody answered yet get a CV-backed suggestion, so the student only taps Confirm. Computed once, then reused.
@@ -97,8 +99,8 @@ export async function buildPack(userId: string, jobId: string): Promise<{ items:
   const suggested = computed ?? {};
   const suggestions = existing?.suggestions ?? (cv && computed ? computed : null);
   try {
-    db.insert(autopilotPacks).values({ user_id: userId, job_id: jobId, form, answers, suggestions })
-      .onConflictDoUpdate({ target: [autopilotPacks.user_id, autopilotPacks.job_id], set: { form, answers, suggestions } }).run();
+    db.insert(autopilotPacks).values({ user_id: userId, job_id: jobId, form, answers: stored, suggestions })
+      .onConflictDoUpdate({ target: [autopilotPacks.user_id, autopilotPacks.job_id], set: { form, answers: stored, suggestions } }).run();
   } catch (e) {
     throw new Error(`buildPack: ${e instanceof Error ? e.message : String(e)}`);
   }
@@ -170,7 +172,7 @@ export async function claimPack(token: string): Promise<{ status: 200; body: Cla
       if (own(o.pdf_path)) { covers.upload = { file: true }; coverPath = o.pdf_path; coverDate = new Date(o.updated_at); }
     } else if (o.text.trim()) covers[o.target.fieldKey] = { text: o.text };
   }
-  const fields = toFillPlan(items, pack.answers as Answers, covers);
+  const fields = toFillPlan(items, openAnswers(pack.user_id, pack.job_id, pack.answers), covers);
   const app = db.select({ tailored_cv_path: applications.tailored_cv_path }).from(applications)
     .where(and(eq(applications.user_id, pack.user_id), eq(applications.job_id, pack.job_id))).get();
   const cvRow = db.select({ storage_path: cvs.storage_path }).from(cvs).where(and(eq(cvs.user_id, pack.user_id), eq(cvs.is_active, true))).get();
