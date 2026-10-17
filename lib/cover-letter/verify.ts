@@ -137,28 +137,44 @@ function firmClausesSupported(text: string, src: Sources): boolean {
   // "I would bring X and checking Y to your team" stays one clause about the student.
   const subject = ["you", "your", "the", "its", "their", "they", "it", ...companyTokens(src.company)].join("|");
   const split = new RegExp(`,|;|\\b(?:and|but|while)\\s+(?=(?:${subject})\\b)`, "i");
+  const supported = (clause: string) => [...contentWords(clause)].every((w) => firm.has(w) || known.has(stemWord(w)));
   for (const raw of text.split(split)) {
     // "I know your analysts get bonuses" is firm talk: the wrapper does not make the clause about the student.
     const clause = raw.replace(WRAPPER, "");
     if (FIRST_PERSON.test(clause) || !mentionsFirm(clause, src.company)) continue;
-    for (const w of contentWords(clause)) if (!firm.has(w) && !known.has(stemWord(w))) return false;
+    if (!supported(clause)) return false;
+  }
+  // A clause after a conjunction ("…because it offers X", "…since its analysts…", "…analysts there get…", "…the
+  // bonuses it offers") with it / its / they / their / there in it, and no student, is about the firm.
+  for (const clause of text.split(CLAUSE_BREAK).slice(1)) {
+    if (FIRST_PERSON.test(clause) || !FIRM_PRONOUN.test(clause)) continue;
+    if (!supported(clause)) return false;
   }
   return true;
 }
 
+const CLAUSE_BREAK = /[,;]|\b(?:because|since|as|so|and|but|when|if|while|given|which|that|where|who|whose)\b/i;
+const FIRM_PRONOUN = /\b(?:it|its|they|their|them|there)\b/i;
+
 /** An epistemic lead-in ("I know", "I have heard that", "I was impressed that"): what follows it is about the firm. */
 const WRAPPER = /^\s*(?:(?:and|but|so|because)\s+)?I(?:'ve|’ve|'m|’m| have| am| was)?\s+(?:(?:also|always|recently)\s+)?(?:know|knew|understand|understood|heard|hear|read|learned|learnt|noticed|seen|saw|admire|admired|excited|impressed|struck)\b(?:\s+(?:that|how|by|to see|to read|to hear|to learn))*\s*/i;
 
+const NAME_STOP = new Set("the and for are you our its has have was were who how not can all any but per via with into onto".split(" "));
 /** Head nouns a first-person intent sentence may use for the firm: "your team", "your Markets programme". */
 const FIRM_HEADS = new Set("team teams firm programme programmes program division desk desks role business scheme internship organisation company group people".split(" "));
-/** Words that may follow a firm reference in intent ("apply to your team in London"); anything else (a verb) asserts something about it. */
-const INTENT_NEXT = new Set("in at for because as since and or this next so from with to when if during".split(" "));
-const RELATIVE = new Set("which that who whose where".split(" "));
+/**
+ * Prepositions that may follow a firm reference in intent ("apply to your team in London", "join Northbridge as a
+ * summer analyst"). A conjunction or a verb starts a clause that may say something about the firm, so it is not intent.
+ */
+const INTENT_NEXT = new Set("in at for from with to on during this next".split(" "));
+const CONJUNCTIONS = new Set("because since as so and or but when if while given which that who whose where".split(" "));
 const refEndsOk = (after: string) => {
-  const m = /^\s*([.;:!?…]|$)|^\s*,\s*([\p{L}'’]+)|^\s+([\p{L}'’]+)/u.exec(after);
+  const m = /^\s*([.;:!?…]|$)|^\s*,\s*([\p{L}'’]+)|^\s+([\p{L}'’]+)(?:\s+([\p{L}'’]+))?/u.exec(after);
   if (!m) return false;
   if (m[1] !== undefined) return true;
-  return m[2] ? !RELATIVE.has(m[2].toLowerCase()) : INTENT_NEXT.has(m[3].toLowerCase());
+  if (m[2]) return !CONJUNCTIONS.has(m[2].toLowerCase());
+  const next = m[3].toLowerCase();
+  return INTENT_NEXT.has(next) || (next === "as" && /^(?:a|an)$/i.test(m[4] ?? ""));
 };
 
 /**
@@ -169,7 +185,9 @@ const refEndsOk = (after: string) => {
  */
 function isIntent(text: string, src: Sources): boolean {
   if (!FIRST_PERSON.test(text) || WRAPPER.test(text) || /\byou\b/i.test(text)) return false;
-  const named = new Set([...(src.input.role.toLowerCase().match(/[a-z]+/g) ?? []), ...(src.input.jdLines.join(" ").toLowerCase().match(/[a-z]+/g) ?? []), ...FIRM_HEADS]);
+  // Role and job-post names ("Markets", "Summer Analyst"), never their stop-words, then a generic head noun.
+  const named = new Set([...(src.input.role.toLowerCase().match(/[a-z]+/g) ?? []), ...(src.input.jdLines.join(" ").toLowerCase().match(/[a-z]+/g) ?? [])]
+    .filter((w) => w.length > 2 && !GENERIC_STOP.has(w) && !NAME_STOP.has(w)).concat([...FIRM_HEADS]));
   const tokens = companyTokens(src.company);
   const firm = tokens.length ? `|${tokens.map((w) => escapeRe(w)).join("|")}` : "";
   const re = new RegExp(`\\b(?:your${firm})\\b`, "gi");

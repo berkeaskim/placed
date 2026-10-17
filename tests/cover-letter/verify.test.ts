@@ -368,6 +368,49 @@ describe("fix round 2: firm talk outside them-sentences", () => {
     ]) expect(ready(full("Dear Hiring Manager,", body)), body).toBe(false);
   });
 
+  it("a firm claim after because / since / and, about \"it\" or \"there\", is checked and goes to the judge", async () => {
+    const bodies = [
+      "I am applying to Northbridge because it offers guaranteed bonuses.⟦me:⟧",
+      "I am applying to Northbridge because it pays analysts generously.⟦me:⟧",
+      "I am applying to Northbridge since its analysts receive guaranteed bonuses.⟦me:⟧",
+      "I am applying to Northbridge because analysts there get guaranteed bonuses.⟦me:⟧",
+      "I am applying to Northbridge and look forward to the guaranteed bonuses it offers.⟦me:⟧",
+    ];
+    for (const body of bodies) {
+      const r = full("Dear Hiring Manager,", body);
+      expect(flagged(r.spans).length, body).toBeGreaterThan(0);
+      expect(ready(r), body).toBe(false);
+    }
+    // Each is also shown to the judge.
+    process.env.AI_MODE = "fixture";
+    try {
+      const { judgeSentences: judge } = await import("@/lib/cover-letter/verify");
+      for (const body of bodies) {
+        const m = letter(body);
+        const n = m.sentences.findIndex((x) => x.text.startsWith("I am applying to Northbridge"));
+        const shown: number[] = [];
+        vi.spyOn(await import("@/lib/ai/provider"), "runAi").mockResolvedValue({ items: m.sentences.map((_, index) => ({ index, about: "me", refs: [], verdict: "ok" })) } as never);
+        for (const x of await judge({ sentences: m.sentences, input: fixtureDraftInput() })) shown.push(x.index);
+        vi.restoreAllMocks();
+        expect(shown, body).toContain(n);
+      }
+    } finally {
+      vi.restoreAllMocks();
+      delete process.env.AI_MODE;
+    }
+  });
+
+  it("intent followed by a preposition phrase or the student's own reason stays unflagged", () => {
+    for (const body of [
+      "That is why I am applying to Northbridge.⟦me:⟧",
+      "I am applying to Northbridge as a summer analyst.⟦me:⟧",
+      "I would value the opportunity to contribute to your team in London.⟦me:⟧",
+    ]) {
+      const r = full("Dear Hiring Manager,", body);
+      expect(flagged(r.spans), body).toEqual([]);
+    }
+  });
+
   it("pure courtesy passes", () => {
     for (const body of ["Thank you for your consideration.⟦me:⟧", "I would welcome the chance to discuss my application.⟦me:⟧"]) {
       const r = full("Dear Hiring Manager,", body);
