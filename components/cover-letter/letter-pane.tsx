@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent as KeyEvent, type ReactNode } from "react";
 import type { CardView, OutputView } from "@/lib/cover-letter/service";
 import { sameLetter } from "@/lib/cover-letter/spans";
 import type { Span } from "@/lib/cover-letter/types";
@@ -51,10 +51,20 @@ function Collapsing({ children }: { children: ReactNode }) {
   return <span ref={ref} className="flag gone" data-span="ai">{children}</span>;
 }
 
-/** One paragraph's text with its spans: theirs green, flagged AI sentences amber (focusable; Enter opens the check). */
-function Segments({ text, range, spans, sweep, litTexts, removing, onFlag }: {
-  text: string; range: Range; spans: Span[]; sweep: boolean; litTexts: string[]; removing: Span | null; onFlag: (el: HTMLElement) => void;
+/**
+ * One paragraph's text with its spans: theirs green, flagged AI sentences amber. While the letter is editable, clicking
+ * amber text places the caret like any other text, and a small "?" after it (outside the editable text) opens the
+ * check; otherwise the amber span itself is focusable and Enter or Space opens it.
+ */
+function Segments({ text, range, spans, sweep, litTexts, removing, editable, onFlag }: {
+  text: string; range: Range; spans: Span[]; sweep: boolean; litTexts: string[]; removing: Span | null; editable: boolean; onFlag: (el: HTMLElement) => void;
 }) {
+  const keys = (e: KeyEvent<HTMLElement>) => {
+    // Only the focused control itself: never a key typed with the caret inside the letter.
+    if (e.target !== e.currentTarget || (e.key !== "Enter" && e.key !== " ")) return;
+    e.preventDefault();
+    onFlag(e.currentTarget);
+  };
   const inside = spans.filter((x) => x.end > range.start && x.start < range.end).sort((a, b) => a.start - b.start);
   const out: ReactNode[] = [];
   let at = range.start;
@@ -65,10 +75,14 @@ function Segments({ text, range, spans, sweep, litTexts, removing, onFlag }: {
     const t = text.slice(a, b);
     if (x === removing) out.push(<Collapsing key={a}>{t}</Collapsing>);
     else if (x.kind === "theirs") out.push(<Yours key={a} sweep={sweep && !litTexts.includes(t.trim())}>{t}</Yours>);
-    else if (x.flag) {
+    else if (x.flag && editable) {
       out.push(
-        <span key={a} data-span="ai" data-flag={x.flag} data-start={x.start} className="flag" tabIndex={0} aria-label={`Check: ${x.flag}`}
-          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onFlag(e.currentTarget); } }}>{t}</span>,
+        <span key={a} data-span="ai" data-flag={x.flag} data-start={x.start} className="flag">{t}</span>,
+        <span key={`q${a}`} className="flag-q" role="button" tabIndex={0} contentEditable={false} data-check={x.start} aria-label={`Check: ${x.flag}`} onKeyDown={keys} />,
+      );
+    } else if (x.flag) {
+      out.push(
+        <span key={a} data-span="ai" data-flag={x.flag} data-start={x.start} className="flag" tabIndex={0} role="button" aria-label={`Check: ${x.flag}`} onKeyDown={keys}>{t}</span>,
       );
     } else out.push(<span key={a} data-span="ai" data-start={x.start}>{t}</span>);
     at = b;
@@ -183,9 +197,9 @@ export function LetterPane({ s, view, output, autopilot, h }: { s: CardState; vi
   useEffect(() => {
     if (!pop) return;
     const close = (e: KeyboardEvent | PointerEvent) => {
-      if (e instanceof KeyboardEvent ? e.key !== "Escape" : (e.target as HTMLElement).closest?.(".pop, [data-flag]")) return;
+      if (e instanceof KeyboardEvent ? e.key !== "Escape" : (e.target as HTMLElement).closest?.(".pop, [data-flag], [data-check]")) return;
       setPop(null);
-      if (e instanceof KeyboardEvent) paperRef.current?.querySelector<HTMLElement>(`[data-start="${pop.start}"]`)?.focus();
+      if (e instanceof KeyboardEvent) paperRef.current?.querySelector<HTMLElement>(`[data-check="${pop.start}"], [data-flag][data-start="${pop.start}"]`)?.focus();
     };
     window.addEventListener("keydown", close);
     window.addEventListener("pointerdown", close);
@@ -193,14 +207,18 @@ export function LetterPane({ s, view, output, autopilot, h }: { s: CardState; vi
   }, [pop]);
 
   function openFlag(target: HTMLElement) {
-    const el = target.closest<HTMLElement>("[data-flag]");
+    // In an editable letter only the "?" opens the check; a click on the amber text just places the caret.
+    const q = target.closest<HTMLElement>("[data-check]");
+    const el = q
+      ? paperRef.current?.querySelector<HTMLElement>(`[data-flag][data-start="${q.dataset.check}"]`) ?? null
+      : editable ? null : target.closest<HTMLElement>("[data-flag]");
     const flag = el?.dataset.flag;
     if (!el || !flag || !wrapRef.current) return;
     const top = el.getBoundingClientRect().bottom - wrapRef.current.getBoundingClientRect().top + 6;
     setPop({ start: Number(el.dataset.start), flag, top });
   }
   const editFlag = () => {
-    const el = paperRef.current?.querySelector<HTMLElement>(`[data-start="${pop?.start}"]`);
+    const el = paperRef.current?.querySelector<HTMLElement>(`[data-flag][data-start="${pop?.start}"]`);
     setPop(null);
     if (!el) return;
     paperRef.current!.focus();
@@ -246,7 +264,7 @@ export function LetterPane({ s, view, output, autopilot, h }: { s: CardState; vi
       const breathing = (gen?.kind === "edit" || undoing) && s.editing === i;
       return (
         <GlowP key={glow ? `g${s.scan.n}` : `p${i}`} glow={glow} className={breathing ? "editing" : ""}>
-          <Segments text={text} range={r} spans={spans} sweep={s.sweep} litTexts={s.litTexts} removing={removing} onFlag={openFlag} />
+          <Segments text={text} range={r} spans={spans} sweep={s.sweep} litTexts={s.litTexts} removing={removing} editable={editable} onFlag={openFlag} />
         </GlowP>
       );
     });

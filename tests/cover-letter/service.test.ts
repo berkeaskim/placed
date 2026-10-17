@@ -2,7 +2,7 @@ import { existsSync } from "node:fs";
 import { and, eq } from "drizzle-orm";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import { db } from "@/lib/db/client";
-import { companyResearch, confirmedFacts, coverLetters, xpEvents } from "@/lib/db/schema";
+import { autopilotPacks, companyResearch, confirmedFacts, coverLetters, xpEvents } from "@/lib/db/schema";
 import { resolveFile } from "@/lib/files";
 import { buildDraftPrompt } from "@/lib/cover-letter/draft";
 import { draftInputFor, openCard, researchSettled, retryResearch, type CardView } from "@/lib/cover-letter/service";
@@ -88,6 +88,20 @@ describe("openCard", () => {
     await researchSettled();
     expect(w.noLetter).toBe(true);
     expect(w.outputs[0].mode).toBe("skip");
+  });
+});
+
+describe("Autopilot field targets", () => {
+  it("a why-us field on a 'no cover letter' posting is still a field answer, with the form's word limit", async () => {
+    const jobId = seedNorthbridgeJob(["Please note: no cover letter is required."]);
+    db.insert(autopilotPacks).values({ user_id: U, job_id: jobId, form: { ats: "greenhouse", url: "https://x/apply", fields: [
+      { key: "why_us", label: "Why do you want to join us?", type: "textarea", required: true, options: [], wordLimit: 200, target: "#why_us" },
+    ] } }).run();
+    const v = await openCard(U, jobId, { kind: "field", fieldKey: "why_us", label: "Why do you want to join us?" });
+    await researchSettled();
+    expect(v.outputs[0]).toMatchObject({ mode: "field_answer", limit: { unit: "words", max: 200 } });
+    // The posting's own upload still takes no letter.
+    expect((await openCard(U, jobId)).outputs.find((o) => o.target.kind === "upload")?.mode).toBe("skip");
   });
 });
 
@@ -296,7 +310,8 @@ describe("edits and Ready", () => {
     expect(o).toMatchObject({ mode: "short_note", limit: null });
     expect(view(await actions.setMode(jobId, outputId, "field_answer", { unit: "chars", max: 1000 })).outputs[0].limit).toEqual({ unit: "chars", max: 1000 });
     expect(await actions.setMode(jobId, outputId, "skip")).toHaveProperty("error");
-    expect(view(await actions.undoEdit(jobId, outputId)).outputs[0].text).toBe(before.text);
+    // Undo walks back through each switch, restoring the mode and limit with the text.
+    expect(view(await actions.undoEdit(jobId, outputId)).outputs[0]).toMatchObject({ mode: "full_letter", limit: null, text: before.text, spans: before.spans });
   });
 
   it("rejects bad input from the client", async () => {

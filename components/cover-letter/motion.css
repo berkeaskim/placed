@@ -102,6 +102,11 @@
 .cl .yours { border-radius: 4px; background-image: linear-gradient(var(--green-soft), var(--green-soft)); background-repeat: no-repeat; background-size: 0% 100%; transition: background-size .7s var(--settle); box-shadow: inset 0 -1.5px 0 rgba(11,107,73,0); }
 .cl .yours.lit { background-size: 100% 100%; box-shadow: inset 0 -1.5px 0 rgba(11,107,73,.35); }
 .cl .flag { border-radius: 4px; background: var(--amber-soft); box-shadow: inset 0 -1.5px 0 rgba(122,65,0,.4); cursor: pointer; }
+.cl .paper[contenteditable="true"] .flag { cursor: text; }
+/* The check's own affordance in an editable letter: its "?" is generated content, so it never enters the letter's text. */
+.cl .flag-q { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; margin: 0 2px 0 3px; vertical-align: 1px; border-radius: 50%; background: var(--amber-soft); color: var(--amber); font-size: 11px; font-weight: 700; line-height: 1; cursor: pointer; user-select: none; }
+.cl .flag-q::before { content: "?"; }
+.cl .flag-q:focus-visible { outline: 2px solid var(--amber); outline-offset: 1px; }
 
 /* flagged-sentence popover */
 .cl .pop { position: absolute; z-index: 5; left: 20px; right: 20px; max-width: 420px; background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; font-size: 13px; box-shadow: 0 8px 28px rgba(22,22,29,.14); animation: cl-pop .3s var(--spring) both; transform-origin: 0% 0%; }

@@ -11,4 +11,6 @@ export type Answer = {
 };
 export type OutputTarget = { kind: "upload" } | { kind: "field"; fieldKey: string; label: string };
 export type OutputStatus = "draft" | "ready";
+/** A previous state on an output's undo stack; `mode` and `limit` are set when a mode switch replaced it. */
+export type UndoEntry = { text: string; spans: Span[]; mode?: Mode; limit?: Limit };
 export type ChatMsg = { id: string; from: "bot" | "me"; text: string; kind?: "question" | "research" | "facts" | "done" | "error"; questionId?: Answer["question"] };

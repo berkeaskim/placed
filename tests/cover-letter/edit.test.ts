@@ -105,6 +105,22 @@ describe("applyEdit", () => {
     expect((done.lint as { ruleId: string }[]).some((h) => h.ruleId === "CL-55")).toBe(false);
   });
 
+  it("keeps the student's text that crosses into the next paragraph, locking only the part inside the edited one", async () => {
+    const b = base();
+    const text = b.text.replace(" Running the trading desk", "\n\nRunning the trading desk");
+    const shifted = b.spans.map((s) => (s.start > b.text.indexOf(" Running the trading desk") ? { ...s, start: s.start + 1, end: s.end + 1 } : s));
+    const a1 = FIXTURE_ANSWERS[0].text!;
+    const from = text.indexOf(a1);
+    const to = text.indexOf("as much as choosing it.") + "as much as choosing it.".length;
+    // A hand edit made one span of theirs from the quoted answer across the break into the next paragraph.
+    const spans: Span[] = [...shifted.filter((s) => s.end <= from || s.start >= to), { start: from, end: to, kind: "theirs" as const, refs: [] }].sort((x, y) => x.start - y.start);
+    const { done } = await run("shorter", "Make the opening shorter", { text, spans });
+    const own = theirsText(done.text, done.spans);
+    expect(own).toContain(a1);
+    expect(own).toContain("Running the trading desk of a £50k student investment fund taught me that sizing a position matters as much as choosing it.");
+    expect(done.spans.some((s) => s.kind === "ai" && /Running the trading desk/.test(done.text.slice(s.start, s.end)))).toBe(false);
+  });
+
   it("fails loudly when the rewrite changes a locked passage", async () => {
     const b = base();
     // paragraph 3 holds the a4 answer; the shorter fixture has no such passage

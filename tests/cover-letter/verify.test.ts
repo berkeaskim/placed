@@ -334,6 +334,40 @@ describe("fix round 2: firm talk outside them-sentences", () => {
     }
   });
 
+  it("a firm claim wrapped in \"I know\" or \"I was impressed that\" is still checked, with no judge", () => {
+    for (const body of [
+      "I know your analysts get guaranteed bonuses.⟦me:⟧",
+      "I understand that Northbridge doubled its revenue last year.⟦me:x1-b0⟧",
+      "I was impressed that your desk won the Risk Awards.⟦me:⟧",
+      "I heard you are opening a Tokyo office.⟦me:⟧",
+      "I have read that your analysts receive guaranteed bonuses.⟦me:x1-b0⟧",
+      "I admire how your desk pays analysts generously.⟦me:x1-b0⟧",
+      "I am excited that Northbridge offers guaranteed bonuses.⟦me:x1-b0⟧",
+    ]) {
+      const r = full("Dear Hiring Manager,", body);
+      expect(flagged(r.spans).length, body).toBeGreaterThan(0);
+      expect(ready(r), body).toBe(false);
+    }
+  });
+
+  it("boilerplate intent naming only the firm, the programme or the team is not a firm claim", () => {
+    for (const body of [
+      "That is why I am applying to Northbridge Capital.⟦me:⟧",
+      "My experience on the fund fits your Markets programme.⟦me:x1-b0⟧",
+      "I would value the opportunity to contribute to your team.⟦me:⟧",
+    ]) {
+      const r = full("Dear Hiring Manager,", body);
+      expect(flagged(r.spans), body).toEqual([]);
+      expect(ready(r), body).toBe(true);
+    }
+    // A clause that says what the firm has, pays or does is still a claim.
+    for (const body of [
+      "I would love to join your team, which pays guaranteed bonuses.⟦me:⟧",
+      "I am applying to Northbridge because Northbridge pays guaranteed bonuses.⟦me:⟧",
+      "I want to join your desk that won the Risk Awards.⟦me:⟧",
+    ]) expect(ready(full("Dear Hiring Manager,", body)), body).toBe(false);
+  });
+
   it("pure courtesy passes", () => {
     for (const body of ["Thank you for your consideration.⟦me:⟧", "I would welcome the chance to discuss my application.⟦me:⟧"]) {
       const r = full("Dear Hiring Manager,", body);
@@ -347,7 +381,8 @@ describe("fix round 2: firm talk outside them-sentences", () => {
   });
 
   it("the judge sees firm-talking me sentences, and its verdict applies to them", async () => {
-    const m = letter("I would bring the habit of sizing a position to your Markets team.⟦me:x1-b0⟧");
+    // (A sentence that only names "your Markets team" is intent and never goes to the judge: this one says something about the desks.)
+    const m = letter("I would bring the habit of sizing a position to your desks, which rotate summer analysts.⟦me:x1-b0⟧");
     const n = m.sentences.findIndex((s) => s.text.startsWith("I would bring"));
     expect(flagged(verifyOutput({ ...m, input: fixtureDraftInput(), ownSpans: [] }).spans)).toEqual([]);
     const v = verifyOutput({ ...m, input: fixtureDraftInput(), ownSpans: [], judged: [{ index: n, about: "me", refs: ["x1-b0"], verdict: "generic" }] });

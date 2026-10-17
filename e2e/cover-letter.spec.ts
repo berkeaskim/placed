@@ -217,11 +217,24 @@ test.describe("cover letter writer", () => {
     // 10. each flagged claim: "This is true" → Mark ready → the PDF downloads
     const flags = page.locator(".cl .paper [data-span=ai][data-flag]");
     const ready = page.getByRole("button", { name: "Mark ready" });
+    const pop = page.getByRole("dialog", { name: "Something to check" });
     await expect(flags.first()).toBeVisible();
     await expect(ready).toBeDisabled();
+    // In the editable letter a click on amber text only places the caret, and leaving without typing saves nothing.
+    const flagCount = await flags.count();
+    await flags.first().click();
+    await expect(pop).toHaveCount(0);
+    await page.locator(".cl .lint").click();
+    await expect(state(page, "done")).toBeVisible();
+    await expect(flags).toHaveCount(flagCount);
+    // The check opens from its own "?" control, by keyboard too.
+    await page.locator(".cl .paper .flag-q").first().focus();
+    await page.keyboard.press("Enter");
+    await expect(pop.getByRole("button", { name: "Edit" })).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(pop).toHaveCount(0);
     for (let n = await flags.count(), first = true; n > 0; n--, first = false) {
-      await flags.first().click();
-      const pop = page.getByRole("dialog", { name: "Something to check" });
+      await page.locator(".cl .paper .flag-q").first().click();
       await expect(pop.getByRole("button", { name: "Edit" })).toBeVisible();
       if (first) await shot(page, "flag-check");
       await pop.getByRole("button", { name: "This is true" }).click();

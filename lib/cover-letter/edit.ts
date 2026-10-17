@@ -45,6 +45,15 @@ function bodyIndexes(text: string, paras: Range[]): number[] {
   });
 }
 
+/** The part of `s` inside [from, to), whitespace trimmed; null when no text is left. */
+function clip(text: string, s: Span, from: number, to: number): Span | null {
+  let start = Math.max(s.start, from);
+  let end = Math.min(s.end, to);
+  while (start < end && /\s/.test(text[start])) start++;
+  while (end > start && /\s/.test(text[end - 1])) end--;
+  return end > start && /[\p{L}\p{N}]/u.test(text.slice(start, end)) ? { ...s, start, end } : null;
+}
+
 const aiChars = (spans: Span[], r: Range) =>
   spans.reduce((n, s) => (s.kind === "ai" ? n + Math.max(0, Math.min(s.end, r.end) - Math.max(s.start, r.start)) : n), 0);
 
@@ -111,8 +120,10 @@ function finalize(o: { text: string; spans: Span[]; region: Range; piece: string
   const { text, spans, region, piece, input } = o;
   const text2 = text.slice(0, region.start) + piece + text.slice(region.end);
   const delta = piece.length - (region.end - region.start);
-  const before = spans.filter((s) => s.end <= region.start);
-  const after = spans.filter((s) => s.start >= region.end && s.end > region.start).map((s) => ({ ...s, start: s.start + delta, end: s.end + delta }));
+  // A span that crosses into the region keeps its part outside it (the part inside is in `o.own` or `o.keep`).
+  const before = spans.flatMap((s) => (s.start < region.start ? clip(text, s, s.start, region.start) ?? [] : []));
+  const after = spans.flatMap((s) => (s.end > region.end ? clip(text, s, region.end, s.end) ?? [] : []))
+    .map((s) => ({ ...s, start: s.start + delta, end: s.end + delta }));
   const picked = new Set(input.pickedFacts.map((f) => f.id.toLowerCase()));
   const ai = (list: Span[], t: string) => list.filter((s) => s.kind === "ai").map((s) => asSentence(t, s, picked));
   const sentences = [...ai(before, text2), ...o.sentences, ...ai(after, text2)];
@@ -191,7 +202,7 @@ export async function* applyEdit(i: {
     // The paragraph's only sentence: drop the paragraph and one separator with it.
     const empty = !/[\p{L}\p{N}]/u.test(piece);
     const region = !empty ? para : index > 0 ? { start: paras[index - 1].end, end: para.end } : { start: para.start, end: paras[index + 1]?.start ?? para.end };
-    const inside = spans.filter((x) => x.start >= para.start && x.end <= para.end && x !== s);
+    const inside = spans.flatMap((x) => (x !== s && x.start < para.end && x.end > para.start ? clip(text, x, para.start, para.end) ?? [] : []));
     const moved = (x: Span): Span => ({ ...x, start: map(x.start), end: map(x.end) });
     const picked = new Set(input.pickedFacts.map((f) => f.id.toLowerCase()));
     const ai = inside.filter((x) => x.kind === "ai").map(moved).filter((x) => x.end > x.start);
@@ -212,7 +223,8 @@ export async function* applyEdit(i: {
   const target = adding ? null : paras[plan.paragraph];
   yield { phase: "target", paragraph: plan.paragraph };
 
-  const lockedSpans = target ? spans.filter((s) => s.kind === "theirs" && s.start >= target.start && s.end <= target.end) : [];
+  // Every piece of the student's text in the paragraph is locked, clipped to it: theirs is never sent to be rewritten.
+  const lockedSpans = target ? spans.flatMap((s) => (s.kind === "theirs" && s.start < target.end && s.end > target.start ? clip(text, s, target.start, target.end) ?? [] : [])) : [];
   const locked = lockedSpans.map((s) => ({ text: text.slice(s.start, s.end), ref: s.refs[0] ?? "" }));
   const { system, prompt } = editPrompt({ kind, instruction: i.instruction, text, target, locked, input });
 

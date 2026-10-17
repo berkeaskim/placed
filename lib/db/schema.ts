@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
 import { check, index, integer, primaryKey, sqliteTable, text, unique, uniqueIndex } from "drizzle-orm/sqlite-core";
-import type { Answer, ChatMsg, Fact, Limit, LintHit, OutputStatus, OutputTarget, Span } from "../cover-letter/types";
+import type { Answer, ChatMsg, Fact, Limit, LintHit, OutputStatus, OutputTarget, Span, UndoEntry } from "../cover-letter/types";
 import type { Archetype, ArchetypeScore, ParsedCV, Region, Requirement, Year } from "../types";
 
 /**
@@ -344,7 +344,7 @@ export const coverLetterOutputs = sqliteTable("cover_letter_outputs", {
   text: text("text").notNull().default(""),
   spans: json<Span[]>("spans").notNull().default(sql`'[]'`),
   lint: json<LintHit[]>("lint").notNull().default(sql`'[]'`),
-  undo: json<{ text: string; spans: Span[] }[]>("undo").notNull().default(sql`'[]'`),
+  undo: json<UndoEntry[]>("undo").notNull().default(sql`'[]'`),
   pdf_path: text("pdf_path"),
   updated_at: now("updated_at").notNull(),
 }, (t) => [

@@ -84,12 +84,14 @@ function sources(i: DraftInput): Sources {
 /** CL-11 backstop: every number in AI-written text appears somewhere in the sources. */
 const numbersSupported = (text: string, src: Sources) => numberTokens(text).every((n) => src.numbers.has(n));
 
-const FIRST_PERSON = /\b(?:I|I'm|I've|I'd|I'll|my|me|myself|mine)\b/;
+// "I" only in capitals (a lowercase "i" is not the pronoun); "My" and "Me" also start sentences.
+const FIRST_PERSON = /\b(?:I|I'm|I've|I'd|I'll|[Mm]y|[Mm]e|[Mm]yself|[Mm]ine)\b/;
 const ADDRESSES_FIRM = /\b(?:you|your|yours)\b/i;
 /** Firm claims that need a firm source even in lowercase (on top of themSupported's claim words). */
 const FIRM_CLAIMS = /\b(?:records?|more than any|any other|unrivalled|unmatched|unparalleled|highest|award[- ]winning|best[- ]paid|double|triple|twice)\b/gi;
 /** Capitalised sentence openers that are not names. */
 const OPENERS = new Set("thank thanks running presenting working having being building leading since after before during then now here away back like both each one so yet still".split(" "));
+const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const companyTokens = (company: string) => (company.toLowerCase().match(/[a-z0-9]+/g) ?? []).filter((w) => w.length >= 3);
 
 /** The sentence's first word is capitalised only because it starts the sentence, unless it looks like a name. */
@@ -135,15 +137,67 @@ function firmClausesSupported(text: string, src: Sources): boolean {
   // "I would bring X and checking Y to your team" stays one clause about the student.
   const subject = ["you", "your", "the", "its", "their", "they", "it", ...companyTokens(src.company)].join("|");
   const split = new RegExp(`,|;|\\b(?:and|but|while)\\s+(?=(?:${subject})\\b)`, "i");
-  for (const clause of text.split(split)) {
+  for (const raw of text.split(split)) {
+    // "I know your analysts get bonuses" is firm talk: the wrapper does not make the clause about the student.
+    const clause = raw.replace(WRAPPER, "");
     if (FIRST_PERSON.test(clause) || !mentionsFirm(clause, src.company)) continue;
     for (const w of contentWords(clause)) if (!firm.has(w) && !known.has(stemWord(w))) return false;
   }
   return true;
 }
 
+/** An epistemic lead-in ("I know", "I have heard that", "I was impressed that"): what follows it is about the firm. */
+const WRAPPER = /^\s*(?:(?:and|but|so|because)\s+)?I(?:'ve|’ve|'m|’m| have| am| was)?\s+(?:(?:also|always|recently)\s+)?(?:know|knew|understand|understood|heard|hear|read|learned|learnt|noticed|seen|saw|admire|admired|excited|impressed|struck)\b(?:\s+(?:that|how|by|to see|to read|to hear|to learn))*\s*/i;
+
+/** Head nouns a first-person intent sentence may use for the firm: "your team", "your Markets programme". */
+const FIRM_HEADS = new Set("team teams firm programme programmes program division desk desks role business scheme internship organisation company group people".split(" "));
+/** Words that may follow a firm reference in intent ("apply to your team in London"); anything else (a verb) asserts something about it. */
+const INTENT_NEXT = new Set("in at for because as since and or this next so from with to when if during".split(" "));
+const RELATIVE = new Set("which that who whose where".split(" "));
+const refEndsOk = (after: string) => {
+  const m = /^\s*([.;:!?…]|$)|^\s*,\s*([\p{L}'’]+)|^\s+([\p{L}'’]+)/u.exec(after);
+  if (!m) return false;
+  if (m[1] !== undefined) return true;
+  return m[2] ? !RELATIVE.has(m[2].toLowerCase()) : INTENT_NEXT.has(m[3].toLowerCase());
+};
+
+/**
+ * A first-person sentence whose only firm content is the company's name, a role, programme, division or team name
+ * from the job post, or a generic "your team / firm / programme" ("That is why I am applying to Northbridge"):
+ * intent, not a firm claim. A firm reference followed by a verb or a relative clause ("your desk pays…", "Northbridge
+ * offers…", "your team, which…") is a claim and is still checked, as is any epistemic wrapper or a bare "you".
+ */
+function isIntent(text: string, src: Sources): boolean {
+  if (!FIRST_PERSON.test(text) || WRAPPER.test(text) || /\byou\b/i.test(text)) return false;
+  const named = new Set([...(src.input.role.toLowerCase().match(/[a-z]+/g) ?? []), ...(src.input.jdLines.join(" ").toLowerCase().match(/[a-z]+/g) ?? []), ...FIRM_HEADS]);
+  const tokens = companyTokens(src.company);
+  const firm = tokens.length ? `|${tokens.map((w) => escapeRe(w)).join("|")}` : "";
+  const re = new RegExp(`\\b(?:your${firm})\\b`, "gi");
+  let refs = 0;
+  for (const m of text.matchAll(re)) {
+    let end = m.index + m[0].length;
+    const isYour = m[0].toLowerCase() === "your";
+    if (!isYour) {
+      // The rest of the company's name, and a possessive: "Northbridge Capital's Markets team".
+      const more = new RegExp(`^(?:\\s+(?:${tokens.map(escapeRe).join("|")})\\b)*(?:['’]s\\b)?`, "i").exec(text.slice(end));
+      end += more?.[0].length ?? 0;
+    }
+    let head = false;
+    for (let k = 0; k < 4; k++) {
+      const w = /^\s+([\p{L}-]+)/u.exec(text.slice(end));
+      if (!w || !named.has(w[1].toLowerCase())) break;
+      end += w[0].length;
+      head = FIRM_HEADS.has(w[1].toLowerCase());
+    }
+    if (isYour && !head) return false;
+    if (!refEndsOk(text.slice(end))) return false;
+    refs++;
+  }
+  return refs > 0;
+}
+
 /** Text that talks about the firm, or is not about the student (no first person): checked like a "them" sentence. */
-const firmTalks = (text: string, src: Sources) => !isCourtesy(text) && (mentionsFirm(text, src.company) || !FIRST_PERSON.test(text));
+const firmTalks = (text: string, src: Sources) => !isCourtesy(text) && !isIntent(text, src) && (mentionsFirm(text, src.company) || !FIRST_PERSON.test(text));
 
 /**
  * AI text in a "me", courtesy or quoted-answer sentence that talks about the firm must pass `themReason` against

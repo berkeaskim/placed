@@ -4,7 +4,7 @@ import {
   companyResearch, coverLetterOutputs, coverLetters, coverLetterStories,
   type LetterRow, type OutputRow, type ResearchRow, type StoryRow,
 } from "@/lib/db/schema";
-import type { OutputTarget, Span } from "./types";
+import type { OutputTarget, UndoEntry } from "./types";
 
 export const RESEARCH_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const stamp = () => new Date().toISOString();
@@ -39,13 +39,13 @@ function getOutput(id: string): OutputRow | undefined {
   return db.select().from(coverLetterOutputs).where(eq(coverLetterOutputs.id, id)).get();
 }
 
-export function pushUndo(outputId: string, prev: { text: string; spans: Span[] }): void {
+export function pushUndo(outputId: string, prev: UndoEntry): void {
   const o = getOutput(outputId);
   if (!o) return;
   db.update(coverLetterOutputs).set({ undo: [...o.undo, prev], updated_at: stamp() }).where(eq(coverLetterOutputs.id, outputId)).run();
 }
 
-export function popUndo(outputId: string): { text: string; spans: Span[] } | null {
+export function popUndo(outputId: string): UndoEntry | null {
   const o = getOutput(outputId);
   const prev = o?.undo[o.undo.length - 1];
   if (!o || !prev) return null;

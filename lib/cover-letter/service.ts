@@ -196,7 +196,9 @@ function modeFor(ctx: Ctx, target: OutputTarget): ReturnType<typeof chooseMode> 
   const form = db.select({ form: autopilotPacks.form }).from(autopilotPacks)
     .where(and(eq(autopilotPacks.user_id, ctx.userId), eq(autopilotPacks.job_id, ctx.job.id))).get()?.form as NormalizedForm | undefined;
   const f = form?.fields?.find((x) => x.key === target.fieldKey);
-  return chooseMode({ target, fieldType: f?.type === "file" ? "file" : "textarea", wordLimit: f?.wordLimit, jdText: jdText(ctx) });
+  const file = f?.type === "file";
+  // "No cover letter" is about the letter upload: a why-us textarea the form asks for still needs its answer.
+  return chooseMode({ target, fieldType: file ? "file" : "textarea", wordLimit: f?.wordLimit, jdText: file ? jdText(ctx) : "" });
 }
 
 function firstMessage(ctx: Ctx, m: ReturnType<typeof chooseMode>): ChatMsg {
@@ -373,7 +375,12 @@ export async function undoEdit(userId: string, jobId: string, outputId: string):
   const letter = getOrCreateLetter(userId, jobId);
   const o = getOutput(letter, outputId);
   const prev = popUndo(o.id);
-  if (prev) writeOutput(ctx, letter, o, prev.text, prev.spans);
+  if (prev?.mode) {
+    // Undoing a mode switch brings the old mode and limit back with the text.
+    const limit = prev.limit ?? null;
+    upsertOutput(letter.id, o.target, { mode: prev.mode, limit });
+    writeOutput(ctx, letter, { ...o, mode: prev.mode, limit }, prev.text, prev.spans);
+  } else if (prev) writeOutput(ctx, letter, o, prev.text, prev.spans);
   return view(ctx, letter);
 }
 
@@ -460,7 +467,7 @@ export async function setMode(userId: string, jobId: string, outputId: string, m
   const o = getOutput(letter, outputId);
   if (streamingNow(letter)) throw new CardError("Wait for the letter to finish writing first.");
   const lim: Limit = mode === "field_answer" ? (limit ?? { unit: "words", max: RULES.modes.field_answer.defaultWords ?? 300 }) : null;
-  if (o.text) pushUndo(o.id, { text: o.text, spans: o.spans });
+  if (o.text) pushUndo(o.id, { text: o.text, spans: o.spans, mode: o.mode as Mode, limit: o.limit });
   upsertOutput(letter.id, o.target, { mode, limit: lim, text: "", spans: [], lint: [], status: "draft", pdf_path: null });
   return view(ctx, letter);
 }
