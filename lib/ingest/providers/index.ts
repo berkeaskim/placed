@@ -39,7 +39,11 @@ function fetchCurated(slug: string): RawJob[] {
   } catch (e) {
     throw new ProviderError(`curated/${slug}: cannot read ${file} (${(e as Error).message})`);
   }
-  return visibleProgrammes(loadProgrammes(text), todayLondon()).filter((p) => p.employer === slug).map(programmeToRawJob);
+  // Any dropped row (or an unreadable file) fails the board: returning fewer cards would let markDead close them.
+  const problems: string[] = [];
+  const programmes = loadProgrammes(text, (m) => problems.push(m));
+  if (problems.length) throw new ProviderError(`curated/${slug}: ${file} is invalid: ${problems.join("; ")}`);
+  return visibleProgrammes(programmes, todayLondon()).filter((p) => p.employer === slug).map(programmeToRawJob);
 }
 
 export function endpointFor(c: CompanySeed): string {

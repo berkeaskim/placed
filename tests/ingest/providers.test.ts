@@ -95,6 +95,18 @@ describe("curated provider", () => {
     expect(jobs[0]!.opensOn).toBe("2026-12-01");
   });
 
+  it("curated fails the board (never returns a partial list) when the file has a bad row, a non-list or a YAML error", async () => {
+    for (const yml of [
+      [prog("barclays", "Spring Week"), prog("barclays", "Graduate Programme", { opens: "Sept" })].join("\n"),
+      [prog("barclays", "Spring Week"), prog("deloitte", "Graduate Programme", { closes: "2026-13-45" })].join("\n"),
+      "employer: barclays",
+      "- employer: [unclosed",
+    ]) {
+      useFile(yml);
+      await expect(fetchJobs({ ats: "curated", slug: "barclays", name: "Barclays" }), yml).rejects.toThrow(ProviderError);
+    }
+  });
+
   it("curated rows with reasonable titles pass the ingest filters", async () => {
     const titles = ["Spring Week", "Graduate Programme", "Summer Internship"];
     useFile(titles.map((t, i) => prog("bank", t, { kind: ["spring-week", "graduate", "internship"][i] })).join("\n"));

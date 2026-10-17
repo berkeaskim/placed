@@ -27,6 +27,11 @@ describe("curated programmes", () => {
     expect(loadProgrammes(yml, warn)).toEqual([]);
     expect(warn).toHaveBeenCalledTimes(4);
   });
+  it("rejects closes that is not a real calendar date", () => {
+    const warn = vi.fn();
+    expect(loadProgrammes([row({ closes: "2026-13-45" }), row({ closes: "2027-02-30" })].join("\n"), warn)).toEqual([]);
+    expect(warn).toHaveBeenCalledTimes(2);
+  });
   it("hides a programme after closes", () => {
     const p = prog({ closes: "2026-11-30" });
     expect(visibleProgrammes([p], "2026-12-01")).toHaveLength(0);

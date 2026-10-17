@@ -1,5 +1,6 @@
 import YAML from "yaml";
 import type { RawJob } from "@/lib/types";
+import { isValidDate } from "@/lib/scoring/dates";
 
 export type ProgrammeKind = "spring-week" | "internship" | "graduate";
 
@@ -40,8 +41,8 @@ function parseRow(raw: unknown): Programme | string {
   }
   if (!isHttpUrl(str(r.url)!)) return `"url" is not an http(s) URL`;
   if (typeof r.opens !== "string" || !OPENS_RE.test(r.opens)) return `"opens" must be YYYY-MM`;
-  if (r.closes !== undefined && r.closes !== null && (typeof r.closes !== "string" || !CLOSES_RE.test(r.closes))) {
-    return `"closes" must be YYYY-MM-DD`;
+  if (r.closes !== undefined && r.closes !== null && (typeof r.closes !== "string" || !CLOSES_RE.test(r.closes) || !isValidDate(r.closes))) {
+    return `"closes" must be a real YYYY-MM-DD date`;
   }
   if (!Number.isInteger(r.season)) return `"season" must be an integer`;
   if (typeof r.kind !== "string" || !KINDS.includes(r.kind)) return `"kind" must be one of ${KINDS.join(", ")}`;
