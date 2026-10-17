@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useRef, useState, useTransition } from "react";
 import { importCvAction, importLinkedInCaptureAction, importLinkedInExportAction, importPostsAction, type ImportResult } from "./actions";
-import { AI_NOT_SET_UP } from "@/lib/ai/provider";
 
 const btn = "flex min-h-11 items-center rounded-full border-2 border-[#E6E6EF] bg-white px-4 text-sm font-bold hover:bg-[#F6F6FA] disabled:opacity-50";
 const CAPTURE_MISSING = "Capture your profile with the extension first";
@@ -18,7 +17,7 @@ export function ImportPanel({ aiOff }: { aiOff: boolean }) {
 
   const report = (r: ImportResult, noun: string) => {
     if ("error" in r) {
-      setMsg({ tone: "err", text: r.error, links: r.error === CAPTURE_MISSING ? "linkedin" : r.error === AI_NOT_SET_UP ? "ai" : undefined });
+      setMsg({ tone: "err", text: r.error, links: r.error === CAPTURE_MISSING ? "linkedin" : r.aiOff ? "ai" : undefined });
       return;
     }
     const dup = r.duplicates ? ` ${r.duplicates} already in your bank.` : "";

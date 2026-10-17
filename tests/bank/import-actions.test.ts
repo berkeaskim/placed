@@ -20,7 +20,7 @@ describe("bank import actions", () => {
 
   it("importPostsAction returns AI_NOT_SET_UP when AI is off", async () => {
     process.env.AI_MODE = "off";
-    expect(await importPostsAction(["I built a thing and shipped it to 200 users."])).toEqual({ error: AI_NOT_SET_UP });
+    expect(await importPostsAction(["I built a thing and shipped it to 200 users."])).toEqual({ error: AI_NOT_SET_UP, aiOff: true });
   });
 
   it("acceptAllAction on a post source returns an error instead of throwing", async () => {

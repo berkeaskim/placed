@@ -98,7 +98,8 @@ export async function deleteBulletAction(id: string): Promise<BankActionResult> 
 
 /* ---- Imports and suggestion review ---- */
 
-export type ImportResult = { ok: true; suggestions: number; duplicates?: number; dropped?: number } | { error: string };
+/** `aiOff` marks the "AI isn't set up" error so the client can link to Settings without importing lib/ai/provider (server-only: it pulls in SQLite). */
+export type ImportResult = { ok: true; suggestions: number; duplicates?: number; dropped?: number } | { error: string; aiOff?: true };
 
 const MAX_POSTS = 10;
 const MAX_POST_CHARS = 5000;
@@ -116,8 +117,8 @@ async function readPdf(formData: FormData, field: string): Promise<{ bytes: Uint
   return { bytes };
 }
 
-const importFailed = (e: unknown, fallback: string): { error: string } =>
-  ({ error: isAiNotSetUp(e) ? AI_NOT_SET_UP : fallback });
+const importFailed = (e: unknown, fallback: string): { error: string; aiOff?: true } =>
+  isAiNotSetUp(e) ? { error: AI_NOT_SET_UP, aiOff: true } : { error: fallback };
 
 export async function importCvAction(formData: FormData): Promise<ImportResult> {
   const { user } = await requireUser();
