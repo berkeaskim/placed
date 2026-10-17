@@ -66,6 +66,9 @@ async function serper(q: string, key: string): Promise<Hit[]> {
   return j.organic.map(({ title, link, snippet }) => ({ title, link, snippet }));
 }
 
+/** Uncached search for callers that keep their own cache (cover-letter research caches in company_research). */
+export const serperSearch = (key: string): SearchFn => (q) => serper(q, key);
+
 /** Errors throw out of the cached function, so only successful searches are cached (7 days, shared by all users). */
 const cachedSerper = (q: string, key: string) => unstable_cache(() => serper(q, key), ["inside-track", "v1", q], { revalidate: 604800 })();
 
