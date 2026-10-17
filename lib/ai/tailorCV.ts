@@ -83,6 +83,7 @@ export function normalizeTailored(raw: TailoredCvFixtureT, cv: ParsedCV): Tailor
     ...(b.changeType ? { changeType: b.changeType } : {}),
     ...(b.qualifiersKept.length ? { qualifiersKept: [...b.qualifiersKept] } : {}),
     ...(b.changeType === "dropped" && b.dropReason ? { dropReason: b.dropReason } : {}),
+    ...(b.untailored ? { untailored: true } : {}),
   });
   const entries = (es: RawEntry[]): TailoredEntry[] => es.map((e) => {
     const src = heads.get(e.id);

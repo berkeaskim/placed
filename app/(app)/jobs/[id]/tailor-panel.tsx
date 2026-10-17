@@ -112,7 +112,7 @@ export function TailorPanel({ jobId, hasCv, original, initial }: {
   const run = () => startTailor(async () => {
     setError(null); setNotice(null);
     const r = await tailorForJob(jobId);
-    if ("error" in r) { setError(r.error); return; }
+    if ("error" in r) { setError("message" in r ? r.message : r.error); return; } // Task 9 renders the overflow removal buttons
     setOutcome(r.outcome); setPdfUrl(r.pdfUrl); setDecisions({}); setHistory([]); setPreview(null); setPreviewErr(null); setDefend({ status: "idle" });
     setSavedKey(JSON.stringify(buildFinal(r.outcome.tailored, r.outcome.changes, {}, original)));
     setAnimateIn(true);
@@ -163,8 +163,8 @@ export function TailorPanel({ jobId, hasCv, original, initial }: {
       setError(null);
       const r = await saveTailoredVersion(jobId, final);
       if ("error" in r) {
-        if (r.report) setDecisions((d) => applyGateBlocks(d, r.report!));
-        setError(r.error);
+        if ("report" in r && r.report) { const rep = r.report; setDecisions((d) => applyGateBlocks(d, rep)); }
+        setError("message" in r ? r.message : r.error);
         return;
       }
       setSavedKey(key); setPdfUrl(r.pdfUrl);

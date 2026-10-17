@@ -92,6 +92,7 @@ export type TailoredCvOutputT = z.infer<typeof TailoredCvOutput>;
 const TBulletLoose = TBullet.extend({
   changeType: TailorChangeTypeOut.optional(), qualifiersKept: z.array(z.string()).default([]),
   keywordsAdded: z.array(z.string()).default([]), dropReason: z.string().nullable().default(null),
+  untailored: z.boolean().optional(),
 });
 const TEntryLoose = TEntry.extend({ dates: z.string().default(""), location: z.string().default(""), bullets: z.array(TBulletLoose) });
 export const TailoredCvFixture = z.object({

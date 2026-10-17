@@ -155,3 +155,10 @@ export function getSourceKind(userId: string, id: string): BankSourceKind | null
   const row = db.select({ k: bankSources.kind }).from(bankSources).where(and(eq(bankSources.id, id), eq(bankSources.user_id, userId))).get();
   return row ? (row.k as BankSourceKind) : null;
 }
+
+/** The id of the user's source row for (kind, ref), or null. Used to find the active CV's source (Task 8). */
+export function getSourceId(userId: string, kind: BankSourceKind, ref: string): string | null {
+  const row = db.select({ id: bankSources.id }).from(bankSources)
+    .where(and(eq(bankSources.user_id, userId), eq(bankSources.kind, kind), eq(bankSources.ref, ref))).get();
+  return row?.id ?? null;
+}

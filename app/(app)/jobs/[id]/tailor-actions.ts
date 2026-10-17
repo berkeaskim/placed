@@ -19,22 +19,31 @@ import { normalizeTailored } from "@/lib/ai/tailorCV";
 import { TailoredCvFixture } from "@/lib/ai/schemas";
 import { defendQuestions, type DefendQuestionT, type DefendSource } from "@/lib/ai/defendQuestions";
 import type { VerifyReport } from "@/lib/verify/tailoring";
-import { confirmNumber, finalizeTailoredCv, type StoredTailoring } from "./actions";
+import { cvForJob } from "@/lib/bank/tailor-context";
+import { confirmNumber, finalizeTailoredCv, type OverflowResult, type StoredTailoring } from "./actions";
 
 export type PreviewResult =
   | { report: VerifyReport; mustHaves: BeforeAfter<Counts>; niceToHaves: BeforeAfter<Counts>; coverageAfter: number | null; rules: RulesGained }
   | { error: string };
 export type SaveResult =
   | { report: VerifyReport; pdfUrl: string; signedUrl: string | null; award: AwardResult | null }
+  | OverflowResult
   | { error: string; report?: VerifyReport };
 export type ConfirmResult = { ok: true; stored: string | null; award: AwardResult | null } | { error: string };
 export type DefendResult = { questions: DefendQuestionT[]; source: DefendSource } | { error: string };
 
 const GONE = "This role is no longer available.";
 
+/**
+ * The CV a preview checks against: the stored tailoring's frozen bank `base` (v2), or the active CV for a v1 row or
+ * when nothing is stored (no bank selection runs just for a preview).
+ */
 async function load(jobId: string) {
   const { user } = await requireUser();
-  const [job, cv, profile] = await Promise.all([getJob(jobId), getActiveCv(user.id), getProfile(user.id)]);
+  const [job, profile] = await Promise.all([getJob(jobId), getProfile(user.id)]);
+  const stored = storedTailoring(user.id, jobId);
+  const active = async () => { const c = await getActiveCv(user.id); return c ? { parsed: c.parsed, rawText: c.rawText ?? "" } : null; };
+  const cv = job && stored?.outcome ? await cvForJob(user.id, job, stored) : await active();
   const facts = db.select({ claim: confirmedFacts.claim }).from(confirmedFacts).where(eq(confirmedFacts.user_id, user.id)).all();
   return { user, job, cv, profile, confirmedFacts: facts.map((f) => f.claim) };
 }
@@ -56,7 +65,7 @@ export async function previewTailoring(jobId: string, edited: unknown): Promise<
   const parsed = TailoredCvFixture.safeParse(edited);
   if (!parsed.success) return { error: "That version couldn't be read." };
   const tailored = normalizeTailored(parsed.data, cv.parsed);
-  const r = reverifyEdits({ cv: cv.parsed, rawText: cv.rawText ?? "", job, confirmedFacts, tailored });
+  const r = reverifyEdits({ cv: cv.parsed, rawText: cv.rawText, job, confirmedFacts, tailored });
   const student = toStudent(profile);
   const sector = job.archetype ?? student.archetypes[0]?.key ?? "data_analytics";
   return { report: r.report, mustHaves: r.mustHaves, niceToHaves: r.niceToHaves, coverageAfter: r.coverageAfter, rules: rulesGained(cv.parsed, r.tailored, sector, student.year) };
@@ -72,9 +81,10 @@ export async function saveTailoredVersion(jobId: string, edited: unknown): Promi
   let award: AwardResult | null = null;
   try {
     const { user } = await requireUser();
-    const cv = await getActiveCv(user.id);
     const stored = storedTailoring(user.id, jobId);
-    if (cv && stored?.final && stored.outcome && countStudentEdits(stored.final, stored.outcome.tailored, cv.parsed) > 0) {
+    // Edits are counted against what was tailored: the frozen bank base (v2) or the active CV (v1).
+    const base = stored?.v === 2 ? stored.base : (await getActiveCv(user.id))?.parsed;
+    if (base && stored?.final && stored.outcome && countStudentEdits(stored.final, stored.outcome.tailored, base) > 0) {
       award = await awardXP(user.id, { type: "suggestion_edited" }, jobId);
     }
   } catch (e) {
