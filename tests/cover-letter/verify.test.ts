@@ -703,3 +703,61 @@ describe("round 5: generic firm references, quoted-answer pieces, the student's 
     expect(canMarkReady({ text: r.text, spans: r.spans, lint: r.lint, limit: null }).ok).toBe(false);
   });
 });
+
+describe("round 6: a judge that says ok to everything", () => {
+  const run = (body: string, quote?: string) => {
+    const m = parseMarked("Dear Hiring Manager,\n\n" + OPEN + body + "\n\nYours faithfully,");
+    const n = m.sentences.findIndex((s) => s.text === body.replace(/⟦.*$/, ""));
+    const judged = okVerdicts(m.sentences).map((j) => (j.index === n && quote ? { ...j, quote } : j));
+    const v = verifyOutput({ ...m, input: fixtureDraftInput(), ownSpans: [], judged });
+    const start = m.text.indexOf(m.sentences[n].text);
+    const mine = flagged(v.spans).filter((s) => s.start >= start && s.start < start + m.sentences[n].text.length);
+    return { flags: mine.map((s) => s.flag), ready: canMarkReady({ text: m.text, spans: v.spans, lint: v.lint, limit: null }).ok };
+  };
+  const fact0 = FIXTURE_FACTS[0].id;
+  const BYPASSES = [
+    // negation of a job-post line
+    "Your desks do not work under time pressure.⟦them:jd⟧",
+    "Your analysts never work under time pressure.⟦me:⟧",
+    "I like that your summer analysts do not rotate across flow and structured trading desks.⟦me:⟧",
+    // job-post words recombined across lines
+    `Your Markets division is hiring 40 analysts in London.⟦them:jd,${fact0}⟧`,
+    "Northbridge is hiring 40 analysts in London, which is why I am applying.⟦me:⟧",
+    `Your structured-finance desk in London is hiring 40 analysts.⟦them:jd,${fact0}⟧`,
+    // CV words describing "the desk" / "the fund"
+    "The desk sizes positions across rates and FX from the first week.⟦me:x1-b0⟧",
+    "The desk gives summer analysts weekly investment committee meetings.⟦me:x1-b1⟧",
+    // plain verbs building a claim
+    "I ran a £50k trading desk, the kind your summer analysts run.⟦me:x1-b0⟧",
+    "I ran the trading desk of a £50k student investment fund, sizing positions across rates and FX to your summer analysts.⟦me:x1-b0⟧",
+    "Your programme lets summer analysts run their own book.⟦me:⟧",
+  ];
+
+  it("flags every bypass deterministically", () => {
+    for (const body of BYPASSES) {
+      const r = run(body);
+      expect(r.flags.length, body).toBeGreaterThan(0);
+      expect(r.flags, body).not.toContain(NO_VERDICT);
+      expect(r.ready, body).toBe(false);
+    }
+  });
+
+  it("a quote that is not a firm line, or does not say the claim, is rejected", () => {
+    const body = "Summer analysts rotate across your flow and structured trading desks.⟦them:jd⟧";
+    expect(run(body)).toEqual({ flags: [], ready: true });
+    expect(run(body, "Summer analysts rotate across our flow and structured trading desks.")).toEqual({ flags: [], ready: true });
+    expect(run(body, "Summer analysts rotate across every desk in the firm.").ready).toBe(false);
+    expect(run(body, "You will own risk analysis from your first week, working alongside traders.").ready).toBe(false);
+  });
+
+  it("claims one line states still pass", () => {
+    for (const body of [
+      `Your new structured-finance desk in Frankfurt is hiring 40 analysts.⟦them:${fact0}⟧`,
+      "The role asks for analysis under time pressure.⟦them:jd⟧",
+      "I would value the opportunity to contribute to your team in London.⟦me:⟧",
+      "I would bring my rates scenario model to your Markets desks.⟦me:x1-b1⟧",
+      // "the fund" is the student's own, as the cited bullet says
+      "I built a rates scenario model in Python that the fund used in weekly investment committee meetings.⟦me:x1-b1⟧",
+    ]) expect(run(body), body).toEqual({ flags: [], ready: true });
+  });
+});
