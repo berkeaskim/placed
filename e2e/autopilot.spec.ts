@@ -93,6 +93,8 @@ test("Autopilot fills the real Monzo form and never submits", async () => {
       first_name: "Ayşe", last_name: "Demir", email: "ayse.demir.demo@example.com", phone: "+44 7700 900123",
       country: "United Kingdom", city: "London", university: "University College London", degree: "BSc Economics",
       grad_year: "2028", start_date: "2027-06-01", heard_about: "Placed",
+      // A CV upload can prefill LinkedIn without a scheme, which the url input rejects and so blocks Save.
+      linkedin: "https://www.linkedin.com/in/ayse-demir-demo",
     };
     for (const [name, value] of Object.entries(text)) await pick(page, `#${name}`, value);
     await page.locator("#year_of_study").selectOption("2nd");
