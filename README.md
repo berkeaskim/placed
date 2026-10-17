@@ -119,7 +119,7 @@ One click in the Chrome extension captures your own LinkedIn profile and scores 
 ### 🎤 Interview prep
 Once you've applied, Placed builds a prep pack for that company and role from real candidate reports (Reddit, Wall Street Oasis and similar), found with grounded search. Each likely question links to its source, and Placed maps it to a story from your own CV.
 
-<p align="center"><img src="docs/readme/interview-prep.png" alt="Interview prep pack: the hiring process step by step, reported and likely questions with sources, stories from your CV and company tips" width="70%"></p>
+<p align="center"><img src="docs/readme/interview-prep.png" alt="Interview prep for Goldman Sachs: the hiring process step by step, reported questions with why they ask and the source, and stories from your CV" width="90%"></p>
 
 ### 🤝 Networking
 For each target employer, Placed suggests who to look up (plain LinkedIn search links, no scraping) and drafts an outreach message. A deterministic guard blocks any claim about you or the firm that it can't back up. Alumni searches use **your own university** (set in *Settings → You*, or read from your CV). Tracker nudges remind you to prep and to follow up after 21 days.
