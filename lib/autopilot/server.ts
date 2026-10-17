@@ -75,7 +75,10 @@ export function listLongAnswers(userId: string): LongAnswerRow[] {
 
 const words = (s: string) => (s.trim() ? s.trim().split(/\s+/).length : 0);
 
-/** Fetches the form, caches CV-backed suggestions once (a computed `{}` counts), upserts autopilot_packs. Never drafts: see generateDraft. */
+/**
+ * Fetches the form, caches CV-backed suggestions once (a computed `{}` counts), upserts autopilot_packs. Never drafts: see generateDraft.
+ * Suggestions are only cached when an active CV existed and the AI call succeeded, so a later build retries.
+ */
 export async function buildPack(userId: string, jobId: string): Promise<{ items: PackItem[]; answers: Answers }> {
   const job = await loadJobForPack(jobId);
   if (!job) throw new Error("Job not found");
@@ -90,10 +93,12 @@ export async function buildPack(userId: string, jobId: string): Promise<{ items:
   const base = assemblePack(form, core, extra, {});
   // Questions nobody answered yet get a CV-backed suggestion, so the student only taps Confirm. Computed once, then reused.
   const toSuggest = base.filter((i) => i.group === "ask" && answers[i.field.key] === undefined && classify(i.field.label, i.field.type).kind !== "eeo");
-  const suggested = existing?.suggestions ?? (toSuggest.length ? await suggestAnswers({ items: toSuggest, core, extra, cv, fixtureKey: job.extId }) : {});
+  const computed = existing?.suggestions ?? (toSuggest.length ? await suggestAnswers({ items: toSuggest, core, extra, cv, fixtureKey: job.extId }) : {});
+  const suggested = computed ?? {};
+  const suggestions = existing?.suggestions ?? (cv && computed ? computed : null);
   try {
-    db.insert(autopilotPacks).values({ user_id: userId, job_id: jobId, form, answers, suggestions: suggested })
-      .onConflictDoUpdate({ target: [autopilotPacks.user_id, autopilotPacks.job_id], set: { form, answers, suggestions: suggested } }).run();
+    db.insert(autopilotPacks).values({ user_id: userId, job_id: jobId, form, answers, suggestions })
+      .onConflictDoUpdate({ target: [autopilotPacks.user_id, autopilotPacks.job_id], set: { form, answers, suggestions } }).run();
   } catch (e) {
     throw new Error(`buildPack: ${e instanceof Error ? e.message : String(e)}`);
   }
@@ -119,7 +124,7 @@ export async function draftInputFor(userId: string, jobId: string, fieldKey: str
   return { question: field.label, wordLimit: field.wordLimit, company: job.company, jobExtId: job.extId, fieldKey, jdLines: job.textLines, cv: cvRow.parsed_json as ParsedCV, facts };
 }
 
-/** Drafts one free-text answer on demand and stores it on the pack; a stored draft (even an empty one) is returned without calling the AI. */
+/** Drafts one free-text answer on demand and stores it on the pack; a stored draft (even an empty one) is returned without calling the AI. A failed draft (source "none") is returned but never stored. */
 export async function generateDraft(userId: string, jobId: string, fieldKey: string): Promise<DraftResult | null> {
   const where = and(eq(autopilotPacks.user_id, userId), eq(autopilotPacks.job_id, jobId));
   const stored = db.select({ drafts: autopilotPacks.drafts }).from(autopilotPacks).where(where).get()?.drafts[fieldKey];
@@ -127,6 +132,7 @@ export async function generateDraft(userId: string, jobId: string, fieldKey: str
   const input = await draftInputFor(userId, jobId, fieldKey);
   if (!input) return null;
   const draft = await draftAnswer(input);
+  if (draft.source === "none") return draft;
   // Re-read so a draft stored for another field while the AI ran is not overwritten.
   const latest = db.select({ drafts: autopilotPacks.drafts }).from(autopilotPacks).where(where).get()?.drafts ?? {};
   db.update(autopilotPacks).set({ drafts: { ...latest, [fieldKey]: draft } }).where(where).run();

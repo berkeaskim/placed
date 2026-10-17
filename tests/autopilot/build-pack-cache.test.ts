@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/lib/db/client";
-import { autopilotPacks } from "@/lib/db/schema";
+import { autopilotPacks, cvs } from "@/lib/db/schema";
 import { LOCAL_USER_ID } from "@/lib/auth/local-user";
 import { seedCv, seedJob, withTempDb } from "../cv/temp-db";
 import type { DraftResult } from "@/lib/autopilot/drafts";
@@ -88,12 +88,46 @@ describe("pack cache", () => {
     expect(items.find((i) => i.field.key === "q_free")!.draft).toEqual(r);
   });
 
-  it("generateDraft stores and returns the empty result on failure", async () => {
+  it("generateDraft returns the empty result on failure without storing it, so the next call retries", async () => {
     const jobId = seedPack();
     const empty = result({ text: "", words: 0, thin: true, source: "none" });
     vi.mocked(draftAnswer).mockResolvedValue(empty);
     expect(await generateDraft(LOCAL_USER_ID, jobId, "q_free")).toEqual(empty);
-    expect(row(jobId).drafts.q_free).toEqual(empty);
+    expect(row(jobId).drafts.q_free).toBeUndefined();
+    const r = result();
+    vi.mocked(draftAnswer).mockResolvedValue(r);
+    expect(await generateDraft(LOCAL_USER_ID, jobId, "q_free")).toEqual(r);
+    expect(draftAnswer).toHaveBeenCalledTimes(2);
+    expect(row(jobId).drafts.q_free).toEqual(r);
+  });
+
+  it("a build without an active CV caches nothing, so a later build with a CV suggests again", async () => {
+    const jobId = seedPack();
+    db.update(cvs).set({ is_active: false }).run();
+    try {
+      vi.mocked(suggestAnswers).mockResolvedValue({});
+      await buildPack(LOCAL_USER_ID, jobId);
+      expect(row(jobId).suggestions).toBeNull();
+    } finally {
+      db.update(cvs).set({ is_active: true }).run();
+    }
+    vi.mocked(suggestAnswers).mockResolvedValue({ q_licence: "Yes" });
+    const second = await buildPack(LOCAL_USER_ID, jobId);
+    expect(suggestAnswers).toHaveBeenCalledTimes(2);
+    expect(second.items.find((i) => i.field.key === "q_licence")!.group).toBe("confirm");
+    expect(row(jobId).suggestions).toEqual({ q_licence: "Yes" });
+  });
+
+  it("a failed suggestion call is not cached, and the next build retries", async () => {
+    const jobId = seedPack();
+    vi.mocked(suggestAnswers).mockResolvedValue(null);
+    const first = await buildPack(LOCAL_USER_ID, jobId);
+    expect(first.items.find((i) => i.field.key === "q_licence")!.group).toBe("ask");
+    expect(row(jobId).suggestions).toBeNull();
+    vi.mocked(suggestAnswers).mockResolvedValue({ q_licence: "Yes" });
+    await buildPack(LOCAL_USER_ID, jobId);
+    expect(suggestAnswers).toHaveBeenCalledTimes(2);
+    expect(row(jobId).suggestions).toEqual({ q_licence: "Yes" });
   });
 
   it("generateDraft returns null for a non-free-text field key", async () => {
