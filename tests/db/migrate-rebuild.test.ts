@@ -60,4 +60,41 @@ describe("runMigrations table rebuilds", () => {
       rmSync(tmp, { recursive: true, force: true });
     }
   });
+
+  it("throws when the drizzle handle has no $client instead of silently migrating with foreign keys on", () => {
+    expect(() => runMigrations({} as never)).toThrow(/\$client/);
+  });
+
+  it("an old foreign key violation does not block startup when no migration ran", () => {
+    const tmp = mkdtempSync(path.join(os.tmpdir(), "placed-mig-"));
+    try {
+      const sqlite = new Database(path.join(tmp, "t.db"));
+      sqlite.pragma("foreign_keys = ON");
+      const db = drizzle(sqlite);
+      runMigrations(db);
+      sqlite.pragma("foreign_keys = OFF");
+      sqlite.prepare("insert into jobs (id,company_id,ext_id,title,url,first_seen,last_seen) values ('orphan',999,'e','T','u','x','y')").run();
+      sqlite.pragma("foreign_keys = ON");
+      expect(() => runMigrations(db)).not.toThrow();
+      expect(sqlite.pragma("foreign_keys", { simple: true })).toBe(1);
+      sqlite.close();
+    } finally {
+      rmSync(tmp, { recursive: true, force: true });
+    }
+  });
+
+  it("still fails a run that applied migrations when a violation is present", () => {
+    const tmp = mkdtempSync(path.join(os.tmpdir(), "placed-mig-"));
+    try {
+      const { sqlite, db } = oldDb(tmp, "0006");
+      sqlite.pragma("foreign_keys = OFF");
+      sqlite.prepare("insert into jobs (id,company_id,ext_id,title,url,first_seen,last_seen) values ('orphan',999,'e','T','u','x','y')").run();
+      sqlite.pragma("foreign_keys = ON");
+      expect(() => runMigrations(db)).toThrow(/foreign key violation/);
+      expect(sqlite.pragma("foreign_keys", { simple: true })).toBe(1);
+      sqlite.close();
+    } finally {
+      rmSync(tmp, { recursive: true, force: true });
+    }
+  });
 });
