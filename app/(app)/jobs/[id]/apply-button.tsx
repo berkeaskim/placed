@@ -9,7 +9,7 @@ import { AppliedChip, useMarkApplied } from "@/components/mark-applied";
  * Students who applied elsewhere (or before Placed) can mark it directly. Both paths share useMarkApplied.
  * `url` is already validated as http(s) on the server; null means there is no usable link.
  */
-export function ApplyButton({ jobId, url, company, alreadyApplied }: { jobId: string; url: string | null; company: string; alreadyApplied: boolean }) {
+export function ApplyButton({ jobId, url, company, alreadyApplied, curated = false }: { jobId: string; url: string | null; company: string; alreadyApplied: boolean; curated?: boolean }) {
   const awaiting = useRef(false);
   const [ask, setAsk] = useState(false);
   const { applied, pending, mark } = useMarkApplied(jobId, alreadyApplied);
@@ -47,13 +47,31 @@ export function ApplyButton({ jobId, url, company, alreadyApplied }: { jobId: st
   }
 
   const yes = () => mark(() => setAsk(false));
+  const arrow = <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M7 17L17 7M9 7h8v8" /></svg>;
+
+  // A curated card points at the employer's programme page, not a live posting: opening it is not applying,
+  // so there is no "Did you apply?" prompt. The student can still mark it applied themselves.
+  if (curated) {
+    return (
+      <>
+        <a href={url} target="_blank" rel="noopener noreferrer"
+          className="btn-quest flex min-h-12 items-center justify-center gap-2 px-4 py-3 text-center no-underline">
+          Official programme page
+          {arrow}
+          <span className="sr-only">(opens in a new tab)</span>
+        </a>
+        {markRow}
+        <p className="text-xs text-muted-foreground">A curated programme page, not a live posting. Check {company ? `${company}'s` : "the employer's"} site for when applications open.</p>
+      </>
+    );
+  }
 
   return (
     <>
       <a href={url} target="_blank" rel="noopener noreferrer" onClick={() => { if (!applied) awaiting.current = true; }}
         className="btn-quest flex min-h-12 items-center justify-center gap-2 px-4 py-3 text-center no-underline">
         {applied ? "Applied · open the posting" : "Apply on company site"}
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M7 17L17 7M9 7h8v8" /></svg>
+        {arrow}
         <span className="sr-only">(opens in a new tab)</span>
       </a>
       {markRow}
