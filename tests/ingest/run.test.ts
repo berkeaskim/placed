@@ -107,4 +107,19 @@ describe("ingestCompany", () => {
     expect(fetchJobs).toHaveBeenCalledWith(expect.objectContaining({ employer: "acme-corp", transport: "stealth" }));
     expect(upserted).toHaveLength(1);
   });
+
+  it("curated cards keep closes exactly: no ATS minus-one shift and no date pulled from the description", async () => {
+    const { store, upserted } = fakeStore();
+    const curated = { ...company, slug: "morganstanley", ats: "curated" as const };
+    await ingestCompany(curated, {
+      fetchJobs: async () => [
+        raw({ extId: "c1", title: "Summer Analyst Programme", deadline: "2026-11-01", html: "<p>Closing date: 31 October 2026. Each programme closes on a rolling basis.</p>" }),
+        raw({ extId: "c2", title: "Summer Analyst Programme", deadline: null, html: "<p>Each programme has its own deadline, the earliest falling on 19 October 2026. Closing date: 19 October 2026.</p>" }),
+      ],
+      tagJob: async (i) => heuristicTagJob(i), store, now: () => new Date("2026-10-17T08:00:00Z"),
+    });
+    const by = (id: string) => upserted.find((r) => r.ext_id === id)!;
+    expect(by("c1")).toMatchObject({ deadline: "2026-11-01", deadline_source: "ats", rolling: true });
+    expect(by("c2")).toMatchObject({ deadline: null, deadline_source: null });
+  });
 });

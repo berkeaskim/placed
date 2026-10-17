@@ -5,7 +5,7 @@ import { passesTitleFilter, detectCohortClash, passesLocationFilter } from "./fi
 import { normalizeUrl, jobFingerprint, contentHash } from "./fingerprint";
 import { heuristicTagJob } from "@/lib/ai/heuristics";
 import type { TaggedJob } from "@/lib/ai/tagJob";
-import { resolveDeadline, type DeadlineSource } from "./deadline";
+import { resolveDeadline, extractDeadline, type DeadlineSource } from "./deadline";
 
 export type CompanyRow = { id: number; slug: string; name: string; ats: Ats; api_host: string | null; employer: string | null; transport: "stealth" | null; enabled: boolean };
 
@@ -78,7 +78,11 @@ export async function ingestCompany(c: CompanyRow, deps: IngestDeps) {
       if (t.status === "failed") failed++;
     }
     // Dates are deterministic only; the tagger's (possibly LLM) deadline is ignored on purpose.
-    const dl = resolveDeadline(j.deadline, text, j.postedAt ? new Date(j.postedAt) : new Date(now));
+    // Curated `closes` is the inclusive last day from seed/programmes.yml: never shifted like an ATS end date, and the
+    // description's prose dates (e.g. "the earliest falling on 19 October") are never read as the card's deadline.
+    const dl = c.ats === "curated"
+      ? { deadline: j.deadline ?? null, source: j.deadline ? ("ats" as const) : null, rolling: extractDeadline(text, new Date(now)).rolling }
+      : resolveDeadline(j.deadline, text, j.postedAt ? new Date(j.postedAt) : new Date(now));
     rows.push({
       company_id: c.id, ext_id: j.extId, title: j.title, url: normalizeUrl(j.url), location: j.location, remote: j.remote,
       deadline: dl.deadline, deadline_source: dl.source, rolling: dl.rolling, closed_at: null, posted_at: j.postedAt, opens_on: j.opensOn ?? null, archetype: t.archetype, field_tags: t.fieldTags,

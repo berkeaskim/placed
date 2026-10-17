@@ -31,8 +31,12 @@ export function deadlineLabel(deadline: string | null, today: string): string {
  * (~90% of Greenhouse/Lever/Ashby postings) and must not be presented as a rolling deadline.
  */
 export function closingLabel(job: { deadline: string | null; rolling?: boolean; opensOn?: string | null }, today: string): string {
+  // A window that hasn't opened yet must not read as "N days left" (that implies you can apply now).
+  if (isValidDate(job.opensOn) && job.opensOn > today) {
+    const closes = isValidDate(job.deadline) ? ` · closes ${Number(job.deadline.slice(8, 10))} ${MONTHS[Number(job.deadline.slice(5, 7)) - 1]}` : "";
+    return `Opens ${opensLabel(job.opensOn)}${closes}`;
+  }
   if (isValidDate(job.deadline)) return deadlineLabel(job.deadline, today);
-  if (isValidDate(job.opensOn) && job.opensOn > today) return `Opens ${opensLabel(job.opensOn)}`;
   return job.rolling ? "Rolling: apply early" : "No closing date published";
 }
 
