@@ -9,7 +9,9 @@ export type PackItem = { field: FormField; group: PackGroup; value: string | str
 export type Answer = { value: string | string[]; approved?: boolean };
 export type Answers = Record<string, Answer>;
 export type FillMode = "fill" | "yours" | "select-yourself";
-export type FillInstruction = { target: string; type: FormField["type"]; label: string; mode: FillMode; value: string | string[] | null; optionLabel?: string; optionLabels?: string[]; sourceLabel: string | null };
+export type FillInstruction = { target: string; type: FormField["type"]; label: string; mode: FillMode; value: string | string[] | null; optionLabel?: string; optionLabels?: string[]; sourceLabel: string | null; asset?: "cv" | "cover" };
+/** Ready cover-letter outputs by form field key; `upload` is the letter PDF for the cover file field. */
+export type Covers = Record<string, { text: string } | { file: true }>;
 
 const SETUP = "from your setup";
 const normBool = (s: string): "true" | "false" | null => {
@@ -86,18 +88,24 @@ function labelFor(f: FormField, v: string | string[] | null): string | undefined
   return f.options.find((o) => o.value === first)?.label;
 }
 
-export function toFillPlan(items: PackItem[], answers: Answers): FillInstruction[] {
+export function toFillPlan(items: PackItem[], answers: Answers, covers: Covers = {}): FillInstruction[] {
   return items.map(({ field, group, value, sourceLabel }): FillInstruction => {
     const base = { target: field.target, type: field.type, label: field.label, sourceLabel };
     const a = answers[field.key];
-    // Task 13 switches cover items to fill once the writer produces a ready output.
-    if (group === "yours" || group === "cover") return { ...base, mode: "yours", value: null };
+    if (group === "cover") {
+      // Only Ready outputs reach `covers`; a file output never fills a text field and the reverse.
+      const c = field.type === "file" ? covers.upload : covers[field.key];
+      if (c && "file" in c && field.type === "file") return { ...base, mode: "fill", value: null, asset: "cover", sourceLabel: "your cover letter" };
+      if (c && "text" in c && field.type !== "file" && c.text.trim()) return { ...base, mode: "fill", value: c.text, sourceLabel: "your cover letter" };
+      return { ...base, mode: "yours", value: null };
+    }
+    if (group === "yours") return { ...base, mode: "yours", value: null };
     if (group === "draft") {
       const empty = !a || (Array.isArray(a.value) ? a.value.every((x) => !x.trim()) : !a.value.trim());
       return a?.approved && !empty ? { ...base, mode: "fill", value: a.value, sourceLabel: "your approved answer" } : { ...base, mode: "yours", value: null };
     }
     const v = group === "vault" ? (a?.value ?? value) : a?.value ?? null;
-    if (field.type === "file") return { ...base, mode: "fill", value: null };
+    if (field.type === "file") return { ...base, mode: "fill", value: null, asset: "cv" };
     if (v == null) return { ...base, mode: hasOptions(field) ? "select-yourself" : "yours", value: null };
     if (field.type === "boolean" && !field.options.length) {
       const b = typeof v === "string" ? normBool(v) : null;

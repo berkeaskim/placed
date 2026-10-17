@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { createRequire } from "node:module";
 import { readFileSync, readdirSync } from "node:fs";
 const require = createRequire(import.meta.url);
-const { summarize } = require("../../extension/lib/fill-plan.js");
+const { summarize, fileFor } = require("../../extension/lib/fill-plan.js");
 const { wantedJobId, pageMatches } = require("../../extension/lib/job-match.js");
 const { extractToken } = require("../../extension/capture.js");
 
@@ -34,6 +34,20 @@ describe("extension job match", () => {
 describe("extension", () => {
   it("summarises a plan", () => {
     expect(summarize([{ mode: "fill" }, { mode: "fill" }, { mode: "yours" }, { mode: "select-yourself" }])).toEqual({ fill: 2, yours: 1, select: 1 });
+  });
+  it("a cover file field picks coverFile, a CV field picks cvFile, and a missing file is null", () => {
+    const ctx = { cvFile: "CV", coverFile: "COVER" };
+    expect(fileFor({ type: "file", asset: "cover" }, ctx)).toBe("COVER");
+    expect(fileFor({ type: "file", asset: "cv" }, ctx)).toBe("CV");
+    expect(fileFor({ type: "file" }, ctx)).toBe("CV");
+    expect(fileFor({ type: "file", asset: "cover" }, { cvFile: "CV", coverFile: null })).toBeNull();
+  });
+  it("cover files travel the same capped, same-origin path as the CV, and every filler uses fileFor", () => {
+    const bg = readFileSync("extension/background.js", "utf8");
+    expect(bg).toMatch(/body\.cover/);
+    expect(bg).toMatch(/return \{ status: 200, plan, cv, cover \}/);
+    expect(readFileSync("extension/content.js", "utf8")).toMatch(/coverFile/);
+    for (const a of ["greenhouse", "lever", "ashby"]) expect(readFileSync(`extension/fillers/${a}.js`, "utf8"), a).toMatch(/PlacedFillPlan\.fileFor\(field, ctx\)/);
   });
   it("contains no submit calls or synthetic input anywhere outside lib/guard.js", () => {
     const walk = (d: string): string[] => readdirSync(d, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(`${d}/${e.name}`) : e.name.endsWith(".js") ? [`${d}/${e.name}`] : []));

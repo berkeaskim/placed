@@ -126,6 +126,19 @@ function toBase64(buf) {
   for (let i = 0; i < b.length; i += 0x8000) s += String.fromCharCode.apply(null, b.subarray(i, i + 0x8000));
   return btoa(s);
 }
+/** Downloads a same-origin PDF the claim pointed at, capped at CV_MAX_BYTES; null leaves that field for the student. */
+async function fetchPdf(ref, fallbackName) {
+  const href = ref && typeof ref.url === "string" ? cvUrl(ref.url) : null;
+  if (!href) return null;
+  try {
+    const r = await fetch(href, { credentials: "omit", cache: "no-store" });
+    const buf = r.ok ? await r.arrayBuffer() : null;
+    if (buf && buf.byteLength > 0 && buf.byteLength <= CV_MAX_BYTES) return { name: String(ref.filename || fallbackName), type: "application/pdf", base64: toBase64(buf) };
+  } catch {
+    return null;
+  }
+  return null;
+}
 async function claim(token) {
   if (typeof token !== "string" || !/^[A-Za-z0-9_-]{43}$/.test(token)) return { status: 400 };
   let res;
@@ -139,19 +152,9 @@ async function claim(token) {
   if (!res.ok) return { status: res.status };
   const body = await res.json().catch(() => null);
   if (!body || !Array.isArray(body.fields)) return { status: 502 };
-  let cv = null;
-  const cvHref = body.cv && typeof body.cv.url === "string" ? cvUrl(body.cv.url) : null;
-  if (cvHref) {
-    try {
-      const r = await fetch(cvHref, { credentials: "omit", cache: "no-store" });
-      const buf = r.ok ? await r.arrayBuffer() : null;
-      if (buf && buf.byteLength > 0 && buf.byteLength <= CV_MAX_BYTES) cv = { name: String(body.cv.filename || "CV.pdf"), type: "application/pdf", base64: toBase64(buf) };
-    } catch {
-      cv = null; // the CV field is left for the student
-    }
-  }
+  const [cv, cover] = await Promise.all([fetchPdf(body.cv, "CV.pdf"), fetchPdf(body.cover, "Cover-Letter.pdf")]);
   const plan = { ats: body.ats, url: body.url, fields: body.fields }; // the CV URL never reaches the page
-  return { status: 200, plan, cv };
+  return { status: 200, plan, cv, cover };
 }
 
 // ---------- LinkedIn Score: read the student's own profile in their logged-in tab ----------

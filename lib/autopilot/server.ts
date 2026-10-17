@@ -1,21 +1,21 @@
 import "server-only";
 import { and, eq, gt, isNull } from "drizzle-orm";
 import { db } from "@/lib/db/client";
-import { applications, autopilotPacks, autopilotVault, companies, confirmedFacts, cvs, jobs } from "@/lib/db/schema";
+import { applications, autopilotPacks, autopilotVault, companies, confirmedFacts, coverLetterOutputs, coverLetters, cvs, jobs } from "@/lib/db/schema";
 import { fileUrl } from "@/lib/files";
 import { fetchForm } from "./forms";
 import type { Ats, NormalizedForm } from "./forms/types";
 import { classify } from "./classify";
 import { draftAnswer, type DraftResult } from "./drafts";
 import { suggestAnswers } from "./suggest";
-import { assemblePack, toFillPlan, type Answers, type FillInstruction, type PackItem } from "./pack";
+import { assemblePack, toFillPlan, type Answers, type Covers, type FillInstruction, type PackItem } from "./pack";
 import { hashToken, safeNamePart } from "./handoff";
 import { isComplete, type Core, type Extra } from "./vault";
 import { openVault } from "./vault-crypto";
 import type { ParsedCV } from "@/lib/types";
 
 export type JobForPack = { id: string; extId: string; url: string; ats: Ats; company: string; textLines: string[] };
-export type ClaimBody = { ats: Ats; url: string; fields: FillInstruction[]; cv: { url: string; filename: string } | null };
+export type ClaimBody = { ats: Ats; url: string; fields: FillInstruction[]; cv: { url: string; filename: string } | null; cover: { url: string; filename: string } | null };
 
 export async function loadJobForPack(jobId: string): Promise<JobForPack | null> {
   const r = db.select({ id: jobs.id, ext_id: jobs.ext_id, url: jobs.url, text_lines: jobs.text_lines, name: companies.name, ats: companies.ats })
@@ -85,11 +85,23 @@ export async function claimPack(token: string): Promise<{ status: 200; body: Cla
   const { core, extra } = await getVault(pack.user_id);
   const form = pack.form as NormalizedForm;
   const items = assemblePack(form, core, extra, {});
-  const fields = toFillPlan(items, pack.answers as Answers);
+  // Ready outputs only, read-only: claiming never creates a letter.
+  const letter = db.select({ id: coverLetters.id }).from(coverLetters)
+    .where(and(eq(coverLetters.user_id, pack.user_id), eq(coverLetters.job_id, pack.job_id))).get();
+  const ready = letter ? db.select().from(coverLetterOutputs)
+    .where(and(eq(coverLetterOutputs.letter_id, letter.id), eq(coverLetterOutputs.status, "ready"))).all() : [];
+  const own = (p: unknown): p is string => typeof p === "string" && p.startsWith(`${pack.user_id}/`);
+  const covers: Covers = {};
+  let coverPath: string | null = null;
+  for (const o of ready) {
+    if (o.target.kind === "upload") {
+      if (own(o.pdf_path)) { covers.upload = { file: true }; coverPath = o.pdf_path; }
+    } else if (o.text.trim()) covers[o.target.fieldKey] = { text: o.text };
+  }
+  const fields = toFillPlan(items, pack.answers as Answers, covers);
   const app = db.select({ tailored_cv_path: applications.tailored_cv_path }).from(applications)
     .where(and(eq(applications.user_id, pack.user_id), eq(applications.job_id, pack.job_id))).get();
   const cvRow = db.select({ storage_path: cvs.storage_path }).from(cvs).where(and(eq(cvs.user_id, pack.user_id), eq(cvs.is_active, true))).get();
-  const own = (p: unknown): p is string => typeof p === "string" && p.startsWith(`${pack.user_id}/`);
   const [bucket, path] = own(app?.tailored_cv_path) ? (["tailored", app.tailored_cv_path] as const) : (["cvs", cvRow?.storage_path] as const);
   let cv: ClaimBody["cv"] = null;
   if (own(path)) {
@@ -99,5 +111,13 @@ export async function claimPack(token: string): Promise<{ status: 200; body: Cla
       console.error("autopilot claim: bad CV path");
     }
   }
-  return { status: 200, body: { ats: form.ats, url: form.url, fields, cv } };
+  let cover: ClaimBody["cover"] = null;
+  if (coverPath) {
+    try {
+      cover = { url: fileUrl("letters", coverPath), filename: `${safeNamePart(core.first_name, "My")}-${safeNamePart(core.last_name, "Cover")}-Cover-Letter.pdf` };
+    } catch {
+      console.error("autopilot claim: bad cover letter path");
+    }
+  }
+  return { status: 200, body: { ats: form.ats, url: form.url, fields, cv, cover } };
 }
