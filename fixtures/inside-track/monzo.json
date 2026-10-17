@@ -1,0 +1,12 @@
+{
+  "alumni": [
+    { "title": "Priya Shah - Data Analyst - Monzo Bank | LinkedIn", "link": "https://uk.linkedin.com/in/placed-demo-priya-shah", "snippet": "University College London · Monzo Bank" },
+    { "title": "Tom Okafor - Product Analyst at Monzo | LinkedIn", "link": "https://uk.linkedin.com/in/placed-demo-tom-okafor", "snippet": "UCL Economics" }
+  ],
+  "team": [
+    { "title": "Elena Rossi - Senior Data Scientist - Monzo | LinkedIn", "link": "https://uk.linkedin.com/in/placed-demo-elena-rossi", "snippet": "" }
+  ],
+  "recruiter": [
+    { "title": "Sam Carter - Early Careers Talent Partner - Monzo Bank | LinkedIn", "link": "https://uk.linkedin.com/in/placed-demo-sam-carter", "snippet": "" }
+  ]
+}
