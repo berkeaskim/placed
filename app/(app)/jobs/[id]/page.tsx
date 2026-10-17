@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { and, eq } from "drizzle-orm";
@@ -26,6 +27,7 @@ import { AutopilotPanel } from "./autopilot-panel";
 import { InterviewPrepPanel } from "./interview-prep-panel";
 import type { StoredTailoring } from "./actions";
 import { PeoplePanel } from "@/components/outreach/people-panel";
+import { InsideTrack, WriteToSomeoneElse } from "@/components/inside-track/inside-track";
 import { OUTREACH_TARGETS } from "@/lib/outreach/targets";
 import type { OutreachPurpose } from "@/lib/outreach/draft";
 
@@ -71,6 +73,12 @@ export default async function JobPage({ params, searchParams }: { params: Promis
   const status = app?.status ?? null;
   const alreadyApplied = isPastSaved(status);
   const stored = (app?.tailored_json ?? null) as StoredTailoring | null;
+  const school = universityFor(user.id);
+  // Tracker nudges open the drafter on a preset target and purpose (?target=…&purpose=…#people).
+  const drafterStart = {
+    initialTarget: OUTREACH_TARGETS.find((t) => t === sp.target),
+    initialPurpose: (["intro", "follow_up", "interview_prep"] as OutreachPurpose[]).find((p) => p === sp.purpose),
+  };
 
   return (
     <div className="flex flex-col gap-4">
@@ -132,11 +140,16 @@ export default async function JobPage({ params, searchParams }: { params: Promis
             <ApplyButton jobId={job.id} url={safeHttpUrl(job.url)} company={job.company} alreadyApplied={alreadyApplied} />
           </section>
 
-          <PeoplePanel
-            company={job.company} title={job.title} jobId={job.id} school={universityFor(user.id)}
-            initialTarget={OUTREACH_TARGETS.find((t) => t === sp.target)}
-            initialPurpose={(["intro", "follow_up", "interview_prep"] as OutreachPurpose[]).find((p) => p === sp.purpose)}
-          />
+          {alreadyApplied ? (
+            <>
+              <Suspense fallback={<section id="inside-track" className="rounded-[20px] border bg-white p-5 text-sm text-muted-foreground">Finding people at {job.company}…</section>}>
+                <InsideTrack company={job.company} title={job.title} jobId={job.id} school={school} />
+              </Suspense>
+              <WriteToSomeoneElse jobId={job.id} school={school} {...drafterStart} />
+            </>
+          ) : (
+            <PeoplePanel company={job.company} title={job.title} jobId={job.id} school={school} {...drafterStart} />
+          )}
         </aside>
       </div>
       {alreadyApplied && <InterviewPrepPanel jobId={job.id} company={job.company} hasCv={Boolean(cv)} />}
