@@ -7,11 +7,11 @@ import { heuristicTagJob } from "@/lib/ai/heuristics";
 import type { TaggedJob } from "@/lib/ai/tagJob";
 import { resolveDeadline, type DeadlineSource } from "./deadline";
 
-export type CompanyRow = { id: number; slug: string; name: string; ats: Ats; api_host: string | null; enabled: boolean };
+export type CompanyRow = { id: number; slug: string; name: string; ats: Ats; api_host: string | null; employer: string | null; transport: "stealth" | null; enabled: boolean };
 
 export type JobRow = {
   company_id: number; ext_id: string; title: string; url: string; location: string; remote: boolean;
-  deadline: string | null; deadline_source: DeadlineSource | null; rolling: boolean; closed_at: null; posted_at: string | null; archetype: string; field_tags: string[];
+  deadline: string | null; deadline_source: DeadlineSource | null; rolling: boolean; closed_at: null; posted_at: string | null; opens_on: string | null; archetype: string; field_tags: string[];
   year_eligibility: string[]; sponsors_visa: string; employment_type: string; first_year_friendly: boolean; cohort_clash: boolean;
   requirements: Requirement[]; skills: string[]; summary: string; raw_html: string; text_lines: string[];
   fingerprint: string; content_hash: string; tag_status: "ok" | "failed" | "pending"; is_live: boolean; last_seen: string;
@@ -38,13 +38,13 @@ export const MAX_TAGS_PER_COMPANY = 25;
 export const HASH_VERSION = "v2";
 
 /** Versioned, and includes the ATS close date: an extended deadline with an unchanged JD must still re-process. */
-export function jobContentHash(j: Pick<RawJob, "title" | "deadline">, text: string): string {
-  return contentHash(`${HASH_VERSION}\n${j.title}\n${j.deadline ?? ""}\n${text}`);
+export function jobContentHash(j: Pick<RawJob, "title" | "deadline" | "opensOn">, text: string): string {
+  return contentHash(`${HASH_VERSION}\n${j.title}\n${j.deadline ?? ""}\n${j.opensOn ?? ""}\n${text}`);
 }
 
 export async function ingestCompany(c: CompanyRow, deps: IngestDeps) {
   const now = (deps.now ?? (() => new Date()))().toISOString();
-  const raw = await deps.fetchJobs({ slug: c.slug, name: c.name, ats: c.ats, apiHost: c.api_host });
+  const raw = await deps.fetchJobs({ slug: c.slug, name: c.name, ats: c.ats, apiHost: c.api_host, employer: c.employer, transport: c.transport });
   const existing = await deps.store.existing(c.id);
   const keptIds: string[] = [];
   const unchanged: string[] = [];
@@ -81,7 +81,7 @@ export async function ingestCompany(c: CompanyRow, deps: IngestDeps) {
     const dl = resolveDeadline(j.deadline, text, j.postedAt ? new Date(j.postedAt) : new Date(now));
     rows.push({
       company_id: c.id, ext_id: j.extId, title: j.title, url: normalizeUrl(j.url), location: j.location, remote: j.remote,
-      deadline: dl.deadline, deadline_source: dl.source, rolling: dl.rolling, closed_at: null, posted_at: j.postedAt, archetype: t.archetype, field_tags: t.fieldTags,
+      deadline: dl.deadline, deadline_source: dl.source, rolling: dl.rolling, closed_at: null, posted_at: j.postedAt, opens_on: j.opensOn ?? null, archetype: t.archetype, field_tags: t.fieldTags,
       year_eligibility: t.yearEligibility, sponsors_visa: t.sponsorsVisa, employment_type: t.employmentType,
       first_year_friendly: t.firstYearFriendly, cohort_clash: cohortClash, requirements: t.requirements,
       skills: [...new Set(t.requirements.map((r) => r.skill).filter((s): s is string => Boolean(s)))],

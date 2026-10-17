@@ -4,12 +4,13 @@ import { normalizeLever } from "./lever";
 import { normalizeAshby } from "./ashby";
 import { fetchWorkday, workdayBase } from "./workday";
 import { fetchSmartRecruiters, srPostingsUrl } from "./smartrecruiters";
+import type { AtsKind } from "@/lib/db/schema";
 import { passesTitleFilter } from "../filter";
 
 export { normalizeGreenhouse, normalizeLever, normalizeAshby };
 
-export type Ats = "greenhouse" | "lever" | "ashby" | "workday" | "smartrecruiters";
-export type CompanySeed = { slug: string; name: string; ats: Ats; apiHost?: string | null };
+export type Ats = AtsKind;
+export type CompanySeed = { slug: string; name: string; ats: Ats; apiHost?: string | null; employer?: string | null; transport?: "stealth" | null };
 
 export class ProviderError extends Error {}
 
@@ -26,6 +27,10 @@ export function endpointFor(c: CompanySeed): string {
       return `${workdayBase(c.slug, c.apiHost)}/jobs`;
     case "smartrecruiters":
       return srPostingsUrl(c.slug);
+    case "oracle":
+    case "amazon":
+    case "curated":
+      throw new ProviderError(`${c.ats}/${c.slug}: provider not implemented yet`);
   }
 }
 

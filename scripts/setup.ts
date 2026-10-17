@@ -4,8 +4,9 @@ import YAML from "yaml";
 import { LOCAL_USER_EMAIL, LOCAL_USER_ID } from "../lib/auth/local-user";
 import { dataDir, db, dbFile } from "../lib/db/client";
 import { ensureProfile } from "../lib/db/functions";
-import { ATS_VALUES, companies, jobs, type AtsKind, type NewJob } from "../lib/db/schema";
+import { companies, jobs, type NewJob } from "../lib/db/schema";
 import { localSecretKey } from "../lib/settings/secret-key";
+import { seedCompanyRows } from "../lib/ingest/seed";
 import { runIngest } from "../lib/ingest/local";
 
 /** One-time local setup: data dir, secret key, migrations, the local profile, and the seed companies/jobs. Re-runnable. */
@@ -16,15 +17,12 @@ async function main() {
   console.log(`database: ${dbFile()} (migrated)`);
   ensureProfile(LOCAL_USER_ID, LOCAL_USER_EMAIL);
 
-  type SeedCompany = { slug: string; name: string; ats: string; apiHost?: string; enabled?: boolean };
-  const rows = (YAML.parse(readFileSync("seed/companies.yml", "utf8")) as SeedCompany[])
-    .filter((r) => (ATS_VALUES as readonly string[]).includes(r.ats))
-    .map((r) => ({ slug: r.slug, name: r.name, ats: r.ats as AtsKind, api_host: r.apiHost ?? null, enabled: r.enabled !== false }));
+  const rows = seedCompanyRows(YAML.parse(readFileSync("seed/companies.yml", "utf8")) as unknown[]);
   db.transaction((tx) => {
     for (const r of rows) {
       tx.insert(companies).values(r).onConflictDoUpdate({
         target: [companies.ats, companies.slug],
-        set: { name: r.name, api_host: r.api_host, enabled: r.enabled },
+        set: { name: r.name, api_host: r.api_host, employer: r.employer, transport: r.transport, enabled: r.enabled },
       }).run();
     }
   });

@@ -55,7 +55,7 @@ describe("sqliteStore", () => {
     const id = acmeId();
     const row = (ext: string, title: string) => ({
       company_id: id, ext_id: ext, title, url: "https://x", location: "London", remote: false, deadline: null, deadline_source: null, rolling: false,
-      closed_at: null, posted_at: null, archetype: "data_analytics", field_tags: [], year_eligibility: ["2nd"], sponsors_visa: "unknown",
+      closed_at: null, posted_at: null, opens_on: null, archetype: "data_analytics", field_tags: [], year_eligibility: ["2nd"], sponsors_visa: "unknown",
       employment_type: "internship", first_year_friendly: false, cohort_clash: false, requirements: [], skills: ["SQL"], summary: "", raw_html: "",
       text_lines: ["x"], fingerprint: "f", content_hash: "h1", tag_status: "ok" as const, is_live: true, last_seen: "2026-10-01T00:00:00.000Z",
     });

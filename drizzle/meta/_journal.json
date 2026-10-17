@@ -36,6 +36,13 @@
       "when": 1792198191718,
       "tag": "0004_profile_course",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1792232008163,
+      "tag": "0005_melodic_deathstrike",
+      "breakpoints": true
     }
   ]
 }

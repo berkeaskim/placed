@@ -3,7 +3,7 @@ import { ingestCompany, jobContentHash, type IngestStore, type JobRow } from "@/
 import type { RawJob } from "@/lib/types";
 import { heuristicTagJob } from "@/lib/ai/heuristics";
 
-const company = { id: 1, slug: "acme", name: "Acme", ats: "lever" as const, api_host: null, enabled: true };
+const company = { id: 1, slug: "acme", name: "Acme", ats: "lever" as const, api_host: null, enabled: true, employer: null, transport: null };
 const raw = (over: Partial<RawJob>): RawJob => ({
   extId: "1", title: "Data Analyst Intern", url: "https://jobs.lever.co/acme/1?utm_source=x", location: "London",
   remote: false, html: "<h3>Requirements</h3><ul><li>SQL</li></ul>", postedAt: null, ...over,
@@ -85,5 +85,26 @@ describe("ingestCompany", () => {
     await ingestCompany(company, { fetchJobs: async () => [job], tagJob: async (i) => heuristicTagJob(i), store });
     expect(upserted).toHaveLength(1);
     expect(upserted[0].deadline).toBe("2026-10-31");
+  });
+
+  it("stores opensOn as opens_on", async () => {
+    const { store, upserted } = fakeStore();
+    await ingestCompany(company, {
+      fetchJobs: async () => [raw({ extId: "1", opensOn: "2026-09-01" }), raw({ extId: "2" })],
+      tagJob: async (i) => heuristicTagJob(i), store,
+    });
+    expect(upserted.find((r) => r.ext_id === "1")?.opens_on).toBe("2026-09-01");
+    expect(upserted.find((r) => r.ext_id === "2")?.opens_on).toBeNull();
+  });
+
+  it("passes employer and transport to fetchJobs and re-processes when opensOn changes", async () => {
+    const { htmlToLines } = await import("@/lib/text/jd");
+    const job = raw({ opensOn: "2026-09-01" });
+    const old = jobContentHash({ ...job, opensOn: "2026-08-01" }, htmlToLines(job.html).join("\n"));
+    const { store, upserted } = fakeStore(new Map([["1", { content_hash: old, tag_status: "ok" }]]));
+    const fetchJobs = vi.fn(async () => [job]);
+    await ingestCompany({ ...company, employer: "acme-corp", transport: "stealth" }, { fetchJobs, tagJob: async (i) => heuristicTagJob(i), store });
+    expect(fetchJobs).toHaveBeenCalledWith(expect.objectContaining({ employer: "acme-corp", transport: "stealth" }));
+    expect(upserted).toHaveLength(1);
   });
 });
