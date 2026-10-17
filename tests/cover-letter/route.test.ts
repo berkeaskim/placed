@@ -8,6 +8,8 @@ import { claimGeneration } from "@/lib/cover-letter/generate";
 import { seedNorthbridgeJob, seedStudent, U } from "./seed";
 
 vi.stubEnv("AI_MODE", "fixture");
+// Full pipelines (draft, judge, repair, PDF render) run several times slower on CI runners than locally.
+vi.setConfig({ testTimeout: 20_000 });
 const route = await import("@/app/api/cover-letter/[jobId]/draft/route");
 beforeAll(() => seedStudent());
 

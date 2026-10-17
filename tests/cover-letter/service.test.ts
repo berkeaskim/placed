@@ -19,6 +19,8 @@ const FIXTURE_JD_LINES_NO_REF = FIXTURE_JD_LINES.filter((l) => !l.includes(FIXTU
 import { seedNorthbridgeJob, seedStudent, U } from "./seed";
 
 vi.stubEnv("AI_MODE", "fixture");
+// Full pipelines (draft, judge, repair, PDF render) run several times slower on CI runners than locally.
+vi.setConfig({ testTimeout: 20_000 });
 beforeAll(() => seedStudent());
 
 const view = (r: CardView | { error: string }): CardView => {
