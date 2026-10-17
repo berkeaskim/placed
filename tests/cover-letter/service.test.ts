@@ -228,6 +228,22 @@ describe("edits and Ready", () => {
     expect(undone.spans).toEqual(before.spans);
   });
 
+  it("stores a draft with the spacing the paper shows, so reading it back unedited saves nothing", async () => {
+    // fixtures/ai/coverLetterDraft/spaced.txt: a space before every marker, as small models write it.
+    const jobId = seedNorthbridgeJob(undefined, "spaced");
+    const v = await interview(jobId);
+    const outputId = v.outputs[0].id;
+    await drain(jobId, outputId);
+    const before = view(await actions.openCoverLetter(jobId)).outputs[0];
+    expect(before.text).not.toMatch(/ {2}/);
+    // The contenteditable's text after a focus and blur: pre-line collapses spaces, each paragraph trimmed.
+    const read = before.text.split(/\n[ \t]*\n/).map((p) => p.replace(/ {2,}/g, " ").trim()).join("\n\n");
+    const after = view(await actions.saveText(jobId, outputId, `${read}  `)).outputs[0];
+    expect(after.text).toBe(before.text);
+    expect(after.spans).toEqual(before.spans);
+    expect(after.canReady).toEqual(before.canReady);
+  });
+
   it("addFieldOutput adds a field answer with its own limit", async () => {
     const jobId = seedNorthbridgeJob();
     await actions.openCoverLetter(jobId);

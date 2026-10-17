@@ -7,6 +7,7 @@ import { applyEdit, type ClosedSentence, type EditKind } from "./edit";
 import {
   CardError, cardView, claimStreaming, draftInput, ensureEvidence, generationTarget, touchStreaming, type CardView, type Ctx,
 } from "./service";
+import { tidySpaces } from "./spans";
 import { getOrCreateLetter, pushUndo, saveLetter, upsertOutput } from "./store";
 import type { Marked } from "./stream-parse";
 import { judgeSentences, repair, verifyOutput } from "./verify";
@@ -98,7 +99,8 @@ async function* draftFlow(ctx: Ctx, letter: LetterRow, o: OutputRow, signal: Abo
   }
   if (signal.aborted) return;
   yield { event: "phase", data: { phase: "checking" } };
-  const signed = sign(visible, sentences, input);
+  // Stored with the spacing the paper renders (pre-line collapses space runs), so an unedited read-back equals it.
+  const signed = sign(tidySpaces(visible), sentences.map((m) => ({ ...m, text: tidySpaces(m.text) })), input);
   if (!signed.text.trim()) throw new CardError("The draft came back empty. Please try again.");
   const judged = await judgeSentences({ sentences: signed.sentences, input, fixtureKey });
   const vin = { text: signed.text, sentences: signed.sentences, input, ownSpans: [], judged };

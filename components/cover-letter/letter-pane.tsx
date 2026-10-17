@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import type { CardView, OutputView } from "@/lib/cover-letter/service";
+import { sameLetter } from "@/lib/cover-letter/spans";
 import type { Span } from "@/lib/cover-letter/types";
 import { paragraphs, type CardState } from "./card-state";
 import { LintChips } from "./lint-chips";
@@ -213,7 +214,8 @@ export function LetterPane({ s, view, output, autopilot, h }: { s: CardState; vi
     const el = paperRef.current;
     if (!el || !editable || !output) return;
     const next = readText(el);
-    if (next !== text.trim() && next !== text) h.onSave(next);
+    // The paper collapses space runs (pre-line), so an unedited read-back can differ from the stored text in spacing only.
+    if (!sameLetter(next, text)) h.onSave(next);
   };
   const copy = async () => {
     try { await navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch { /* clipboard blocked: nothing to do */ }

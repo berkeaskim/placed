@@ -18,7 +18,7 @@ import { findPersons, maskPersons } from "./person";
 import { nextQuestion } from "./questions";
 import { defaultResearchDeps, researchCompany, researchKey } from "./research";
 import { countWords, lintLetter, RULES } from "./rules";
-import { diffSpans } from "./spans";
+import { diffSpans, sameLetter } from "./spans";
 import {
   findStories, getOrCreateLetter, getResearch, listOutputs, popUndo, pushUndo, rememberStory, saveLetter, upsertOutput,
 } from "./store";
@@ -360,7 +360,8 @@ export async function saveText(userId: string, jobId: string, outputId: string, 
   const ctx = loadCtx(userId, jobId);
   const letter = getOrCreateLetter(userId, jobId);
   const o = getOutput(letter, outputId);
-  if (text !== o.text) {
+  // Whitespace the paper does not show (a focus and blur with no edit) is not an edit.
+  if (!sameLetter(text, o.text)) {
     pushUndo(o.id, { text: o.text, spans: o.spans });
     writeOutput(ctx, letter, o, text, diffSpans(o.text, o.spans, text));
   }
