@@ -4,6 +4,7 @@ import { normalizeLever } from "./lever";
 import { normalizeAshby } from "./ashby";
 import { fetchWorkday, workdayBase } from "./workday";
 import { fetchSmartRecruiters, srPostingsUrl } from "./smartrecruiters";
+import { fetchOracle, oracleListUrl } from "./oracle";
 import type { AtsKind } from "@/lib/db/schema";
 import { passesTitleFilter } from "../filter";
 
@@ -28,6 +29,8 @@ export function endpointFor(c: CompanySeed): string {
     case "smartrecruiters":
       return srPostingsUrl(c.slug);
     case "oracle":
+      if (!c.apiHost) throw new ProviderError(`oracle/${c.slug}: apiHost ({tenant}.fa.{region}.oraclecloud.com) is required`);
+      return oracleListUrl(c.slug, c.apiHost, 0);
     case "amazon":
     case "curated":
       throw new ProviderError(`${c.ats}/${c.slug}: provider not implemented yet`);
@@ -50,6 +53,13 @@ export async function fetchJobs(c: CompanySeed, fetchImpl: typeof fetch = fetch)
       return (await fetchSmartRecruiters(c.slug, passesTitleFilter, fetchImpl)).jobs;
     } catch (e) {
       throw new ProviderError(`smartrecruiters/${c.slug}: ${(e as Error).message}`);
+    }
+  }
+  if (c.ats === "oracle") {
+    try {
+      return (await fetchOracle(c.slug, c.apiHost as string, passesTitleFilter, fetchImpl)).jobs;
+    } catch (e) {
+      throw new ProviderError(`oracle/${c.slug}: ${(e as Error).message}`);
     }
   }
   let res: Response;

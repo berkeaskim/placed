@@ -172,3 +172,6 @@
 - { slug: mazars, name: Forvis Mazars, ats: smartrecruiters, enabled: true } # 0 today
 - { slug: legalandgeneral, name: Legal & General, ats: smartrecruiters, enabled: true } # 0 today
 - { slug: asos, name: ASOS, ats: smartrecruiters, enabled: true } # 0 today
+
+# Oracle Recruiting Cloud. slug = "<siteNumber>/<locationId>", apiHost = tenant host. UK locationId 300000000289276 (not 300000000289360, India).
+- { slug: CX_1001/300000000289276, name: JPMorgan, ats: oracle, apiHost: jpmc.fa.oraclecloud.com, employer: jpmorgan, enabled: true }
