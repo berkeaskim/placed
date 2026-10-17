@@ -1,0 +1,13 @@
+Dear Northbridge Graduate Recruitment Team,
+
+I am applying for the 2027 Summer Analyst Programme in Markets at Northbridge Capital (ref. SA-MKT-27).⟦them:jd⟧ On the trading desk of a £50k student investment fund, I size positions across rates and FX.⟦me:x1-b0⟧ That is the kind of risk analysis the programme asks of its analysts.⟦them:jd⟧
+
+The role asks for analysis under time pressure.⟦them:jd⟧ I built a rates scenario model in Python that the fund used in weekly investment committee meetings.⟦me:x1-b1⟧ At the Warwick Trading Challenge I presented the downside case for our team's rates position to the judging panel.⟦me:p1-b0⟧ Each week the model had to make the downside case clear in a few minutes.⟦me:x1-b1⟧ Presenting it under questioning from the judges was the same skill, with less time.⟦me:p1-b0⟧
+
+Summer analysts at Northbridge rotate across flow and structured trading desks.⟦them:jd⟧ They own risk analysis from their first week, working alongside traders.⟦them:jd⟧ For someone who has so far sized positions only in rates and FX, that rotation is the main draw of the programme.⟦me:x1-b0⟧
+
+At Cafe Lune I trained 4 new staff on the till during weekend peak hours.⟦me:x2-b0⟧ It taught me to explain a task simply when there is no time to repeat it.⟦me:x2-b0⟧ My modules in Econometrics, Financial Markets and Statistics sit behind the modelling I do in Python, and I would like to test them on a real desk.⟦me:ed1-d0,x1-b1⟧
+
+I would bring careful risk work and a habit of checking the downside to your Markets team.⟦me:x1-b0,p1-b0⟧ Thank you for considering my application, and I would welcome the chance to discuss it at interview.⟦me:⟧
+
+Yours faithfully,

@@ -30,7 +30,7 @@ const FIRST_PERSON = /\b(?:I|I'm|I've|I'd|I'll|my|me|myself|mine)\b/;
 const tokens = (t: string): string[] => (t.toLowerCase().replace(/(\d),(?=\d)/g, "$1").match(/[a-z0-9]+(?:\.[0-9]+)?/g) ?? []);
 
 /** Whole-token comparison: numbers (with their unit word), names and claim words must all appear in the cited lines. */
-function themSupported(text: string, lines: string[], company: string): boolean {
+export function themSupported(text: string, lines: string[], company: string): boolean {
   const hay = tokens(lines.join(" ") + " " + company);
   const hayWords = new Set(hay);
   const hayPairs = new Set(hay.slice(1).map((w, n) => `${hay[n]} ${w}`));
@@ -69,7 +69,7 @@ const CORPUS_TYPES = new Set(["inventedMetrics", "unsupportedFacts", "skillInjec
 const VERIFY_ORDER = ["siblingContamination", "skillInjection", "inventedMetrics", "authorshipEscalation", "qualifierDrop", "unsupportedFacts"];
 
 /** Reason a first-person sentence is not backed by the cited CV bullets / facts, or null if it is. */
-function meBlock(text: string, resolved: string[], i: DraftInput, bullets: Map<string, string>, facts: Map<string, string>, corpusOnly = false): string | null {
+export function meBlock(text: string, resolved: string[], i: DraftInput, bullets: Map<string, string>, facts: Map<string, string>, corpusOnly = false): string | null {
   const source: SourceBullet[] = resolved.map((r) => ({ id: r, text: bullets.get(r) ?? facts.get(r)! }));
   const t: TailoredBullet = { id: "draft", text, sourceRefs: resolved, changeType: "rephrased" };
   const first = corpusOnly ? [] : [

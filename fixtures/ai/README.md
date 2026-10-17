@@ -25,6 +25,15 @@ The demo job was chosen because it is a real London internship for 2nd/penultima
 must-haves are Python, SQL and "Case Interviews" (from its interview process: two case studies). The persona has
 the first two and **genuinely lacks the third**, so tailoring shows it as "Not in your CV — we didn't invent it".
 
+## Cover letter draft fixtures
+
+`coverLetterDraft/default.txt` and `skipped.txt` are raw marked streams (`⟦me:…⟧`, `⟦them:…⟧`, `⟦you:…⟧`) written by
+hand for the fictional student "Alex Morgan" and the fictional Northbridge Capital job defined in
+`tests/cover-letter/fixtures.ts` (CV bullet ids, answer ids `a1`–`a4`, and the research fixture's fact ids).
+`default.txt` quotes three answers verbatim and has **one deliberate catch**: "We placed 3rd of 62 teams." is not on
+the CV, so the ground-check flags it "unsupported number". `skipped.txt` is the letter when every question was skipped:
+no `⟦you⟧` sentence and the why-them part cites only `⟦them:jd⟧`.
+
 ## Other fixtures
 
 `defendQuestions/default.json` is a generic fallback from the C13 module (not persona-specific). Without an exact
