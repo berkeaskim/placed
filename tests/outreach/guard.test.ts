@@ -351,11 +351,26 @@ describe("fix round 5", () => {
       "Please let me know if Lendable runs a spring week."]) expect(checkOutreach(full(x), src())).toEqual([]);
   });
 
-  it("a 20,000-char run of capitalised words completes in under 300 ms", () => {
-    const t = `Hi Sam, ${"Abc ".repeat(5000)}committee.`;
-    const start = performance.now();
-    checkOutreach(t, src());
-    expect(performance.now() - start).toBeLessThan(300);
+  // Guards against catastrophic backtracking on long capitalised runs. Each call carries a fixed
+  // ~35 ms cost (CV regexes), so a wall-clock bound flakes on slow CI runners. Instead compare
+  // against a 20x shorter input timed in the same process: linear scaling keeps the ratio near
+  // 1.5, an O(n²) pattern pushes it into the hundreds. Best-of-3 filters scheduler noise.
+  it("a 20,000-char run of capitalised words scales linearly", () => {
+    const run = (words: number) => {
+      const t = `Hi Sam, ${"Abc ".repeat(words)}committee.`;
+      let best = Infinity;
+      for (let i = 0; i < 3; i++) {
+        const start = performance.now();
+        checkOutreach(t, src());
+        best = Math.min(best, performance.now() - start);
+      }
+      return best;
+    };
+    run(250); // warm up the JIT
+    const small = run(250);
+    const large = run(5000);
+    expect(large).toBeLessThan(small * 5);
+    expect(large).toBeLessThan(2000); // absolute backstop
   });
 });
 
