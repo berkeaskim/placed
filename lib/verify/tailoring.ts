@@ -68,7 +68,7 @@ const GLOBAL = (re: RegExp) => new RegExp(re.source, re.flags.includes("g") ? re
 /** Contact details are content but never claims; strip them so a phone number can't license a metric. */
 const stripContacts = (t: string) => t.replace(GLOBAL(EMAIL_RE), " ").replace(/https?:\/\/\S+|www\.\S+/gi, " ").replace(GLOBAL(PHONE_RE), " ");
 
-function numberSet(text: string): Set<string> {
+export function numberSet(text: string): Set<string> {
   const out = new Set<string>();
   const clean = stripContacts(text);
   for (const m of clean.match(NUM) ?? []) numValues(m).forEach((v) => out.add(v));
