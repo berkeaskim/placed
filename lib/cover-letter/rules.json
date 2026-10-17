@@ -820,6 +820,11 @@
         "label": "Placeholder"
       },
       {
+        "pattern": "\\[[A-Z][^\\]]{0,30}\\]",
+        "scope": "any",
+        "label": "Placeholder"
+      },
+      {
         "pattern": "(as an AI|I hope this (letter|draft) helps|here is (a|your) (draft|cover letter)|certainly!)",
         "scope": "any",
         "label": "Chatbot leakage"

@@ -23,6 +23,8 @@ export type DraftInput = {
   facts: Fact[];
   pickedFacts: Fact[];
   confirmedFacts: { id: string; claim: string }[];
+  /** A named recipient ("Ms Priya Patel"), when the posting or the student gives one. */
+  recipient?: string;
 };
 
 const esc = escapeUntrusted;
@@ -115,6 +117,7 @@ export function buildDraftPrompt(i: DraftInput): { system: string; prompt: strin
     `<company>${esc(i.company)}</company>`,
     `<role>${esc(i.role)}</role>`,
     ...(i.ref ? [`<ref>${esc(i.ref)}</ref>`] : []),
+    ...(i.recipient ? [`<recipient>${esc(i.recipient)}</recipient> (address the letter to this person)`] : []),
     wrapJob(i.jdLines.join("\n"), i.role),
     `<cv>\n${cvLines.join("\n")}\n</cv>`,
     ...(i.confirmedFacts.length ? [`<confirmed_facts>\n${i.confirmedFacts.map((f) => `${f.id}: ${esc(f.claim)}`).join("\n")}\n</confirmed_facts>`] : []),

@@ -1,0 +1,8 @@
+{
+  "items": [
+    { "index": 1, "about": "them", "refs": ["jd"], "verdict": "ok" },
+    { "index": 4, "about": "them", "refs": ["jd"], "verdict": "ok" },
+    { "index": 11, "about": "them", "refs": ["8843a74840"], "verdict": "ok" },
+    { "index": 12, "about": "them", "refs": ["jd"], "verdict": "ok" }
+  ]
+}

@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
-import { repair, verifyOutput } from "@/lib/cover-letter/verify";
+import { canMarkReady } from "@/lib/cover-letter/gate";
+import { judgeSentences, repair, verifyOutput } from "@/lib/cover-letter/verify";
 import type { Span } from "@/lib/cover-letter/types";
 import { FIXTURE_ANSWERS, FIXTURE_FACTS, fixtureDraftInput, parseMarked } from "./fixtures";
 
@@ -170,5 +171,139 @@ describe("repair", () => {
     const mine = r.spans.find((s) => s.kind === "theirs")!;
     expect(at(r.text, mine)).toBe("I typed this myself.");
     expect(flagged(r.spans)).toEqual([]);
+  });
+});
+
+describe("fix round 1: furniture, firm claims, judge, half-owned text", () => {
+  const full = (sal: string, body: string, close: string, over = {}) => {
+    const m = parseMarked(sal + "\n\n" + OPEN + body + "\n\n" + close);
+    return { ...m, ...verifyOutput({ ...m, input: fixtureDraftInput(over), ownSpans: [] }) };
+  };
+  const ready = (r: ReturnType<typeof full>) => canMarkReady({ text: r.text, spans: r.spans, lint: r.lint, limit: null }).ok;
+  const BODY_OK = "I ran the trading desk of a £50k student investment fund.⟦me:x1-b0⟧";
+
+  it("the greeting may name only the firm, the recipient or stock words", () => {
+    expect(ready(full("Dear Northbridge Graduate Recruitment Team,", BODY_OK, "Yours faithfully,\nAlex Morgan"))).toBe(true);
+    expect(ready(full("Dear Hiring Manager,", BODY_OK, "Yours faithfully,"))).toBe(true);
+    expect(ready(full("Dear Ms Priya Patel,", BODY_OK, "Yours sincerely,", { recipient: "Ms Priya Patel" }))).toBe(true);
+    for (const sal of ["Dear Goldman Sachs Graduate Recruitment Team,", "Dear Northbridge, home of the best analysts,", "Dear Ms Priya Patel,"]) {
+      const r = full(sal, BODY_OK, "Yours faithfully,");
+      expect(ready(r), sal).toBe(false);
+      expect(flagged(r.spans).map((s) => s.flag)).toEqual(["check the greeting"]);
+    }
+  });
+
+  it("only the student's own name may follow the sign-off", () => {
+    const r = full("Dear Hiring Manager,", BODY_OK, "Kind regards,\nAlex Morgan\nGoldman Sachs");
+    expect(ready(r)).toBe(false);
+    expect(flagged(r.spans).map((s) => s.flag)).toEqual(["check the sign-off"]);
+    expect(ready(full("Dear Hiring Manager,", BODY_OK, "Kind regards,\nJordan Lee"))).toBe(false);
+  });
+
+  it("invented firm facts in lowercase words cannot reach Ready", () => {
+    const a1 = FIXTURE_ANSWERS[0].text!;
+    for (const body of [
+      "Your traders work a four-day week in London.⟦them:jd⟧",
+      "Northbridge Capital has a four-day week.⟦them:jd⟧",
+      "Northbridge pays its summer analysts more than any other bank in London.⟦them:jd⟧",
+      "Thank you, and congratulations on your record trading year.⟦me:⟧",
+      `${a1.slice(0, -1)}, and your analysts get double bonuses.⟦you:a1⟧`,
+      "Northbridge pays analysts double.⟦me:a1⟧",
+    ]) {
+      const r = full("Dear Hiring Manager,", body, "Yours faithfully,");
+      expect(ready(r), body).toBe(false);
+    }
+  });
+
+  it("a quantity word is checked like a digit", () => {
+    expect(flagged(verify("At Cafe Lune I trained four new staff on the till.⟦me:x2-b0⟧").spans)).toEqual([]);
+    expect(flagged(verify("At Cafe Lune I trained five new staff on the till.⟦me:x2-b0⟧").spans)).toHaveLength(1);
+  });
+
+  it("a placeholder in brackets blocks Ready", () => {
+    const r = full("Dear Hiring Manager,", "I ran the trading desk of a £50k student investment fund at [University].⟦me:x1-b0⟧", "Yours faithfully,");
+    expect(r.lint.some((h) => h.label === "Placeholder" && h.severity === "block")).toBe(true);
+    expect(ready(r)).toBe(false);
+  });
+
+  it("matches a quoted answer on word boundaries and needs it to be most of the sentence", () => {
+    const short = { answers: [{ id: "a1", question: "why_firm" as const, text: "Risk." }] };
+    const r = verify("Risk is something I have thought about at length while running a student investment fund.⟦you:a1⟧", short);
+    expect(ready({ ...r } as ReturnType<typeof full>)).toBe(false);
+    const ranked = { answers: [{ id: "a1", question: "why_firm" as const, text: "I ran" }] };
+    const b = verify("I ranked first.⟦you:a1⟧", ranked);
+    expect(b.spans.some((s) => s.kind === "theirs")).toBe(false);
+    expect(flagged(b.spans).map((s) => s.flag)).toEqual(["changed your words"]);
+  });
+
+  it("checks only the AI part of a half-owned sentence and never rewrites the student's words", async () => {
+    const sentence = "I ran the trading desk of a £50k student investment fund, and I personally made 300 trades.";
+    const m = letter(`${sentence}⟦me:x1-b0⟧`);
+    const mineText = "and I personally made 300 trades.";
+    const start = m.text.indexOf(mineText);
+    const own: Span = { start, end: start + mineText.length, kind: "theirs", refs: [] };
+    const i = { ...m, input: fixtureDraftInput(), ownSpans: [own] };
+    const v = verifyOutput(i);
+    expect(flagged(v.spans)).toEqual([]);
+    expect(v.spans.filter((s) => s.kind === "ai").every((s) => s.end <= own.start || s.start >= own.end)).toBe(true);
+    expect(canMarkReady({ text: m.text, ...v, limit: null }).ok).toBe(true);
+
+    // An invented AI part next to the student's words: only the AI part is sent for rewriting.
+    const bad = letter(`I ran the trading desk of a £50k fund with 12 traders, ${mineText}⟦me:x1-b0⟧`);
+    const s2 = bad.text.indexOf(mineText);
+    const own2: Span = { start: s2, end: s2 + mineText.length, kind: "theirs", refs: [] };
+    const i2 = { ...bad, input: fixtureDraftInput(), ownSpans: [own2] };
+    const rewrite = vi.fn<(s: string, r: string) => Promise<string>>(async () => "I ran the trading desk of a £50k student investment fund,");
+    const r = await repair(i2, verifyOutput(i2), rewrite);
+    expect(rewrite).toHaveBeenCalledTimes(1);
+    expect(rewrite.mock.calls[0][0]).toBe("I ran the trading desk of a £50k fund with 12 traders,");
+    const mine = r.spans.find((s) => s.kind === "theirs")!;
+    expect(r.text.slice(mine.start, mine.end)).toBe(mineText);
+    expect(flagged(r.spans)).toEqual([]);
+  });
+});
+
+describe("judge results", () => {
+  const body = "Northbridge Capital runs flow and structured trading desks.⟦them:jd⟧ I sized positions across rates and FX on the trading desk of a £50k student investment fund.";
+  const m = letter(body);
+  const idx = (needle: string) => m.sentences.findIndex((s) => s.text.startsWith(needle));
+
+  it("a generic or unsupported verdict adds a flag", () => {
+    const n = idx("Northbridge Capital runs");
+    const r = verifyOutput({ ...m, input: fixtureDraftInput(), ownSpans: [], judged: [{ index: n, about: "them", refs: ["jd"], verdict: "generic" }] });
+    expect(flagged(r.spans).map((s) => s.flag)).toContain("would work for any firm");
+    const u = verifyOutput({ ...m, input: fixtureDraftInput(), ownSpans: [], judged: [{ index: n, about: "them", refs: ["jd"], verdict: "unsupported" }] });
+    expect(flagged(u.spans).map((s) => s.flag)).toContain("not in the job post or your picked facts");
+  });
+
+  it("a tag gives an unmarked sentence its sources, which then face the deterministic checks", () => {
+    const n = idx("I sized positions");
+    expect(flagged(verifyOutput({ ...m, input: fixtureDraftInput(), ownSpans: [] }).spans).map((s) => s.flag)).toEqual(["no source"]);
+    const tagged = verifyOutput({ ...m, input: fixtureDraftInput(), ownSpans: [], judged: [{ index: n, about: "me", refs: ["X1-B0"], verdict: "ok" }] });
+    expect(flagged(tagged.spans)).toEqual([]);
+    const wrong = verifyOutput({ ...m, input: fixtureDraftInput(), ownSpans: [], judged: [{ index: n, about: "me", refs: ["x2-b0"], verdict: "ok" }] });
+    expect(flagged(wrong.spans)).toHaveLength(1);
+  });
+
+  it("an ok verdict never clears a deterministic flag, and a tag never relabels a marked sentence", () => {
+    const bad = letter("Your traders work a four-day week in London.⟦them:jd⟧ We placed 3rd of 62 teams.⟦me:p1-b0⟧");
+    const judged = bad.sentences.map((s, index) => ({ index, about: "me" as const, refs: ["p1-b0"], verdict: "ok" as const }));
+    expect(flagged(verifyOutput({ ...bad, input: fixtureDraftInput(), ownSpans: [], judged }).spans)).toHaveLength(2);
+  });
+
+  it("judgeSentences sends only unmarked and them sentences and keeps their indexes (fixture mode)", async () => {
+    process.env.AI_MODE = "fixture";
+    try {
+      const d = parseMarked(readFileSync("fixtures/ai/coverLetterDraft/default.txt", "utf8"));
+      const j = await judgeSentences({ sentences: d.sentences, input: fixtureDraftInput() });
+      expect(j.map((x) => x.index)).toEqual([1, 4, 11, 12]);
+      expect(j.every((x) => x.verdict === "ok")).toBe(true);
+      const v = verifyOutput({ ...d, input: fixtureDraftInput(), ownSpans: [], judged: j });
+      expect(flagged(v.spans)).toHaveLength(1);
+      // Indexes that point at sentences the judge was not shown are dropped.
+      expect(await judgeSentences({ sentences: d.sentences.slice(0, 3), input: fixtureDraftInput() })).toEqual([{ index: 1, about: "them", refs: ["jd"], verdict: "ok" }]);
+    } finally {
+      delete process.env.AI_MODE;
+    }
   });
 });
