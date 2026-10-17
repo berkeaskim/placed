@@ -307,3 +307,62 @@ describe("judge results", () => {
     }
   });
 });
+
+describe("fix round 2: firm talk outside them-sentences", () => {
+  const full = (sal: string, body: string) => {
+    const m = parseMarked(sal + "\n\n" + OPEN + body + "\n\nYours faithfully,");
+    return { ...m, ...verifyOutput({ ...m, input: fixtureDraftInput(), ownSpans: [] }) };
+  };
+  const ready = (r: ReturnType<typeof full>) => canMarkReady({ text: r.text, spans: r.spans, lint: r.lint, limit: null }).ok;
+  const a1 = FIXTURE_ANSWERS[0].text!;
+
+  it("firm claims in me, courtesy and quoted-answer sentences are blocked", () => {
+    for (const body of [
+      "Thank you, and congratulations on your successful trading year.⟦me:⟧",
+      `${a1.slice(0, -1)}, and your analysts get guaranteed bonuses.⟦you:a1⟧`,
+      "Northbridge pays its analysts generously.⟦me:a1⟧",
+      "Northbridge analysts get a fortnight of extra holiday.⟦me:⟧",
+    ]) {
+      const r = full("Dear Hiring Manager,", body);
+      expect(ready(r), body).toBe(false);
+    }
+  });
+
+  it("pure courtesy passes", () => {
+    for (const body of ["Thank you for your consideration.⟦me:⟧", "I would welcome the chance to discuss my application.⟦me:⟧"]) {
+      const r = full("Dear Hiring Manager,", body);
+      expect(flagged(r.spans), body).toEqual([]);
+      expect(ready(r), body).toBe(true);
+    }
+  });
+
+  it("a greeting may use the connectors at, of, the and and", () => {
+    expect(ready(full("Dear Recruitment Team at Northbridge,", "I ran the trading desk of a £50k student investment fund.⟦me:x1-b0⟧"))).toBe(true);
+  });
+
+  it("the judge sees firm-talking me sentences, and its verdict applies to them", async () => {
+    const m = letter("I would bring the habit of sizing a position to your Markets team.⟦me:x1-b0⟧");
+    const n = m.sentences.findIndex((s) => s.text.startsWith("I would bring"));
+    expect(flagged(verifyOutput({ ...m, input: fixtureDraftInput(), ownSpans: [] }).spans)).toEqual([]);
+    const v = verifyOutput({ ...m, input: fixtureDraftInput(), ownSpans: [], judged: [{ index: n, about: "me", refs: ["x1-b0"], verdict: "generic" }] });
+    expect(flagged(v.spans).map((s) => s.flag)).toEqual(["would work for any firm"]);
+    const q = letter(`${a1.slice(0, -1)}, and that suits your desk.⟦you:a1⟧`);
+    const k = q.sentences.findIndex((s) => s.about === "you");
+    const vq = verifyOutput({ ...q, input: fixtureDraftInput(), ownSpans: [], judged: [{ index: k, about: "you", refs: ["a1"], verdict: "unsupported" }] });
+    expect(vq.spans.find((s) => s.kind === "theirs")).toBeDefined();
+    expect(flagged(vq.spans).map((s) => s.flag)).toEqual(["not in the job post or your picked facts"]);
+
+    process.env.AI_MODE = "fixture";
+    try {
+      const { judgeSentences: judge } = await import("@/lib/cover-letter/verify");
+      const seen: number[] = [];
+      // The model answers for every sentence; only the ones it was shown come back.
+      vi.spyOn(await import("@/lib/ai/provider"), "runAi").mockResolvedValue({ items: m.sentences.map((_, index) => ({ index, about: "me", refs: [], verdict: "ok" })) } as never);
+      for (const x of await judge({ sentences: m.sentences, input: fixtureDraftInput() })) seen.push(x.index);
+      expect(seen).toEqual([1, n]); // the opening them-sentence and the firm-talking me-sentence, not the salutation
+    } finally {
+      vi.restoreAllMocks();
+      delete process.env.AI_MODE;
+    }
+  });
+});
