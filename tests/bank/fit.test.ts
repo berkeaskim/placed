@@ -156,8 +156,21 @@ describe("overflowCandidates", () => {
   it("skips dropped bullets and returns fewer when there are fewer", () => {
     const t = toTailored(onePageCv());
     t.experience[0].bullets[0].changeType = "dropped";
-    const out = overflowCandidates(t, { "x0-b0": -10 });
-    expect(out.map((o) => o.bulletId)).not.toContain("x0-b0");
+    const out = overflowCandidates(t, { "x0-b0": -10, "x0-b1": 1 });
+    expect(out.map((o) => o.bulletId)).toEqual(["x0-b1"]);
+  });
+  it("names a merged or AI bullet by its lowest-scoring bank-id source, and skips bullets with no bank-id ref", () => {
+    const t = toTailored(onePageCv());
+    t.experience[0].bullets = [{ id: "ai-merged-1", text: "Merged line", sourceRefs: ["x0-b0", "x0-b1"], changeType: "merged" }];
+    t.experience[1].bullets = [{ id: "ai-new", text: "No bank source", sourceRefs: ["not-a-bank-id"], changeType: "rephrased" }];
+    const scores: Record<string, number> = { "x0-b0": 5, "x0-b1": 0.2, "p0-b0": 3, "p0-b1": 6, "l0-b0": 7, "l0-b1": 4 };
+    const out = overflowCandidates(t, scores);
+    expect(out).toEqual([
+      { bulletId: "x0-b1", text: "Merged line" },
+      { bulletId: "p0-b0", text: "Used Python and SQL to collect and clean 1,200 rental listings" },
+      { bulletId: "l0-b1", text: "Secured 3 sponsors by pitching to banks and consultancies" },
+    ]);
+    expect(out.map((o) => o.bulletId)).not.toContain("ai-merged-1");
   });
 });
 

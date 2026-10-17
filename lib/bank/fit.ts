@@ -46,11 +46,23 @@ export async function fillRatio(cv: TailoredCV, contact: ParsedCV): Promise<numb
   return pdf.numPages > 1 ? 1 + used / usable : used / usable;
 }
 
-/** The 3 lowest-scoring rendered bullets, lowest first (Task 8's save refusal offers these to remove). */
+/**
+ * The 3 lowest-scoring rendered bullets, lowest first (the save refusal offers these to remove). Each is named by a bank
+ * bullet id the swap can exclude: a tailored bullet is scored through its sourceRefs that are bank ids (keys of
+ * `scores`), taking the lowest, and that id is returned. Bullets with no bank-id ref (e.g. v1 CV ids) are skipped.
+ */
 export function overflowCandidates(tailored: TailoredCV, scores: Record<string, number>): { bulletId: string; text: string }[] {
   const rows = [tailored.experience, tailored.projects, tailored.leadership].flat()
-    .flatMap((e) => e.bullets.filter((b) => b.changeType !== "dropped").map((b, i) => ({ bulletId: b.id, text: b.text, score: scores[b.id] ?? 0, i })));
-  return rows.sort((a, b) => a.score - b.score || a.i - b.i).slice(0, 3).map(({ bulletId, text }) => ({ bulletId, text }));
+    .flatMap((e) => e.bullets.filter((b) => b.changeType !== "dropped"))
+    .flatMap((b, i) => {
+      const refs = (b.sourceRefs.length ? b.sourceRefs : [b.id]).filter((r) => r in scores);
+      if (refs.length === 0) return [];
+      const ref = refs.reduce((lo, r) => (scores[r] < scores[lo] ? r : lo));
+      return [{ bulletId: ref, text: b.text, score: scores[ref], i }];
+    });
+  const seen = new Set<string>();
+  return rows.sort((a, b) => a.score - b.score || a.i - b.i)
+    .filter((r) => !seen.has(r.bulletId) && seen.add(r.bulletId)).slice(0, 3).map(({ bulletId, text }) => ({ bulletId, text }));
 }
 
 type Drop = { id: string; lines: number };

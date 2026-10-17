@@ -101,6 +101,17 @@ describe("tailor context from the bank", () => {
     if (!("error" in p)) expect(p.report.verdict).not.toBe("block");
   });
 
+  it("an emptied bank falls back to the active CV like v1", async () => {
+    const job = await setup();
+    expect((await cvForJob(U, job, null))?.selection).not.toBeNull(); // bootstraps the bank
+    db.delete(bankBullets).run();
+    db.delete(bankEntries).run();
+    const r = await cvForJob(U, job, null);
+    expect(r?.parsed).toEqual(activeCv());
+    expect(r?.rawText).toBe(RAW);
+    expect(r?.selection).toBeNull();
+  });
+
   it("groundingText contains active raw_text and bank sourceText", async () => {
     const job = await setup();
     await cvForJob(U, job, null); // bootstraps the bank

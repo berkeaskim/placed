@@ -5,14 +5,14 @@ import { db } from "@/lib/db/client";
 import { applications, confirmedFacts, matches } from "@/lib/db/schema";
 import { fileUrl, putFile } from "@/lib/files";
 import { getActiveCv, getJob, getProfile, toStudent } from "@/lib/db/queries";
-import { computeCoverage, coverageFor, cvSkillSource, jdRequirementSkills } from "@/lib/scoring/coverage";
+import { coverageFor } from "@/lib/scoring/coverage";
 import { explainCacheKey, explainMatchWithSource, readCachedExplanation, shouldCacheExplanation, toCacheRecord } from "@/lib/ai/explainMatch";
 import { aiMode } from "@/lib/ai/config";
 import { awardXP } from "@/lib/gamify/award";
 import { isUuid } from "@/lib/feed/save-result";
 import type { Explanation } from "@/lib/scoring/requirements";
 import type { AwardResult } from "@/lib/gamify/core";
-import { renderView, reverifyEdits, runTailoring, type TailorOutcome } from "@/lib/tailor/run";
+import { coverageSummary, reverifyEdits, runTailoring, type ReverifyResult, type RevertedChange, type TailorOutcome } from "@/lib/tailor/run";
 import { BlockedCvError, renderVerifiedPdf } from "@/lib/tailor/render";
 import { normalizeTailored, tailorCV } from "@/lib/ai/tailorCV";
 import { TailoredCvFixture } from "@/lib/ai/schemas";
@@ -22,7 +22,7 @@ import { extractPdf } from "@/lib/cv/pdf-text";
 import { fillRatio, overflowCandidates } from "@/lib/bank/fit";
 import type { Selection, SelectionReport } from "@/lib/bank/select";
 import { getBank } from "@/lib/bank/store";
-import { bankStamp, cvForJob, NO_OVERRIDES, type BankOverrides, type StoredTailoring as StoredTailoringT } from "@/lib/bank/tailor-context";
+import { bankStamp, cvForJob, NO_OVERRIDES, SECTIONS, type BankOverrides, type StoredTailoring as StoredTailoringT } from "@/lib/bank/tailor-context";
 
 /**
  * `aiWritten`: the free text (why you fit, closest experience, how to close) came from the model (live or recorded
@@ -91,7 +91,6 @@ const BLOCKED = "We couldn't produce a version we can stand behind, so no PDF wa
 const NO_FIT = "We couldn't fit your CV on one page for this role. Hide or remove a few items in your bank, then try again.";
 const NOT_TAILORED = "Tailor your CV for this role first.";
 const MAX_FACT = 300;
-const SECTIONS = ["experience", "projects", "leadership"] as const;
 
 type TailorCtx = {
   userId: string; jobId: string; job: NonNullable<Awaited<ReturnType<typeof getJob>>>; confirmedFacts: string[];
@@ -164,11 +163,15 @@ async function renderAndStore(ctx: TailorCtx, tailored: TailoredCV, stored: (rep
   return { report: r.report, signedUrl: `${fileUrl("tailored", path)}?download=CV-tailored.pdf` };
 }
 
-/** The v2 row for a fresh selection (tailorForJob, swapBankItem). */
-function storedV2(ctx: TailorCtx, outcome: TailorOutcome): StoredTailoring {
-  const sel = ctx.cv.selection!;
+/**
+ * The row for a fresh selection (tailorForJob, swapBankItem): v2 with the frozen base. With no selection (the student
+ * emptied their bank, so cvForJob used the active CV) it is a v1 row, exactly as before the bank.
+ */
+function storedFresh(ctx: TailorCtx, outcome: TailorOutcome, final: TailoredCV | null = null): StoredTailoring {
+  const sel = ctx.cv.selection;
+  if (!sel) return { v: 1, outcome, final };
   return {
-    v: 2, outcome, final: null, base: ctx.cv.parsed, rawText: ctx.cv.rawText, report: sel.report, scores: sel.scores,
+    v: 2, outcome, final, base: ctx.cv.parsed, rawText: ctx.cv.rawText, report: sel.report, scores: sel.scores,
     overrides: ctx.overrides, bankStamp: bankStamp(getBank(ctx.userId), ctx.cv.parsed),
   };
 }
@@ -180,8 +183,17 @@ const bankView = (ctx: TailorCtx): BankView | null =>
  * store v2 → +30 XP once per job. The stored per-job overrides (Add back / Remove) are kept, so "Tailor again to polish"
  * keeps an item the student added back.
  */
-export async function tailorForJob(jobId: string): Promise<TailorResult> {
-  const loaded = await loadTailorContext(jobId, "fresh");
+export async function tailorForJob(jobId: string, opts?: { extraExcluded?: string[] }): Promise<TailorResult> {
+  // extraExcluded: "Remove" on a first-tailor overflow (nothing stored yet), merged into the per-job overrides.
+  const extra = Array.isArray(opts?.extraExcluded) ? opts.extraExcluded.filter((x): x is string => typeof x === "string").slice(0, 20) : [];
+  let overrides: BankOverrides | undefined;
+  if (extra.length) {
+    const { user } = await requireUser();
+    const prev = isUuid(jobId) ? loadStored(user.id, jobId) : null;
+    const o = prev?.v === 2 ? prev.overrides : NO_OVERRIDES;
+    overrides = { pinned: o.pinned.filter((x) => !extra.includes(x)), excluded: [...o.excluded.filter((x) => !extra.includes(x)), ...new Set(extra)] };
+  }
+  const loaded = await loadTailorContext(jobId, "fresh", overrides);
   if ("error" in loaded) return loaded;
   const { ctx } = loaded;
   let outcome: TailorOutcome;
@@ -194,7 +206,7 @@ export async function tailorForJob(jobId: string): Promise<TailorResult> {
   if (outcome.report.verdict === "block") return { error: BLOCKED };
   let signedUrl: string | null;
   try {
-    const res = await renderAndStore(ctx, outcome.tailored, () => storedV2(ctx, outcome));
+    const res = await renderAndStore(ctx, outcome.tailored, () => storedFresh(ctx, outcome));
     if ("overflow" in res) return res.overflow;
     ({ signedUrl } = res);
   } catch (e) {
@@ -242,32 +254,29 @@ function carryTailored(base: ParsedCV, prev: TailoredCV): TailoredCV {
   return out;
 }
 
+/** reverifyEdits on a carried-over CV, plus one revertBlocked pass if the gate blocks (its reverts are returned). */
+function recheck(ctx: TailorCtx, tailored: TailoredCV): { r: ReverifyResult; reverted: RevertedChange[] } {
+  const g = { cv: ctx.cv.parsed, rawText: ctx.cv.rawText, job: ctx.job, confirmedFacts: ctx.confirmedFacts };
+  const r = reverifyEdits({ ...g, tailored });
+  if (r.report.verdict !== "block") return { r, reverted: [] };
+  const text = (t: TailoredCV, id: string) => SECTIONS.flatMap((s) => t[s].flatMap((e) => e.bullets)).find((b) => b.id === id)?.text ?? null;
+  const rb = revertBlocked(r.tailored, ctx.cv.parsed, r.report.issues);
+  const reverted = rb.reverted.map((x) => ({ ...x, attempted: text(r.tailored, x.bulletId) ?? "", restored: text(rb.tailored, x.bulletId) }));
+  return { r: reverifyEdits({ ...g, tailored: rb.tailored }), reverted };
+}
+
 /**
- * A full TailorOutcome for a swap, with no AI: the carried-over CV is re-checked by reverifyEdits (report, coverageAfter,
- * must/nice counts, changes, needsNumber); coverageBefore and tailoredFor are recomputed against the new base; one
- * revertBlocked pass if the gate blocks; the rest (attempts, fallback flags, unconfirmed numbers) is the stored outcome's.
+ * A full TailorOutcome for a swap, with no AI: the carried-over AI version is re-checked by reverifyEdits (report,
+ * changes, needsNumber); coverage and tailoredFor come from coverageSummary against the new base; one revertBlocked
+ * pass if the gate blocks; the rest (attempts, fallback flags, unconfirmed numbers) is the stored outcome's.
  */
 function swapOutcome(ctx: TailorCtx, prev: TailorOutcome): TailorOutcome {
-  const g = { cv: ctx.cv.parsed, rawText: ctx.cv.rawText, job: ctx.job, confirmedFacts: ctx.confirmedFacts };
-  let r = reverifyEdits({ ...g, tailored: carryTailored(ctx.cv.parsed, prev.tailored) });
+  const { r, reverted: added } = recheck(ctx, carryTailored(ctx.cv.parsed, prev.tailored));
   const ids = new Set(SECTIONS.flatMap((s) => r.tailored[s].flatMap((e) => e.bullets.map((b) => b.id))));
-  let reverted = prev.reverted.filter((x) => x.bulletId === "skills" || ids.has(x.bulletId));
-  if (r.report.verdict === "block") {
-    const text = (t: TailoredCV, id: string) => SECTIONS.flatMap((s) => t[s].flatMap((e) => e.bullets)).find((b) => b.id === id)?.text ?? null;
-    const rb = revertBlocked(r.tailored, ctx.cv.parsed, r.report.issues);
-    reverted = [...reverted, ...rb.reverted.map((x) => ({ ...x, attempted: text(r.tailored, x.bulletId) ?? "", restored: text(rb.tailored, x.bulletId) }))];
-    r = reverifyEdits({ ...g, tailored: rb.tailored });
-  }
-  const reqs = jdRequirementSkills(ctx.job.textLines, ctx.job.requirements);
-  const before = computeCoverage(reqs, cvSkillSource(ctx.cv.parsed));
-  const afterStatus = new Map(computeCoverage(reqs, cvSkillSource(renderView(r.tailored, ctx.cv.parsed))).items.map((x) => [x.skill, x.status]));
-  const tailoredFor = before.items.map((b) => ({
-    requirement: b.skill, skill: b.skill, section: b.section,
-    state: b.status === "gap" ? "missing" as const : b.status === "supportedByResume" && afterStatus.get(b.skill) === "existing" ? "surfaced" as const : "covered" as const,
-  }));
+  const reverted = [...prev.reverted.filter((x) => x.bulletId === "skills" || ids.has(x.bulletId)), ...added];
   return {
-    ...prev, tailored: r.tailored, report: r.report, coverageBefore: before.weighted, coverageAfter: r.coverageAfter,
-    mustHaves: r.mustHaves, niceToHaves: r.niceToHaves, tailoredFor, changes: r.changes, reverted, needsNumber: r.needsNumber,
+    ...prev, ...coverageSummary(ctx.cv.parsed, ctx.job, r.tailored),
+    tailored: r.tailored, report: r.report, changes: r.changes, reverted, needsNumber: r.needsNumber,
   };
 }
 
@@ -293,10 +302,14 @@ export async function swapBankItem(jobId: string, itemId: string, op: "add" | "r
   const loaded = await loadTailorContext(jobId, "fresh", overrides);
   if ("error" in loaded) return loaded;
   const { ctx } = loaded;
+  if (!ctx.cv.selection) return { error: "Your bank is empty, so there is nothing to add or remove. Tailor again to use your CV." };
   try {
+    // outcome: the AI version carried over (drives the change cards). final: the student's saved version carried over
+    // (or the AI version if they never saved), which is what gets rendered, so their accepted/edited lines survive.
     const outcome = swapOutcome(ctx, prev.outcome);
     if (outcome.report.verdict === "block") return { error: BLOCKED };
-    const res = await renderAndStore(ctx, outcome.tailored, () => storedV2(ctx, outcome));
+    const final = prev.final ? recheck(ctx, carryTailored(ctx.cv.parsed, prev.final)).r.tailored : outcome.tailored;
+    const res = await renderAndStore(ctx, final, () => storedFresh(ctx, outcome, final));
     if ("overflow" in res) return res.overflow;
     return { outcome, award: null, pdfUrl: `/api/tailored/${jobId}`, signedUrl: res.signedUrl, bank: bankView(ctx) };
   } catch (e) {

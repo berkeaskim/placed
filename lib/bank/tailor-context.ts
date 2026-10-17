@@ -25,7 +25,7 @@ export type StoredTailoring =
 
 export const NO_OVERRIDES: BankOverrides = { pinned: [], excluded: [] };
 
-const SECTIONS = ["experience", "projects", "leadership"] as const;
+export const SECTIONS = ["experience", "projects", "leadership"] as const;
 
 /** Every entry and bullet id in `base` (bank ids for a v2 base). */
 function baseIds(base: ParsedCV): string[] {
@@ -73,7 +73,8 @@ export type CvForJob = { parsed: ParsedCV; rawText: string; selection: Selection
  * - `overrides` given, or nothing stored: ensureBank, then a fresh one-page selection (fitSelection, which may throw
  *   "Could not fit your CV on one page");
  * - a stored v2: its frozen `base` and `rawText`;
- * - a stored v1: the active CV (Review Focus 3).
+ * - a stored v1: the active CV (Review Focus 3);
+ * - an empty bank after ensureBank (the student cleared it): the active CV, like v1 (selection null), never an empty CV.
  * Null when the active CV is needed and there is none.
  */
 export async function cvForJob(userId: string, job: JobListItem, stored: StoredTailoring | null, overrides?: BankOverrides): Promise<CvForJob | null> {
@@ -83,6 +84,7 @@ export async function cvForJob(userId: string, job: JobListItem, stored: StoredT
   if (!overrides && stored?.v === 1) return { parsed: cv.parsed, rawText: cv.rawText ?? "", selection: null, newCvSuggestions: 0 };
   const { newCvSuggestions } = await ensureBank(userId);
   const bank = getBank(userId);
+  if (bank.entries.length === 0) return { parsed: cv.parsed, rawText: cv.rawText ?? "", selection: null, newCvSuggestions };
   const o = overrides ?? NO_OVERRIDES;
   const selection = await fitSelection(bank, cv.parsed, job, {
     pinnedForJob: o.pinned, excludedForJob: o.excluded, activeCvSourceId: getSourceId(userId, "cv", cv.id),
