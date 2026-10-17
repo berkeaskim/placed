@@ -43,8 +43,22 @@ export function ChatThread({ turns, byKey, initial, onShow }: { turns: Turn[]; b
     const item = byKey.get(t.key);
     if (!item) return null;
     if (t.kind === "ask") return <div key={id} className="msg bot" {...s}>{askText(item)}</div>;
-    return <div key={id} className="msg me line-clamp-4" {...s}>{t.text}</div>;
+    return <MeBubble key={id} text={t.text} isStatic={initial.has(id)} />;
   });
+}
+
+const LONG = 280;
+
+/** A past answer. Long ones clamp on whole lines (the clamp sits inside the padding) with Show more. */
+function MeBubble({ text, isStatic }: { text: string; isStatic: boolean }) {
+  const [open, setOpen] = useState(false);
+  const long = text.length > LONG;
+  return (
+    <div className="msg me flex flex-col items-start gap-1" {...staticProps(isStatic)}>
+      <span className={long && !open ? "line-clamp-4" : undefined}>{text}</span>
+      {long && <button type="button" aria-expanded={open} className="min-h-11 text-sm font-bold underline" onClick={() => setOpen((o) => !o)}>{open ? "Show less" : "Show more"}</button>}
+    </div>
+  );
 }
 
 /** The question being asked now, with its answer control. */

@@ -1,17 +1,24 @@
 "use client";
 import { useState } from "react";
 import type { Answer, PackItem } from "@/lib/autopilot/pack";
-import type { DraftResult } from "@/lib/autopilot/drafts";
+import type { DraftCaught, DraftResult } from "@/lib/autopilot/drafts";
 import { draftFor, ideasFor, reviseFor } from "@/app/(app)/jobs/[id]/autopilot-actions";
 import { CHIP, SaveError, useSaver } from "./answer-controls";
 
 type Mode = "menu" | "writing" | "draft" | "ideas" | "own" | "edit";
 type Idea = { text: string; refs: string[] };
+/** What this flow has said so far, oldest first: past bot replies are kept here so the order never shuffles. */
+type Entry = { k: "me" | "bot" | "err"; text: string; caught?: DraftCaught[] } | { k: "draft"; d: DraftResult };
 
 const GENERIC = "Something went wrong. Please try again.";
+const THIN = "Not enough on your CV for this one. Add your own words.";
+const NO_IDEAS = "I couldn't find a strong angle on your CV. Try writing a few lines and I'll tidy them.";
+const IDEAS_LEAD = "A few angles from your CV. Pick any, then write a few lines.";
+const KEPT = "I couldn't rewrite this without changing what you said, so I left your words as they are.";
 const wordCount = (s: string) => (s.trim() ? s.trim().split(/\s+/).length : 0);
 const sourceChip = (ref: string) => (ref.startsWith("fact:") ? "your confirmed fact" : ref.startsWith("jd:") ? "the job post" : "your CV");
-const usable = (d: DraftResult | null): d is DraftResult => !!d && d.source !== "none" && !!d.text.trim();
+const hasText = (d: DraftResult) => d.source !== "none" && !!d.text.trim();
+const usable = (d: DraftResult | null): d is DraftResult => !!d && hasText(d);
 
 export const longLimit = (item: PackItem) => item.draft?.limit ?? item.field.wordLimit ?? 200;
 
@@ -33,14 +40,26 @@ function DraftBubble({ d }: { d: DraftResult }) {
           </span>
         )}
       </div>
-      {d.caught.length > 0 && (
-        <details className="rounded-lg bg-white/70 px-2.5 py-2 text-xs">
-          <summary className="cursor-pointer font-bold">Caught it: {d.caught.length} sentence{d.caught.length === 1 ? "" : "s"} removed</summary>
-          <ul className="mt-1 flex flex-col gap-1">{d.caught.map((c, i) => <li key={i}><span className="font-semibold">{c.reason}:</span> {c.text}</li>)}</ul>
-        </details>
-      )}
+      <Caught list={d.caught} />
     </div>
   );
+}
+
+function Caught({ list }: { list: DraftCaught[] }) {
+  if (!list.length) return null;
+  return (
+    <details className="rounded-lg bg-white/70 px-2.5 py-2 text-xs whitespace-normal">
+      <summary className="cursor-pointer font-bold">Caught it: {list.length} sentence{list.length === 1 ? "" : "s"} removed</summary>
+      <ul className="mt-1 flex flex-col gap-1">{list.map((c, i) => <li key={i}><span className="font-semibold">{c.reason}:</span> {c.text}</li>)}</ul>
+    </details>
+  );
+}
+
+function LogEntry({ e }: { e: Entry }) {
+  if (e.k === "draft") return <>{<DraftBubble d={e.d} />}{e.d.thin && <div className="msg bot">{THIN}</div>}</>;
+  if (e.k === "me") return <div className="msg me self-end">{e.text}</div>;
+  if (e.k === "err") return <div className="msg bot err" role="alert">{e.text}</div>;
+  return <div className="msg bot flex flex-col gap-2">{e.text}{e.caught && <Caught list={e.caught} />}</div>;
 }
 
 /** The long-answer flow for one free-text question: write it for me, ideas, own words, or skip. */
@@ -50,24 +69,35 @@ export function LongAnswer({ jobId, item, answer, onSave }: {
   const key = item.field.key;
   const saved = typeof answer?.value === "string" ? answer.value : "";
   const [mode, setMode] = useState<Mode>(saved.trim() ? "edit" : "menu");
-  const [said, setSaid] = useState<string | null>(null);
+  const [log, setLog] = useState<Entry[]>([]);
+  // Back in a mode after a revise: its earlier bubbles are already in the log, so only its controls show again.
+  const [resumed, setResumed] = useState(false);
   const [draft, setDraft] = useState<DraftResult | null>(null);
   const [ideas, setIdeas] = useState<Idea[] | null>(null);
   const [picked, setPicked] = useState<Set<number>>(new Set());
   const [text, setText] = useState(saved);
   const [unapproved, setUnapproved] = useState(!!saved.trim() && !answer?.approved);
-  const [note, setNote] = useState<string | null>(null);
   const { pending, failed, run } = useSaver();
   const limit = draft?.limit ?? longLimit(item);
   const busy = pending || mode === "writing";
 
-  const choose = (label: string, next: Mode) => { setSaid(label); setNote(null); setMode(next); };
+  /** The bot bubbles the current mode shows, moved into the log once the student answers them. */
+  const shown = (): Entry[] => {
+    if (resumed) return [];
+    if (mode === "draft") return usable(draft) ? [{ k: "draft", d: draft }] : [{ k: "bot", text: THIN }];
+    if (mode === "ideas" && ideas) {
+      return [{ k: "bot", text: ideas.length ? `${IDEAS_LEAD}\n${ideas.map((x, i) => `${i + 1}. ${x.text}`).join("\n")}` : NO_IDEAS }];
+    }
+    return [];
+  };
+  const choose = (label: string, next: Mode) => { setLog((l) => [...l, ...shown(), { k: "me", text: label }]); setResumed(false); setMode(next); };
+  const settle = (e: Entry, next: Mode) => { setLog((l) => [...l, e]); setResumed(true); setMode(next); };
   const write = async () => {
     choose("Write it for me", "writing");
     try {
       const r = await draftFor(jobId, key);
-      if (r.ok) { setDraft(r.draft); setMode("draft"); } else { setNote(GENERIC); setMode("menu"); }
-    } catch { setNote(GENERIC); setMode("menu"); }
+      if (r.ok) { setDraft(r.draft); setMode("draft"); } else settle({ k: "err", text: GENERIC }, "menu");
+    } catch { settle({ k: "err", text: GENERIC }, "menu"); }
   };
   const getIdeas = async () => {
     choose("Give me ideas", "ideas");
@@ -82,9 +112,11 @@ export function LongAnswer({ jobId, item, answer, onSave }: {
     choose(label, "writing");
     try {
       const r = await reviseFor(jobId, key, source, how);
-      if (r.ok && usable(r.draft)) { setDraft(r.draft); setMode("draft"); return; }
-    } catch { /* falls through to the note */ }
-    setNote(GENERIC); setMode(back);
+      if (!r.ok) settle({ k: "err", text: GENERIC }, back);
+      else if (hasText(r.draft)) { setDraft(r.draft); setMode("draft"); }
+      // The gate refused every rewritten sentence: nothing failed, the student's words simply stay as they were.
+      else settle({ k: "bot", text: KEPT, caught: r.draft.caught }, back);
+    } catch { settle({ k: "err", text: GENERIC }, back); }
   };
   const save = (value: string, approved: boolean) => run(async () => {
     const ok = await onSave(value, approved);
@@ -118,14 +150,12 @@ export function LongAnswer({ jobId, item, answer, onSave }: {
 
   return (
     <div data-autopilot-live="" className="flex flex-col gap-2.5 self-stretch">
-      {said && <div className="msg me self-end">{said}</div>}
-      {note && <div className="msg bot err" role="alert">{note}</div>}
+      {log.map((e, i) => <LogEntry key={i} e={e} />)}
       {mode === "writing" && <div className="msg bot">Writing…</div>}
       {mode === "menu" && menuChips(true)}
       {mode === "draft" && (usable(draft) ? (
         <>
-          <DraftBubble d={draft} />
-          {draft.thin && <div className="msg bot">Not enough on your CV for this one. Add your own words.</div>}
+          {!resumed && <><DraftBubble d={draft} />{draft.thin && <div className="msg bot">{THIN}</div>}</>}
           <div className="actchips">
             <button type="button" className={`${CHIP} bg-[#5B3DF5]! text-white!`} disabled={busy} onClick={() => void save(draft.text, true)}>Use this</button>
             <button type="button" className={CHIP} disabled={busy} onClick={() => revise("shorter", "Shorter", draft.text)}>Shorter</button>
@@ -136,17 +166,17 @@ export function LongAnswer({ jobId, item, answer, onSave }: {
         </>
       ) : (
         <>
-          <div className="msg bot">Not enough on your CV for this one. Add your own words.</div>
+          {!resumed && <div className="msg bot">{THIN}</div>}
           {menuChips(false)}
         </>
       ))}
       {mode === "ideas" && (ideas === null ? <div className="msg bot typing" aria-label="Writing"><span /><span /><span /></div> : (
         <>
-          {ideas.length === 0
-            ? <div className="msg bot">I couldn&apos;t find a strong angle on your CV. Try writing a few lines and I&apos;ll tidy them.</div>
+          {resumed ? null : ideas.length === 0
+            ? <div className="msg bot">{NO_IDEAS}</div>
             : (
               <>
-                <div className="msg bot">A few angles from your CV. Pick any, then write a few lines.</div>
+                <div className="msg bot">{IDEAS_LEAD}</div>
                 <div className="facts">
                   {ideas.map((idea, i) => {
                     const on = picked.has(i);
