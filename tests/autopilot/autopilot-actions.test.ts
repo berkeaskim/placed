@@ -3,14 +3,18 @@ import { eq } from "drizzle-orm";
 type F = { key: string; target: string; label: string; type: string; required: boolean; options: { label: string; value: string }[] };
 const h = vi.hoisted(() => ({
   items: [] as unknown[], answers: {} as Record<string, unknown>, extra: {} as Record<string, string | string[]>,
-  completed: true, on: true, fields: [] as unknown[] | null,
+  completed: true, on: true, fields: [] as unknown[] | null, input: {} as unknown, draft: { text: "d" } as unknown,
 }));
 vi.mock("@/lib/env", () => ({ env: { get autopilot() { return h.on; } } }));
 vi.mock("@/lib/autopilot/server", () => ({
   getVault: async () => ({ core: {}, extra: h.extra, completed: h.completed }),
   buildPack: async () => ({ items: h.items, answers: h.answers }),
+  draftInputFor: async () => h.input,
+  generateDraft: async () => h.draft,
 }));
-import { openAndFill, setAnswer, preparePack } from "@/app/(app)/jobs/[id]/autopilot-actions";
+vi.mock("@/lib/autopilot/ideas", () => ({ suggestIdeas: async () => [{ text: "an angle", refs: ["x"] }] }));
+vi.mock("@/lib/autopilot/revise", () => ({ reviseAnswer: async () => h.draft }));
+import { openAndFill, setAnswer, preparePack, draftFor, ideasFor, reviseFor } from "@/app/(app)/jobs/[id]/autopilot-actions";
 import { openVault, sealVault } from "@/lib/autopilot/vault-crypto";
 import { db } from "@/lib/db/client";
 import { autopilotPacks, autopilotVault } from "@/lib/db/schema";
@@ -39,7 +43,7 @@ const snapshot = () => JSON.stringify([db.select().from(autopilotPacks).all(), s
 describe("autopilot actions", () => {
   beforeEach(() => {
     JOB ||= seedJob().id;
-    h.answers = {}; h.extra = {}; h.completed = true; h.on = true;
+    h.answers = {}; h.extra = {}; h.completed = true; h.on = true; h.input = {}; h.draft = { text: "d" };
     h.fields = [field("q1", "Level of German?"), field("g", "What is your gender?"), field("d1", "Describe a project you are proud of", { type: "textarea", options: [] })];
     db.delete(autopilotVault).run();
     db.insert(autopilotVault).values({ user_id: UID, core: {}, extra: SEALED_EMPTY() }).run();
@@ -171,5 +175,31 @@ describe("autopilot actions", () => {
   it("rejects an unknown job id", async () => {
     expect(await setAnswer("nope", "q1", "x")).toEqual({ ok: false });
     expect(await openAndFill("nope")).toEqual({ error: "Unknown job" });
+  });
+  it("draftFor/ideasFor/reviseFor refuse when the feature is off or the vault is incomplete", async () => {
+    for (const state of [{ on: false, completed: true }, { on: true, completed: false }]) {
+      h.on = state.on; h.completed = state.completed;
+      expect(await draftFor(JOB, "d1")).toEqual({ ok: false });
+      expect(await ideasFor(JOB, "d1")).toEqual({ ok: false });
+      expect(await reviseFor(JOB, "d1", "text", "tidy")).toEqual({ ok: false });
+    }
+    expect(await draftFor("nope", "d1")).toEqual({ ok: false });
+  });
+  it("draftFor/ideasFor/reviseFor return results when allowed, and { ok: false } without a draft input", async () => {
+    expect(await draftFor(JOB, "d1")).toEqual({ ok: true, draft: { text: "d" } });
+    expect(await ideasFor(JOB, "d1")).toEqual({ ok: true, ideas: [{ text: "an angle", refs: ["x"] }] });
+    expect(await reviseFor(JOB, "d1", "text", "warmer")).toEqual({ ok: true, draft: { text: "d" } });
+    h.input = null; h.draft = null;
+    expect(await draftFor(JOB, "d1")).toEqual({ ok: false });
+    expect(await ideasFor(JOB, "d1")).toEqual({ ok: false });
+    expect(await reviseFor(JOB, "d1", "text", "tidy")).toEqual({ ok: false });
+  });
+  it("reviseFor rejects oversize text and unknown how, and never stores the revision", async () => {
+    const before = snapshot();
+    expect(await reviseFor(JOB, "d1", "x".repeat(5001), "tidy")).toEqual({ ok: false });
+    expect(await reviseFor(JOB, "d1", "text", "louder" as never)).toEqual({ ok: false });
+    expect(await reviseFor(JOB, "d1", "  ", "tidy")).toEqual({ ok: false });
+    await reviseFor(JOB, "d1", "text", "tidy");
+    expect(snapshot()).toBe(before);
   });
 });

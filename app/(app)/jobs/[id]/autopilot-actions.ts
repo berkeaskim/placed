@@ -3,7 +3,10 @@ import { and, eq } from "drizzle-orm";
 import { requireUser } from "@/lib/auth/local-user";
 import { db } from "@/lib/db/client";
 import { autopilotPacks, autopilotVault, jobs } from "@/lib/db/schema";
-import { buildPack, getVault } from "@/lib/autopilot/server";
+import { buildPack, draftInputFor, generateDraft, getVault } from "@/lib/autopilot/server";
+import { suggestIdeas, type Idea } from "@/lib/autopilot/ideas";
+import { reviseAnswer, type ReviseHow } from "@/lib/autopilot/revise";
+import type { DraftResult } from "@/lib/autopilot/drafts";
 import { canOpen, type Answers, type PackItem } from "@/lib/autopilot/pack";
 import { mintToken } from "@/lib/autopilot/handoff";
 import { isEeoLabel, normLabel } from "@/lib/autopilot/vault";
@@ -123,4 +126,34 @@ export async function openAndFill(jobId: string): Promise<{ url: string } | { er
     return { error: "Couldn't create your link, please try again." };
   }
   return { url: `${formUrl}#placed=${t.token}` };
+}
+
+/** Shared guard for the draft-chat actions: feature on, valid ids, setup finished. */
+async function chatUser(jobId: string, fieldKey: string): Promise<string | null> {
+  const { user } = await requireUser();
+  if (!env.autopilot || !isUuid(jobId) || typeof fieldKey !== "string" || !fieldKey) return null;
+  return (await getVault(user.id)).completed ? user.id : null;
+}
+
+export async function draftFor(jobId: string, fieldKey: string): Promise<{ ok: true; draft: DraftResult } | { ok: false }> {
+  const uid = await chatUser(jobId, fieldKey);
+  if (!uid) return { ok: false };
+  const draft = await generateDraft(uid, jobId, fieldKey);
+  return draft ? { ok: true, draft } : { ok: false };
+}
+
+export async function ideasFor(jobId: string, fieldKey: string): Promise<{ ok: true; ideas: Idea[] } | { ok: false }> {
+  const uid = await chatUser(jobId, fieldKey);
+  if (!uid) return { ok: false };
+  const input = await draftInputFor(uid, jobId, fieldKey);
+  return input ? { ok: true, ideas: await suggestIdeas(input) } : { ok: false };
+}
+
+/** Revised text is returned, not stored: the chat saves whichever version the student picks via setAnswer. */
+export async function reviseFor(jobId: string, fieldKey: string, text: string, how: ReviseHow): Promise<{ ok: true; draft: DraftResult } | { ok: false }> {
+  if (typeof text !== "string" || !text.trim() || text.length > MAX_TEXT || !["shorter", "warmer", "tidy"].includes(how)) return { ok: false };
+  const uid = await chatUser(jobId, fieldKey);
+  if (!uid) return { ok: false };
+  const input = await draftInputFor(uid, jobId, fieldKey);
+  return input ? { ok: true, draft: await reviseAnswer(input, text, how) } : { ok: false };
 }
