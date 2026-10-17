@@ -62,10 +62,38 @@ describe("MarkerParser", () => {
     expect(closed).toEqual([{ text: "Trailing words", about: null, refs: [] }]);
   });
 
-  it("treats a malformed marker as literal text", () => {
+  it("accepts case and whitespace variants without leaking", () => {
+    const { visible, closed } = run(["Done.⟦ME: B12 , b14⟧"]);
+    expect(visible).toBe("Done.");
+    expect(closed).toEqual([{ text: "Done.", about: "me", refs: ["b12", "b14"] }]);
+  });
+
+  it("swallows an unrecognised marker as about null", () => {
     const { visible, closed } = run(["A ⟦bogus:x⟧ b.⟦me:r1⟧"]);
-    expect(visible).toBe("A ⟦bogus:x⟧ b.");
-    expect(closed).toEqual([{ text: "A ⟦bogus:x⟧ b.", about: "me", refs: ["r1"] }]);
+    expect(visible).toBe("A  b.");
+    expect(closed).toEqual([
+      { text: "A", about: null, refs: [] },
+      { text: "b.", about: "me", refs: ["r1"] },
+    ]);
+  });
+
+  it("releases an unterminated bracket held past 120 chars", () => {
+    const tail = "x".repeat(129);
+    const { visible, visibleAfterEach } = run(["Hi.⟦", tail]);
+    expect(visibleAfterEach[0]).toBe("Hi.");
+    expect(visible).toBe("Hi.⟦" + tail);
+  });
+
+  it("does not leak adjacent markers", () => {
+    const { visible, closed } = run(["a.⟦me:x⟧⟦them:y⟧"]);
+    expect(visible).toBe("a.");
+    expect(closed).toEqual([{ text: "a.", about: "me", refs: ["x"] }]);
+  });
+
+  it("treats CRLF paragraph breaks as breaks", () => {
+    const { closed, visible } = run(["One.\r\n", "\r\nTwo.⟦you:q⟧"]);
+    expect(closed.map((c) => c.about)).toEqual([null, "you"]);
+    expect(visible).toBe("One.\r\n\r\nTwo.");
   });
 
   it("visible equals the input with markers removed, for any chunking", () => {

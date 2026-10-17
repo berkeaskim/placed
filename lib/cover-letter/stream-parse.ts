@@ -6,9 +6,9 @@ export type Marked = { text: string; about: "me" | "them" | "you" | null; refs: 
 
 const OPEN = "⟦";
 const CLOSE = "⟧";
-const MARKER = /^⟦(me|them|you):([a-z0-9_,:-]+)⟧$/;
-// A buffer that could still grow into a valid marker (no closing bracket yet).
-const MARKER_PREFIX = /^⟦(?:m|me|t|th|the|them|y|yo|you|(?:me|them|you):[a-z0-9_,:-]*)?$/;
+const KNOWN = /^\u27E6\s*(me|them|you)\s*:\s*([^\u27E7]{0,80})\u27E7$/i;
+// A held buffer longer than this is released as literal text, which bounds the stall.
+const MAX_HELD = 120;
 
 export class MarkerParser {
   private pending = ""; // sentence text since the last marker or paragraph break
@@ -20,7 +20,7 @@ export class MarkerParser {
     const show = (s: string) => {
       visible += s;
       this.pending += s;
-      if (this.pending.endsWith("\n\n")) {
+      if (/\r?\n\r?\n$/.test(this.pending)) {
         this.closeSentence(closed, null, []);
       }
     };
@@ -29,23 +29,19 @@ export class MarkerParser {
       if (this.held) {
         this.held += ch;
         if (ch === CLOSE) {
-          const m = MARKER.exec(this.held);
+          const m = KNOWN.exec(this.held);
           if (m) {
-            this.closeSentence(closed, m[1] as "me" | "them" | "you", m[2].split(",").filter(Boolean));
+            const refs = m[2].split(",").map((r) => r.trim().toLowerCase()).filter(Boolean);
+            this.closeSentence(closed, m[1].toLowerCase() as "me" | "them" | "you", refs);
           } else {
-            show(this.held);
+            // Unrecognised marker: swallow it so it never reaches the UI.
+            this.closeSentence(closed, null, []);
           }
           this.held = "";
-        } else if (!MARKER_PREFIX.test(this.held)) {
-          // Cannot become a marker: release it as ordinary text.
+        } else if (this.held.length > MAX_HELD) {
           const text = this.held;
           this.held = "";
-          if (ch === OPEN) {
-            show(text.slice(0, -1));
-            this.held = OPEN;
-          } else {
-            show(text);
-          }
+          show(text);
         }
       } else if (ch === OPEN) {
         this.held = OPEN;
