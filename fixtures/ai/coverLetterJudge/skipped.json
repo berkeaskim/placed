@@ -1,0 +1,86 @@
+{
+  "items": [
+    {
+      "index": 1,
+      "about": "them",
+      "refs": [
+        "jd"
+      ],
+      "verdict": "ok"
+    },
+    {
+      "index": 3,
+      "about": "them",
+      "refs": [
+        "jd"
+      ],
+      "verdict": "ok"
+    },
+    {
+      "index": 4,
+      "about": "them",
+      "refs": [
+        "jd"
+      ],
+      "verdict": "ok"
+    },
+    {
+      "index": 7,
+      "about": "me",
+      "refs": [
+        "x1-b1"
+      ],
+      "verdict": "ok"
+    },
+    {
+      "index": 8,
+      "about": "me",
+      "refs": [
+        "p1-b0"
+      ],
+      "verdict": "ok"
+    },
+    {
+      "index": 9,
+      "about": "them",
+      "refs": [
+        "jd"
+      ],
+      "verdict": "ok"
+    },
+    {
+      "index": 10,
+      "about": "them",
+      "refs": [
+        "jd"
+      ],
+      "verdict": "ok"
+    },
+    {
+      "index": 13,
+      "about": "me",
+      "refs": [
+        "x2-b0"
+      ],
+      "verdict": "ok"
+    },
+    {
+      "index": 14,
+      "about": "me",
+      "refs": [
+        "ed1-d0",
+        "x1-b1"
+      ],
+      "verdict": "ok"
+    },
+    {
+      "index": 15,
+      "about": "me",
+      "refs": [
+        "x1-b0",
+        "p1-b0"
+      ],
+      "verdict": "ok"
+    }
+  ]
+}

@@ -24,6 +24,7 @@ import {
   findStories, getOrCreateLetter, getResearch, listOutputs, popUndo, pushUndo, rememberStory, saveLetter, upsertOutput,
 } from "./store";
 import type { Answer, ChatMsg, Fact, Limit, LintHit, Mode, OutputStatus, OutputTarget, Span } from "./types";
+import { NO_VERDICT } from "./verify";
 
 /** An error whose message is fit to show the student. */
 export class CardError extends Error {}
@@ -400,9 +401,9 @@ export async function undoEdit(userId: string, jobId: string, outputId: string):
 }
 
 /** Flags the ground-check gives a claim about the firm (see verify.ts). */
-const FIRM_FLAGS = new Set(["would work for any firm", "not in the job post", "not in the job post or your research", "not in the job post or your picked facts", "not a fact you picked"]);
+const FIRM_FLAGS = new Set(["would work for any firm", "not in the job post", "not in the job post or your research", "not in the job post or your picked facts", "not a fact you picked", NO_VERDICT]);
 
-/** Flags "This is true" cannot clear: letter furniture and text with no source at all must be edited instead. */
+/** Flags "This is true" cannot clear: letter furniture and text with no source at all must be edited instead. (A firm sentence the judge could not check is clearable.) */
 const NOT_CONFIRMABLE = new Set(["check the greeting", "check the sign-off", "no source"]);
 
 /**

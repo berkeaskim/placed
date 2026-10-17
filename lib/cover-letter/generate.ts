@@ -104,7 +104,8 @@ async function* draftFlow(ctx: Ctx, letter: LetterRow, o: OutputRow, signal: Abo
   if (!signed.text.trim()) throw new CardError("The draft came back empty. Please try again.");
   const judged = await judgeSentences({ sentences: signed.sentences, input, fixtureKey });
   const vin = { text: signed.text, sentences: signed.sentences, input, ownSpans: [], judged };
-  const fixed = await repair(vin, verifyOutput(vin), (s, reason) => rewriteSentence(input, s, reason, signal, fixtureKey));
+  const fixed = await repair(vin, verifyOutput(vin), (s, reason) => rewriteSentence(input, s, reason, signal, fixtureKey), 2,
+    (s) => judgeSentences({ sentences: s, input, fixtureKey }));
   if (signal.aborted) return;
   if (o.text) pushUndo(o.id, { text: o.text, spans: o.spans });
   upsertOutput(letter.id, o.target, { text: fixed.text, spans: fixed.spans, lint: fixed.lint, status: "draft", pdf_path: null });

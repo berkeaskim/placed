@@ -9,6 +9,7 @@ import { draftInputFor, openCard, researchSettled, retryResearch, type CardView 
 import { runGeneration } from "@/lib/cover-letter/generate";
 import { getOrCreateLetter, upsertOutput } from "@/lib/cover-letter/store";
 import type { Span } from "@/lib/cover-letter/types";
+import { NO_VERDICT } from "@/lib/cover-letter/verify";
 import * as actions from "@/app/(app)/jobs/[id]/cover-letter-actions";
 import { letterFilename } from "@/lib/cover-letter/pdf";
 import { letterWords } from "@/lib/cover-letter/rules";
@@ -287,6 +288,25 @@ describe("edits and Ready", () => {
     expect(out.spans.find((s) => s.start === at(me))).toMatchObject({ kind: "theirs", confirmed: true });
     expect(facts()).toHaveLength(n + 1);
     expect(facts()).toContain(me);
+  });
+
+  it("confirmTrue clears \"couldn't check this claim about the firm\" without saving it as a fact about the student", async () => {
+    const jobId = seedNorthbridgeJob();
+    await actions.openCoverLetter(jobId);
+    await researchSettled();
+    const letter = getOrCreateLetter(U, jobId);
+    const text = "Dear Hiring Manager,\n\nThat is why I am applying to Northbridge.\n\nYours faithfully,\nAlex Morgan";
+    const s = "That is why I am applying to Northbridge.";
+    const at = text.indexOf(s);
+    const o = upsertOutput(letter.id, { kind: "upload" }, { text, status: "draft", lint: [], spans: [
+      { start: at, end: at + s.length, kind: "ai", refs: [], flag: NO_VERDICT },
+    ] });
+    const facts = () => db.select().from(confirmedFacts).where(eq(confirmedFacts.user_id, U)).all().length;
+    const n = facts();
+    const out = view(await actions.confirmTrue(jobId, o.id, at)).outputs[0];
+    expect(out.spans.find((x) => x.start === at)).toMatchObject({ kind: "theirs", confirmed: true });
+    expect(out.spans.filter((x) => x.kind === "ai" && x.flag)).toEqual([]);
+    expect(facts()).toBe(n);
   });
 
   it("takes the posting's reference from the job text, or none", async () => {

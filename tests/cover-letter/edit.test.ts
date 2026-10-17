@@ -4,17 +4,18 @@ import { FIXTURE_ANSWERS } from "./fixtures";
 import { applyEdit, planEdit, type EditKind } from "@/lib/cover-letter/edit";
 import type { Span } from "@/lib/cover-letter/types";
 import { countWords } from "@/lib/cover-letter/rules";
-import { verifyOutput } from "@/lib/cover-letter/verify";
-import { fixtureDraftInput, parseMarked } from "./fixtures";
+import { NO_VERDICT, verifyOutput } from "@/lib/cover-letter/verify";
+import { fixtureDraftInput, okVerdicts, parseMarked } from "./fixtures";
 
 type Done = { text: string; spans: Span[]; lint: unknown[] };
 const input = fixtureDraftInput();
 const base = () => {
   const m = parseMarked(readFileSync("fixtures/ai/coverLetterDraft/default.txt", "utf8"));
-  return { text: m.text, spans: verifyOutput({ ...m, input, ownSpans: [] }).spans };
+  return { text: m.text, spans: verifyOutput({ ...m, input, ownSpans: [], judged: okVerdicts(m.sentences) }).spans };
 };
-const noJudge = async () => [];
-const run = async (kind: EditKind, instruction?: string, b = base(), judge: Parameters<typeof applyEdit>[0]["judge"] = noJudge) => {
+/** A judge that says "ok" to every sentence of the rewritten paragraph. */
+const okJudge = async (a: { sentences: { about: "me" | "them" | "you" | null; refs: string[] }[] }) => okVerdicts(a.sentences);
+const run = async (kind: EditKind, instruction?: string, b = base(), judge: Parameters<typeof applyEdit>[0]["judge"] = okJudge) => {
   const events: { phase: string; [k: string]: unknown }[] = [];
   for await (const ev of applyEdit({ ...b, kind, instruction, input, judge })) events.push(ev);
   return { events, done: events.find((e) => e.phase === "done") as unknown as Done, before: b };
@@ -158,7 +159,8 @@ describe("judge flags", () => {
   const judgedBase = () => {
     const m = parseMarked(readFileSync("fixtures/ai/coverLetterDraft/default.txt", "utf8"));
     const index = m.sentences.findIndex((s) => s.text.startsWith("Presenting it each week"));
-    const v = verifyOutput({ ...m, input, ownSpans: [], judged: [{ index, about: "me", refs: ["x1-b0"], verdict: "unsupported" }] });
+    const judged = [...okVerdicts(m.sentences).filter((j) => j.index !== index), { index, about: "me" as const, refs: ["x1-b0"], verdict: "unsupported" as const }];
+    const v = verifyOutput({ ...m, input, ownSpans: [], judged });
     return { text: m.text, spans: v.spans, index };
   };
 
@@ -182,6 +184,16 @@ describe("judge flags", () => {
     expect(seen[0]).toHaveLength(2);
     const f = done.spans.find((s) => s.flag === "would work for any firm");
     expect(done.text.slice(f!.start, f!.end)).toMatch(/^I am applying for the 2027/);
+  });
+});
+
+describe("a rewrite the judge cannot check", () => {
+  it("flags the rewritten paragraph's sentences about the firm (fail closed)", async () => {
+    const { done } = await run("free", "the opening", base(), async () => []);
+    const p1 = paragraphs(done.text)[1];
+    const at = done.text.indexOf(p1);
+    const flags = done.spans.filter((s) => s.kind === "ai" && s.flag && s.start >= at && s.end <= at + p1.length);
+    expect(flags.map((s) => s.flag)).toContain(NO_VERDICT);
   });
 });
 

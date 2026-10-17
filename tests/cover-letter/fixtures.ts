@@ -95,3 +95,8 @@ export function parseMarked(raw: string) {
   const r = p.push(raw);
   return { text: r.visible, sentences: [...r.closed, ...p.end()] };
 }
+
+/** An "ok" verdict from the judge for every marked sentence (unmarked ones get no tag, so they stay "no source"). */
+export function okVerdicts(sentences: { about: "me" | "them" | "you" | null; refs: string[] }[]) {
+  return sentences.flatMap((s, index) => (s.about ? [{ index, about: s.about, refs: s.refs, verdict: "ok" as const }] : []));
+}

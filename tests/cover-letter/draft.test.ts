@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { buildDraftPrompt, streamDraft } from "@/lib/cover-letter/draft";
 import type { Marked } from "@/lib/cover-letter/stream-parse";
-import { verifyOutput } from "@/lib/cover-letter/verify";
+import { judgeSentences, verifyOutput } from "@/lib/cover-letter/verify";
 import { FIXTURE_ANSWERS, FIXTURE_FACTS, fixtureDraftInput, skippedDraftInput } from "./fixtures";
 
 describe("buildDraftPrompt", () => {
@@ -84,7 +84,9 @@ describe("streamDraft (fixture mode)", () => {
     expect(them.length).toBeGreaterThan(0);
     expect(closed.some((s) => s.about === "you")).toBe(false);
     for (const s of them) expect(s.refs.some((r) => r === "jd")).toBe(true);
-    const v = verifyOutput({ text: visible, sentences: closed, input: skippedDraftInput(), ownSpans: [] });
+    // The fixture judge (coverLetterJudge/skipped.json) says "ok" to every sentence about the firm.
+    const judged = await judgeSentences({ sentences: closed, input: skippedDraftInput(), fixtureKey: "skipped" });
+    const v = verifyOutput({ text: visible, sentences: closed, input: skippedDraftInput(), ownSpans: [], judged });
     expect(v.spans.filter((s) => s.flag)).toEqual([]);
     expect(v.spans.some((s) => s.kind === "theirs")).toBe(false);
     expect(v.lint.filter((h) => h.severity === "block")).toEqual([]);
