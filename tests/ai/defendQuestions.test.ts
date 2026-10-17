@@ -104,8 +104,8 @@ describe("defendQuestions in fixture mode", () => {
     expect(await defendQuestions({ ...DEMO, bullets: [] })).toEqual({ questions: [], source: "heuristic" });
   });
 
-  it("works with no API key and no AI_MODE set (automatic fixture mode)", async () => {
-    delete process.env.AI_MODE;
+  it("works with no API key when AI_MODE=fixture", async () => {
+    process.env.AI_MODE = "fixture";
     noKeys();
     expectOnePerBullet(await defendQuestions(DEMO), DEMO);
     expect(generateStructured).not.toHaveBeenCalled();

@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { motion, useReducedMotion, type Variants } from "motion/react";
 import { AgentSteps, useAgentSteps } from "@/components/agent/agent-steps";
@@ -106,7 +107,12 @@ export function ExplainPanel({ jobId, children }: { jobId: string; children?: Re
       </StaggerItem>
       {children}
 
-      {e.aiFailed && (
+      {e.aiOff ? (
+        <p className="rounded-xl bg-[#F6F6FA] p-3 text-xs text-[#4A4A57]" role="status">
+          AI isn&apos;t set up, so this is an automatic estimate from keyword matching.{" "}
+          <Link href="/settings/ai" className="font-bold underline">Set up AI</Link> for the full explanation.
+        </p>
+      ) : e.aiFailed && (
         <p className="rounded-xl bg-[#F6F6FA] p-3 text-xs text-[#4A4A57]" role="status">
           The AI explanation is unavailable right now, so this is an automatic estimate from keyword matching.
           Open the role again later for the full explanation.

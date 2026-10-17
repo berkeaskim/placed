@@ -9,7 +9,7 @@ import {
 import { renderCvContent, stripPii } from "@/lib/cv-score/pii";
 import { canonicalize, extractSkills } from "@/lib/skills/extract";
 import { escapeRegex, stripListMarker } from "@/lib/text/regex";
-import { aiMode } from "@/lib/ai/config";
+import { aiMode, type AiMode } from "@/lib/ai/config";
 import { AiError, generateStructured, runAi } from "./provider";
 import { SYSTEM_EXPLAIN, wrapJob } from "./prompts";
 import { ExplainOutput, type ExplainOutputT } from "./schemas";
@@ -199,6 +199,7 @@ export async function explainMatchWithSource(
     return finalizeExplanation(h.rows, h.gaps, h.whyFit);
   };
   if (!i.cv || reqs.length === 0) return { explanation: fallback(), source: "heuristic", aiFailed: false };
+  if (aiMode() === "off") return { explanation: fallback(), source: "heuristic", aiFailed: true }; // no AI set up: no call to fail
   const cv = i.cv;
   const lines = cvEvidenceLines(cv, i.cvText);
   const map = (raw: ExplainOutputT) => toExplanation(raw, reqs, lines);
@@ -240,7 +241,7 @@ export const shouldCacheExplanation = (source: ExplainSource) => source !== "heu
  * Everything a cached explanation depends on: cache version, AI mode, the active CV, the job's tagJob requirements
  * (re-tagging invalidates) and, with no CV, the profile skills (editing them invalidates).
  */
-export function explainCacheKey(i: { mode: "live" | "fixture"; cvId: string | null; requirements: Requirement[]; skills: string[] }): string {
+export function explainCacheKey(i: { mode: AiMode; cvId: string | null; requirements: Requirement[]; skills: string[] }): string {
   const basis = JSON.stringify([EXPLAIN_CACHE_VERSION, i.mode, i.cvId, i.requirements, i.cvId ? null : [...i.skills].sort()]);
   return createHash("sha256").update(basis).digest("hex").slice(0, 16);
 }

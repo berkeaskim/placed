@@ -29,7 +29,7 @@ export default async function Settings() {
       <section className="card-quest flex flex-col gap-3 p-5">
         <h2 className="font-bold">AI</h2>
         <p className="text-sm text-muted-foreground">
-          {provider ? `Using ${PROVIDER_LABEL[provider]}.` : "No AI set up yet, so Placed uses sample answers."} Pick Claude, Gemini or a local model.
+          {provider ? `Using ${PROVIDER_LABEL[provider]}.` : "No AI set up yet, so AI features (scoring, tailoring, cover letters) are off."} Pick Claude, Gemini or a local model.
         </p>
         <Link href="/settings/ai" className="inline-flex h-11 items-center self-start rounded-[14px] border-2 border-border bg-white px-5 font-bold transition-colors hover:bg-muted">
           AI settings

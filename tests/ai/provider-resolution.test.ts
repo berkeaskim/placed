@@ -22,9 +22,9 @@ afterEach(() => {
 });
 
 describe("provider resolution", () => {
-  it("nothing configured: no provider, fixture mode", () => {
+  it("nothing configured: no provider, AI off (never silent fixture answers)", () => {
     expect(aiProvider()).toBeNull();
-    expect(aiMode()).toBe("fixture");
+    expect(aiMode()).toBe("off");
   });
 
   it("keys saved in settings count as configured (no env needed)", () => {
