@@ -1,6 +1,5 @@
 import { Document, Page, StyleSheet, Text, View, renderToBuffer } from "@react-pdf/renderer";
 import { FONT_FAMILY, pdfSafe, registerFonts } from "@/lib/pdf/cv-document";
-import { safeNamePart } from "@/lib/autopilot/handoff";
 
 /**
  * A4 one-page cover letter PDF (Noto Sans 11pt) that Autopilot uploads into application forms.
@@ -43,8 +42,4 @@ export async function renderLetterPdf(i: LetterPdfInput): Promise<Buffer> {
   );
 }
 
-/** `First-Last_Cover-Letter_Company_YYYY-MM.pdf`, each name part through the same sanitiser Autopilot's handoff uses. */
-export function letterFilename(first: string, last: string, company: string, date: Date): string {
-  const ym = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-  return `${safeNamePart(first, "Name")}-${safeNamePart(last, "Name")}_Cover-Letter_${safeNamePart(company, "Company")}_${ym}.pdf`;
-}
+export { letterFilename } from "./filename";

@@ -4,7 +4,7 @@ import type { CardView, OutputView } from "@/lib/cover-letter/service";
 
 const output = (o: Partial<OutputView> = {}): OutputView => ({
   id: "o1", target: { kind: "upload" }, mode: "full_letter", limit: null, status: "draft", text: "", spans: [], lint: [],
-  words: 0, canReady: { ok: false, reasons: ["The letter is empty"] }, pdfPath: null, ...o,
+  words: 0, canReady: { ok: false, reasons: ["The letter is empty"] }, pdfPath: null, pdfName: null, ...o,
 });
 const view = (v: Partial<CardView> = {}): CardView => ({
   letterId: "l1", company: "Northbridge", role: "Analyst", chat: [], next: null, researchState: "done", draftState: "idle",

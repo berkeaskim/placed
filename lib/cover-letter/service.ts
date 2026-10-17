@@ -11,13 +11,14 @@ import { awardXP } from "@/lib/gamify/award";
 import type { Archetype, ParsedCV } from "@/lib/types";
 import type { DraftInput } from "./draft";
 import { buildEvidence, pickStoryEntry, type Evidence } from "./evidence";
+import { letterFilename, splitName } from "./filename";
 import { canMarkReady } from "./gate";
 import { aiPolicyBlocks, chooseMode } from "./mode";
 import { renderLetterPdf } from "./pdf";
 import { findPersons, maskPersons } from "./person";
 import { nextQuestion } from "./questions";
 import { defaultResearchDeps, researchCompany, researchKey } from "./research";
-import { countWords, lintLetter, RULES } from "./rules";
+import { letterWords, lintLetter, RULES } from "./rules";
 import { diffSpans, sameLetter } from "./spans";
 import {
   findStories, getOrCreateLetter, getResearch, listOutputs, popUndo, pushUndo, rememberStory, saveLetter, upsertOutput,
@@ -35,6 +36,8 @@ export type OutputView = {
   words: number; canReady: ReturnType<typeof canMarkReady>;
   /** Under the `letters` bucket, set once an upload output is Ready. */
   pdfPath: string | null;
+  /** The download name for that PDF: First-Last_Cover-Letter_Company_YYYY-MM.pdf. */
+  pdfName: string | null;
 };
 export type CardView = {
   letterId: string; company: string; role: string; chat: ChatMsg[]; next: ReturnType<typeof nextQuestion>;
@@ -76,6 +79,15 @@ export function loadCtx(userId: string, jobId: string): Ctx {
 }
 
 const jdText = (ctx: Ctx) => ctx.job.jdLines.join("\n");
+const REF = /\b(?:job\s+|vacancy\s+|requisition\s+|position\s+)?(?:ref(?:erence)?|req(?:uisition)?(?:\s+id)?|job\s+id|vacancy\s+(?:id|number))(?:\s+(?:no|number|code))?\.?\s*[:#]?\s*([A-Z0-9][A-Z0-9/_-]{2,29})\b/i;
+/** The posting's reference ("Reference: SA-MKT-27", "Job ID: 12345") when the job text gives one; jobs keep no separate column. */
+export function jobRef(lines: string[]): string | null {
+  for (const l of lines) {
+    const m = REF.exec(l);
+    if (m && /\d/.test(m[1])) return m[1];
+  }
+  return null;
+}
 const feedbackOnly = (ctx: Ctx) => aiPolicyBlocks(jdText(ctx));
 const storyEntry = (ctx: Ctx) => (ctx.cv ? pickStoryEntry(ctx.cv, ctx.job.jdLines) : null);
 
@@ -112,16 +124,19 @@ function syncChat(ctx: Ctx, letter: LetterRow): LetterRow {
   return { ...letter, chat };
 }
 
-function outputView(o: OutputRow): OutputView {
+function outputView(ctx: Ctx, o: OutputRow): OutputView {
+  const [first, last] = splitName(ctx.cv?.name ?? "");
   return {
     id: o.id, target: o.target, mode: o.mode as Mode, limit: o.limit, status: o.status, text: o.text, spans: o.spans, lint: o.lint,
-    words: countWords(o.text), canReady: canMarkReady({ text: o.text, spans: o.spans, lint: o.lint, limit: o.limit }), pdfPath: o.pdf_path,
+    // The chip, the "Done. N words" note and the length band all count the same words.
+    words: letterWords(o.text, o.mode as Mode), canReady: canMarkReady({ text: o.text, spans: o.spans, lint: o.lint, limit: o.limit }), pdfPath: o.pdf_path,
+    pdfName: o.pdf_path ? letterFilename(first, last, ctx.job.company, new Date(o.updated_at)) : null,
   };
 }
 
 function view(ctx: Ctx, row: LetterRow): CardView {
   const letter = syncChat(ctx, row);
-  const outputs = listOutputs(letter.id).map(outputView);
+  const outputs = listOutputs(letter.id).map((o) => outputView(ctx, o));
   const pending = letter.answers.flatMap((a) => a.persons ?? []).find((p) => p.ok === null);
   return {
     letterId: letter.id, company: ctx.job.company, role: ctx.job.role, chat: letter.chat, next: questionFor(ctx, letter),
@@ -328,7 +343,7 @@ export function draftInput(ctx: Ctx, letter: LetterRow, o: OutputRow, evidence: 
   const answers = masked.length ? letter.answers.map((a) => (a.text ? { ...a, text: maskPersons(a.text, masked, company, keep) } : a)) : letter.answers;
   const pickedIds = new Set(letter.answers.find((a) => a.question === "facts")?.pickedFactIds ?? []);
   return {
-    mode: o.mode as Mode, limit: o.limit, company, role: ctx.job.role, ref: null, cv: ctx.cv, jdLines: ctx.job.jdLines,
+    mode: o.mode as Mode, limit: o.limit, company, role: ctx.job.role, ref: jobRef(ctx.job.jdLines), cv: ctx.cv, jdLines: ctx.job.jdLines,
     evidence, answers, facts: letter.facts, pickedFacts: letter.facts.filter((f) => pickedIds.has(f.id)), confirmedFacts: ctx.confirmed,
   };
 }
@@ -384,10 +399,16 @@ export async function undoEdit(userId: string, jobId: string, outputId: string):
   return view(ctx, letter);
 }
 
+/** Flags the ground-check gives a claim about the firm (see verify.ts). */
+const FIRM_FLAGS = new Set(["would work for any firm", "not in the job post", "not in the job post or your research", "not in the job post or your picked facts", "not a fact you picked"]);
+
 /** Flags "This is true" cannot clear: letter furniture and text with no source at all must be edited instead. */
 const NOT_CONFIRMABLE = new Set(["check the greeting", "check the sign-off", "no source"]);
 
-/** "This is true": the claim joins confirmed_facts (grounding later letters and tailoring) and the span becomes theirs. */
+/**
+ * "This is true": the span becomes theirs (shown as confirmed), and a claim about the student joins confirmed_facts,
+ * grounding later letters and tailoring.
+ */
 export async function confirmTrue(userId: string, jobId: string, outputId: string, spanStart: number): Promise<CardView> {
   const ctx = loadCtx(userId, jobId);
   const letter = getOrCreateLetter(userId, jobId);
@@ -398,9 +419,12 @@ export async function confirmTrue(userId: string, jobId: string, outputId: strin
   // A placeholder, another employer or a banned phrase inside the sentence would stop blocking once it is theirs.
   const blocked = relint(ctx, letter, o, o.text, o.spans).some((h) => h.severity === "block" && h.scope !== "letter" && h.start < span.end && h.end > span.start);
   if (blocked) throw new CardError("This sentence has something that has to change first. Edit it in your own words instead.");
+  // A claim about the firm is not a fact about the student: it becomes theirs in this letter but grounds nothing else.
+  const picked = new Set(letter.facts.map((f) => f.id.toLowerCase()));
+  const aboutFirm = span.refs.some((r) => r === "jd" || picked.has(r)) || (!!span.flag && FIRM_FLAGS.has(span.flag));
   const claim = o.text.slice(span.start, span.end).trim().slice(0, 500);
-  if (claim) db.insert(confirmedFacts).values({ user_id: userId, claim }).run();
-  const spans = o.spans.map((s) => (s === span ? { start: s.start, end: s.end, kind: "theirs" as const, refs: s.refs } : s));
+  if (claim && !aboutFirm) db.insert(confirmedFacts).values({ user_id: userId, claim }).run();
+  const spans = o.spans.map((s) => (s === span ? { start: s.start, end: s.end, kind: "theirs" as const, refs: s.refs, confirmed: true } : s));
   writeOutput(ctx, letter, o, o.text, spans);
   return view(ctx, letter);
 }
@@ -416,7 +440,7 @@ export async function markReady(userId: string, jobId: string, outputId: string)
     const cv = ctx.cv;
     const bytes = await renderLetterPdf({
       name: cv?.name ?? "", email: cv?.email ?? "", phone: cv?.phone ?? null, linkedin: cv?.links.find((l) => /linkedin\.com/i.test(l)) ?? null,
-      date: new Date(), company: ctx.job.company, ref: null, role: ctx.job.role, body: o.text,
+      date: new Date(), company: ctx.job.company, ref: jobRef(ctx.job.jdLines), role: ctx.job.role, body: o.text,
     });
     pdf_path = `${userId}/${letter.id}-${o.id}.pdf`;
     await putFile("letters", pdf_path, bytes, "application/pdf");

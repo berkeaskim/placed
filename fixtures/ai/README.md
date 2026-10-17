@@ -33,6 +33,8 @@ hand for the fictional student "Alex Morgan" and the fictional Northbridge Capit
 `default.txt` quotes three answers verbatim and has **one deliberate catch**: "We placed 3rd of 62 teams." is not on
 the CV, so the ground-check flags it "unsupported number". `skipped.txt` is the letter when every question was skipped:
 no `⟦you⟧` sentence and the why-them part cites only `⟦them:jd⟧`.
+`spaced.txt` is `default.txt` with a space before every marker, as small models write it (the draft is stored with the
+spacing the paper renders). The job post's last line carries the reference `SA-MKT-27` that the opening quotes.
 `coverLetterJudge/default.json` is the judge's verdict on `default.txt`: its four `them` sentences (indexes 1, 4, 11, 12)
 pass the swap test. The judge can only add flags, so it leaves the one deliberate catch in place.
 

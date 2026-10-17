@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { RULES, countChars, countWords, lintLetter, lintParagraph, lintParagraphScoped } from "@/lib/cover-letter/rules";
+import { RULES, countChars, countWords, letterWords, lintLetter, lintParagraph, lintParagraphScoped } from "@/lib/cover-letter/rules";
 
 // Examples A-E from docs/research/cover-letter/02-structure-craft.md section 3.
 const WEAK: string[] = [
@@ -79,6 +79,15 @@ describe("lexicon scope", () => {
 describe("counting", () => {
   it("counts characters with newlines", () => expect(countChars("ab\ncd ")).toBe(6));
   it("counts words", () => expect(countWords("  one two\nthree  ")).toBe(3));
+  it("counts a letter's words as the length band does: the body, without salutation, sign-off or name", () => {
+    const letter = "Dear Hiring Manager,\n\nOne two three.\n\nFour five.\n\nYours faithfully,\nAlex Morgan";
+    expect(letterWords(letter, "full_letter")).toBe(5);
+    expect(letterWords(letter, "short_letter")).toBe(5);
+    expect(letterWords("One two three.", "field_answer")).toBe(3);
+    expect(letterWords("Hello,\n\nOne two.\n\nBest,\nAlex", "short_note")).toBe(countWords("Hello,\n\nOne two.\n\nBest,\nAlex"));
+    const band = lintLetter(letter, { mode: "full_letter", limit: null, company: "", role: "", otherEmployers: [], ownSpans: [] }).find((h) => h.ruleId === "CL-03");
+    expect(band?.label).toMatch(/\(5\)$/);
+  });
 });
 
 describe("lintLetter", () => {

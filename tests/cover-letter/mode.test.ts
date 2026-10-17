@@ -41,5 +41,7 @@ describe("posting checks", () => {
     expect(isMotivationLabel("Describe a time you motivated a team")).toBe(false);
     expect(isMotivationLabel("Additional information")).toBe(false);
     expect(isMotivationLabel("Anything else we should know?")).toBe(false);
+    expect(isMotivationLabel("Describe your interest in the team")).toBe(true);
+    expect(isMotivationLabel("Describe your interest in teamwork")).toBe(false);
   });
 });

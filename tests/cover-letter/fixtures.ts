@@ -39,6 +39,7 @@ export const FIXTURE_JD_LINES = [
   "You will own risk analysis from your first week, working alongside traders.",
   "We look for strong analytical skills and the ability to work under time pressure.",
   "Experience with Python or Excel modelling is an advantage.",
+  "Reference: SA-MKT-27.",
 ];
 
 // Same id scheme as lib/cover-letter/research.ts, applied to fixtures/ai/coverLetterResearch/default.json,

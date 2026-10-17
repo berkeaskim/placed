@@ -1,7 +1,8 @@
 export type Mode = "skip" | "full_letter" | "short_letter" | "field_answer" | "short_note";
 export type Limit = { unit: "words" | "chars"; max: number } | null;
 export type SpanKind = "ai" | "theirs";
-export type Span = { start: number; end: number; kind: SpanKind; refs: string[]; flag?: string };
+/** `confirmed`: AI-written text the student marked "This is true" (theirs, shown apart from words they typed). */
+export type Span = { start: number; end: number; kind: SpanKind; refs: string[]; flag?: string; confirmed?: boolean };
 export type LintHit = { ruleId: string; label: string; severity: "block" | "high" | "med" | "low"; start: number; end: number; scope: SpanKind | "letter" };
 export type Fact = { id: string; claim: string; url: string; publisher: string; date: string | null };
 export type Answer = {

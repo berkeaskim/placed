@@ -10,7 +10,11 @@ import { runGeneration } from "@/lib/cover-letter/generate";
 import { getOrCreateLetter, upsertOutput } from "@/lib/cover-letter/store";
 import type { Span } from "@/lib/cover-letter/types";
 import * as actions from "@/app/(app)/jobs/[id]/cover-letter-actions";
-import { FIXTURE_ANSWERS, FIXTURE_FACTS } from "./fixtures";
+import { letterFilename } from "@/lib/cover-letter/pdf";
+import { letterWords } from "@/lib/cover-letter/rules";
+import { FIXTURE_ANSWERS, FIXTURE_FACTS, FIXTURE_JD_LINES, FIXTURE_REF } from "./fixtures";
+
+const FIXTURE_JD_LINES_NO_REF = FIXTURE_JD_LINES.filter((l) => !l.includes(FIXTURE_REF));
 import { seedNorthbridgeJob, seedStudent, U } from "./seed";
 
 vi.stubEnv("AI_MODE", "fixture");
@@ -204,6 +208,8 @@ describe("edits and Ready", () => {
     let out = (done.data as CardView).outputs[0];
     expect(out.text.trimEnd().endsWith("Yours faithfully,\nAlex Morgan")).toBe(true);
     expect(out.canReady.ok).toBe(false);
+    // The posting's reference is in the job text, so the opening that quotes it is sourced: one deliberate catch is left.
+    expect(out.spans.filter((s) => s.flag).map((s) => s.flag)).toEqual(["unsupported number"]);
 
     out = view(await actions.markReady(jobId, outputId)).outputs[0];
     expect(out.status).toBe("draft");
@@ -217,6 +223,11 @@ describe("edits and Ready", () => {
 
     const ready = view(await actions.markReady(jobId, outputId));
     expect(ready.outputs[0].status).toBe("ready");
+    // The download is named First-Last_Cover-Letter_Company_YYYY-MM.pdf.
+    expect(ready.outputs[0].pdfName).toBe(letterFilename("Alex", "Morgan", "Northbridge Capital", new Date()));
+    // The word chip counts what the length band counts: the body only.
+    expect(ready.outputs[0].words).toBe(letterWords(ready.outputs[0].text, "full_letter"));
+    expect(ready.outputs[0].words).toBeLessThan(ready.outputs[0].text.split(/\s+/).length);
     const pdf = ready.outputs[0].pdfPath!;
     expect(pdf.startsWith(`${U}/`)).toBe(true);
     expect(existsSync(resolveFile("letters", pdf))).toBe(true);
@@ -252,6 +263,45 @@ describe("edits and Ready", () => {
     const ok = view(await actions.confirmTrue(jobId, o.id, at("I ran a fund"))).outputs[0];
     expect(ok.spans.find((s) => s.start === at("I ran a fund"))?.kind).toBe("theirs");
     expect(facts()).toBe(n + 1);
+  });
+
+  it("confirmTrue on a firm sentence makes it theirs, shown as confirmed, without saving it as a fact about the student", async () => {
+    const jobId = seedNorthbridgeJob();
+    await actions.openCoverLetter(jobId);
+    await researchSettled();
+    const letter = getOrCreateLetter(U, jobId);
+    const text = "Dear Hiring Manager,\n\nI am applying for the Summer Analyst – Markets role at Northbridge Capital. Northbridge is a great place to learn. I ran a fund with 7 people.\n\nYours faithfully,\nAlex Morgan";
+    const at = (t: string) => text.indexOf(t);
+    const firm = "Northbridge is a great place to learn.";
+    const me = "I ran a fund with 7 people.";
+    const o = upsertOutput(letter.id, { kind: "upload" }, { text, status: "draft", lint: [], spans: [
+      { start: at(firm), end: at(firm) + firm.length, kind: "ai", refs: ["jd"], flag: "would work for any firm" },
+      { start: at(me), end: at(me) + me.length, kind: "ai", refs: ["x1-b0"], flag: "unsupported number" },
+    ] });
+    const facts = () => db.select().from(confirmedFacts).where(eq(confirmedFacts.user_id, U)).all().map((f) => f.claim);
+    const n = facts().length;
+    let out = view(await actions.confirmTrue(jobId, o.id, at(firm))).outputs[0];
+    expect(out.spans.find((s) => s.start === at(firm))).toMatchObject({ kind: "theirs", confirmed: true });
+    expect(facts()).toHaveLength(n);
+    out = view(await actions.confirmTrue(jobId, o.id, at(me))).outputs[0];
+    expect(out.spans.find((s) => s.start === at(me))).toMatchObject({ kind: "theirs", confirmed: true });
+    expect(facts()).toHaveLength(n + 1);
+    expect(facts()).toContain(me);
+  });
+
+  it("takes the posting's reference from the job text, or none", async () => {
+    const withRef = seedNorthbridgeJob([...FIXTURE_JD_LINES_NO_REF, "Job reference: NB-2027-MKT"]);
+    let v = await openCard(U, withRef);
+    await researchSettled();
+    expect((await draftInputFor(U, withRef, v.outputs[0].id)).ref).toBe("NB-2027-MKT");
+    const none = seedNorthbridgeJob(FIXTURE_JD_LINES_NO_REF);
+    v = await openCard(U, none);
+    await researchSettled();
+    expect((await draftInputFor(U, none, v.outputs[0].id)).ref).toBeNull();
+    const fixture = seedNorthbridgeJob();
+    v = await openCard(U, fixture);
+    await researchSettled();
+    expect((await draftInputFor(U, fixture, v.outputs[0].id)).ref).toBe(FIXTURE_REF);
   });
 
   it("saveText makes the edit the student's, resets Ready, and undoEdit restores the previous text", async () => {

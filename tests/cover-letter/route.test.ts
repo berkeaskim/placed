@@ -11,8 +11,9 @@ vi.stubEnv("AI_MODE", "fixture");
 const route = await import("@/app/api/cover-letter/[jobId]/draft/route");
 beforeAll(() => seedStudent());
 
-const call = (jobId: string, body: unknown, signal?: AbortSignal) =>
-  route.POST(new Request("http://x", { method: "POST", body: JSON.stringify(body), signal }), { params: Promise.resolve({ jobId }) });
+const SAME = { "sec-fetch-site": "same-origin", origin: "http://x", host: "x" };
+const call = (jobId: string, body: unknown, signal?: AbortSignal, headers: Record<string, string> = SAME) =>
+  route.POST(new Request("http://x", { method: "POST", body: JSON.stringify(body), signal, headers }), { params: Promise.resolve({ jobId }) });
 
 /** Parses `event: x\ndata: json\n\n` frames; `onEvent` may abort mid-stream. */
 async function readSse(res: Response, onEvent?: (e: { event: string; data: unknown }) => void) {
@@ -95,6 +96,17 @@ describe("POST /api/cover-letter/[jobId]/draft", () => {
     expect((await call(ok.jobId, { outputId: ok.outputId, kind: "nope" })).status).toBe(400);
     expect((await call(ok.jobId, { outputId: crypto.randomUUID(), kind: "draft" })).status).toBe(404);
     expect((await call("not-a-uuid", { outputId: ok.outputId, kind: "draft" })).status).toBe(400);
+  });
+
+  it("refuses a request from another site, before any generation starts", async () => {
+    const { jobId, outputId, letterId } = await freshLetter();
+    const refused: Record<string, string>[] = [
+      { "sec-fetch-site": "cross-site", origin: "https://evil.example", host: "x" },
+      { origin: "https://evil.example", host: "x" },
+      {},
+    ];
+    for (const headers of refused) expect((await call(jobId, { outputId, kind: "draft" }, undefined, headers)).status).toBe(403);
+    expect(draftState(letterId)).not.toBe("streaming");
   });
 
   it("lets only one of two simultaneous generations start", async () => {

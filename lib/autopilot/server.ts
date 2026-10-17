@@ -2,6 +2,7 @@ import "server-only";
 import { and, eq, gt, isNull } from "drizzle-orm";
 import { db } from "@/lib/db/client";
 import { applications, autopilotPacks, autopilotVault, companies, confirmedFacts, coverLetterOutputs, coverLetters, cvs, jobs } from "@/lib/db/schema";
+import { letterFilename } from "@/lib/cover-letter/filename";
 import { fileUrl } from "@/lib/files";
 import { fetchForm } from "./forms";
 import type { Ats, NormalizedForm } from "./forms/types";
@@ -93,9 +94,10 @@ export async function claimPack(token: string): Promise<{ status: 200; body: Cla
   const own = (p: unknown): p is string => typeof p === "string" && p.startsWith(`${pack.user_id}/`);
   const covers: Covers = {};
   let coverPath: string | null = null;
+  let coverDate = new Date();
   for (const o of ready) {
     if (o.target.kind === "upload") {
-      if (own(o.pdf_path)) { covers.upload = { file: true }; coverPath = o.pdf_path; }
+      if (own(o.pdf_path)) { covers.upload = { file: true }; coverPath = o.pdf_path; coverDate = new Date(o.updated_at); }
     } else if (o.text.trim()) covers[o.target.fieldKey] = { text: o.text };
   }
   const fields = toFillPlan(items, pack.answers as Answers, covers);
@@ -114,7 +116,9 @@ export async function claimPack(token: string): Promise<{ status: 200; body: Cla
   let cover: ClaimBody["cover"] = null;
   if (coverPath) {
     try {
-      cover = { url: fileUrl("letters", coverPath), filename: `${safeNamePart(core.first_name, "My")}-${safeNamePart(core.last_name, "Cover")}-Cover-Letter.pdf` };
+      // The same name the card's Download PDF uses: First-Last_Cover-Letter_Company_YYYY-MM.pdf.
+      const company = db.select({ name: companies.name }).from(jobs).innerJoin(companies, eq(companies.id, jobs.company_id)).where(eq(jobs.id, pack.job_id)).get()?.name ?? "";
+      cover = { url: fileUrl("letters", coverPath), filename: letterFilename(core.first_name ?? "", core.last_name ?? "", company, coverDate) };
     } catch {
       console.error("autopilot claim: bad cover letter path");
     }

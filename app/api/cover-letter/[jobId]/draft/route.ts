@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth/local-user";
+import { sameOrigin } from "@/lib/auth/same-origin";
 import { isUuid } from "@/lib/feed/save-result";
 import { abandonClaim, claimGeneration, parseBody, precheck, runGeneration } from "@/lib/cover-letter/generate";
 
@@ -14,6 +15,8 @@ const NO_STORE = { "Cache-Control": "private, no-store" };
  * a prefetch must never start a paid generation. Closing the request stops the model and marks the draft interrupted.
  */
 export async function POST(request: Request, { params }: { params: Promise<{ jobId: string }> }) {
+  // A paid generation must not start from another site's page.
+  if (!sameOrigin(request)) return NextResponse.json({ error: "forbidden" }, { status: 403, headers: NO_STORE });
   const { jobId } = await params;
   const { user } = await requireUser();
   const body = parseBody(await request.json().catch(() => null));

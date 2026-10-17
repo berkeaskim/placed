@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { eq } from "drizzle-orm";
 import { hashToken } from "@/lib/autopilot/handoff";
 import { claimPack } from "@/lib/autopilot/server";
+import { letterFilename } from "@/lib/cover-letter/pdf";
 import { sealVault } from "@/lib/autopilot/vault-crypto";
 import { db } from "@/lib/db/client";
 import { applications, autopilotPacks, autopilotVault, coverLetterOutputs, coverLetters, cvs } from "@/lib/db/schema";
@@ -59,7 +60,8 @@ describe("claimPack cover letters", () => {
     reset({ form: FORM_COVER });
     seedOutputs([{ target: { kind: "upload" }, status: "ready", pdf_path: `${UID}/l1-o1.pdf` }]);
     const b = await plan();
-    expect(b.cover).toEqual({ url: `/api/files/letters/${UID}/l1-o1.pdf`, filename: "Ayşe-Yılmaz-Cover-Letter.pdf" });
+    // The same name the card's Download PDF uses: First-Last_Cover-Letter_Company_YYYY-MM.pdf.
+    expect(b.cover).toEqual({ url: `/api/files/letters/${UID}/l1-o1.pdf`, filename: letterFilename("Ayşe", "Yılmaz", "Acme", new Date()) });
     expect(b.fields[0]).toMatchObject({ mode: "fill", asset: "cover" });
     expect(b.fields[1].mode).toBe("yours");
   });

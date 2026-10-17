@@ -30,6 +30,11 @@ function Yours({ sweep, children }: { sweep: boolean; children: ReactNode }) {
   return <span data-span="theirs" className={`yours${lit ? " lit" : ""}`}>{children}</span>;
 }
 
+/** AI-written text the student confirmed with "This is true": theirs, but outlined rather than filled like words they typed. */
+function Confirmed({ children }: { children: ReactNode }) {
+  return <span data-span="theirs" data-confirmed="" className="confirmed" title="You confirmed this is true">{children}</span>;
+}
+
 /** A streamed word. Inside the student's own sentence it turns green as soon as that sentence closes. */
 function Word({ t, mine, i }: { t: string; mine: boolean; i: number }) {
   const lit = useLit(mine, false);
@@ -74,6 +79,7 @@ function Segments({ text, range, spans, sweep, litTexts, removing, editable, onF
     if (b <= a) continue;
     const t = text.slice(a, b);
     if (x === removing) out.push(<Collapsing key={a}>{t}</Collapsing>);
+    else if (x.kind === "theirs" && x.confirmed) out.push(<Confirmed key={a}>{t}</Confirmed>);
     else if (x.kind === "theirs") out.push(<Yours key={a} sweep={sweep && !litTexts.includes(t.trim())}>{t}</Yours>);
     else if (x.flag && editable) {
       out.push(
@@ -292,7 +298,9 @@ export function LetterPane({ s, view, output, autopilot, h }: { s: CardState; vi
       : s.state === "checking" ? { text: "Checking: facts, clichés, length" } : null;
   const ready = output?.canReady.ok === true;
   const isReady = output?.status === "ready";
-  const pdf = isReady && output?.pdfPath ? `/api/files/letters/${output.pdfPath.split("/").map(encodeURIComponent).join("/")}?download=cover-letter.pdf` : null;
+  const pdf = isReady && output?.pdfPath
+    ? `/api/files/letters/${output.pdfPath.split("/").map(encodeURIComponent).join("/")}?download=${encodeURIComponent(output.pdfName ?? "cover-letter.pdf")}`
+    : null;
 
   return (
     <div className="right">

@@ -66,6 +66,15 @@ export function countChars(text: string): number {
   return text.length;
 }
 
+/**
+ * The words a letter's length is judged on, and the card's word chip shows: a full or short letter counts its body
+ * (no salutation, sign-off or name); a field answer and a short note count all their text.
+ */
+export function letterWords(text: string, mode: Mode): number {
+  if (mode !== "full_letter" && mode !== "short_letter") return countWords(text);
+  return countWords(splitLetter(text).body.map((p) => p.text).join("\n\n"));
+}
+
 function matches(re: RegExp, text: string): { start: number; end: number }[] {
   const out: { start: number; end: number }[] = [];
   for (const m of text.matchAll(re)) {
@@ -208,13 +217,12 @@ function roleNamed(text: string, role: string): boolean {
   return parts.length > 0 && parts.filter((w) => t.includes(w)).length / parts.length >= 0.6;
 }
 
-function lengthHits(text: string, struct: Structure, opts: LetterOpts): RawHit[] {
+function lengthHits(text: string, opts: LetterOpts): RawHit[] {
   const { mode, limit } = opts;
   if (mode === "skip") return [];
   const whole = { start: 0, end: text.length };
   const hits: RawHit[] = [];
   const measure = (unit: "words" | "chars", t: string) => (unit === "words" ? countWords(t) : countChars(t));
-  const bodyText = struct.body.map((p) => p.text).join("\n\n");
   const band = RULES.modes[mode];
 
   if (limit) {
@@ -229,7 +237,7 @@ function lengthHits(text: string, struct: Structure, opts: LetterOpts): RawHit[]
     if (used < Math.floor(lo * eff.max)) hits.push({ ruleId: "CL-03", severity: "high", label: `Fills under ${Math.round(lo * 100)}% of the limit (${used}/${eff.max} ${eff.unit})`, ...whole });
     return hits;
   }
-  const words = countWords(mode === "short_note" ? text : bodyText);
+  const words = letterWords(text, mode);
   if (band.hardMax && words > band.hardMax) hits.push({ ruleId: "CL-02", severity: "block", label: `Over the hard maximum (${words}/${band.hardMax} words)`, ...whole });
   if (band.words && (words < band.words[0] || words > band.words[1]) && !(band.hardMax && words > band.hardMax)) {
     hits.push({ ruleId: "CL-03", severity: "high", label: `Outside ${band.words[0]}-${band.words[1]} words (${words})`, ...whole });
@@ -364,7 +372,7 @@ export function lintLetter(text: string, opts: LetterOpts): LintHit[] {
 
   const letterLevel: RawHit[] = [
     ...openingNameHits(text, struct, opts),
-    ...lengthHits(text, struct, opts),
+    ...lengthHits(text, opts),
     ...furnitureHits(text, opts.mode),
     ...pairingHits(text, struct, opts.mode),
     ...rhythmHits(text, struct.body, opts.mode),
