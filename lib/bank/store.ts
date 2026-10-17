@@ -145,3 +145,13 @@ export function setSuggestionStatus(userId: string, id: string, status: BankSugg
     .set({ status, resolved_at: status === "pending" ? null : nowIso() })
     .where(and(eq(bankSuggestions.id, id), eq(bankSuggestions.user_id, userId))).run();
 }
+
+export function getSuggestion(userId: string, id: string): BankSuggestion | null {
+  const row = db.select().from(bankSuggestions).where(and(eq(bankSuggestions.id, id), eq(bankSuggestions.user_id, userId))).get();
+  return row ? toSuggestion(row) : null;
+}
+
+export function getSourceKind(userId: string, id: string): BankSourceKind | null {
+  const row = db.select({ k: bankSources.kind }).from(bankSources).where(and(eq(bankSources.id, id), eq(bankSources.user_id, userId))).get();
+  return row ? (row.k as BankSourceKind) : null;
+}
