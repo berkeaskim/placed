@@ -162,3 +162,9 @@ export function getSourceId(userId: string, kind: BankSourceKind, ref: string): 
     .where(and(eq(bankSources.user_id, userId), eq(bankSources.kind, kind), eq(bankSources.ref, ref))).get();
   return row?.id ?? null;
 }
+
+/** Every source of the user as id -> kind. One query, for badge lookups on the bank page. */
+export function listSources(userId: string): Map<string, BankSourceKind> {
+  const rows = db.select({ id: bankSources.id, k: bankSources.kind }).from(bankSources).where(eq(bankSources.user_id, userId)).all();
+  return new Map(rows.map((r) => [r.id, r.k as BankSourceKind]));
+}

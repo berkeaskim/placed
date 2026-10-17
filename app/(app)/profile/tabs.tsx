@@ -3,11 +3,12 @@ import { TabPending } from "./tab-pending";
 
 const TABS = [
   { href: "/profile", label: "Your roles" },
+  { href: "/profile/bank", label: "Experience bank" },
   { href: "/profile/target", label: "Target role" },
   { href: "/profile/linkedin", label: "LinkedIn" },
 ] as const;
 
-/** "Your roles" | "Target role" | "LinkedIn" pill tabs (spec §15.6); the active one is filled black. */
+/** "Your roles" | "Experience bank" | "Target role" | "LinkedIn" pill tabs (spec §15.6); the active one is filled black. */
 export function ProfileTabs({ active }: { active: (typeof TABS)[number]["href"] }) {
   return (
     <nav aria-label="Profile" className="mb-6 flex gap-2">
