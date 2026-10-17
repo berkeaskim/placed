@@ -20,11 +20,11 @@ export const anthropicModel = (tier: Tier): string => override(`ai.anthropic.mod
 /** Gemini model for a tier: setting `ai.gemini.model.<tier>` over the pinned default. */
 export const geminiModel = (tier: Tier): string => override(`ai.gemini.model.${tier}`) ?? GEMINI_MODELS[tier];
 
-/** The model that would answer a request of this tier right now; "fixture" in fixture mode. */
+/** The model that would answer a request of this tier right now; "fixture" in fixture mode, "off" with no AI set up. */
 export function currentModelId(tier: Tier): string {
   if (aiMode() === "fixture") return "fixture";
   const p = aiProvider();
-  if (!p) return "fixture";
+  if (!p) return "off";
   const model = p === "anthropic" ? anthropicModel(tier) : p === "gemini" ? geminiModel(tier) : ollamaModel(tier);
   return `${p}:${model ?? "unset"}`;
 }

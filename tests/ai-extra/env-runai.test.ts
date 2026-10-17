@@ -3,7 +3,7 @@ import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { z } from "zod";
 import { aiMode, aiProvider } from "@/lib/ai/config";
-import { generateStructured, runAi, AiError } from "@/lib/ai/provider";
+import { generateStructured, runAi, AiError, AI_NOT_SET_UP } from "@/lib/ai/provider";
 import { loadFixture } from "@/lib/ai/fixtures";
 
 const KEYS = ["AI_MODE", "AI_PROVIDER", "ANTHROPIC_API_KEY", "GEMINI_API_KEY"] as const;
@@ -24,8 +24,8 @@ describe("aiProvider / aiMode matrix", () => {
   const A = "a-test", G = "g-test";
   it.each([
     // [env, provider, mode]
-    [{}, null, "fixture"],
-    [{ AI_PROVIDER: "anthropic" }, null, "fixture"],
+    [{}, null, "off"],
+    [{ AI_PROVIDER: "anthropic" }, null, "off"],
     [{ ANTHROPIC_API_KEY: A }, "anthropic", "live"],
     [{ GEMINI_API_KEY: G }, "gemini", "live"], // default wants anthropic, falls back to gemini
     [{ AI_PROVIDER: "anthropic", ANTHROPIC_API_KEY: "", GEMINI_API_KEY: G }, "gemini", "live"], // the repo's .env.local shape
@@ -34,7 +34,7 @@ describe("aiProvider / aiMode matrix", () => {
     [{ AI_PROVIDER: "gemini", ANTHROPIC_API_KEY: A }, "anthropic", "live"], // wanted provider has no key
     [{ AI_MODE: "fixture", GEMINI_API_KEY: G, ANTHROPIC_API_KEY: A }, "anthropic", "fixture"], // fixture forced, provider still resolvable
     [{ AI_MODE: "fixture", AI_PROVIDER: "gemini", GEMINI_API_KEY: G }, "gemini", "fixture"],
-    [{ AI_MODE: "live" }, null, "fixture"], // "live" without any key cannot be honoured
+    [{ AI_MODE: "live" }, null, "off"], // "live" without any key cannot be honoured
     [{ AI_MODE: "", GEMINI_API_KEY: G }, "gemini", "live"],
   ] as const)("%j -> provider %s, mode %s", (env, provider, mode) => {
     setEnv(env);
@@ -78,12 +78,12 @@ describe("runAi fixture-vs-live branching", () => {
   });
 
   it("fixture mode falls back to default.json for an unknown key", async () => {
-    setEnv({});
+    setEnv({ AI_MODE: "fixture" });
     await expect(runAi(opts({ fixtureKey: "missing" }))).resolves.toEqual({ v: 1 });
   });
 
   it("fixture mode with no fixture dir uses fallback()", async () => {
-    setEnv({});
+    setEnv({ AI_MODE: "fixture" });
     await expect(runAi(opts({ fn: "__no_such_fn__" }))).resolves.toEqual({ v: -1 });
     expect(calls).toEqual({ live: 0, fallback: 1 });
   });
@@ -102,6 +102,13 @@ describe("runAi fixture-vs-live branching", () => {
   it("live errors propagate (callers own the fallback decision)", async () => {
     setEnv({ GEMINI_API_KEY: "g" });
     await expect(runAi(opts({ live: async () => { throw new AiError("down"); } }))).rejects.toThrow("down");
+    expect(calls.fallback).toBe(0);
+  });
+
+  it("no AI set up: never replays a fixture, the call fails with the setup message", async () => {
+    setEnv({});
+    await expect(runAi(opts({ fixtureKey: "keyed", live: () => generateStructured({ tier: "fast", system: "", parts: [], schema: Raw }) })))
+      .rejects.toThrow(AI_NOT_SET_UP);
     expect(calls.fallback).toBe(0);
   });
 

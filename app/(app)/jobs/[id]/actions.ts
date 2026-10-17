@@ -22,8 +22,9 @@ import type { VerifyReport } from "@/lib/verify/tailoring";
 /**
  * `aiWritten`: the free text (why you fit, closest experience, how to close) came from the model (live or recorded
  * fixture) and is labelled "AI-written" in the panel. `aiFailed`: the live model failed, so this is the automatic estimate.
+ * `aiOff`: no AI is set up at all, so the panel points to Settings → AI instead of "try again later".
  */
-export type ExplanationView = Explanation & { aiWritten: boolean; aiFailed: boolean };
+export type ExplanationView = Explanation & { aiWritten: boolean; aiFailed: boolean; aiOff: boolean };
 export type ExplanationResult = ExplanationView | { error: string };
 
 const EXPLAIN_FAILED = "We couldn't build the explanation right now. Try again in a moment.";
@@ -39,7 +40,7 @@ export async function getExplanation(jobId: string): Promise<ExplanationResult> 
   const student = toStudent(profile);
   const key = explainCacheKey({ mode: aiMode(), cvId: cv?.id ?? null, requirements: job.requirements, skills: student.skills });
   const hit = readCachedExplanation(cached?.explanation_json, key);
-  if (hit) return { ...hit, aiWritten: true, aiFailed: false }; // heuristic results are never cached
+  if (hit) return { ...hit, aiWritten: true, aiFailed: false, aiOff: false }; // heuristic results are never cached
 
   const coverage = coverageFor(job, cv?.parsed ?? null, student.skills);
   let r: Awaited<ReturnType<typeof explainMatchWithSource>>;
@@ -50,7 +51,7 @@ export async function getExplanation(jobId: string): Promise<ExplanationResult> 
     return { error: EXPLAIN_FAILED };
   }
   const { explanation: e, source, aiFailed } = r;
-  const view: ExplanationView = { ...e, aiWritten: source !== "heuristic", aiFailed };
+  const view: ExplanationView = { ...e, aiWritten: source !== "heuristic", aiFailed, aiOff: aiMode() === "off" };
   if (!shouldCacheExplanation(source)) return view; // heuristic: cheap, and must not mask a fixture/live answer later
   try {
     const row = { explanation_json: toCacheRecord(e, key, source), created_at: new Date().toISOString() };
