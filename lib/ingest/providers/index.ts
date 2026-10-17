@@ -11,6 +11,7 @@ import { fetchMorganStanley, morganStanleyUrl } from "./morganstanley";
 import { fetchBankOfAmerica, bankOfAmericaUrl } from "./bankofamerica";
 import { fetchDeutscheBank, deutscheBankUrl } from "./deutschebank";
 import { fetchEightfold, eightfoldSearchUrl } from "./eightfold";
+import { fetchPhenom, phenomUrl } from "./phenom";
 import type { AtsKind } from "@/lib/db/schema";
 import { passesTitleFilter } from "../filter";
 import { loadProgrammes, programmeToRawJob, visibleProgrammes } from "../curated";
@@ -81,6 +82,8 @@ export function endpointFor(c: CompanySeed): string {
       if (!c.apiHost) throw new ProviderError(`eightfold/${c.slug}: apiHost (careers host, e.g. apply.careers.microsoft.com) is required`);
       return eightfoldSearchUrl(c.slug, c.apiHost, 0);
     case "phenom":
+      if (!c.apiHost) throw new ProviderError(`phenom/${c.slug}: apiHost (careers host, e.g. careers.bcg.com) is required`);
+      return phenomUrl(c.apiHost);
     case "apple":
     case "mckinsey":
       throw new ProviderError(`${c.ats}/${c.slug}: provider not implemented yet`);
@@ -154,6 +157,13 @@ export async function fetchJobs(c: CompanySeed, plainFetch: typeof fetch = fetch
       return (await fetchEightfold(c.slug, c.apiHost as string, passesTitleFilter, fetchImpl)).jobs;
     } catch (e) {
       throw new ProviderError(`eightfold/${c.slug}: ${(e as Error).message}`);
+    }
+  }
+  if (c.ats === "phenom") {
+    try {
+      return (await fetchPhenom(c.slug, c.apiHost as string, passesTitleFilter, fetchImpl)).jobs;
+    } catch (e) {
+      throw new ProviderError(`phenom/${c.slug}: ${(e as Error).message}`);
     }
   }
   if (c.ats === "amazon") {
