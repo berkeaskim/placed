@@ -29,6 +29,7 @@
     "snapshot": "tsx --env-file-if-exists=.env.local scripts/snapshot.ts",
     "seed": "tsx --env-file-if-exists=.env.local scripts/setup.ts --no-ingest",
     "validate-slugs": "tsx scripts/validate-slugs.ts",
+    "programmes:check": "tsx scripts/check-programmes.ts",
     "coverage": "tsx scripts/coverage.ts",
     "e2e": "playwright test",
     "build-playbooks": "tsx scripts/build-playbooks.ts",
