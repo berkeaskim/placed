@@ -70,7 +70,7 @@ Students hunting for internships run into the same four walls:
 ### 🎯 CV Score with citations
 Your CV is scored against **160+ rules** for Finance, Consulting, Tech, Product and Data. Each rule links to its published source and carries an evidence grade (A–D). Rules backed only by convention are labelled as convention and count for less. A *Myth vs evidence* card debunks popular CV advice that the evidence doesn't support.
 
-<p align="center"><img src="docs/readme/cv-score.png" alt="CV Score for Consulting: 96/100 with the next best fix and its cited source" width="90%"></p>
+<p align="center"><img src="docs/readme/cv-score.png" alt="CV Score for Data &amp; Analytics: 84/100 by category, with the next best fix and its cited source" width="90%"></p>
 
 ### 🔎 Live, ranked internship feed
 Jobs come straight from **Greenhouse, Lever, Ashby, SmartRecruiters and Workday** boards. No scraping of LinkedIn or login-walled portals. A rule-based fit score handles the eligibility checks that usually rule students out (year of study, graduation date, visa/right to work, location) **before** any AI is involved, so the feed ranks instantly and costs nothing per view.
@@ -82,28 +82,22 @@ Jobs come straight from **Greenhouse, Lever, Ashby, SmartRecruiters and Workday*
 
 Tailoring may reorder, rephrase and emphasise. A deterministic verifier (`lib/verify`) rejects any new skill, number, employer, title or tool that isn't in your original CV. When a line would be stronger with a figure, Placed leaves a blank (`[add your real number]`) instead of guessing. You see exactly which job requirements the CV was tailored against and which rules it now satisfies, and you download an ATS-safe PDF.
 
-<p align="center"><img src="docs/readme/job.png" alt="Job page with must-haves met, why you fit and what's missing" width="90%"></p>
+<p align="center"><img src="docs/readme/job.png" alt="Job page with must-haves met, the CV line that proves each one, and advice for the missing case study" width="90%"></p>
 
-<table>
-  <tr>
-    <td width="40%" valign="top"><img src="docs/readme/tailor.png" alt="Tailoring panel: requirements tailored for, and two unsupported lines caught by the verifier"></td>
-    <td width="60%" valign="top">
-      <h4>What the verifier caught here</h4>
-      <p>The model suggested two lines the CV couldn't back up:</p>
-      <ul>
-        <li><b>An invented number.</b> "Reduced regressions by 20%" appears nowhere in the original. Placed removes it and asks the student to confirm the real figure.</li>
-        <li><b>A swapped tool.</b> "Ran the script on Azure" when the CV says AWS. Placed restores the student's own wording.</li>
-        <li><b>A missing requirement stays missing.</b> "Case interviews" is marked as not on the CV, with advice on how to close the gap, instead of being slipped in.</li>
-      </ul>
-      <p>Every accepted line links back to the sentence in the original CV it came from.</p>
-    </td>
-  </tr>
-</table>
+<p align="center"><img src="docs/readme/tailor.png" alt="Tailoring panel: requirements tailored for, two unsupported lines caught by the verifier, and a suggested change waiting for a real number" width="90%"></p>
+
+**What the verifier caught here.** The model suggested two lines the CV couldn't back up:
+
+- **An invented number.** "Reduced regressions by 20%" appears nowhere in the original. Placed removes it and asks the student to confirm the real figure.
+- **A swapped tool.** "Ran the script on Azure" when the CV says AWS. Placed restores the student's own wording.
+- **A missing requirement stays missing.** "Case interviews" is marked as not on the CV, with advice on how to close the gap, instead of being slipped in.
+
+Every accepted line links back to the sentence in the original CV it came from.
 
 ### 🧭 Target Role mode
 Pick the role you want. Placed shows what the market asks for, your readiness percentage, and a **cited Role Playbook** of projects, free courses, experiences and employer signals that close the gap. Nothing goes onto your CV until you confirm it.
 
-<p align="center"><img src="docs/readme/target-role.png" alt="Target Role mode for Consulting: what internships ask for and step-by-step CV improvements" width="90%"></p>
+<p align="center"><img src="docs/readme/target-role.png" alt="Target Role mode for Data &amp; Analytics: what internships ask for, readiness and a Role Playbook step" width="90%"></p>
 
 ### 🤖 Autopilot: fill the form, never submit it
 Placed reads the employer's application form through public **Greenhouse, Ashby and Lever** APIs and builds an *Application Pack*: every field, matched to your answers. Press **Open & fill** and the Placed Chrome extension fills the real page, outlines each field it touched (green = filled, amber = your call) and **stops at *Submit***.
@@ -119,6 +113,8 @@ One click in the Chrome extension captures your own LinkedIn profile and scores 
 ### 🎤 Interview prep
 Once you've applied, Placed builds a prep pack for that company and role from real candidate reports (Reddit, Wall Street Oasis and similar), found with grounded search. Each likely question links to its source, and Placed maps it to a story from your own CV.
 
+<p align="center"><img src="docs/readme/interview-prep.png" alt="Interview prep for Goldman Sachs: the hiring process step by step, reported questions with why they ask and the source, and stories from your CV" width="90%"></p>
+
 ### 🤝 Networking
 For each target employer, Placed suggests who to look up (plain LinkedIn search links, no scraping) and drafts an outreach message. A deterministic guard blocks any claim about you or the firm that it can't back up. Alumni searches use **your own university** (set in *Settings → You*, or read from your CV). Tracker nudges remind you to prep and to follow up after 21 days.
 
@@ -129,12 +125,14 @@ The **Strategy** tab covers every role you've saved, applied to or are interview
 - **A dated plan.** Talk to people, apply, send a team note, follow up with the recruiter, and prep once you're at interview stage. It's built from the posting's deadline and your outreach log, with the CV-grounded message writer inline on each step.
 - **Who to message this week.** Open steps ordered by how likely each kind of person is to reply.
 
+<p align="center"><img src="docs/readme/strategy.png" alt="Strategy tab: reach map for Lendable, a dated plan and who to message this week" width="90%"></p>
+
 ### 🏆 Tracker and gamification
 A kanban from Saved → Applied → Interview → Offer / Rejected. A summary card on top shows your pipeline, how many applications are in play, what moved this week and your heard-back rate, and a *Needs your attention* list flags postings that close within 3 days, then networking nudges. Cards drag smoothly with mouse or touch, and a **Move** menu does the same by keyboard.
 
 Levels go *Explorer → Applicant → Contender → Shortlisted → Placed*, with badges such as **Early Bird**, **Spring Week Hunter**, **Made it yours** and **Bounce Back**. XP rewards well-matched applications, not volume.
 
-<p align="center"><img src="docs/readme/tracker.png" alt="Application tracker kanban with XP, streak and level in the header" width="90%"></p>
+<p align="center"><img src="docs/readme/tracker.png" alt="Application tracker: pipeline summary and kanban from Saved to Rejected" width="90%"></p>
 
 ## A quick tour
 
