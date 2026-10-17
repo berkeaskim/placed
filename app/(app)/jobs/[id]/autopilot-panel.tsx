@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Lock, Rocket } from "lucide-react";
 import { canOpen, type Answers, type PackGroup, type PackItem } from "@/lib/autopilot/pack";
 import type { FormField } from "@/lib/autopilot/forms/types";
+import { asArray, displayValue as labelsOf, optionsOf } from "@/lib/autopilot/chat-flow";
 import { openAndFill, preparePack, setAnswer } from "./autopilot-actions";
 import { ExtensionHint } from "@/components/autopilot/extension-install";
 import { openCoverLetterCard } from "@/components/cover-letter/cover-letter-host";
@@ -13,15 +14,7 @@ type Phase =
   | { s: "error"; message: string; applyUrl: string | null }
   | { s: "ready"; items: PackItem[] };
 
-type Opt = { label: string; value: string };
-const YES_NO: Opt[] = [{ label: "Yes", value: "true" }, { label: "No", value: "false" }];
-const optionsOf = (f: FormField): Opt[] | null => (f.options.length ? f.options : f.type === "boolean" ? YES_NO : null);
-const asArray = (v: string | string[] | null | undefined): string[] => (v == null ? [] : Array.isArray(v) ? v : [v]);
 const wordCount = (s: string) => (s.trim() ? s.trim().split(/\s+/).length : 0);
-const labelsOf = (f: FormField, v: string | string[] | null | undefined): string => {
-  const opts = optionsOf(f);
-  return asArray(v).map((x) => opts?.find((o) => o.value === x)?.label ?? x).join(", ");
-};
 const sourceChip = (ref: string) => (ref.startsWith("fact:") ? "your confirmed fact" : ref.startsWith("jd:") ? "the job post" : "your CV");
 
 const INPUT = "min-h-11 w-full rounded-xl border bg-white px-3 py-2 text-[15px]";
