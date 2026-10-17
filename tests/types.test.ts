@@ -12,11 +12,11 @@ describe("shared types", () => {
 describe("aiMode", () => {
   const saved = { ...process.env };
   afterEach(() => { process.env = { ...saved }; });
-  it("is fixture when no key is configured", () => {
+  it("is off (not fixture) when no key is configured", () => {
     delete process.env.AI_MODE;
     delete process.env.ANTHROPIC_API_KEY;
     delete process.env.GEMINI_API_KEY;
-    expect(aiMode()).toBe("fixture");
+    expect(aiMode()).toBe("off");
     expect(aiProvider()).toBeNull();
   });
   it("falls back to the provider that has a key", () => {

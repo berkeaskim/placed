@@ -28,8 +28,12 @@ const track = (status: "saved" | "applied" | "interview") => db.insert(applicati
 describe("getInterviewPrep", () => {
   // A provider key makes aiMode() "live", so the shared cache and the daily cap are in play (fixture mode skips both).
   const savedKey = process.env.GEMINI_API_KEY;
-  beforeEach(() => { process.env.GEMINI_API_KEY = "test"; });
-  afterEach(() => { if (savedKey === undefined) delete process.env.GEMINI_API_KEY; else process.env.GEMINI_API_KEY = savedKey; });
+  const savedMode = process.env.AI_MODE;
+  beforeEach(() => { process.env.GEMINI_API_KEY = "test"; delete process.env.AI_MODE; });
+  afterEach(() => {
+    if (savedKey === undefined) delete process.env.GEMINI_API_KEY; else process.env.GEMINI_API_KEY = savedKey;
+    if (savedMode === undefined) delete process.env.AI_MODE; else process.env.AI_MODE = savedMode;
+  });
   beforeEach(() => { generatePrepPack.mockReset().mockResolvedValue({ pack: { process: [], questions: [], tips: [] }, sources: [], grounded: false }); });
 
   it("refuses an untracked or saved job without generating", async () => {

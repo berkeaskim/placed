@@ -20,12 +20,18 @@ function pinProvider(configuring: AiProvider) {
 export type ActionResult = { ok: true; message?: string } | { ok: false; error: string };
 
 const PATH = "/settings/ai";
+
+/** Refreshes this page and the app layout, whose "AI isn't set up" banner depends on the provider settings. */
+function refresh() {
+  revalidatePath(PATH);
+  revalidatePath("/", "layout");
+}
 const CloudProvider = z.enum(["anthropic", "gemini"]);
 
 export async function setProviderAction(provider: string): Promise<ActionResult> {
   if (!(AI_PROVIDERS as readonly string[]).includes(provider)) return { ok: false, error: "Unknown provider." };
   setSetting(AI_KEYS.provider, provider as AiProvider);
-  revalidatePath(PATH);
+  refresh();
   return { ok: true };
 }
 
@@ -36,7 +42,7 @@ export async function saveKeyAction(provider: string, key: string): Promise<Acti
   if (k.length < 10 || k.length > 400 || /\s/.test(k)) return { ok: false, error: "That doesn't look like an API key." };
   pinProvider(p.data);
   setSecret(p.data === "anthropic" ? AI_KEYS.anthropicKey : AI_KEYS.geminiKey, k);
-  revalidatePath(PATH);
+  refresh();
   return { ok: true, message: "Key saved." };
 }
 
@@ -44,7 +50,7 @@ export async function clearKeyAction(provider: string): Promise<ActionResult> {
   const p = CloudProvider.safeParse(provider);
   if (!p.success) return { ok: false, error: "Unknown provider." };
   setSecret(p.data === "anthropic" ? AI_KEYS.anthropicKey : AI_KEYS.geminiKey, null);
-  revalidatePath(PATH);
+  refresh();
   return { ok: true, message: "Key removed." };
 }
 
@@ -58,7 +64,7 @@ export async function setCloudModelsAction(provider: string, fast: string, smart
   if (!p.success || !f.success || !s.success) return { ok: false, error: "Invalid model id." };
   setSetting(`ai.${p.data}.model.fast`, f.data || null);
   setSetting(`ai.${p.data}.model.smart`, s.data || null);
-  revalidatePath(PATH);
+  refresh();
   return { ok: true, message: "Models saved." };
 }
 
@@ -69,7 +75,7 @@ export async function setOllamaModelsAction(fast: string, smart: string): Promis
   setSetting("ai.ollama.model.fast", fast || null);
   setSetting("ai.ollama.model.smart", smart || null);
   setSetting(AI_KEYS.ollamaModel, fast || smart || null);
-  revalidatePath(PATH);
+  refresh();
   return { ok: true, message: "Models saved." };
 }
 
@@ -85,13 +91,13 @@ export async function setOllamaHostAction(host: string): Promise<ActionResult> {
     }
   }
   setSetting(AI_KEYS.ollamaHost, h || null);
-  revalidatePath(PATH);
+  refresh();
   return { ok: true, message: h ? "Host saved." : "Back to the default host." };
 }
 
 /** Re-renders the page so Ollama detection and the installed list run again. */
 export async function refreshOllamaAction(): Promise<void> {
-  revalidatePath(PATH);
+  refresh();
 }
 
 const Ping = z.object({ ok: z.boolean() });

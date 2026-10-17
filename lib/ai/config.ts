@@ -68,9 +68,15 @@ export function aiProvider(): AiProvider | null {
   return AI_PROVIDERS.find(isProviderConfigured) ?? null;
 }
 
-export function aiMode(): "live" | "fixture" {
+/**
+ * "fixture" only when AI_MODE=fixture (tests, e2e, offline demos): replays recorded answers. With no provider set up the
+ * mode is "off", never fixture: AI calls throw AiError(AI_NOT_SET_UP) so the user sees a setup prompt, not sample text.
+ */
+export type AiMode = "live" | "fixture" | "off";
+
+export function aiMode(): AiMode {
   if (process.env.AI_MODE === "fixture") return "fixture";
-  return aiProvider() ? "live" : "fixture";
+  return aiProvider() ? "live" : "off";
 }
 
 /** Budget for callers that race an AI call against a deadline (CV parse, judge batches). */
