@@ -168,3 +168,9 @@ export function listSources(userId: string): Map<string, BankSourceKind> {
   const rows = db.select({ id: bankSources.id, k: bankSources.kind }).from(bankSources).where(eq(bankSources.user_id, userId)).all();
   return new Map(rows.map((r) => [r.id, r.k as BankSourceKind]));
 }
+
+/** Every source of the user with when it was imported, for grouping the review list. */
+export function listSourceMeta(userId: string): Map<string, { kind: BankSourceKind; importedAt: string }> {
+  const rows = db.select({ id: bankSources.id, k: bankSources.kind, at: bankSources.imported_at }).from(bankSources).where(eq(bankSources.user_id, userId)).all();
+  return new Map(rows.map((r) => [r.id, { kind: r.k as BankSourceKind, importedAt: String(r.at) }]));
+}
