@@ -81,8 +81,10 @@ export type BankView = { report: SelectionReport; stale: boolean; newCvSuggestio
 export type OverflowResult = { error: "overflow"; message: string; pages: number; remove: { bulletId: string; text: string }[] };
 export type TailorResult =
   | { outcome: TailorOutcome; award: AwardResult | null; pdfUrl: string; signedUrl: string | null; bank: BankView | null;
-    /** Swaps only: the student's saved version carried onto the new selection, so the panel keeps their edits without a reload. */
-    final?: TailoredCV }
+    /** Swaps only: the student's version (current if sent, else saved) carried onto the new selection, so the panel keeps their edits. */
+    final?: TailoredCV;
+    /** Swaps only: bullet ids of carried edits the gate put back to the original wording (the panel says how many). */
+    reverted?: string[] }
   | OverflowResult
   | { error: string };
 export type FinalizeResult = { report: VerifyReport; pdfUrl: string; signedUrl: string | null } | OverflowResult | { error: string; report?: VerifyReport };
@@ -144,7 +146,12 @@ const scoresOf = (ctx: TailorCtx) => ctx.cv.selection?.scores ?? (ctx.stored?.v 
 async function overflowOf(ctx: TailorCtx, tailored: TailoredCV, pages: number): Promise<OverflowResult> {
   const last = await fillRatio(tailored, ctx.cv.parsed); // 1 + share of the last page when it spilled
   const exact = Math.max(1.1, Math.ceil((pages - 2 + last) * 10) / 10);
-  return { error: "overflow", message: `This is ${exact.toFixed(1)} pages — remove one of these`, pages: exact, remove: overflowCandidates(tailored, scoresOf(ctx)) };
+  const remove = overflowCandidates(tailored, scoresOf(ctx));
+  // v1 rows (and CVs with no bank ids) have nothing to offer: say how to fix it instead of "remove one of these".
+  const message = remove.length
+    ? `This is ${exact.toFixed(1)} pages — remove one of these`
+    : `This is ${exact.toFixed(1)} pages. Tailor again to fit it on one page.`;
+  return { error: "overflow", message, pages: exact, remove };
 }
 
 /**
@@ -285,14 +292,23 @@ function swapOutcome(ctx: TailorCtx, prev: TailorOutcome): TailorOutcome {
 /**
  * One-click "Add back" / "Remove" for a bank item on this job, with no AI call: re-select with the stored overrides plus
  * this change, keep the tailored bullets still in the new base, add new ones untailored, re-check and render.
+ * `currentFinal`: the panel's current version (same shape finalizeTailoredCv takes), carried instead of the last saved
+ * one so unsaved edits survive the swap. It goes through the same recheck and render gate; edits the gate reverts are
+ * returned as `reverted`.
  */
-export async function swapBankItem(jobId: string, itemId: string, op: "add" | "remove"): Promise<TailorResult> {
+export async function swapBankItem(jobId: string, itemId: string, op: "add" | "remove", currentFinal?: unknown): Promise<TailorResult> {
   if (!isUuid(jobId)) return { error: "This role is no longer available." };
   if (op !== "add" && op !== "remove") return { error: "Unknown choice." };
   const { user } = await requireUser();
   const prev = loadStored(user.id, jobId);
   if (!prev?.outcome) return { error: NOT_TAILORED };
   if (prev.v !== 2) return { error: "Tailor again to choose what goes in from your bank." };
+  let current: TailoredCV | null = null;
+  if (currentFinal !== undefined && currentFinal !== null) {
+    const parsed = TailoredCvFixture.safeParse(currentFinal);
+    if (!parsed.success) return { error: "That version couldn't be read. Try again." };
+    current = normalizeTailored(parsed.data, prev.base); // the panel edits the stored base's ids, like finalize
+  }
   const bank = getBank(user.id);
   if (typeof itemId !== "string" || !bank.entries.some((e) => e.id === itemId || e.bullets.some((b) => b.id === itemId))) {
     return { error: "That item is no longer in your bank." };
@@ -310,10 +326,13 @@ export async function swapBankItem(jobId: string, itemId: string, op: "add" | "r
     // (or the AI version if they never saved), which is what gets rendered, so their accepted/edited lines survive.
     const outcome = swapOutcome(ctx, prev.outcome);
     if (outcome.report.verdict === "block") return { error: BLOCKED };
-    const final = prev.final ? recheck(ctx, carryTailored(ctx.cv.parsed, prev.final)).r.tailored : outcome.tailored;
+    const carried = current ?? prev.final;
+    const checked = carried ? recheck(ctx, carryTailored(ctx.cv.parsed, carried)) : null;
+    const final = checked ? checked.r.tailored : outcome.tailored;
+    const reverted = checked ? [...new Set(checked.reverted.map((x) => x.bulletId))] : [];
     const res = await renderAndStore(ctx, final, () => storedFresh(ctx, outcome, final));
     if ("overflow" in res) return res.overflow;
-    return { outcome, award: null, pdfUrl: `/api/tailored/${jobId}`, signedUrl: res.signedUrl, bank: bankView(ctx), final };
+    return { outcome, award: null, pdfUrl: `/api/tailored/${jobId}`, signedUrl: res.signedUrl, bank: bankView(ctx), final, reverted };
   } catch (e) {
     if (e instanceof BlockedCvError) return { error: BLOCKED };
     console.error("swapBankItem: failed", e instanceof Error ? e.message : e);

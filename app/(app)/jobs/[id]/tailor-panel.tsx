@@ -123,6 +123,9 @@ export function TailorPanel({ jobId, hasCv, original, initial }: {
     setOutcome(r.outcome); setPdfUrl(r.pdfUrl); setDecisions(next); setHistory([]); setPreview(null); setPreviewErr(null); setDefend({ status: "idle" });
     setSavedKey(JSON.stringify(buildFinal(r.outcome.tailored, r.outcome.changes, next, original)));
     setBank(r.bank);
+    // A swap carries the current edits through the gate; any it had to put back are said out loud, never silent.
+    const lost = r.reverted?.length ?? 0;
+    setNotice(lost ? `${lost} of your edits couldn't be kept because they aren't supported by your CV or bank.` : null);
     if (source === "tailor") { setAnimateIn(true); celebrate(r.award); }
   };
 
@@ -133,7 +136,7 @@ export function TailorPanel({ jobId, hasCv, original, initial }: {
 
   const removeForOverflow = (bulletId: string) => {
     if (overflow?.source === "tailor") { run([bulletId]); return; }
-    startBusy(async () => { setError(null); applyResult(await swapBankItem(jobId, bulletId, "remove"), "swap"); });
+    startBusy(async () => { setError(null); applyResult(await swapBankItem(jobId, bulletId, "remove", final ?? undefined), "swap"); });
   };
 
   const decide = (id: string, d: Decision) => {
@@ -212,7 +215,7 @@ export function TailorPanel({ jobId, hasCv, original, initial }: {
           <button type="button" onClick={() => run()} className="btn-quest min-h-12 py-3">Tailor my CV for this role</button>
         )}
         {error && <p className="rounded-xl bg-[#FFF1DC] px-3 py-2 text-sm font-semibold text-[#7A4100]" role="alert">{error}</p>}
-        {overflow && !showSteps && <OverflowRemove overflow={overflow.o} pending={tailoring || busy} onRemove={removeForOverflow} />}
+        {overflow && !showSteps && <OverflowRemove overflow={overflow.o} pending={tailoring || busy} onRemove={removeForOverflow} onTailorAgain={() => run()} />}
       </section>
     );
   }
@@ -281,7 +284,7 @@ export function TailorPanel({ jobId, hasCv, original, initial }: {
           <StaggerItem>
             <Section id="from-bank" title="From your bank">
               <BankBlock report={bank.report} stale={bank.stale} newCvSuggestions={bank.newCvSuggestions} jobId={jobId}
-                untailoredIds={untailoredIdsOf(outcome.tailored)} disabled={tailoring || busy}
+                untailoredIds={untailoredIdsOf(outcome.tailored)} disabled={tailoring || busy} currentFinal={final}
                 onResult={(r) => applyResult(r, "swap")} />
             </Section>
           </StaggerItem>
@@ -362,7 +365,7 @@ export function TailorPanel({ jobId, hasCv, original, initial }: {
             </p>
           )}
           {error && <p className="rounded-xl bg-[#FFF1DC] px-3 py-2 text-sm font-semibold text-[#7A4100]" role="alert">{error}</p>}
-          {overflow && <OverflowRemove overflow={overflow.o} pending={tailoring || busy} onRemove={removeForOverflow} />}
+          {overflow && <OverflowRemove overflow={overflow.o} pending={tailoring || busy} onRemove={removeForOverflow} onTailorAgain={() => run()} />}
         </StaggerItem>
 
         <StaggerItem>

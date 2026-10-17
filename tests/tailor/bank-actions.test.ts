@@ -177,6 +177,42 @@ describe("tailoring from the bank (server actions)", () => {
     expect(v2().final).toEqual(s.final);
   });
 
+  // I3: a swap carries the panel's current (unsaved) version, not the last saved one
+  it("a swap with currentFinal keeps unsaved edits in the stored final and the PDF", async () => {
+    const saved = v2().final!;
+    expect(saved.experience[0].bullets[0].text).toBe("Served 150 customers per shift"); // edit A (saved)
+    const withB: TailoredCV = { ...saved, experience: saved.experience.map((e, i) => (i ? e : { ...e, bullets: e.bullets.map((b, k) => (k === 1 ? { ...b, text: "Trained 3 new staff" } : b)) })) };
+    const r = await swapBankItem(jobId, projectId, "remove", withB);
+    expect("error" in r ? r.error : null).toBeNull();
+    const s = v2();
+    expect(entryIds(s.base)).not.toContain(projectId);
+    const texts = s.final!.experience[0].bullets.map((b) => b.text);
+    expect(texts).toContain("Served 150 customers per shift");
+    expect(texts).toContain("Trained 3 new staff");
+    expect("reverted" in r ? r.reverted : null).toEqual([]);
+    const pdf = (await pdfText(stored().tailored_cv_path!)).replace(/\s+/g, " ");
+    expect(pdf).toContain("Trained 3 new staff");
+    expect(pdf).not.toContain("Trained 3 new staff on the opening routine");
+  });
+
+  it("a carried edit the gate reverts comes back in `reverted`", async () => {
+    const cur = v2().final!;
+    const bad: TailoredCV = { ...cur, experience: cur.experience.map((e, i) => (i ? e : { ...e, bullets: e.bullets.map((b, k) => (k === 1 ? { ...b, text: "Trained 3 new staff at Goldman Sachs" } : b)) })) };
+    const badId = bad.experience[0].bullets[1].id;
+    const r = await swapBankItem(jobId, projectId, "add", bad);
+    expect("error" in r ? r.error : null).toBeNull();
+    expect("reverted" in r ? r.reverted : null).toEqual([badId]);
+    expect(JSON.stringify(v2().final)).not.toContain("Goldman");
+    expect(await pdfText(stored().tailored_cv_path!)).not.toContain("Goldman");
+  });
+
+  it("a swap refuses a currentFinal it can't read and changes nothing", async () => {
+    const before = stored().tailored_json;
+    const r = await swapBankItem(jobId, projectId, "remove", { experience: "not a list" });
+    expect("error" in r && r.error).toMatch(/couldn't be read/);
+    expect(stored().tailored_json).toEqual(before);
+  });
+
   it("a first-tailor overflow offers bank ids, and tailorForJob with extraExcluded applies one", async () => {
     const job2 = seedJob({ title: "Data Analyst Intern", text_lines: ["## Requirements", "- Python", "- SQL"] }).id;
     spy.long = true;
@@ -208,6 +244,15 @@ describe("tailoring from the bank (server actions)", () => {
       const r = await swapBankItem(job3, projectId, "remove");
       expect("error" in r && r.error).toMatch(/Tailor again/);
       expect(storedFor(job3).tailored_json).toEqual(before);
+    });
+    // M1: a v1 row has no bank ids to offer, so the overflow says to tailor again instead of "remove one of these"
+    it("a v1 overflow says to tailor again and offers nothing to remove", async () => {
+      const t = toTailored(activeCv());
+      const long: TailoredCV = { ...t, experience: t.experience.map((e) => ({ ...e, bullets: Array.from({ length: 40 }, (_, k) => e.bullets.map((b) => ({ ...b, id: k ? `${b.id}-r${k}` : b.id }))).flat() })) };
+      const r = await finalizeTailoredCv(job3, long);
+      if (!("remove" in r)) throw new Error("expected overflow");
+      expect(r.remove).toEqual([]);
+      expect(r.message).toMatch(/^This is \d+\.\d pages\. Tailor again to fit it on one page\.$/);
     });
     it("finalizeTailoredCv on a v1 row works against the active CV and stays v1", async () => {
       const r = await finalizeTailoredCv(job3, toTailored(activeCv()));

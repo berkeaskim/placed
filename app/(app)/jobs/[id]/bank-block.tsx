@@ -2,6 +2,7 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import type { SelectionReport, SelItem } from "@/lib/bank/select";
+import type { TailoredCV } from "@/lib/types";
 import { reselectFromBank, swapBankItem, type OverflowResult, type TailorResult } from "./actions";
 
 const LEFT_OUT_SHOWN = 5;
@@ -36,9 +37,11 @@ function Row({ item, action, tag }: { item: SelItem; action: React.ReactNode; ta
  * "From your bank": what was added to this CV from the student's experience bank, what was left out, and one-click
  * Remove / Add back (no AI call). Every swap goes through swapBankItem; results flow back via onResult.
  */
-export function BankBlock({ report, stale, newCvSuggestions, jobId, untailoredIds, disabled, onResult }: {
+export function BankBlock({ report, stale, newCvSuggestions, jobId, untailoredIds, disabled, currentFinal, onResult }: {
   report: SelectionReport; stale: boolean; newCvSuggestions: number; jobId: string; untailoredIds: string[];
   disabled?: boolean; onResult: (r: TailorResult) => void;
+  /** The panel's current version (with unsaved edits): every swap carries it instead of the last saved one. */
+  currentFinal?: TailoredCV | null;
 }) {
   const [pending, start] = useTransition();
   const [working, setWorking] = useState<string | null>(null);
@@ -48,7 +51,7 @@ export function BankBlock({ report, stale, newCvSuggestions, jobId, untailoredId
 
   const swap = (id: string, op: "add" | "remove") => start(async () => {
     setWorking(id);
-    try { onResult(await swapBankItem(jobId, id, op)); } finally { setWorking(null); }
+    try { onResult(await swapBankItem(jobId, id, op, currentFinal ?? undefined)); } finally { setWorking(null); }
   });
   const reselect = () => start(async () => {
     setWorking("reselect");
@@ -99,13 +102,19 @@ export function BankBlock({ report, stale, newCvSuggestions, jobId, untailoredId
   );
 }
 
-/** The "this is X pages" refusal: the 3 lowest-scoring bank bullets, each one click from removal. */
-export function OverflowRemove({ overflow, pending, onRemove }: {
-  overflow: Pick<OverflowResult, "message" | "remove">; pending: boolean; onRemove: (bulletId: string) => void;
+/**
+ * The "this is X pages" refusal: the 3 lowest-scoring bank bullets, each one click from removal. With nothing to offer
+ * (a pre-bank tailoring) the message says to tailor again, and the button does it.
+ */
+export function OverflowRemove({ overflow, pending, onRemove, onTailorAgain }: {
+  overflow: Pick<OverflowResult, "message" | "remove">; pending: boolean; onRemove: (bulletId: string) => void; onTailorAgain: () => void;
 }) {
   return (
     <div className="flex flex-col gap-2 rounded-xl bg-[#FFF1DC] px-3 py-3 text-sm text-[#7A4100]" role="alert">
       <p className="font-semibold">{overflow.message}</p>
+      {overflow.remove.length === 0 && (
+        <button type="button" onClick={onTailorAgain} disabled={pending} className={`${ghost} self-start bg-white`}>Tailor again</button>
+      )}
       <ul className="flex flex-col gap-2">
         {overflow.remove.map((r) => (
           <li key={r.bulletId} className="flex items-center justify-between gap-3 rounded-xl border-2 border-[#E6E6EF] bg-white px-3 py-2">
