@@ -86,6 +86,9 @@ describe("classify file uploads", () => {
     expect(classify("Why do you want to join Monzo?", "textarea")).toEqual({ kind: "motivation" });
     expect(classify("Additional information", "textarea")).toEqual({ kind: "yours" });
     expect(classify("Cover Letter", "file")).toEqual({ kind: "file", which: "cover" });
+    expect(classify("Describe a time you motivated a team", "textarea")).toEqual({ kind: "freeText" });
+    expect(classify("What is your motivation for applying?", "textarea")).toEqual({ kind: "motivation" });
+    expect(classify("Why us?", "textarea")).toEqual({ kind: "motivation" });
     expect(classify("Cover Letter", "textarea")).toEqual({ kind: "motivation" });
   });
 });

@@ -1,7 +1,7 @@
 import { RULES } from "./rules";
 import type { Limit, Mode, OutputTarget } from "./types";
 
-const MOTIVATION = /cover letter|covering letter|why (do you want|are you interested|this|us|join)|motivat|interest in (the )?(role|firm|company|programme|program|division|team)/i;
+const MOTIVATION = /cover letter|covering letter|why (do you want|are you interested|this|us|join)\b|\bmotivation\b|what motivates you|motivated to (apply|join)|interest in (the )?(role|firm|company|programme|program|division|team)/i;
 const NO_LETTER = /no (cover|covering) letter|cover letters? (are|is) not (required|needed|accepted)|do not (send|include) a cover letter/i;
 const AI_POLICY = new RegExp(RULES.lexicon.counters.aiPolicy, RULES.lexicon.flags);
 

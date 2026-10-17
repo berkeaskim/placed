@@ -258,7 +258,7 @@ export function AutopilotPanel({ jobId }: { jobId: string }) {
   }
 
   const by = (g: PackGroup) => phase.items.filter((i) => i.group === g);
-  const vault = by("vault"), ask = by("ask"), confirm = by("confirm"), draft = by("draft"), yours = by("yours");
+  const vault = by("vault"), ask = by("ask"), confirm = by("confirm"), draft = by("draft"), yours = [...by("yours"), ...by("cover")]; // cover items join "Yours" until the cover letter card exists
   const ready = canOpen(phase.items, answers);
   const left = [...ask, ...confirm].filter((i) => answers[i.field.key] === undefined).length;
   const suggested = confirm.filter((i) => i.value != null && answers[i.field.key] === undefined);
