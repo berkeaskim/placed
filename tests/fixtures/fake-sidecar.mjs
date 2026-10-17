@@ -24,11 +24,13 @@ createInterface({ input: process.stdin }).on("line", (line) => {
       id: req.id, status: 403, headers: { "content-type": "text/html", "cf-mitigated": "challenge" },
       body: "<!DOCTYPE html><html><head><title>Just a moment...</title></head><body></body></html>",
     });
+  } else if (url.includes("hang")) {
+    // never answers: a wedged page
   } else if (url.includes("broken")) {
     reply({ id: req.id, error: "navigation failed" });
   } else if (/\/postings\?/.test(url)) {
     json(req.id, { totalFound: 1, content: [{ id: "p1", name: "Data Analyst Intern" }] });
   } else {
-    json(req.id, { ok: true, url, method: req.method, body: req.body ?? null, headers: req.headers });
+    json(req.id, { ok: true, pid: process.pid, url, method: req.method, body: req.body ?? null, headers: req.headers });
   }
 });

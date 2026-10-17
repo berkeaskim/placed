@@ -7,7 +7,7 @@ import { companies, jobs } from "@/lib/db/schema";
 import { heuristicTagJob } from "@/lib/ai/heuristics";
 import { runIngest } from "@/lib/ingest/local";
 import { fetchJobs as liveFetchJobs, type CompanySeed } from "@/lib/ingest/providers";
-import { isChallenge, resetStealthForTests, scraperInstalled, stealthFetch } from "@/lib/ingest/stealth";
+import { isChallenge, resetStealthForTests, scraperInstalled, setStealthTimeoutForTests, stealthFetch } from "@/lib/ingest/stealth";
 import { setSetting } from "@/lib/settings/store";
 
 const FAKE = `${process.execPath} ${path.resolve("tests/fixtures/fake-sidecar.mjs")}`;
@@ -57,6 +57,15 @@ describe("stealthFetch", () => {
 
   it("a sidecar error fails that request", async () => {
     await expect(stealthFetch("https://boards.example/broken")).rejects.toThrow(/navigation failed/);
+  });
+
+  it("a timed-out request restarts the sidecar so later requests aren't stuck behind it", async () => {
+    const pid = (await (await stealthFetch("https://boards.example/first")).json()).pid;
+    setStealthTimeoutForTests(300);
+    await expect(stealthFetch("https://boards.example/hang")).rejects.toThrow(/timed out/);
+    const next = await stealthFetch("https://boards.example/after-timeout");
+    expect(next.status).toBe(200);
+    expect((await next.json()).pid).not.toBe(pid); // a fresh process, not the wedged one
   });
 
   it("missing install gives the setup hint", async () => {

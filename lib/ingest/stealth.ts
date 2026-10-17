@@ -15,7 +15,8 @@ import { createInterface } from "node:readline";
 export const SETUP_HINT = "needs the optional scraper: npm run scraper:setup";
 const IDLE_MS = 60_000;
 // A browser launch plus page load can outlast the 15 s budget providers give a plain fetch, so the sidecar has its own cap.
-const REQUEST_TIMEOUT_MS = 90_000;
+const REQUEST_TIMEOUT_MS = 90_000; // fetch.py aborts its in-page fetch() at 85 s, just under this
+let requestTimeoutMs = REQUEST_TIMEOUT_MS;
 const VERSION_TIMEOUT_MS = 30_000;
 
 /** The sidecar's interpreter, or the whole command when PLACED_SCRAPER_CMD is set (tests use a Node fake). */
@@ -131,7 +132,8 @@ function start(): ChildProcessWithoutNullStreams {
     failAll(new Error(`stealth sidecar ${why}${tail ? `: ${tail}` : ""}`));
   };
   c.on("error", (e) => onGone(`failed to start (${e.message})`));
-  c.on("exit", (code, signal) => onGone(`exited (${signal ?? `code ${code}`})`));
+  // "close" (not "exit") fires once stdout is drained, so replies written just before a crash are still delivered.
+  c.on("close", (code, signal) => onGone(`exited (${signal ?? `code ${code}`})`));
   c.stdin.on("error", () => {}); // EPIPE after a crash is reported by the exit handler
   c.stderr.on("data", (d: Buffer) => { stderrTail = (stderrTail + d.toString()).slice(-2000); });
   createInterface({ input: c.stdout }).on("line", (line) => {
@@ -160,9 +162,13 @@ function call(req: { url: string; method: string; headers: Record<string, string
   return new Promise<SidecarReply>((resolve, reject) => {
     const timer = setTimeout(() => {
       pending.delete(id);
-      reject(new Error(`stealth sidecar timed out after ${REQUEST_TIMEOUT_MS / 1000}s`));
-      armIdle();
-    }, REQUEST_TIMEOUT_MS);
+      reject(new Error(`stealth sidecar timed out after ${requestTimeoutMs / 1000}s`));
+      // fetch.py serves requests one at a time, so a wedged page would block every later request: replace the process.
+      if (child === c) {
+        stop();
+        failAll(new Error("stealth sidecar restarted after a timed-out request"));
+      }
+    }, requestTimeoutMs);
     pending.set(id, { resolve, reject, timer });
     c.stdin.write(`${JSON.stringify({ id, ...req })}\n`);
   });
@@ -203,8 +209,14 @@ export const stealthFetch: typeof fetch = async (input, init) => {
   return new Response(NULL_BODY.has(status) ? null : text, { status, headers: toHeaders(r.headers) });
 };
 
+/** Tests: a short per-request timeout (reset by resetStealthForTests). */
+export function setStealthTimeoutForTests(ms: number) {
+  requestTimeoutMs = ms;
+}
+
 /** Tests: drop the running sidecar and the install cache. */
 export function resetStealthForTests() {
+  requestTimeoutMs = REQUEST_TIMEOUT_MS;
   stop();
   failAll(new Error("stealth sidecar reset"));
   installed.clear();

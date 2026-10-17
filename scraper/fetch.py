@@ -24,12 +24,21 @@ from urllib.parse import urlsplit
 OUT = sys.stdout
 sys.stdout = sys.stderr
 
+# Just under lib/ingest/stealth.ts's 90 s per-request timeout, so a hung in-page fetch() reports an error itself.
+IN_PAGE_FETCH_TIMEOUT_MS = 85_000
+
 PAGE_FETCH_JS = """
-async ({ url, method, headers, body }) => {
-  const r = await fetch(url, { method, headers, body: body ?? undefined, credentials: "include" });
-  const h = {};
-  r.headers.forEach((v, k) => { h[k] = v; });
-  return { status: r.status, headers: h, body: await r.text() };
+async ({ url, method, headers, body, timeoutMs }) => {
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), timeoutMs);
+  try {
+    const r = await fetch(url, { method, headers, body: body ?? undefined, credentials: "include", signal: ctl.signal });
+    const h = {};
+    r.headers.forEach((v, k) => { h[k] = v; });
+    return { status: r.status, headers: h, body: await r.text() };
+  } finally {
+    clearTimeout(timer);
+  }
 }
 """
 
@@ -65,7 +74,10 @@ def handle(session, req):
         # Scrapling logs and swallows page_action errors, so they are captured here.
         try:
             holder["result"] = page.evaluate(
-                PAGE_FETCH_JS, {"url": url, "method": method, "headers": headers, "body": req.get("body")}
+                PAGE_FETCH_JS, {
+                    "url": url, "method": method, "headers": headers, "body": req.get("body"),
+                    "timeoutMs": IN_PAGE_FETCH_TIMEOUT_MS,
+                },
             )
         except Exception as e:  # noqa: BLE001
             holder["error"] = f"in-page fetch failed: {e}"
