@@ -11,10 +11,14 @@
 
 Find live internships, spring weeks and placements. Score your CV and LinkedIn against cited, sector-specific rules.
 Tailor your CV to a job without inventing a single claim. Let Autopilot fill the application form, then press *Submit* yourself.
-Track every application, prep for the interview, and reach out to the right people.
+Track every application, prep for the interview, and get a dated plan for who to message and when.
 
 **Runs on your own computer.** No account, no cloud database: your CV and applications stay in a folder on your machine.
 Bring a Claude or Gemini key, or run a model locally with Ollama.
+
+<p>
+  <img alt="3rd place, Claude Hackathon" src="https://img.shields.io/badge/%F0%9F%A5%89%203rd%20place-Claude%20Hackathon-D97757">
+</p>
 
 <p>
   <img alt="Next.js" src="https://img.shields.io/badge/Next.js-16-000000?logo=nextdotjs&logoColor=white">
@@ -30,7 +34,7 @@ Bring a Claude or Gemini key, or run a model locally with Ollama.
   <img alt="Vitest" src="https://img.shields.io/badge/tested%20with-Vitest%20%2B%20Playwright-6E9F18?logo=vitest&logoColor=white">
 </p>
 
-<sub>Built at the UCL hackathon, October 2026 · theme: <i>"How can we make students' lives easier?"</i></sub>
+<sub>🥉 <b>3rd place at the Claude Hackathon</b> at UCL, October 2026 · theme: <i>"How can we make students' lives easier?"</i></sub>
 
 <p>
   <a href="#features">Features</a> ·
@@ -57,6 +61,7 @@ Students hunting for internships run into the same four walls:
 | Openings are scattered across dozens of career sites. | One click on **Refresh jobs** pulls **live roles from 160+ employers** through public ATS APIs and ranks them by fit. |
 | Tailoring a CV for every application is exhausting. | **One-click tailoring**, checked line by line in code so nothing is fabricated. |
 | Every form asks the same 30 questions again. | **Autopilot** fills Greenhouse, Ashby and Lever forms from answers you gave once, and stops at *Submit*. |
+| You don't know who to talk to, or when. | A **Strategy** tab maps the people worth reaching at each firm and turns your deadline into a dated plan. |
 | You don't know what the interview will ask. | **Interview prep** built from real candidate reports, each one linked to its source. |
 | The whole process is lonely and demotivating. | A tracker with **XP, levels, streaks and badges**, including one for applying again after a rejection. |
 
@@ -115,10 +120,19 @@ One click in the Chrome extension captures your own LinkedIn profile and scores 
 Once you've applied, Placed builds a prep pack for that company and role from real candidate reports (Reddit, Wall Street Oasis and similar), found with grounded search. Each likely question links to its source, and Placed maps it to a story from your own CV.
 
 ### 🤝 Networking
-For each target employer, Placed suggests who to look up (plain LinkedIn search links, no scraping) and drafts an outreach message. A deterministic guard blocks any claim about you or the firm that it can't back up. Tracker nudges remind you to prep and to follow up after 21 days.
+For each target employer, Placed suggests who to look up (plain LinkedIn search links, no scraping) and drafts an outreach message. A deterministic guard blocks any claim about you or the firm that it can't back up. Alumni searches use **your own university** (set in *Settings → You*, or read from your CV). Tracker nudges remind you to prep and to follow up after 21 days.
+
+### 🗺️ Strategy: who to message, and when
+The **Strategy** tab covers every role you've saved, applied to or are interviewing for.
+
+- **Reach map.** Alumni from your university, recent joiners, the team and the recruiter. Each one opens a LinkedIn people search, and the lines fill in as you mark messages sent or replied. Placed never names or looks up a person itself.
+- **A dated plan.** Talk to people, apply, send a team note, follow up with the recruiter, and prep once you're at interview stage. It's built from the posting's deadline and your outreach log, with the CV-grounded message writer inline on each step.
+- **Who to message this week.** Open steps ordered by how likely each kind of person is to reply.
 
 ### 🏆 Tracker and gamification
-A kanban from Saved → Applied → Interview → Offer / Rejected, with levels (*Explorer → Applicant → Contender → Shortlisted → Placed*) and badges such as **Early Bird**, **Spring Week Hunter**, **Made it yours** and **Bounce Back**. XP rewards well-matched applications, not volume.
+A kanban from Saved → Applied → Interview → Offer / Rejected. A summary card on top shows your pipeline, how many applications are in play, what moved this week and your heard-back rate, and a *Needs your attention* list flags postings that close within 3 days, then networking nudges. Cards drag smoothly with mouse or touch, and a **Move** menu does the same by keyboard.
+
+Levels go *Explorer → Applicant → Contender → Shortlisted → Placed*, with badges such as **Early Bird**, **Spring Week Hunter**, **Made it yours** and **Bounce Back**. XP rewards well-matched applications, not volume.
 
 <p align="center"><img src="docs/readme/tracker.png" alt="Application tracker kanban with XP, streak and level in the header" width="90%"></p>
 
@@ -133,6 +147,7 @@ A typical first session, for a 2nd-year Economics student applying to a real pos
 5. **Tailor.** Get a version of your CV for this job. Unsupported claims are caught and a blank is left where only you know the real number.
 6. **Autopilot.** Open the employer's form; the extension fills it from your pack and stops at *Submit*. You check it and press the button.
 7. **Track and prep.** The application lands in the tracker, your first badge unlocks, and an interview prep pack is one click away.
+8. **Plan the outreach.** Strategy shows who to message at the firm and when, and drafts each message from your CV.
 
 ## Principles
 
@@ -154,7 +169,7 @@ flowchart LR
     EXT["Chrome extension<br/>Autopilot fill · LinkedIn capture"] --> SA
     SA --> DB[("./data<br/>SQLite (Drizzle) · files · secret.key")]
     SA --> AI["lib/ai<br/>Claude, Gemini or Ollama<br/>(Zod-validated JSON)"]
-    SA --> DET["Deterministic core<br/>cv-rules · cv-score · scoring<br/>verify · outreach guard · gamify · pdf"]
+    SA --> DET["Deterministic core<br/>cv-rules · cv-score · scoring<br/>verify · outreach guard · strategy plan<br/>gamify · pdf"]
     SA --> FORMS["Greenhouse · Ashby · Lever<br/>application forms"]
     BTN["Refresh jobs button<br/>or npm run ingest"] --> ING["Ingest"]
     ING --> ATS["Greenhouse · Lever · Ashby<br/>SmartRecruiters · Workday"]
@@ -175,7 +190,7 @@ flowchart LR
 | Extension | Chrome MV3: Autopilot form filler and one-click LinkedIn capture |
 | PDF | `@react-pdf/renderer` (serverless-safe, no headless Chromium) |
 | Security | Loopback-only server, AES-GCM encryption for saved API keys and the Autopilot vault, rate-limited routes |
-| Quality | Vitest (150+ test files, including fairness and security suites, each on a temp database), Playwright end-to-end runs, Zod everywhere |
+| Quality | Vitest (180 test files, including fairness and security suites, each on a temp database), Playwright end-to-end runs, Zod everywhere |
 
 ## Quick start
 
@@ -302,7 +317,7 @@ Contributions are welcome: see [CONTRIBUTING.md](CONTRIBUTING.md).
 ## Project structure
 
 ```
-app/                 Pages: feed, jobs/[id], profile (score · quiz · target · linkedin), tracker, autopilot, settings
+app/                 Pages: feed, jobs/[id], profile (score · quiz · target · linkedin), tracker, strategy, outreach, autopilot, settings
 extension/           Chrome MV3 extension: Autopilot form filler + LinkedIn capture
 lib/
   ai/                Model calls (Claude · Gemini · Ollama): parseCV, tagJob, judgeCvRules, explainMatch, tailorCV …
@@ -311,6 +326,9 @@ lib/
   linkedin-score/    LinkedIn rules + scoring
   interview-prep/    Grounded prep packs with sources, cached per company and role
   outreach/          Networking targets + anti-fabrication guard for outreach drafts
+  strategy/          Dated outreach plan per role (deadline + outreach log)
+  tracker/           Pipeline summary and needs-attention list
+  profile/           University lookup (Settings, else the active CV)
   cv-rules/          Cited rule library + sector profiles (data, not prompts)
   cv-score/          Deterministic checks + aggregation into the CV Score
   ingest/            ATS providers, title/location filters, dedupe, liveness
@@ -329,6 +347,7 @@ docs/research/       Sources behind every CV rule and Role Playbook
 - [x] **Placed Autopilot:** read application forms through public ATS APIs and fill them from a one-time answer vault with a Chrome extension. It always stops at *Submit*.
 - [x] Interview prep grounded in real candidate reports
 - [x] LinkedIn score and networking
+- [x] Strategy tab: reach map and a dated outreach plan per role
 - [x] Local-first: SQLite, no account, Claude / Gemini / Ollama
 - [ ] Autopilot on the Chrome Web Store
 - [ ] More employer coverage (JPMorgan, Goldman Sachs, the Big Four and other bank and Workday portals)
