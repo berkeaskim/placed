@@ -2,7 +2,9 @@
 
 import { useState, useTransition } from "react";
 import { entryLabel } from "@/lib/bank/label";
-import { addManualBullet, addManualEntry, deleteBulletAction, editBullet, moveBullet, toggleBullet, toggleEntry, type BankActionResult } from "./actions";
+import {
+  addManualBullet, addManualEntry, deleteBulletAction, deleteEntryAction, editBullet, editEntry, moveBullet, toggleBullet, toggleEntry, type BankActionResult,
+} from "./actions";
 
 export type BadgeLabel = "CV" | "LinkedIn" | "Post" | "Manual";
 type Section = "experience" | "projects" | "leadership";
@@ -37,6 +39,8 @@ export function BankView({ entries }: { entries: ViewEntry[] }) {
   const [adding, setAdding] = useState<string | null>(null);
   const [newText, setNewText] = useState("");
   const [showEntryForm, setShowEntryForm] = useState(false);
+  const [editingEntry, setEditingEntry] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
   const run = (fn: () => Promise<BankActionResult>, onOk?: () => void) => start(async () => {
     const r = await fn();
@@ -48,6 +52,11 @@ export function BankView({ entries }: { entries: ViewEntry[] }) {
   async function submitEntry(fd: FormData) {
     const f = (k: string) => String(fd.get(k) ?? "");
     run(() => addManualEntry({ section: f("section") as Section, org: f("org"), title: f("title"), dates: f("dates"), location: f("location") }), () => setShowEntryForm(false));
+  }
+
+  function submitEntryEdit(id: string, fd: FormData) {
+    const f = (k: string) => String(fd.get(k) ?? "");
+    run(() => editEntry(id, { org: f("org"), title: f("title"), dates: f("dates"), location: f("location") }), () => setEditingEntry(null));
   }
 
   return (
@@ -62,17 +71,42 @@ export function BankView({ entries }: { entries: ViewEntry[] }) {
             <ul className="space-y-4">
               {list.map((e) => (
                 <li key={e.id} className={`rounded-2xl border-2 border-[#E6E6EF] bg-white p-4 ${e.hidden ? "opacity-60" : ""}`}>
-                  <div className="flex flex-wrap items-start justify-between gap-2">
-                    <div>
-                      <h3 className="font-bold">{entryLabel(e) || "Untitled entry"}</h3>
-                      <p className="text-sm text-[#5B5B6B]">{[e.dates, e.location].filter(Boolean).join(" · ")}</p>
-                      <div className="mt-1 flex gap-1"><Badges labels={e.badges} /></div>
+                  {editingEntry === e.id ? (
+                    <form action={(fd) => submitEntryEdit(e.id, fd)} className="space-y-2" aria-label={`Edit ${entryLabel(e) || "entry"}`}>
+                      <label className="block text-sm font-bold">Organisation<input name="org" defaultValue={e.org} maxLength={120} className={input} /></label>
+                      <label className="block text-sm font-bold">Title<input name="title" defaultValue={e.title} required maxLength={120} className={input} /></label>
+                      <label className="block text-sm font-bold">Dates<input name="dates" defaultValue={e.dates} maxLength={80} placeholder="Jun 2024 - Aug 2024" className={input} /></label>
+                      <label className="block text-sm font-bold">Location<input name="location" defaultValue={e.location} maxLength={80} className={input} /></label>
+                      <div className="flex gap-2">
+                        <button type="submit" disabled={pending} className={`${btn} !bg-foreground !text-background`}>Save entry</button>
+                        <button type="button" onClick={() => setEditingEntry(null)} className={btn}>Cancel</button>
+                      </div>
+                    </form>
+                  ) : (
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div>
+                        <h3 className="font-bold">{entryLabel(e) || "Untitled entry"}</h3>
+                        <p className="text-sm text-[#5B5B6B]">{[e.dates, e.location].filter(Boolean).join(" · ")}</p>
+                        <div className="mt-1 flex gap-1"><Badges labels={e.badges} /></div>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <Toggle label={e.pinned ? "Pinned" : "Pin"} on={e.pinned} disabled={pending} onClick={() => run(() => toggleEntry(e.id, "pinned"))} />
+                        <Toggle label={e.hidden ? "Hidden" : "Hide"} on={e.hidden} disabled={pending} onClick={() => run(() => toggleEntry(e.id, "hidden"))} />
+                        <button type="button" className={btn} onClick={() => { setEditingEntry(e.id); setConfirmDelete(null); }}
+                          aria-label={`Edit entry: ${entryLabel(e) || "Untitled entry"}`}>Edit</button>
+                        {confirmDelete === e.id ? (
+                          <>
+                            <button type="button" className={`${btn} !border-[#B42318] !text-[#B42318]`} disabled={pending}
+                              onClick={() => run(() => deleteEntryAction(e.id), () => setConfirmDelete(null))}>Confirm delete</button>
+                            <button type="button" className={btn} onClick={() => setConfirmDelete(null)}>Keep</button>
+                          </>
+                        ) : (
+                          <button type="button" className={btn} disabled={pending} onClick={() => setConfirmDelete(e.id)}
+                            aria-label={`Delete entry: ${entryLabel(e) || "Untitled entry"}`}>Delete</button>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex gap-2">
-                      <Toggle label={e.pinned ? "Pinned" : "Pin"} on={e.pinned} disabled={pending} onClick={() => run(() => toggleEntry(e.id, "pinned"))} />
-                      <Toggle label={e.hidden ? "Hidden" : "Hide"} on={e.hidden} disabled={pending} onClick={() => run(() => toggleEntry(e.id, "hidden"))} />
-                    </div>
-                  </div>
+                  )}
                   <ul className="mt-3 space-y-2">
                     {e.bullets.map((b, i) => (
                       <li key={b.id} className={`rounded-xl bg-[#F6F6FA] p-3 ${b.hidden ? "opacity-60" : ""}`}>

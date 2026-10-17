@@ -51,8 +51,14 @@ export function insertEntry(userId: string, e: NewEntry): BankEntry {
 
 export type EntryPatch = Partial<Pick<BankEntry, "section" | "org" | "title" | "dates" | "startYm" | "endYm" | "location" | "pinned" | "hidden">>;
 
+/** A header text edit (org, title, dates, location) is the student's own claim: provenance gains "manual", as in updateBullet. */
 export function updateEntry(userId: string, id: string, patch: EntryPatch): void {
+  const where = and(eq(bankEntries.id, id), eq(bankEntries.user_id, userId));
   const set: Partial<typeof bankEntries.$inferInsert> = { updated_at: nowIso() };
+  if ([patch.org, patch.title, patch.dates, patch.location].some((v) => v !== undefined)) {
+    const cur = db.select({ s: bankEntries.source_ids }).from(bankEntries).where(where).get();
+    if (cur && !cur.s.includes("manual")) set.source_ids = [...cur.s, "manual"];
+  }
   if (patch.section !== undefined) set.section = patch.section;
   if (patch.org !== undefined) set.org = patch.org;
   if (patch.title !== undefined) set.title = patch.title;
@@ -62,7 +68,12 @@ export function updateEntry(userId: string, id: string, patch: EntryPatch): void
   if (patch.location !== undefined) set.location = patch.location;
   if (patch.pinned !== undefined) set.pinned = patch.pinned;
   if (patch.hidden !== undefined) set.hidden = patch.hidden;
-  db.update(bankEntries).set(set).where(and(eq(bankEntries.id, id), eq(bankEntries.user_id, userId))).run();
+  db.update(bankEntries).set(set).where(where).run();
+}
+
+/** Deletes an entry; its bullets go with it (ON DELETE CASCADE). Pending suggestions aimed at it are left as orphans, which review skips. */
+export function deleteEntry(userId: string, id: string): void {
+  db.delete(bankEntries).where(and(eq(bankEntries.id, id), eq(bankEntries.user_id, userId))).run();
 }
 
 export type BulletPatch = Partial<Pick<BankBullet, "text" | "position" | "pinned" | "hidden">>;

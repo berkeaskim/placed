@@ -26,6 +26,11 @@ function Card({ s, run, busy }: { s: SuggestionView; run: (fn: () => Promise<Ban
   const [draft, setDraft] = useState(s.text ?? "");
   const [target, setTarget] = useState(s.targets?.[0]?.id ?? "");
   const mergeNeedsTarget = s.kind === "merge_into" && !target;
+  // A post's new entry with several bullets: each can be unticked before Accept (all ticked by default).
+  const pickBullets = s.kind === "new_entry" && !!s.entry?.excerpts && s.entry.bullets.length > 1;
+  const [ticked, setTicked] = useState<boolean[]>(() => (s.entry?.bullets ?? []).map(() => true));
+  const tickedIdx = ticked.flatMap((t, i) => (t ? [i] : []));
+  const noneTicked = pickBullets && tickedIdx.length === 0;
 
   return (
     <li className="rounded-2xl border-2 border-[#E6E6EF] bg-white p-4">
@@ -43,7 +48,22 @@ function Card({ s, run, busy }: { s: SuggestionView; run: (fn: () => Promise<Ban
           <p className="text-xs font-bold uppercase tracking-wide text-[#555]">{s.kind === "new_entry" ? "New entry" : "Looks like one you have"} · {s.entry.section}</p>
           <p className="mt-1 text-sm font-extrabold">{entryLabel(s.entry) || "Untitled entry"}</p>
           <p className="text-xs text-[#555]">{[s.entry.dates, s.entry.location].filter(Boolean).join(" · ")}</p>
-          <ul className="mt-2 list-disc pl-5 text-sm">{s.entry.bullets.map((b, i) => <li key={i}>{b}{s.entry?.excerpts?.[i] && <blockquote className="mt-1 list-none border-l-4 border-[#E6E6EF] pl-3 text-xs text-[#555]">&ldquo;{s.entry.excerpts[i]}&rdquo;</blockquote>}</li>)}</ul>
+          {pickBullets ? (
+            <fieldset className="mt-2">
+              <legend className="text-xs font-bold text-[#555]">Untick any bullet you don&apos;t want</legend>
+              <ul className="mt-1 space-y-2 text-sm">{s.entry.bullets.map((b, i) => (
+                <li key={i}>
+                  <label className="flex min-h-11 items-start gap-2">
+                    <input type="checkbox" className="mt-1 size-4" checked={ticked[i]} onChange={() => setTicked((t) => t.map((x, k) => (k === i ? !x : x)))} />
+                    <span>{b}</span>
+                  </label>
+                  {s.entry?.excerpts?.[i] && <blockquote className="ml-6 border-l-4 border-[#E6E6EF] pl-3 text-xs text-[#555]">&ldquo;{s.entry.excerpts[i]}&rdquo;</blockquote>}
+                </li>
+              ))}</ul>
+            </fieldset>
+          ) : (
+            <ul className="mt-2 list-disc pl-5 text-sm">{s.entry.bullets.map((b, i) => <li key={i}>{b}{s.entry?.excerpts?.[i] && <blockquote className="mt-1 list-none border-l-4 border-[#E6E6EF] pl-3 text-xs text-[#555]">&ldquo;{s.entry.excerpts[i]}&rdquo;</blockquote>}</li>)}</ul>
+          )}
         </>
       )}
       {s.kind === "merge_into" && s.targets && (
@@ -65,8 +85,8 @@ function Card({ s, run, busy }: { s: SuggestionView; run: (fn: () => Promise<Ban
           </>
         ) : (
           <>
-            <button type="button" className={primary} disabled={busy || mergeNeedsTarget}
-              onClick={() => run(() => acceptAction(s.id, s.kind === "merge_into" ? { targetEntryId: target } : {}))}>Accept</button>
+            <button type="button" className={primary} disabled={busy || mergeNeedsTarget || noneTicked}
+              onClick={() => run(() => acceptAction(s.id, s.kind === "merge_into" ? { targetEntryId: target } : pickBullets ? { bulletIndexes: tickedIdx } : {}))}>Accept</button>
             {s.kind === "new_bullet" && <button type="button" className={btn} disabled={busy} onClick={() => setEditing(true)}>Edit &amp; accept</button>}
           </>
         )}

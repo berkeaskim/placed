@@ -7,7 +7,7 @@ import { importCvPdf, importLinkedInExport, importLinkedInFromLatestCapture, imp
 import { parseYm } from "@/lib/bank/match";
 import { acceptAllFromSource, acceptSuggestion, rejectSuggestion } from "@/lib/bank/suggestions";
 import { cvSizeError } from "@/lib/cv/upload-limits";
-import { addBullet, deleteBullet, getBank, insertEntry, updateBullet, updateEntry } from "@/lib/bank/store";
+import { addBullet, deleteBullet, deleteEntry, getBank, insertEntry, updateBullet, updateEntry } from "@/lib/bank/store";
 import { BANK_SECTION_VALUES } from "@/lib/db/schema";
 
 export type BankActionResult = { ok: true } | { error: string };
@@ -90,6 +90,31 @@ export async function addManualBullet(entryId: string, text: string): Promise<Ba
   return done();
 }
 
+const entryEdit = z.object({
+  org: z.string().trim().max(120, "Keep the organisation to 120 characters or fewer."),
+  title: z.string().trim().min(1, "Add a title.").max(120, "Keep the title to 120 characters or fewer."),
+  dates: z.string().trim().max(80, "Keep the dates to 80 characters or fewer."),
+  location: z.string().trim().max(80, "Keep the location to 80 characters or fewer."),
+});
+
+/** Edits an entry's header. The month range is re-parsed from the new dates; provenance gains "manual" (updateEntry). */
+export async function editEntry(id: string, input: z.input<typeof entryEdit>): Promise<BankActionResult> {
+  const { user } = await requireUser();
+  const p = entryEdit.safeParse(input);
+  if (!p.success) return fail(p.error);
+  if (!getBank(user.id).entries.some((e) => e.id === id)) return { error: "That entry no longer exists." };
+  const { startYm, endYm } = p.data.dates ? parseYm(p.data.dates) : { startYm: null, endYm: null };
+  updateEntry(user.id, id, { ...p.data, startYm, endYm });
+  return done();
+}
+
+/** Deletes an entry and its bullets. The page asks for a second click ("Confirm delete") before calling this. */
+export async function deleteEntryAction(id: string): Promise<BankActionResult> {
+  const { user } = await requireUser();
+  deleteEntry(user.id, id);
+  return done();
+}
+
 export async function deleteBulletAction(id: string): Promise<BankActionResult> {
   const { user } = await requireUser();
   deleteBullet(user.id, id);
@@ -165,13 +190,20 @@ export async function importPostsAction(texts: string[]): Promise<ImportResult> 
 
 const id = z.string().min(1).max(100);
 
-export async function acceptAction(suggestionId: string, opts: { editedText?: string; targetEntryId?: string } = {}): Promise<BankActionResult> {
+const bulletIndexes = z.array(z.number().int().min(0).max(50)).max(50);
+
+/** `bulletIndexes`: new_entry / merge_into only, the bullets the student left ticked (all when absent). */
+export async function acceptAction(
+  suggestionId: string, opts: { editedText?: string; targetEntryId?: string; bulletIndexes?: number[] } = {},
+): Promise<BankActionResult> {
   const { user } = await requireUser();
   if (!id.safeParse(suggestionId).success) return { error: "Unknown suggestion." };
   const text = opts.editedText === undefined ? undefined : bulletText.safeParse(opts.editedText);
   if (text && !text.success) return fail(text.error);
+  const idx = opts.bulletIndexes === undefined ? undefined : bulletIndexes.safeParse(opts.bulletIndexes);
+  if (idx && !idx.success) return { error: "Those bullets don't match this suggestion." };
   try {
-    acceptSuggestion(user.id, suggestionId, { editedText: text?.data, targetEntryId: opts.targetEntryId });
+    acceptSuggestion(user.id, suggestionId, { editedText: text?.data, targetEntryId: opts.targetEntryId, bulletIndexes: idx?.data });
   } catch (e) { return { error: e instanceof Error ? e.message : "Couldn't add that." }; }
   return done();
 }
