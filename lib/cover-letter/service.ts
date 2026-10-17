@@ -1,6 +1,7 @@
 import "server-only";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/lib/db/client";
+import { aiMode } from "@/lib/ai/config";
 import {
   autopilotPacks, companies, confirmedFacts, coverLetters, coverLetterStories, cvs, jobs,
   type CL_DRAFT_STATE_VALUES, type CL_RESEARCH_STATE_VALUES, type LetterRow, type OutputRow,
@@ -162,7 +163,9 @@ function startResearch(ctx: Ctx, letter: LetterRow): void {
   const p = (async () => {
     let state: ResearchState;
     let facts: Fact[] = [];
-    try {
+    const aiOff = aiMode() === "off";
+    if (aiOff) state = "none"; // no AI set up: nothing to look the company up with, and Retry would not help
+    else try {
       const r = await researchCompany({ company, division: null, jdText: jdText(ctx) }, defaultResearchDeps(ctx.job.extId));
       state = r.failed ? "failed" : r.provider === "none" ? "none" : "done";
       facts = r.facts;
@@ -173,7 +176,9 @@ function startResearch(ctx: Ctx, letter: LetterRow): void {
     const cur = getOrCreateLetter(ctx.userId, ctx.job.id);
     const note = state === "done" ? [] : [msg({
       from: "bot", kind: "research",
-      text: state === "none"
+      text: aiOff
+        ? `AI isn't set up, so I couldn't look ${company} up. I'll work from the job post. Set up AI in Settings → AI.`
+        : state === "none"
         ? `I couldn't look ${company} up (that needs a Gemini or Serper key in Settings), so I'll work from the job post.`
         : `Researching ${company} didn't work this time, so I'll work from the job post.`,
     })];
