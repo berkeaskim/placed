@@ -75,7 +75,7 @@ dropdowns turn amber instead.
 - The one-time token travels only in the URL fragment (`#placed=…`), which is never sent to the employer. `capture.js`
   removes it from the URL at `document_start`, before the page's scripts run, and keeps it in the extension's
   isolated world, which the page cannot read.
-- The pack is claimed by the extension's service worker (`background.js`), not by the employer page, and the CV is
+- The pack is claimed by the extension's service worker (`background.js`), not by the employer page, and the CV (and a Ready cover letter PDF, if any) is
   downloaded there too (from the Placed app's `/api/files/...`, resolved against `PLACED_ORIGIN` and refused if it points
   anywhere else), so neither ever touches the employer's page context. Each link works once and expires after
   10 minutes. The token is never logged.

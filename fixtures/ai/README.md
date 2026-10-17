@@ -25,6 +25,22 @@ The demo job was chosen because it is a real London internship for 2nd/penultima
 must-haves are Python, SQL and "Case Interviews" (from its interview process: two case studies). The persona has
 the first two and **genuinely lacks the third**, so tailoring shows it as "Not in your CV — we didn't invent it".
 
+## Cover letter draft fixtures
+
+`coverLetterDraft/default.txt` and `skipped.txt` are raw marked streams (`⟦me:…⟧`, `⟦them:…⟧`, `⟦you:…⟧`) written by
+hand for the fictional student "Alex Morgan" and the fictional Northbridge Capital job defined in
+`tests/cover-letter/fixtures.ts` (CV bullet ids, answer ids `a1`–`a4`, and the research fixture's fact ids).
+`default.txt` quotes three answers verbatim and has **one deliberate catch**: "We placed 3rd of 62 teams." is not on
+the CV, so the ground-check flags it "unsupported number". `skipped.txt` is the letter when every question was skipped:
+no `⟦you⟧` sentence and the why-them part cites only `⟦them:jd⟧`.
+`spaced.txt` is `default.txt` with a space before every marker, as small models write it (the draft is stored with the
+spacing the paper renders). The job post's last line carries the reference `SA-MKT-27` that the opening quotes.
+`coverLetterJudge/default.json` (and `e2e-cl.json`, the same verdicts held back 1.5s) is the judge's verdict on
+`default.txt`: an explicit "ok" for every sentence but the furniture and the courtesy close (indexes 1–15).
+`skipped.json` does the same for `skipped.txt`. The ground-check fails closed: an AI-written sentence with no verdict
+is flagged "couldn't check this claim about the firm". An "ok" never clears a deterministic flag, so the one deliberate
+catch stays.
+
 ## Other fixtures
 
 `defendQuestions/default.json` is a generic fallback from the C13 module (not persona-specific). Without an exact

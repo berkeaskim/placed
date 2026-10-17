@@ -71,20 +71,23 @@
     return;
   }
 
-  let cvFile = null;
-  if (res.cv && typeof res.cv.base64 === "string") {
+  const toFile = (f, fallback) => {
+    if (!f || typeof f.base64 !== "string") return null;
     try {
-      const bin = atob(res.cv.base64);
+      const bin = atob(f.base64);
       const bytes = new Uint8Array(bin.length);
       for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-      cvFile = new File([bytes], res.cv.name || "CV.pdf", { type: res.cv.type || "application/pdf" });
-    } catch { cvFile = null; }
-  }
+      return new File([bytes], f.name || fallback, { type: f.type || "application/pdf" });
+    } catch { return null; }
+  };
+  const cvFile = toFile(res.cv, "CV.pdf");
+  const coverFile = toFile(res.cover, "Cover-Letter.pdf");
 
   const fill = globalThis.PlacedFillers[ats];
   const s = globalThis.PlacedFillPlan.summarize(plan.fields);
-  // The CV goes first: Lever re-parses the CV on upload, which must not overwrite what we fill afterwards.
-  const fields = [...plan.fields].sort((a, b) => (a.type === "file" ? 0 : 1) - (b.type === "file" ? 0 : 1));
+  // The CV goes first (Lever re-parses it on upload, which must not overwrite what we fill afterwards), then the cover letter file.
+  const rank = (f) => (f.type !== "file" ? 2 : f.asset === "cover" ? 1 : 0);
+  const fields = [...plan.fields].sort((a, b) => rank(a) - rank(b));
   let done = 0, mine = 0, n = 0;
   say(`Placed Autopilot filling… 0/${fields.length}`, `${s.fill} from your pack · ${s.yours + s.select} for you`);
 
@@ -93,7 +96,7 @@
     // Attach once, before anything is measured, so the debugger infobar cannot shift the page under a click.
     if (needsTrusted) await Dom.prepareTrusted();
     for (const f of fields) {
-      const ctx = { cvFile, sourceLabel: f.sourceLabel, armed: false };
+      const ctx = { cvFile, coverFile, sourceLabel: f.sourceLabel, armed: false };
       let out;
       try { out = await fill(f, ctx); } catch { out = "select-yourself"; }
       if (f.type === "file" && out === "filled" && ats === "lever") await Dom.sleep(1500);

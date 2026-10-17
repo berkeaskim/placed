@@ -6,6 +6,7 @@ import { canOpen, type Answers, type PackGroup, type PackItem } from "@/lib/auto
 import type { FormField } from "@/lib/autopilot/forms/types";
 import { openAndFill, preparePack, setAnswer } from "./autopilot-actions";
 import { ExtensionHint } from "@/components/autopilot/extension-install";
+import { openCoverLetterCard } from "@/components/cover-letter/cover-letter-host";
 
 type Phase =
   | { s: "idle" } | { s: "loading" } | { s: "locked" }
@@ -258,7 +259,7 @@ export function AutopilotPanel({ jobId }: { jobId: string }) {
   }
 
   const by = (g: PackGroup) => phase.items.filter((i) => i.group === g);
-  const vault = by("vault"), ask = by("ask"), confirm = by("confirm"), draft = by("draft"), yours = by("yours");
+  const vault = by("vault"), ask = by("ask"), confirm = by("confirm"), draft = by("draft"), yours = by("yours"), cover = by("cover");
   const ready = canOpen(phase.items, answers);
   const left = [...ask, ...confirm].filter((i) => answers[i.field.key] === undefined).length;
   const suggested = confirm.filter((i) => i.value != null && answers[i.field.key] === undefined);
@@ -332,6 +333,21 @@ export function AutopilotPanel({ jobId }: { jobId: string }) {
       {draft.length > 0 && (
         <Group group="draft" icon="✍️" title="Your answer" count={draft.length}>
           {draft.map((i) => <DraftRow key={i.field.key} jobId={jobId} item={i} answer={answers[i.field.key]} onSaved={save} />)}
+        </Group>
+      )}
+
+      {cover.length > 0 && (
+        <Group group="cover" icon="✉️" title="Cover letter" count={cover.length}>
+          {cover.map((i) => (
+            <div key={i.field.key} className="flex flex-col gap-2 rounded-xl border p-3">
+              <p className="text-sm font-semibold">{i.field.label}</p>
+              <button type="button" className={`${SMALL_BTN} w-fit`}
+                onClick={() => openCoverLetterCard(i.field.type === "file" ? { kind: "upload" } : { kind: "field", fieldKey: i.field.key, label: i.field.label.slice(0, 300) }, true)}>
+                {i.field.type === "file" ? "Write the cover letter" : "Write this answer"}
+              </button>
+            </div>
+          ))}
+          <p className="text-xs text-muted-foreground">Built from your answers and your CV. You check it before it&apos;s used.</p>
         </Group>
       )}
 

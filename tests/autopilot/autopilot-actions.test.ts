@@ -40,7 +40,7 @@ describe("autopilot actions", () => {
   beforeEach(() => {
     JOB ||= seedJob().id;
     h.answers = {}; h.extra = {}; h.completed = true; h.on = true;
-    h.fields = [field("q1", "Level of German?"), field("g", "What is your gender?"), field("d1", "Why us?", { type: "textarea", options: [] })];
+    h.fields = [field("q1", "Level of German?"), field("g", "What is your gender?"), field("d1", "Describe a project you are proud of", { type: "textarea", options: [] })];
     db.delete(autopilotVault).run();
     db.insert(autopilotVault).values({ user_id: UID, core: {}, extra: SEALED_EMPTY() }).run();
     writePack();

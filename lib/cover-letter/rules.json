@@ -1,0 +1,948 @@
+{
+  "_meta": {
+    "compiled": "2026-10-17",
+    "companion": "00-playbook.md",
+    "notes": "Consolidated, de-duplicated rule set for the Placed Cover Letter Writer. Each rule cites the research rule ids it came from (file:rule-id). Severities: block = must not ship; high = fix before ship; med = warn; low = style. check: regex|count|length (deterministic), llm (judge pass), flow (pipeline/UX), policy (product decision). Lexicon regexes are case-insensitive, multiline. Thresholds are uncalibrated (05 §6): calibrate on real student letters and aim for < 10% false positives on human letters."
+  },
+  "modes": {
+    "skip": {
+      "words": null,
+      "note": "No letter accepted or no specific hook for an optional upload; produce 'why us' interview notes instead."
+    },
+    "full_letter": {
+      "words": [
+        250,
+        400
+      ],
+      "hardMax": 450,
+      "pages": 1,
+      "salutation": true,
+      "signOff": true
+    },
+    "short_letter": {
+      "words": [
+        150,
+        330
+      ],
+      "target": 300,
+      "salutation": true,
+      "signOff": true
+    },
+    "field_answer": {
+      "limitFromForm": true,
+      "defaultWords": 300,
+      "fillRatio": [
+        0.85,
+        1
+      ],
+      "salutation": false,
+      "signOff": false
+    },
+    "short_note": {
+      "words": [
+        50,
+        150
+      ],
+      "salutation": "informal",
+      "signOff": "first name"
+    },
+    "email": {
+      "words": [
+        150,
+        250
+      ],
+      "subject": "{role title} – {ref}",
+      "salutation": true,
+      "signOff": "Kind regards"
+    },
+    "speculative": {
+      "words": [
+        200,
+        300
+      ],
+      "salutation": true,
+      "signOff": true,
+      "followUpDays": 14
+    }
+  },
+  "rules": [
+    {
+      "id": "CL-01",
+      "rule": "Choose the output mode (skip/full_letter/short_letter/field_answer/short_note/email/speculative) from the form and posting before drafting; never paste a full letter into a question box.",
+      "severity": "block",
+      "check": "flow",
+      "sources": [
+        "03:CL-FC-02",
+        "04:CL-TP-01",
+        "06:CL-FM-01",
+        "01:CL-EV-14"
+      ]
+    },
+    {
+      "id": "CL-02",
+      "rule": "Never exceed a stated word/character limit; field answers fill 85–100% of it. Count characters including spaces and newlines when the limit is in characters.",
+      "severity": "block",
+      "check": "length",
+      "sources": [
+        "06:CL-FM-02",
+        "06:CL-FM-03",
+        "04:CL-TP-02"
+      ]
+    },
+    {
+      "id": "CL-03",
+      "rule": "Full letter body 250–400 words (hard max 450), 4–5 paragraphs, each ≤ ~110 words, one A4 page.",
+      "severity": "high",
+      "check": "length",
+      "sources": [
+        "02:CL-ST-14",
+        "01:CL-EV-03",
+        "06:CL-FM-04",
+        "03:CL-FC-03"
+      ]
+    },
+    {
+      "id": "CL-04",
+      "rule": "Field answers and short notes carry no letter furniture: no address, date, 'Dear…' or 'Yours…'. A field answer's first sentence answers the question using its key nouns.",
+      "severity": "high",
+      "check": "regex",
+      "sources": [
+        "06:CL-FM-09",
+        "06:CL-FM-08"
+      ]
+    },
+    {
+      "id": "CL-05",
+      "rule": "Don't write a letter just because an optional upload exists: require at least one specific firm hook and one proof point the CV can't show, otherwise suggest skipping it.",
+      "severity": "med",
+      "check": "flow",
+      "sources": [
+        "04:CL-TP-23",
+        "01:CL-EV-15"
+      ]
+    },
+    {
+      "id": "CL-06",
+      "rule": "Never offer a 'generic' (untailored) mode.",
+      "severity": "high",
+      "check": "policy",
+      "sources": [
+        "01:CL-EV-15"
+      ]
+    },
+    {
+      "id": "CL-10",
+      "rule": "Every claim about the candidate traces to an evidence-pack item (a CV line ID, a profile field, or a user answer).",
+      "severity": "block",
+      "check": "llm",
+      "sources": [
+        "01:CL-EV-04",
+        "02:CL-ST-15",
+        "04:CL-TP-05",
+        "05:CL-AI-01"
+      ]
+    },
+    {
+      "id": "CL-11",
+      "rule": "No number appears unless it appears in the sources.",
+      "severity": "block",
+      "check": "regex",
+      "sources": [
+        "05:CL-AI-02"
+      ]
+    },
+    {
+      "id": "CL-12",
+      "rule": "Never invent a motivation, anecdote, contact, event attended or product usage; if none is given, write a factual role-fit sentence and flag it 'add your own reason'.",
+      "severity": "block",
+      "check": "llm",
+      "sources": [
+        "05:CL-AI-03",
+        "04:CL-TP-16"
+      ]
+    },
+    {
+      "id": "CL-13",
+      "rule": "Firm facts (deal, result, programme feature, product) come only from the job description or user notes, each with a source; anything older than 12 months is flagged.",
+      "severity": "block",
+      "check": "llm",
+      "sources": [
+        "03:CL-FC-09",
+        "04:CL-TP-07",
+        "05:CL-AI-16"
+      ]
+    },
+    {
+      "id": "CL-14",
+      "rule": "Mention visa status, right to work, disability, grades or gaps only if they are stored in the profile and the user opts in. Visa: ≤ 2 sentences in the final paragraph, with the duration taken from dated config. If the form has a right-to-work field, answer it there instead.",
+      "severity": "block",
+      "check": "flow",
+      "sources": [
+        "06:CL-FM-22",
+        "06:CL-FM-23",
+        "06:CL-FM-24",
+        "06:CL-FM-25"
+      ]
+    },
+    {
+      "id": "CL-15",
+      "rule": "Name a third party (a person met) only after the user confirms.",
+      "severity": "high",
+      "check": "flow",
+      "sources": [
+        "03:open-Q7"
+      ]
+    },
+    {
+      "id": "CL-16",
+      "rule": "If the job description or employer forbids AI use, switch to feedback-only mode (critique the user's own draft; generate no text) and warn the user.",
+      "severity": "block",
+      "check": "regex",
+      "sources": [
+        "05:CL-AI-19",
+        "04:Anthropic",
+        "03:Bain London"
+      ]
+    },
+    {
+      "id": "CL-17",
+      "rule": "Never compute or display an AI-detector score.",
+      "severity": "block",
+      "check": "policy",
+      "sources": [
+        "05:CL-AI-21"
+      ]
+    },
+    {
+      "id": "CL-18",
+      "rule": "Never auto-submit; show the final text, the limit and how much of it is used before the user submits.",
+      "severity": "block",
+      "check": "policy",
+      "sources": [
+        "06:CL-FM-31"
+      ]
+    },
+    {
+      "id": "CL-20",
+      "rule": "Name the exact company and role title (plus division/office, and the reference if one is given) in the first paragraph, or in the first sentence of a field answer.",
+      "severity": "block",
+      "check": "regex",
+      "sources": [
+        "01:CL-EV-01",
+        "02:CL-ST-05",
+        "03:CL-FC-05",
+        "06:CL-FM-15"
+      ]
+    },
+    {
+      "id": "CL-21",
+      "rule": "No other employer's name (except past employers in the CV) and no placeholders.",
+      "severity": "block",
+      "check": "regex",
+      "sources": [
+        "01:CL-EV-02",
+        "02:CL-ST-22",
+        "03:CL-FC-01"
+      ]
+    },
+    {
+      "id": "CL-22",
+      "rule": "Address 2–3 requirements from the job description, each with its own example.",
+      "severity": "block",
+      "check": "llm",
+      "sources": [
+        "02:CL-ST-02"
+      ]
+    },
+    {
+      "id": "CL-23",
+      "rule": "Each 'why this firm' sentence must fail the swap test against the firm's top-3 rivals.",
+      "severity": "high",
+      "check": "llm",
+      "sources": [
+        "02:CL-ST-01",
+        "03:CL-FC-07",
+        "01:CL-EV-06"
+      ]
+    },
+    {
+      "id": "CL-24",
+      "rule": "Connect each firm fact to the candidate's own experience or goal; no firm fact stands alone.",
+      "severity": "high",
+      "check": "llm",
+      "sources": [
+        "02:CL-ST-07",
+        "03:recipe-5"
+      ]
+    },
+    {
+      "id": "CL-25",
+      "rule": "Put the candidate's own touchpoints (spring week, event, contact) first in 'why us' when they exist.",
+      "severity": "high",
+      "check": "llm",
+      "sources": [
+        "03:CL-FC-10",
+        "01:CL-EV-18"
+      ]
+    },
+    {
+      "id": "CL-26",
+      "rule": "Use at most one company value, illustrated by one behaviour from the CV; never paraphrase the values page.",
+      "severity": "med",
+      "check": "count",
+      "sources": [
+        "03:CL-FC-11",
+        "04:CL-TP-15"
+      ]
+    },
+    {
+      "id": "CL-27",
+      "rule": "No run of 8 or more words copied from the job description or careers page (except the role title).",
+      "severity": "high",
+      "check": "count",
+      "sources": [
+        "03:CL-FC-12"
+      ]
+    },
+    {
+      "id": "CL-28",
+      "rule": "Raw website facts (headcount, offices, founding year, AUM) only when tied to the role in the same sentence.",
+      "severity": "med",
+      "check": "regex",
+      "sources": [
+        "03:CL-FC-08"
+      ]
+    },
+    {
+      "id": "CL-30",
+      "rule": "Every trait claim (analytical, team player…) is followed by a concrete example in the same or the next sentence, or removed.",
+      "severity": "high",
+      "check": "llm",
+      "sources": [
+        "02:CL-ST-03",
+        "04:CL-TP-04"
+      ]
+    },
+    {
+      "id": "CL-31",
+      "rule": "At least one concrete detail per body paragraph (a number, named project, tool, module, organisation or date).",
+      "severity": "high",
+      "check": "llm",
+      "sources": [
+        "05:CL-AI-15",
+        "01:CL-EV-05"
+      ]
+    },
+    {
+      "id": "CL-32",
+      "rule": "Don't restate the CV: each example adds how/why/what changed; ≤ ~60% of sentences may paraphrase CV bullets; never write 'my CV shows'.",
+      "severity": "high",
+      "check": "count",
+      "sources": [
+        "02:CL-ST-04",
+        "01:CL-EV-07",
+        "04:CL-TP-10",
+        "03:CL-FC-14"
+      ]
+    },
+    {
+      "id": "CL-33",
+      "rule": "Use first-person active verbs for the candidate's own contribution ('I built', not 'we were involved in'); state the outcome when the source has one.",
+      "severity": "med",
+      "check": "llm",
+      "sources": [
+        "02:CL-ST-08",
+        "04:CL-TP-09"
+      ]
+    },
+    {
+      "id": "CL-34",
+      "rule": "End each example with a 'so what' link to the target role.",
+      "severity": "med",
+      "check": "llm",
+      "sources": [
+        "02:CL-ST-09"
+      ]
+    },
+    {
+      "id": "CL-35",
+      "rule": "Never open with a deficit ('Although I have no experience…').",
+      "severity": "med",
+      "check": "regex",
+      "sources": [
+        "02:CL-ST-10"
+      ]
+    },
+    {
+      "id": "CL-36",
+      "rule": "Focus on what the candidate would contribute, not gain: 'opportunity to learn/develop/grow' at most once.",
+      "severity": "low",
+      "check": "count",
+      "sources": [
+        "02:CL-ST-11"
+      ]
+    },
+    {
+      "id": "CL-37",
+      "rule": "Societies and extracurriculars: at most 2, each with scale or outcome.",
+      "severity": "med",
+      "check": "llm",
+      "sources": [
+        "03:CL-FC-21"
+      ]
+    },
+    {
+      "id": "CL-38",
+      "rule": "Tech/product/data roles: 1–2 proof links the user owns, placed next to the claim they support (max 3).",
+      "severity": "med",
+      "check": "count",
+      "sources": [
+        "04:CL-TP-08"
+      ]
+    },
+    {
+      "id": "CL-39",
+      "rule": "Put the stronger section first: 'why me' with direct experience, 'why them' with thin experience but strong research.",
+      "severity": "low",
+      "check": "policy",
+      "sources": [
+        "02:CL-ST-21"
+      ]
+    },
+    {
+      "id": "CL-40",
+      "rule": "The opening sentence names the role and carries a specific hook; no throat-clearing opener.",
+      "severity": "block",
+      "check": "regex",
+      "sources": [
+        "01:CL-EV-11",
+        "02:CL-ST-06",
+        "04:CL-TP-03",
+        "05:CL-AI-14"
+      ]
+    },
+    {
+      "id": "CL-41",
+      "rule": "The close gives a one-sentence fit summary plus a forward ask (interview, availability) in 25–50 words, with no stock filler.",
+      "severity": "med",
+      "check": "llm",
+      "sources": [
+        "02:CL-ST-13",
+        "05:CL-AI-22",
+        "03:CL-FC-19"
+      ]
+    },
+    {
+      "id": "CL-42",
+      "rule": "Salutation: a named person ('Dear Ms Patel', no full stop) → else '{Firm} Graduate Recruitment Team' if the programme has one → else 'Dear Hiring Manager'. Never 'To whom it may concern' or 'Dear Sir/Madam'.",
+      "severity": "high",
+      "check": "regex",
+      "sources": [
+        "02:CL-ST-16",
+        "03:CL-FC-18",
+        "06:CL-FM-11",
+        "06:CL-FM-12"
+      ]
+    },
+    {
+      "id": "CL-43",
+      "rule": "Sign-off: named → 'Yours sincerely'; unnamed → 'Yours faithfully' (configurable); email/short note → 'Kind regards' or first name. Fail on named + faithfully or on a bare US 'Sincerely,'.",
+      "severity": "med",
+      "check": "regex",
+      "sources": [
+        "02:CL-ST-17",
+        "06:CL-FM-10"
+      ]
+    },
+    {
+      "id": "CL-44",
+      "rule": "Startup notes end with exactly one low-friction ask.",
+      "severity": "med",
+      "check": "llm",
+      "sources": [
+        "04:CL-TP-11"
+      ]
+    },
+    {
+      "id": "CL-50",
+      "rule": "Zero hard-lexicon hits.",
+      "severity": "block",
+      "check": "regex",
+      "sources": [
+        "05:CL-AI-06",
+        "02:CL-ST-06",
+        "03:CL-FC-06",
+        "03:CL-FC-15"
+      ]
+    },
+    {
+      "id": "CL-51",
+      "rule": "At most 3 distinct soft-lexicon hits per 300 words; fix by rewriting the sentence, not by swapping synonyms.",
+      "severity": "med",
+      "check": "count",
+      "sources": [
+        "05:CL-AI-07"
+      ]
+    },
+    {
+      "id": "CL-52",
+      "rule": "Keep user-supplied sentences verbatim (spelling and grammar fixes only) as locked spans.",
+      "severity": "block",
+      "check": "count",
+      "sources": [
+        "05:CL-AI-05",
+        "04:CL-TP-22"
+      ]
+    },
+    {
+      "id": "CL-53",
+      "rule": "Sentence rhythm: standard deviation ≥ 4 words, at least one sentence ≤ 8 words, mean ≤ 22, max 40.",
+      "severity": "low",
+      "check": "count",
+      "sources": [
+        "05:CL-AI-12",
+        "02:CL-ST-20"
+      ]
+    },
+    {
+      "id": "CL-54",
+      "rule": "Paragraph lengths vary (coefficient of variation ≥ 0.15 when there are 4 or more paragraphs).",
+      "severity": "low",
+      "check": "count",
+      "sources": [
+        "05:CL-AI-13"
+      ]
+    },
+    {
+      "id": "CL-55",
+      "rule": "≤ 35% of sentences start with 'I'; no two consecutive paragraphs start with 'I'; no 'I want'/'I like' in the opening.",
+      "severity": "low",
+      "check": "count",
+      "sources": [
+        "02:CL-ST-19",
+        "04:CL-TP-14"
+      ]
+    },
+    {
+      "id": "CL-56",
+      "rule": "Match the user's voice stats (contraction rate, first-person rate, sentence length) when a sample exists.",
+      "severity": "low",
+      "check": "count",
+      "sources": [
+        "05:CL-AI-17"
+      ]
+    },
+    {
+      "id": "CL-57",
+      "rule": "No more than 40% verbatim sentence overlap with the user's other letters.",
+      "severity": "med",
+      "check": "count",
+      "sources": [
+        "04:CL-TP-20"
+      ]
+    },
+    {
+      "id": "CL-58",
+      "rule": "Moderate self-promotion: ≤ 2 unsupported superlatives; never 'perfect/ideal candidate'; ≤ 1 evaluative adjective about the firm per paragraph.",
+      "severity": "med",
+      "check": "count",
+      "sources": [
+        "01:CL-EV-09",
+        "03:CL-FC-26"
+      ]
+    },
+    {
+      "id": "CL-60",
+      "rule": "en-GB spelling throughout; zero spelling or grammar errors.",
+      "severity": "block",
+      "check": "regex",
+      "sources": [
+        "01:CL-EV-10",
+        "03:CL-FC-30",
+        "04:CL-TP-21",
+        "06:CL-FM-14"
+      ]
+    },
+    {
+      "id": "CL-61",
+      "rule": "UK date format, e.g. '17 October 2026'.",
+      "severity": "med",
+      "check": "regex",
+      "sources": [
+        "06:CL-FM-13"
+      ]
+    },
+    {
+      "id": "CL-62",
+      "rule": "Prose only: no markdown, bullets, headings, emoji or exclamation marks.",
+      "severity": "block",
+      "check": "regex",
+      "sources": [
+        "02:CL-ST-18",
+        "05:CL-AI-18"
+      ]
+    },
+    {
+      "id": "CL-63",
+      "rule": "Export both a PDF named First-Last_Cover-Letter_Company_YYYY-MM.pdf and a plain-text copy.",
+      "severity": "high",
+      "check": "policy",
+      "sources": [
+        "06:CL-FM-05",
+        "06:CL-FM-06",
+        "06:CL-FM-30"
+      ]
+    },
+    {
+      "id": "CL-64",
+      "rule": "Use 3 or more key terms from the job description naturally; never keyword-stuff.",
+      "severity": "low",
+      "check": "count",
+      "sources": [
+        "06:CL-FM-19",
+        "01:CL-EV-17"
+      ]
+    },
+    {
+      "id": "CL-70",
+      "rule": "Consulting: never frame consulting as a stepping stone.",
+      "severity": "high",
+      "check": "regex",
+      "sources": [
+        "03:CL-FC-16"
+      ]
+    },
+    {
+      "id": "CL-71",
+      "rule": "Never give salary, bonus, perks, prestige or exit opportunities as the motivation.",
+      "severity": "high",
+      "check": "regex",
+      "sources": [
+        "03:CL-FC-17"
+      ]
+    },
+    {
+      "id": "CL-72",
+      "rule": "S&T: name the desk family and show engagement with markets.",
+      "severity": "med",
+      "check": "llm",
+      "sources": [
+        "03:CL-FC-22"
+      ]
+    },
+    {
+      "id": "CL-73",
+      "rule": "Big 4: show realism about the qualification and the service line; 'why this Big 4' must not apply to the other three.",
+      "severity": "med",
+      "check": "llm",
+      "sources": [
+        "03:CL-FC-23"
+      ]
+    },
+    {
+      "id": "CL-74",
+      "rule": "Asset management: state a buy-side motivation and the firm's investment style.",
+      "severity": "low",
+      "check": "llm",
+      "sources": [
+        "03:CL-FC-24"
+      ]
+    },
+    {
+      "id": "CL-75",
+      "rule": "Actuarial: mention IFoA exam progress and the line of business when present.",
+      "severity": "low",
+      "check": "llm",
+      "sources": [
+        "03:CL-FC-25"
+      ]
+    },
+    {
+      "id": "CL-76",
+      "rule": "PM: one user-level product observation, taken only from the user's notes; otherwise ask the user for one.",
+      "severity": "med",
+      "check": "flow",
+      "sources": [
+        "04:CL-TP-16"
+      ]
+    },
+    {
+      "id": "CL-77",
+      "rule": "Data: each story runs question → method → decision.",
+      "severity": "low",
+      "check": "llm",
+      "sources": [
+        "04:CL-TP-17"
+      ]
+    },
+    {
+      "id": "CL-78",
+      "rule": "Quant 'additional info' boxes: factual, ≤ 150 words, covering only why this firm, how you heard, and your timeline.",
+      "severity": "med",
+      "check": "length",
+      "sources": [
+        "04:CL-TP-18"
+      ]
+    },
+    {
+      "id": "CL-79",
+      "rule": "If the user flags a gap, weak grades or a reapplication, address it in one neutral sentence after the main evidence.",
+      "severity": "med",
+      "check": "llm",
+      "sources": [
+        "03:CL-FC-27",
+        "06:CL-FM-27",
+        "01:CL-EV-19"
+      ]
+    }
+  ],
+  "lexicon": {
+    "flags": "im",
+    "hard": [
+      {
+        "pattern": "\\bdelv(e|es|ed|ing)\\b",
+        "scope": "any",
+        "label": "AI vocabulary"
+      },
+      {
+        "pattern": "\\btapestry\\b",
+        "scope": "any",
+        "label": "AI vocabulary"
+      },
+      {
+        "pattern": "\\btestament to\\b",
+        "scope": "any",
+        "label": "AI vocabulary"
+      },
+      {
+        "pattern": "\\bunderscor(e|es|ed|ing)\\b",
+        "scope": "any",
+        "label": "AI vocabulary"
+      },
+      {
+        "pattern": "\\b(ever[- ]evolving|evolving landscape|(digital|financial|tech|business|competitive) landscape)\\b",
+        "scope": "any",
+        "label": "AI vocabulary"
+      },
+      {
+        "pattern": "\\bnavigat(e|ing) the (complexities|landscape|world)\\b",
+        "scope": "any",
+        "label": "AI vocabulary"
+      },
+      {
+        "pattern": "\\b(realm|beacon|symphony|unwavering|indelible)\\b",
+        "scope": "any",
+        "label": "AI vocabulary"
+      },
+      {
+        "pattern": "\\bI am writing to (express|apply|submit)\\b",
+        "scope": "any",
+        "label": "Cliché opener"
+      },
+      {
+        "pattern": "\\bI am (thrilled|excited|delighted|eager) to (apply|submit|express)\\b",
+        "scope": "opening",
+        "label": "Cliché opener"
+      },
+      {
+        "pattern": "\\b(I hereby apply|I hope this (email|letter|message) finds you well|my name is)\\b",
+        "scope": "opening",
+        "label": "Cliché opener"
+      },
+      {
+        "pattern": "\\bfast[- ]paced (environment|world|industry)\\b",
+        "scope": "any",
+        "label": "Cliché"
+      },
+      {
+        "pattern": "\\bdynamic (team|environment|company)\\b",
+        "scope": "any",
+        "label": "Cliché"
+      },
+      {
+        "pattern": "\\b(team player|self[- ]starter|go[- ]getter|think outside the box|hit the ground running|fast learner|give 100%)\\b",
+        "scope": "any",
+        "label": "Cliché"
+      },
+      {
+        "pattern": "\\b(esteemed|renowned|prestigious|world[- ]class|industry[- ]leading|leading global) (firm|company|bank|organi[sz]ation|business)\\b",
+        "scope": "any",
+        "label": "Generic praise"
+      },
+      {
+        "pattern": "\\b(commitment to (excellence|innovation)|culture of (innovation|excellence)|reputation for excellence)\\b",
+        "scope": "any",
+        "label": "Generic praise"
+      },
+      {
+        "pattern": "\\bdream (job|company|role)\\b",
+        "scope": "any",
+        "label": "Cliché"
+      },
+      {
+        "pattern": "\\bit'?s not\\b[^.]{1,60}\\bit'?s\\b",
+        "scope": "any",
+        "label": "Negative parallelism"
+      },
+      {
+        "pattern": "\\bnot because\\b[^.]{1,60}\\bbut because\\b",
+        "scope": "any",
+        "label": "Negative parallelism"
+      },
+      {
+        "pattern": ", (highlighting|underscoring|showcasing|reflecting|ensuring|demonstrating|fostering|contributing to)\\b",
+        "scope": "any",
+        "label": "Trailing participle"
+      },
+      {
+        "pattern": "(^|[.!?]\\s+)(In conclusion|In summary|Ultimately|Overall),",
+        "scope": "any",
+        "label": "Formulaic transition"
+      },
+      {
+        "pattern": "\\bI (look forward|would welcome the opportunity) to (discuss|discussing) how my (skills|experience)\\b",
+        "scope": "close",
+        "label": "Formulaic close"
+      },
+      {
+        "pattern": "!",
+        "scope": "any",
+        "label": "Exclamation mark"
+      },
+      {
+        "pattern": "(\\*\\*|^#+ |^\\s*[-*•] )",
+        "scope": "any",
+        "label": "Markdown / bullets"
+      },
+      {
+        "pattern": "\\[(Company|Name|Hiring Manager|Your Name|Role|Position)[^\\]]*\\]|\\{\\{|<insert|\\bXYZ\\b|lorem ipsum",
+        "scope": "any",
+        "label": "Placeholder"
+      },
+      {
+        "pattern": "\\[[A-Z][^\\]]{0,30}\\]",
+        "scope": "any",
+        "label": "Placeholder"
+      },
+      {
+        "pattern": "(as an AI|I hope this (letter|draft) helps|here is (a|your) (draft|cover letter)|certainly!)",
+        "scope": "any",
+        "label": "Chatbot leakage"
+      },
+      {
+        "pattern": "\\b(to whom it may concern|dear sir(\\s*(/|or)\\s*madam)?)\\b",
+        "scope": "any",
+        "label": "Salutation"
+      },
+      {
+        "pattern": "\\b(a few years (in|at) consulting|before deciding|exit opportunit(y|ies)|keep(ing)? my options open|stepping[- ]stone)\\b",
+        "scope": "any",
+        "label": "Consulting stepping-stone"
+      },
+      {
+        "pattern": "\\b(salary|bonus|compensation|perks|benefits package)\\b",
+        "scope": "any",
+        "label": "Money as motivation"
+      },
+      {
+        "pattern": "\\b(although|while|despite) I (do not|don't|lack|have no)\\b|\\bno (prior|previous|professional) experience\\b",
+        "scope": "any",
+        "label": "Deficit framing"
+      }
+    ],
+    "soft": [
+      {
+        "pattern": "\\bmeticulous(ly)?\\b|\\bintricac(y|ies)\\b|\\bintricate\\b",
+        "weight": 1
+      },
+      {
+        "pattern": "\\b(pivotal|crucial|paramount|vital role)\\b",
+        "weight": 1
+      },
+      {
+        "pattern": "\\b(foster(s|ed|ing)?|garner(ed)?|bolster(ed)?|interplay|multifaceted|nuanced)\\b",
+        "weight": 1
+      },
+      {
+        "pattern": "\\b(showcas(e|es|ed|ing)|boasts?|vibrant|robust|seamless(ly)?)\\b",
+        "weight": 1
+      },
+      {
+        "pattern": "\\bleverag(e|es|ed|ing)\\b",
+        "weight": 1
+      },
+      {
+        "pattern": "\\b(synerg(y|ies|istic)|holistic|cutting[- ]edge|game[- ]chang(er|ing)|deep dive)\\b",
+        "weight": 1
+      },
+      {
+        "pattern": "\\b(align|resonate)s? (deeply )?with\\b",
+        "weight": 1
+      },
+      {
+        "pattern": "\\b((deeply|truly|incredibly) passionate|passionate about|passion for)\\b",
+        "weight": 1
+      },
+      {
+        "pattern": "\\b(unique (opportunity|blend|combination)|perfect (fit|candidate)|ideal candidate)\\b",
+        "weight": 1
+      },
+      {
+        "pattern": "\\b(proven track record|results[- ]driven|detail[- ]oriented|hard[- ]working|highly motivated)\\b",
+        "weight": 1
+      },
+      {
+        "pattern": "\\b(make|making) a (meaningful|lasting|significant) (impact|difference|contribution)\\b",
+        "weight": 1
+      },
+      {
+        "pattern": "\\bI am confident (that )?(my|I)\\b",
+        "weight": 1
+      },
+      {
+        "pattern": "\\b(please do not hesitate to contact|at your earliest convenience|I hope to hear from you soon)\\b",
+        "weight": 1
+      },
+      {
+        "pattern": "\\bopportunity to (learn|develop|grow)\\b",
+        "weight": 1
+      },
+      {
+        "pattern": "\\bI (feel|believe|think) (that )?I (could|would|can)\\b",
+        "weight": 1
+      },
+      {
+        "pattern": "\\b(various|numerous|many|some) (skills|experiences|activities|societies|roles)\\b",
+        "weight": 1
+      },
+      {
+        "pattern": "\\b(serves|stands|acts) as\\b",
+        "weight": 1
+      },
+      {
+        "pattern": "\\b(organiz|optimiz|analyz|favor|center\\b|program(?!me))",
+        "weight": 1
+      }
+    ],
+    "counters": {
+      "emDashMax": 1,
+      "emDashFail": 3,
+      "notOnlyButMax": 1,
+      "notOnlyBut": "\\bnot (only|just|merely)\\b[^.]{1,80}\\bbut( also)?\\b",
+      "tripletMax": 1,
+      "triplet": "\\b\\w+, \\w+,? and \\w+\\b",
+      "softDistinctPer300": 3,
+      "sentenceStdDevMin": 4,
+      "shortSentenceMaxWords": 8,
+      "sentenceMeanMax": 22,
+      "sentenceMax": 40,
+      "paragraphCvMin": 0.15,
+      "paragraphMaxWords": 110,
+      "iStartRatioMax": 0.35,
+      "jdCopyNgram": 8,
+      "cvParaphraseRatioMax": 0.6,
+      "crossLetterOverlapMax": 0.4,
+      "aiPolicy": "(do not|don't|please don't) use (AI|generative AI|ChatGPT|AI assistants)|without (the use of )?AI|AI[- ]generated [^.]{0,40}(not permitted|prohibited|not allowed)"
+    }
+  }
+}

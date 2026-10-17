@@ -1,8 +1,9 @@
 import { isEeoLabel, type VaultKey } from "./vault";
 import type { FieldType } from "./forms/types";
+import { isMotivationLabel } from "../cover-letter/mode";
 
 export type Classified =
-  | { kind: "vault"; key: VaultKey } | { kind: "eeo" } | { kind: "consent" } | { kind: "freeText" }
+  | { kind: "vault"; key: VaultKey } | { kind: "eeo" } | { kind: "consent" } | { kind: "freeText" } | { kind: "motivation" }
   | { kind: "file"; which: "cv" | "cover" } | { kind: "yours" } | { kind: "extra" };
 
 const CONSENT = /^privacy|terms (&|and) conditions|personal data|ai policy|information provided in this application|\bi confirm\b|name is your legal name|privacy (notice|policy)|candidate data|data protection|gdpr|i (consent|agree|acknowledge|confirm that)|acknowledg|declaration|conduct policy|confidentiality agreement|terms and conditions/i;
@@ -57,6 +58,7 @@ export function classify(label: string, type: FieldType): Classified {
     if (!re.test(l)) continue;
     return OTHER_JURISDICTION.test(l) || OTHER_US.test(l) ? { kind: "yours" } : { kind: "vault", key };
   }
+  if (type === "textarea" && isMotivationLabel(l)) return { kind: "motivation" };
   if (SCORE_TEST.test(l)) return type === "textarea" ? { kind: "freeText" } : { kind: "extra" };
   // Long free-text prompts mention words like "GitHub" or "degree" in passing ("…projects or experiences… GitHub"): never map them to a vault field.
   if (type === "textarea" && l.length > 80) return { kind: "freeText" };

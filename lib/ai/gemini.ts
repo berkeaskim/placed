@@ -1,6 +1,6 @@
 import { GoogleGenAI, ThinkingLevel } from "@google/genai";
 import { z } from "zod";
-import { AiError, AI_BAD_FORMAT, AI_REFUSAL, AI_UNAVAILABLE, type GroundedRequest, type GroundedResult, type StructuredRequest } from "./provider";
+import { AiError, AI_BAD_FORMAT, AI_REFUSAL, AI_UNAVAILABLE, type GroundedRequest, type GroundedResult, type StreamRequest, type StructuredRequest } from "./provider";
 import { geminiModel } from "./models";
 import { aiApiKey } from "./config";
 
@@ -90,4 +90,38 @@ export async function geminiGrounded(req: GroundedRequest, c?: ModelsClient): Pr
   const chunks = (cand?.groundingMetadata?.groundingChunks ?? [])
     .flatMap((ch) => (ch.web?.uri ? [{ uri: ch.web.uri, title: ch.web.title ?? "" }] : []));
   return { text, chunks };
+}
+
+/** Streams the answer as text deltas at LOW thinking. An aborted signal ends the stream quietly. */
+export async function* geminiStream(req: StreamRequest, c?: ModelsClient): AsyncGenerator<string> {
+  const api = client(c);
+  let stream: Awaited<ReturnType<GoogleGenAI["models"]["generateContentStream"]>>;
+  try {
+    stream = await api.models.generateContentStream({
+      model: geminiModel(req.tier),
+      contents: [{ role: "user", parts: [{ text: req.prompt }] }],
+      config: {
+        systemInstruction: req.system,
+        maxOutputTokens: req.maxTokens ?? 8000,
+        thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
+        abortSignal: req.signal,
+      },
+    });
+  } catch (cause) {
+    if (req.signal?.aborted) return;
+    throw new AiError(AI_UNAVAILABLE, { cause });
+  }
+  try {
+    for await (const chunk of stream) {
+      if (req.signal?.aborted) return;
+      const finish = chunk.candidates?.[0]?.finishReason;
+      if (chunk.promptFeedback?.blockReason || (finish && REFUSAL_FINISH.has(finish))) throw new AiError(AI_REFUSAL);
+      const text = chunk.text;
+      if (text) yield text;
+    }
+  } catch (cause) {
+    if (cause instanceof AiError) throw cause;
+    if (req.signal?.aborted) return;
+    throw new AiError(AI_UNAVAILABLE, { cause });
+  }
 }

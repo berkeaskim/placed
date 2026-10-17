@@ -152,3 +152,36 @@ describe("remembered answers", () => {
     expect(planOf([rtw], {}, { "what is your right to work status": "Option B" }).it[0]).toMatchObject({ group: "confirm", value: "b" });
   });
 });
+
+describe("cover group", () => {
+  const mk = (label: string, type: FormField["type"]): FormField => ({ key: "k", label, type, required: false, options: [], target: "t" });
+  const pack = (f: FormField) => assemblePack({ ...form, fields: [f] }, AYSE_CORE, {}, {})[0];
+  it("puts a cover file field and a motivation textarea in the cover group", () => {
+    expect(pack(mk("Cover Letter", "file")).group).toBe("cover");
+    expect(pack(mk("Why do you want to join us?", "textarea")).group).toBe("cover");
+  });
+  it("leaves cover items for the student when there is no Ready output", () => {
+    const it = [pack(mk("Cover Letter", "file")), pack(mk("Why do you want to join us?", "textarea"))];
+    expect(toFillPlan(it, {}, {})).toEqual([expect.objectContaining({ mode: "yours", value: null }), expect.objectContaining({ mode: "yours", value: null })]);
+    expect(toFillPlan(it, {})[0]).toMatchObject({ mode: "yours", value: null });
+  });
+  it("a Ready upload output fills the cover file field with asset: cover", () => {
+    const it = [pack(mk("Cover Letter", "file"))];
+    expect(toFillPlan(it, {}, { upload: { file: true } })[0]).toMatchObject({ mode: "fill", asset: "cover", value: null, sourceLabel: "your cover letter" });
+  });
+  it("a Ready field output fills the motivation textarea with its text", () => {
+    const it = [pack(mk("Why do you want to join us?", "textarea"))];
+    expect(toFillPlan(it, {}, { k: { text: "Because of X." } })[0]).toMatchObject({ mode: "fill", value: "Because of X.", sourceLabel: "your cover letter" });
+    expect(toFillPlan(it, {}, { other: { text: "Nope" } })[0]).toMatchObject({ mode: "yours", value: null });
+  });
+  it("a file output never fills a textarea and a text output never fills a file field", () => {
+    const f = pack(mk("Cover Letter", "file")), t = pack(mk("Why do you want to join us?", "textarea"));
+    expect(toFillPlan([f], {}, { k: { text: "x" } })[0].mode).toBe("yours");
+    expect(toFillPlan([t], {}, { upload: { file: true }, k: { file: true } })[0].mode).toBe("yours");
+  });
+  it("CV file fields carry asset: cv, and canOpen ignores cover items", () => {
+    const cv = assemblePack({ ...form, fields: [mk("Resume/CV", "file")] }, AYSE_CORE, {}, {});
+    expect(toFillPlan(cv, {})[0]).toMatchObject({ mode: "fill", asset: "cv" });
+    expect(canOpen([pack(mk("Cover Letter", "file")), pack(mk("Why do you want to join us?", "textarea"))], {})).toBe(true);
+  });
+});

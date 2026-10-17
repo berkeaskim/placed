@@ -27,6 +27,7 @@ import { ApplyButton } from "./apply-button";
 import { TailorPanel } from "./tailor-panel";
 import { AutopilotPanel } from "./autopilot-panel";
 import { InterviewPrepPanel } from "./interview-prep-panel";
+import { CoverLetterButton, CoverLetterHost } from "@/components/cover-letter/cover-letter-host";
 import type { StoredTailoring } from "./actions";
 import { PeoplePanel } from "@/components/outreach/people-panel";
 import { InsideTrack, WriteToSomeoneElse } from "@/components/inside-track/inside-track";
@@ -86,6 +87,7 @@ export default async function JobPage({ params, searchParams }: { params: Promis
   return (
     <div className="flex flex-col gap-4">
       <Link href="/feed" className="self-start text-sm font-semibold text-[#5B3DF5] no-underline hover:underline">← Back to your feed</Link>
+      <CoverLetterHost jobId={job.id} />
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_400px]">
         <article className="flex min-w-0 flex-col gap-3 rounded-[20px] border bg-white p-5 sm:p-6">
           <div className="flex flex-wrap items-center gap-2">
@@ -96,6 +98,7 @@ export default async function JobPage({ params, searchParams }: { params: Promis
           <p className="text-sm font-semibold text-muted-foreground">
             {job.location || "Location not stated"} · <span className="text-[#8A4B00]">{closingLabel(job, today)}</span>
           </p>
+          <CoverLetterButton />
           {job.summary && !summaryRepeatsText(job.summary, job.textLines) && <p className="rounded-xl bg-[#F6F6FA] p-3 text-[15px] text-[#4A4A57]">{job.summary}</p>}
           {job.textLines.length ? <JobText lines={job.textLines} /> : <p className="text-muted-foreground">The full description is on the company&apos;s site.</p>}
         </article>

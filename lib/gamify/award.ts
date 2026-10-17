@@ -6,7 +6,7 @@ import { badges, profiles, xpEvents } from "@/lib/db/schema";
 import { todayLondon } from "@/lib/scoring/dates";
 import { computeAward, levelFromXp, londonDayStart, noAward, type AwardResult, type BadgeKey, type GamifyEvent } from "./core";
 
-const JOB_EVENTS = new Set(["job_saved", "cv_tailored", "applied", "interview", "rejected", "offer", "number_confirmed", "suggestion_edited"]);
+const JOB_EVENTS = new Set(["job_saved", "cv_tailored", "applied", "interview", "rejected", "offer", "number_confirmed", "suggestion_edited", "cover_letter_ready"]);
 
 /** Reads, the event row, the xp increment, the profile update and badges all run in one synchronous transaction. */
 export async function awardXP(userId: string, e: GamifyEvent, jobId?: string): Promise<AwardResult> {

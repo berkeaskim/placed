@@ -8,7 +8,11 @@
     }
     return s;
   }
-  const api = { summarize };
+  /** The file a file field takes: the cover letter when the pack says so, otherwise the CV. Null means leave it to the student. */
+  function fileFor(field, ctx) {
+    return (field.asset === "cover" ? ctx.coverFile : ctx.cvFile) || null;
+  }
+  const api = { summarize, fileFor };
   root.PlacedFillPlan = api;
   if (typeof module !== "undefined") module.exports = api;
 })(globalThis);

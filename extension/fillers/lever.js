@@ -22,9 +22,10 @@
     const els = [...byName(field.target)];
 
     if (field.type === "file") {
-      if (!ctx.cvFile) return "yours";
+      const file = globalThis.PlacedFillPlan.fileFor(field, ctx);
+      if (!file) return "yours";
       const input = els.find((e) => e.type === "file") || document.getElementById("resume-upload-input");
-      return uploadFile(input, ctx.cvFile) ? "filled" : "missing";
+      return uploadFile(input, file) ? "filled" : "missing";
     }
     if (!els.length) return "missing";
     const values = (Array.isArray(field.value) ? field.value : [field.value]).filter((v) => v != null).map(String);

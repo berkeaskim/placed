@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, beforeAll, afterAll, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, beforeAll, afterAll, afterEach, vi } from "vitest";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { z } from "zod";
@@ -43,6 +43,27 @@ describe("runAi fromFixture post-processor", () => {
       fallback: () => ({ camelValue: -1 }),
     });
     expect(out).toEqual({ camelValue: 40 });
+  });
+
+  it("holds a fixture back by its delayMs (so e2e tests can see slow steps)", async () => {
+    process.env.AI_MODE = "fixture";
+    writeFileSync(path.join(dir, "slow.json"), JSON.stringify({ snake_value: 2, delayMs: 1000 }));
+    vi.useFakeTimers();
+    try {
+      let out: { camelValue: number } | null = null;
+      const p = runAi({
+        fn: FN, fixtureKey: "slow", schema: Raw, fromFixture: toCamel,
+        live: async () => { throw new Error("must not be called"); },
+        fallback: () => ({ camelValue: -1 }),
+      }).then((r) => { out = r; });
+      await vi.advanceTimersByTimeAsync(900);
+      expect(out).toBeNull();
+      await vi.advanceTimersByTimeAsync(200);
+      await p;
+      expect(out).toEqual({ camelValue: 20 });
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("rejects a fixture that does not match the schema", async () => {

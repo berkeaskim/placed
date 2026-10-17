@@ -121,3 +121,22 @@ describe("gateDraft: sentences about the employer", () => {
     expect(why(them("Monzo has over 13 million customers, and I have three years of banking experience."))).toHaveLength(1);
   });
 });
+
+describe("gateDraft: hard-lexicon lint", () => {
+  it("catches an AI-sounding sentence as 'sounds like AI'", () => {
+    const r = gateDraft([{ text: "I am thrilled to apply to this dynamic team.", about: "me", refs: ["x1b1"] }], base);
+    expect(r.sentences).toEqual([]);
+    expect(r.caught).toEqual([{ text: "I am thrilled to apply to this dynamic team.", reason: "sounds like AI" }]);
+  });
+  it("catches placeholders and chatbot leakage as 'placeholder'", () => {
+    const r = gateDraft([
+      { text: "I would love to join [Company Name] and its Data team.", about: "them", refs: ["jd:1"] },
+      { text: "As an AI language model, I organised weekly society events.", about: "me", refs: ["x1b1"] },
+    ], base);
+    expect(r.caught.map((c) => c.reason)).toEqual(["placeholder", "placeholder"]);
+  });
+  it("keeps clean sentences", () => {
+    const r = gateDraft([{ text: "I organised weekly society events using Excel to analyse attendance.", about: "me", refs: ["x1b1"] }], base);
+    expect(r.caught).toEqual([]);
+  });
+});

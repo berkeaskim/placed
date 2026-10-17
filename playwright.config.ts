@@ -38,7 +38,8 @@ export default defineConfig({
   webServer: {
     command: `npm run setup && npm run dev -- -p ${PORT}`,
     // Replays the recorded AI fixtures (deterministic, no API spend). AI_MODE=live in the shell exercises a real model.
-    env: { PLACED_DATA_DIR: DATA_DIR, AI_MODE: process.env.AI_MODE || "fixture" },
+    // SKIP_INGEST: setup never pulls live postings, so the suite runs offline.
+    env: { PLACED_DATA_DIR: DATA_DIR, AI_MODE: process.env.AI_MODE || "fixture", SKIP_INGEST: "1" },
     url: baseURL,
     reuseExistingServer: false, // an already-running server would use someone's real ./data
     timeout: 180_000,

@@ -1,21 +1,9 @@
 import { revalidateTag } from "next/cache";
+import { sameOrigin } from "@/lib/auth/same-origin";
 import { IngestBusyError, ingestRunning, lastIngestAt, runIngest } from "@/lib/ingest/local";
 import { JOBS_TAG } from "@/lib/feed/jobs-cache";
 
 export const dynamic = "force-dynamic";
-
-/** Another site's page in the user's browser must not be able to start a run (no auth locally, so check the origin). */
-function sameOrigin(request: Request): boolean {
-  const site = request.headers.get("sec-fetch-site");
-  if (site && site !== "same-origin") return false;
-  const origin = request.headers.get("origin");
-  if (!origin) return site === "same-origin";
-  try {
-    return new URL(origin).host === (request.headers.get("host") ?? new URL(request.url).host);
-  } catch {
-    return false;
-  }
-}
 
 export async function GET() {
   return Response.json({ running: ingestRunning(), lastRun: lastIngestAt() }, { headers: { "Cache-Control": "no-store" } });

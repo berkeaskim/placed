@@ -3,7 +3,7 @@ import path from "node:path";
 import { dataDir } from "./db/paths";
 
 /** Local replacement for the Supabase Storage buckets: `<dataDir>/files/<bucket>/<path>`. */
-export const BUCKETS = ["cvs", "tailored"] as const;
+export const BUCKETS = ["cvs", "tailored", "letters"] as const;
 export type Bucket = (typeof BUCKETS)[number];
 
 const CT_SUFFIX = ".content-type";

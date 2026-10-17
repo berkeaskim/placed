@@ -50,8 +50,9 @@
     const { setNative, uploadFile } = D();
 
     if (field.type === "file") {
-      if (!ctx.cvFile) return "yours";
-      return uploadFile(anchor(field), ctx.cvFile) ? "filled" : "missing";
+      const file = globalThis.PlacedFillPlan.fileFor(field, ctx);
+      if (!file) return "yours";
+      return uploadFile(anchor(field), file) ? "filled" : "missing";
     }
     if (field.type === "multiselect") {
       const values = Array.isArray(field.value) ? field.value : [field.value];

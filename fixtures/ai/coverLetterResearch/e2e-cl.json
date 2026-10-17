@@ -1,0 +1,28 @@
+{
+  "delayMs": 3500,
+  "facts": [
+    {
+      "claim": "Opened a new European structured-finance desk in Frankfurt, hiring 40 analysts across its markets division.",
+      "url": "https://www.example-news.com/firm-frankfurt-desk",
+      "publisher": "Example Financial News",
+      "date": "2026-06"
+    },
+    {
+      "claim": "Advised on the largest UK renewable-energy infrastructure refinancing of the year.",
+      "url": "https://www.example-deals.com/renewables-refinancing",
+      "publisher": "Example Deals",
+      "date": "2026-03"
+    },
+    {
+      "claim": "Expanded its graduate programme to include a data and technology rotation from autumn 2026.",
+      "url": "https://www.example-careers.com/graduate-rotation",
+      "publisher": "Example Careers",
+      "date": "2025-12"
+    }
+  ],
+  "rivals": [
+    "Rival Capital",
+    "Northgate Partners",
+    "Kestrel & Co"
+  ]
+}

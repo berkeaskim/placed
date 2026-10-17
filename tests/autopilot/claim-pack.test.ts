@@ -2,9 +2,10 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { eq } from "drizzle-orm";
 import { hashToken } from "@/lib/autopilot/handoff";
 import { claimPack } from "@/lib/autopilot/server";
+import { letterFilename } from "@/lib/cover-letter/pdf";
 import { sealVault } from "@/lib/autopilot/vault-crypto";
 import { db } from "@/lib/db/client";
-import { applications, autopilotPacks, autopilotVault, cvs } from "@/lib/db/schema";
+import { applications, autopilotPacks, autopilotVault, coverLetterOutputs, coverLetters, cvs } from "@/lib/db/schema";
 import { LOCAL_USER_ID as UID } from "@/lib/auth/local-user";
 import { seedCv, seedJob, withTempDb } from "../cv/temp-db";
 
@@ -35,6 +36,63 @@ function reset(pack: Partial<typeof autopilotPacks.$inferInsert> = {}, paths: { 
   seedCv({ storage_path: paths.cv ?? `${UID}/cv.pdf`, is_active: true });
 }
 const packRow = () => db.select().from(autopilotPacks).where(eq(autopilotPacks.job_id, jobId)).get()!;
+
+const FORM_COVER = { ats: "greenhouse", url: "https://x/apply", fields: [
+  { key: "cover_letter", label: "Cover Letter", type: "file", required: false, options: [], target: "#cover_letter" },
+  { key: "why_us", label: "Why do you want to join us?", type: "textarea", required: true, options: [], target: "#why_us" },
+] };
+function seedOutputs(rows: { target: { kind: "upload" } | { kind: "field"; fieldKey: string; label: string }; status: "draft" | "ready"; text?: string; pdf_path?: string | null }[]) {
+  const letter = db.insert(coverLetters).values({ user_id: UID, job_id: jobId }).returning().get();
+  for (const r of rows) db.insert(coverLetterOutputs).values({ letter_id: letter.id, mode: "full_letter", text: "", pdf_path: null, ...r }).run();
+}
+
+describe("claimPack cover letters", () => {
+  beforeEach(() => { vi.spyOn(console, "error").mockImplementation(() => {}); });
+  const plan = async () => { const r = await claimPack(TOKEN); if (r.status !== 200) throw new Error("claim failed"); return r.body; };
+  it("cover is null and cover fields stay yours when no letter exists (and none is created)", async () => {
+    reset({ form: FORM_COVER });
+    const b = await plan();
+    expect(b.cover).toBeNull();
+    expect(b.fields.map((f) => f.mode)).toEqual(["yours", "yours"]);
+    expect(db.select().from(coverLetters).all()).toHaveLength(0);
+  });
+  it("a Ready upload output returns the letter PDF and a cover file instruction", async () => {
+    reset({ form: FORM_COVER });
+    seedOutputs([{ target: { kind: "upload" }, status: "ready", pdf_path: `${UID}/l1-o1.pdf` }]);
+    const b = await plan();
+    // The same name the card's Download PDF uses: First-Last_Cover-Letter_Company_YYYY-MM.pdf.
+    expect(b.cover).toEqual({ url: `/api/files/letters/${UID}/l1-o1.pdf`, filename: letterFilename("Ayşe", "Yılmaz", "Acme", new Date()) });
+    expect(b.fields[0]).toMatchObject({ mode: "fill", asset: "cover" });
+    expect(b.fields[1].mode).toBe("yours");
+  });
+  it("a Ready field output pastes its text into the matching textarea", async () => {
+    reset({ form: FORM_COVER });
+    seedOutputs([{ target: { kind: "field", fieldKey: "why_us", label: "Why us" }, status: "ready", text: "Because of the desk." }]);
+    const b = await plan();
+    expect(b.fields[1]).toMatchObject({ mode: "fill", value: "Because of the desk.", sourceLabel: "your cover letter" });
+    expect(b.cover).toBeNull();
+  });
+  it("draft outputs are never filled", async () => {
+    reset({ form: FORM_COVER });
+    seedOutputs([
+      { target: { kind: "upload" }, status: "draft", pdf_path: `${UID}/l1-o1.pdf` },
+      { target: { kind: "field", fieldKey: "why_us", label: "Why us" }, status: "draft", text: "Draft text" },
+    ]);
+    const b = await plan();
+    expect(b.cover).toBeNull();
+    expect(b.fields.map((f) => f.mode)).toEqual(["yours", "yours"]);
+  });
+  it("a Ready upload whose pdf_path is outside the user's prefix, or missing, gives no cover file", async () => {
+    reset({ form: FORM_COVER });
+    seedOutputs([{ target: { kind: "upload" }, status: "ready", pdf_path: "other-user/x.pdf" }]);
+    const b = await plan();
+    expect(b.cover).toBeNull();
+    expect(b.fields[0].mode).toBe("yours");
+    reset({ form: FORM_COVER });
+    seedOutputs([{ target: { kind: "upload" }, status: "ready", pdf_path: null }]);
+    expect((await plan()).cover).toBeNull();
+  });
+});
 
 describe("claimPack", () => {
   beforeEach(() => { vi.spyOn(console, "error").mockImplementation(() => {}); });
@@ -71,7 +129,7 @@ describe("claimPack", () => {
     const r = await claimPack(TOKEN);
     expect(r.status).toBe(200);
     if (r.status !== 200) return;
-    expect(Object.keys(r.body).sort()).toEqual(["ats", "cv", "fields", "url"]);
+    expect(Object.keys(r.body).sort()).toEqual(["ats", "cover", "cv", "fields", "url"]);
     expect(r.body.fields).toHaveLength(1);
     expect(r.body.fields[0]).toMatchObject({ target: "#first_name", value: "Ayşe" });
     expect(r.body.cv).toEqual({ url: `/api/files/tailored/${UID}/${jobId}.pdf`, filename: "Ayşe-Yılmaz-CV.pdf" });

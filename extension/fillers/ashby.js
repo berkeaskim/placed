@@ -66,10 +66,11 @@
     const { setNative, uploadFile } = D();
 
     if (field.type === "file") {
-      if (!ctx.cvFile) return "yours";
+      const file = globalThis.PlacedFillPlan.fileFor(field, ctx);
+      if (!file) return "yours";
       const input = document.getElementById(field.target);
       const fileInput = input && input.type === "file" ? input : entry(field) && entry(field).querySelector("input[type=file]");
-      return uploadFile(fileInput, ctx.cvFile) ? "filled" : "missing";
+      return uploadFile(fileInput, file) ? "filled" : "missing";
     }
     const container = entry(field);
     if (!container) return "missing";

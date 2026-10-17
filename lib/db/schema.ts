@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import { check, index, integer, primaryKey, sqliteTable, text, unique, uniqueIndex } from "drizzle-orm/sqlite-core";
+import type { Answer, ChatMsg, Fact, Limit, LintHit, OutputStatus, OutputTarget, Span, UndoEntry } from "../cover-letter/types";
 import type { Archetype, ArchetypeScore, ParsedCV, Region, Requirement, Year } from "../types";
 
 /**
@@ -28,6 +29,12 @@ export const OUTREACH_TARGET_VALUES = ["alumni", "recent_joiner", "team", "recru
 export const OUTREACH_STATUS_VALUES = ["drafted", "sent", "replied"] as const;
 /** xp_events types that are earned once per user (xp_events_once_per_user, 0012). */
 export const ONCE_PER_USER_XP = ["onboarding_complete", "cv_uploaded", "quiz_done", "autopilot_ready"] as const;
+
+export const CL_RESEARCH_STATE_VALUES = ["idle", "running", "done", "none", "failed"] as const;
+export const CL_DRAFT_STATE_VALUES = ["idle", "streaming", "done", "interrupted"] as const;
+export const CL_OUTPUT_STATUS_VALUES = ["draft", "ready"] as const;
+export const CL_STORY_KIND_VALUES = ["story", "why_firm"] as const;
+export const CL_RESEARCH_PROVIDER_VALUES = ["gemini", "serper", "none"] as const;
 
 export type AtsKind = (typeof ATS_VALUES)[number];
 export type PackStatus = (typeof PACK_STATUS_VALUES)[number];
@@ -318,6 +325,71 @@ export const interviewPreps = sqliteTable("interview_preps", {
   index("interview_preps_created_by_idx").on(t.created_by, t.created_at),
 ]);
 
+export const coverLetters = sqliteTable("cover_letters", {
+  id: uuid("id").primaryKey(),
+  user_id: text("user_id").notNull(),
+  job_id: text("job_id").notNull().references(() => jobs.id, { onDelete: "cascade" }),
+  chat: json<ChatMsg[]>("chat").notNull().default(sql`'[]'`),
+  answers: json<Answer[]>("answers").notNull().default(sql`'[]'`),
+  facts: json<Fact[]>("facts").notNull().default(sql`'[]'`),
+  /** Narrowed to the Evidence type by the researcher (Task 7). */
+  evidence: json<unknown | null>("evidence"),
+  research_state: text("research_state").notNull().default("idle"),
+  draft_state: text("draft_state").notNull().default("idle"),
+  created_at: now("created_at").notNull(),
+  updated_at: now("updated_at").notNull(),
+}, (t) => [
+  unique("cover_letters_user_id_job_id_key").on(t.user_id, t.job_id),
+  check("cover_letters_research_state_check", inList("research_state", CL_RESEARCH_STATE_VALUES)),
+  check("cover_letters_draft_state_check", inList("draft_state", CL_DRAFT_STATE_VALUES)),
+]);
+
+export const coverLetterOutputs = sqliteTable("cover_letter_outputs", {
+  id: uuid("id").primaryKey(),
+  letter_id: text("letter_id").notNull().references(() => coverLetters.id, { onDelete: "cascade" }),
+  target: json<OutputTarget>("target").notNull(),
+  mode: text("mode").notNull(),
+  limit: json<Limit>("limit"),
+  status: text("status").$type<OutputStatus>().notNull().default("draft"),
+  text: text("text").notNull().default(""),
+  spans: json<Span[]>("spans").notNull().default(sql`'[]'`),
+  lint: json<LintHit[]>("lint").notNull().default(sql`'[]'`),
+  undo: json<UndoEntry[]>("undo").notNull().default(sql`'[]'`),
+  pdf_path: text("pdf_path"),
+  updated_at: now("updated_at").notNull(),
+}, (t) => [
+  index("cover_letter_outputs_letter_idx").on(t.letter_id),
+  check("cover_letter_outputs_status_check", inList("status", CL_OUTPUT_STATUS_VALUES)),
+]);
+
+export const coverLetterStories = sqliteTable("cover_letter_stories", {
+  id: uuid("id").primaryKey(),
+  user_id: text("user_id").notNull(),
+  cv_entry_id: text("cv_entry_id"),
+  company: text("company"),
+  kind: text("kind").notNull(),
+  text: text("text").notNull(),
+  created_at: now("created_at").notNull(),
+  updated_at: now("updated_at").notNull(),
+  last_used_at: text("last_used_at"),
+}, (t) => [
+  index("cover_letter_stories_user_idx").on(t.user_id, t.kind),
+  check("cover_letter_stories_kind_check", inList("kind", CL_STORY_KIND_VALUES)),
+]);
+
+/** Shared per-company research cache; `company_key` = lowercased company + "|" + division. */
+export const companyResearch = sqliteTable("company_research", {
+  id: uuid("id").primaryKey(),
+  company_key: text("company_key").notNull(),
+  facts: json<Fact[]>("facts").notNull().default(sql`'[]'`),
+  rivals: json<string[]>("rivals").notNull().default(sql`'[]'`),
+  provider: text("provider").notNull(),
+  fetched_at: now("fetched_at").notNull(),
+}, (t) => [
+  unique("company_research_company_key_key").on(t.company_key),
+  check("company_research_provider_check", inList("provider", CL_RESEARCH_PROVIDER_VALUES)),
+]);
+
 /** Local app settings (AI provider, model overrides, ...). Secrets live under `secret.<key>`, sealed (lib/settings/store.ts). */
 export const appSettings = sqliteTable("app_settings", {
   key: text("key").primaryKey(),
@@ -325,6 +397,10 @@ export const appSettings = sqliteTable("app_settings", {
   updated_at: now("updated_at"),
 });
 
+export type LetterRow = typeof coverLetters.$inferSelect;
+export type OutputRow = typeof coverLetterOutputs.$inferSelect;
+export type StoryRow = typeof coverLetterStories.$inferSelect;
+export type ResearchRow = typeof companyResearch.$inferSelect;
 export type Profile = typeof profiles.$inferSelect;
 export type NewProfile = typeof profiles.$inferInsert;
 export type Cv = typeof cvs.$inferSelect;
