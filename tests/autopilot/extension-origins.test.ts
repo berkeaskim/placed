@@ -55,7 +55,8 @@ describe("claimOrigins", () => {
 describe("fetchFirst", () => {
   const ok = (status: number) => ({ status, ok: status >= 200 && status < 300 });
   it("moves on only when fetch throws (network error)", async () => {
-    const f = vi.fn(async (url: string) => {
+    const f = vi.fn(async (url: string, init?: unknown) => {
+      void init;
       if (url.startsWith("http://localhost:3200")) throw new TypeError("Failed to fetch");
       return ok(200);
     });
