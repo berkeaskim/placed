@@ -7,7 +7,9 @@ export type XpEventType = "onboarding_complete" | "cv_uploaded" | "quiz_done" | 
   // Task 19b: Target Role. Action-scoped via xp_events.ref (0010).
   | "playbook_done"
   // Autopilot: Answer Vault completed. Awarded once (the setup action checks completed_at).
-  | "autopilot_ready";
+  | "autopilot_ready"
+  // Cover letter writer: an output marked Ready. Job-scoped, so xp_events_once_per_job makes it once per job.
+  | "cover_letter_ready";
 export type BadgeKey = "profile_pro" | "first_shot" | "spring_week_hunter" | "early_bird" | "bounce_back" | "made_it_yours" | "gap_closer";
 
 export const BADGES: Record<BadgeKey, { name: string; description: string }> = {
@@ -52,6 +54,7 @@ export function xpFor(e: GamifyEvent, s: GamifyState): number {
     case "number_confirmed": case "suggestion_edited": return 10;
     case "playbook_done": return (s.playbookDoneToday ?? 0) < PLAYBOOK_DONE_DAILY_CAP ? 40 : 0;
     case "autopilot_ready": return 50;
+    case "cover_letter_ready": return 20;
   }
 }
 

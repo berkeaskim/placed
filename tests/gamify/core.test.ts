@@ -19,6 +19,7 @@ describe("xpFor", () => {
     expect(xpFor({ type: "applied", fitLabel: "Stretch" }, base)).toBe(25);
     expect(xpFor({ type: "applied", fitLabel: "Not recommended" }, base)).toBe(10);
     expect(xpFor({ type: "rejected" }, base)).toBe(20);
+    expect(xpFor({ type: "cover_letter_ready" }, base)).toBe(20);
   });
   it("caps saves at 10 per day", () => {
     expect(xpFor({ type: "job_saved" }, { ...base, savesToday: 9, lastActiveDate: today })).toBe(5);

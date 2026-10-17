@@ -4,7 +4,11 @@ export type SpanKind = "ai" | "theirs";
 export type Span = { start: number; end: number; kind: SpanKind; refs: string[]; flag?: string };
 export type LintHit = { ruleId: string; label: string; severity: "block" | "high" | "med" | "low"; start: number; end: number; scope: SpanKind | "letter" };
 export type Fact = { id: string; claim: string; url: string; publisher: string; date: string | null };
-export type Answer = { id: string; question: "why_firm" | "facts" | "story" | "touchpoint" | "product"; text: string | null; pickedFactIds?: string[]; cvEntryId?: string };
+export type Answer = {
+  id: string; question: "why_firm" | "facts" | "story" | "touchpoint" | "product"; text: string | null; pickedFactIds?: string[]; cvEntryId?: string;
+  /** A person the answer names: `ok` null until the student confirms (true) or declines (false); unconfirmed names are masked in prompts. */
+  person?: { name: string; ok: boolean | null };
+};
 export type OutputTarget = { kind: "upload" } | { kind: "field"; fieldKey: string; label: string };
 export type OutputStatus = "draft" | "ready";
 export type ChatMsg = { id: string; from: "bot" | "me"; text: string; kind?: "question" | "research" | "facts" | "done" | "error"; questionId?: Answer["question"] };

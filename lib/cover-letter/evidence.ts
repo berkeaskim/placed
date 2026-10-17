@@ -71,11 +71,12 @@ function fallbackRequirements(cv: ParsedCV, jdLines: string[], story: { id: stri
   });
 }
 
-export async function buildEvidence(i: { cv: ParsedCV; jdLines: string[]; company: string; rivals: string[]; archetype: Archetype | null }): Promise<Evidence> {
+/** `fixtureKey` (the job extId) picks fixtures/ai/coverLetterEvidence/<key|default>.json in fixture mode. */
+export async function buildEvidence(i: { cv: ParsedCV; jdLines: string[]; company: string; rivals: string[]; archetype: Archetype | null; fixtureKey?: string }): Promise<Evidence> {
   const storyEntry = pickStoryEntry(i.cv, i.jdLines);
   const known = cvBulletIndex(i.cv);
   const raw = await runAi({
-    fn: "coverLetterEvidence", fixtureKey: "default", schema: Schema,
+    fn: "coverLetterEvidence", fixtureKey: i.fixtureKey ?? "default", schema: Schema,
     live: () => generateStructured({
       tier: "fast", system: SYSTEM, schema: Schema,
       parts: [{ type: "text", text: `<company>${clean(i.company)}</company>\n${cvPrompt(i.cv)}\n${wrapJob(i.jdLines.join("\n"))}` }],

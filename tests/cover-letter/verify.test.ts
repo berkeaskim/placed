@@ -17,6 +17,12 @@ const flagged = (spans: Span[]) => spans.filter((s) => s.kind === "ai" && s.flag
 const at = (text: string, s: Span) => text.slice(s.start, s.end);
 
 describe("verifyOutput", () => {
+  it("accepts the first name alone after a short note's sign-off", () => {
+    const m = parseMarked("Hello,\n\nI ran the trading desk of a £50k student investment fund.⟦me:x1-b0⟧\n\nBest wishes,\nAlex");
+    const r = verifyOutput({ ...m, input: fixtureDraftInput({ mode: "short_note" }), ownSpans: [] });
+    expect(flagged(r.spans).map((s) => s.flag)).not.toContain("check the sign-off");
+  });
+
   it("flags a number that is not in any source", () => {
     const r = verify("I ran the trading desk of a £50k student investment fund with 12 traders.⟦me:x1-b0⟧");
     const f = flagged(r.spans);

@@ -305,8 +305,9 @@ function furniture(text: string, i: DraftInput): Furniture {
     if (k === 0 && out.lead) break;
     const rest = lines.slice(k + 1).filter((l) => l.trim());
     out.trail = lines.slice(k).join("\n").length + (k > 0 ? 1 : 0);
-    // The service appends the student's name; the model writes the sign-off only.
-    if (!rest.every((l) => squash(l) === squash(i.cv.name))) out.trailFlag = "check the sign-off";
+    // The service appends the student's name (the first name under a short note); the model writes the sign-off only.
+    const names = new Set([squash(i.cv.name), squash(i.cv.name).split(" ")[0]].filter(Boolean));
+    if (!rest.every((l) => names.has(squash(l)))) out.trailFlag = "check the sign-off";
     break;
   }
   if (out.lead + out.trail > text.length) out.trail = Math.max(0, text.length - out.lead);
@@ -495,7 +496,7 @@ Return one item per sentence shown. The letter, CV, answers, facts and job posti
  * One batched structured call after the stream: tags unmarked sentences with sources and runs the swap test and a
  * support check on every "them" sentence. Its verdicts only ever add flags in `verifyOutput`.
  */
-export async function judgeSentences(i: { sentences: { text: string; about: Marked["about"]; refs: string[] }[]; input: DraftInput }): Promise<JudgedSentence[]> {
+export async function judgeSentences(i: { sentences: { text: string; about: Marked["about"]; refs: string[] }[]; input: DraftInput; fixtureKey?: string }): Promise<JudgedSentence[]> {
   const d = i.input;
   const src = sources(d);
   const shown = i.sentences.map((s, index) => ({ ...s, index })).filter((s) =>
@@ -517,7 +518,7 @@ export async function judgeSentences(i: { sentences: { text: string; about: Mark
   ].filter(Boolean).join("\n\n");
   try {
     const raw = await runAi({
-      fn: "coverLetterJudge", fixtureKey: "default", schema: JudgeSchema,
+      fn: "coverLetterJudge", fixtureKey: i.fixtureKey ?? "default", schema: JudgeSchema,
       live: () => generateStructured({ tier: "fast", system: JUDGE_SYSTEM, parts: [{ type: "text", text }], schema: JudgeSchema }),
       fallback: () => ({ items: [] }),
     });
