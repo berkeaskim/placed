@@ -411,6 +411,40 @@ describe("fix round 2: firm talk outside them-sentences", () => {
     }
   });
 
+  it("a reason lead-in before the student (\"Because of…\", \"Thanks to its…\") is firm talk", () => {
+    for (const body of [
+      "Because of the bonuses I want to join Northbridge.⟦me:⟧",
+      "Thanks to its four-day week, Northbridge is my first choice.⟦me:⟧",
+      "Given its generous bonuses, I want to join Northbridge.⟦me:⟧",
+      // Cited to a CV bullet, so only the firm check can catch the lead-in.
+      "Because of its bonuses I am applying to Northbridge.⟦me:x1-b0⟧",
+      "Owing to its generous bonuses, I am applying to Northbridge.⟦me:x1-b0⟧",
+    ]) {
+      const r = full("Dear Hiring Manager,", body);
+      expect(flagged(r.spans).length, body).toBeGreaterThan(0);
+      expect(ready(r), body).toBe(false);
+    }
+  });
+
+  it("every sentence that names the firm goes to the judge, intent included, and a pass stays a pass", async () => {
+    process.env.AI_MODE = "fixture";
+    try {
+      const { judgeSentences: judge } = await import("@/lib/cover-letter/verify");
+      for (const body of ["That is why I am applying to Northbridge.⟦me:⟧", "I would value the opportunity to contribute to your team.⟦me:⟧"]) {
+        const m = letter(body);
+        const n = m.sentences.findIndex((x) => x.about === "me");
+        vi.spyOn(await import("@/lib/ai/provider"), "runAi").mockResolvedValue({ items: m.sentences.map((_, index) => ({ index, about: "me", refs: [], verdict: "ok" })) } as never);
+        const verdicts = await judge({ sentences: m.sentences, input: fixtureDraftInput() });
+        vi.restoreAllMocks();
+        expect(verdicts.map((x) => x.index), body).toContain(n);
+        expect(flagged(verifyOutput({ ...m, input: fixtureDraftInput(), ownSpans: [], judged: verdicts }).spans), body).toEqual([]);
+      }
+    } finally {
+      vi.restoreAllMocks();
+      delete process.env.AI_MODE;
+    }
+  });
+
   it("intent followed by a preposition phrase or the student's own reason stays unflagged", () => {
     for (const body of [
       "That is why I am applying to Northbridge.⟦me:⟧",

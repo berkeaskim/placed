@@ -146,6 +146,9 @@ function firmClausesSupported(text: string, src: Sources): boolean {
   }
   // In a sentence about the firm, a clause after a conjunction or comma with no student in it ("…because it offers X",
   // "…because bonuses are guaranteed", ", where analysts get…") is about the firm.
+  // A sentence-initial reason lead-in ("Because of its bonuses I…", "Thanks to its four-day week, …") is about the firm.
+  const lead = reasonLead(text);
+  if (lead !== null && !supported(lead)) return false;
   if (mentionsFirm(text, src.company)) {
     for (const clause of text.split(CLAUSE_BREAK).slice(1)) {
       if (FIRST_PERSON.test(clause)) continue;
@@ -153,6 +156,16 @@ function firmClausesSupported(text: string, src: Sources): boolean {
     }
   }
   return true;
+}
+
+const REASON_LEAD = /^\s*(?:because of|thanks to|given|due to|owing to|with its|for its)\b/i;
+/** The reason lead-in up to the first comma or first-person subject, or null when the sentence has none. */
+function reasonLead(text: string): string | null {
+  const m = REASON_LEAD.exec(text);
+  if (!m) return null;
+  const rest = text.slice(m[0].length);
+  const stop = /,|\b(?:I|I'm|I've|I'd|I'll|[Mm]y|[Mm]e)\b/.exec(rest);
+  return rest.slice(0, stop ? stop.index : rest.length);
 }
 
 const CLAUSE_BREAK = /[,;]|\b(?:because|since|as|so|and|but|when|if|while|given|which|that|where|who|whose)\b/i;
@@ -178,7 +191,7 @@ const INTENT_VOCAB = new Set(("start starting career analyst analysts summer pro
  * any epistemic wrapper or a bare "you".
  */
 function isIntent(text: string, src: Sources): boolean {
-  if (!FIRST_PERSON.test(text) || WRAPPER.test(text) || /\byou\b/i.test(text)) return false;
+  if (!FIRST_PERSON.test(text) || WRAPPER.test(text) || REASON_LEAD.test(text) || /\byou\b/i.test(text)) return false;
   // Role and job-post names ("Markets", "Summer Analyst"), never their stop-words, then a generic head noun.
   const named = new Set([...(src.input.role.toLowerCase().match(/[a-z]+/g) ?? []), ...(src.input.jdLines.join(" ").toLowerCase().match(/[a-z]+/g) ?? [])]
     .filter((w) => w.length > 2 && !GENERIC_STOP.has(w) && !NAME_STOP.has(w)).concat([...FIRM_HEADS]));
@@ -579,8 +592,9 @@ export async function judgeSentences(i: { sentences: { text: string; about: Mark
   const shown = i.sentences.map((s, index) => ({ ...s, index })).filter((s) =>
     s.about === "them"
     || (s.about === null && s.text.trim() && !furniture(s.text, d).lead && !furniture(s.text, d).trail)
-    // "me" and quoted-answer sentences that talk about the firm get the swap test and support check too.
-    || ((s.about === "me" || s.about === "you") && firmTalks(s.text, src)));
+    // "me" and quoted-answer sentences that name or talk about the firm get the swap test and support check too,
+    // intent included: the judge only adds flags, so it is the backstop for what the deterministic checks let through.
+    || ((s.about === "me" || s.about === "you") && (firmTalks(s.text, src) || mentionsFirm(s.text, src.company))));
   if (!shown.length) return [];
   const esc = escapeUntrusted;
   const cv = [...cvBulletIndex(d.cv)].map(([id, t]) => `${id}: ${esc(t)}`).join("\n");
