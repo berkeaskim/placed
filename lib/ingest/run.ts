@@ -37,9 +37,13 @@ export const MAX_TAGS_PER_COMPANY = 25;
 /** Bump to force every job to be re-processed once (e.g. after changing deterministic extraction). */
 export const HASH_VERSION = "v2";
 
-/** Versioned, and includes the ATS close date: an extended deadline with an unchanged JD must still re-process. */
+/**
+ * Versioned, and includes the ATS close date: an extended deadline with an unchanged JD must still re-process.
+ * opensOn is appended only when set, so jobs without it keep their pre-opensOn hash (no mass re-tag after upgrade).
+ */
 export function jobContentHash(j: Pick<RawJob, "title" | "deadline" | "opensOn">, text: string): string {
-  return contentHash(`${HASH_VERSION}\n${j.title}\n${j.deadline ?? ""}\n${j.opensOn ?? ""}\n${text}`);
+  const opens = j.opensOn ? `\nopens:${j.opensOn}` : "";
+  return contentHash(`${HASH_VERSION}\n${j.title}\n${j.deadline ?? ""}\n${text}${opens}`);
 }
 
 export async function ingestCompany(c: CompanyRow, deps: IngestDeps) {

@@ -122,4 +122,13 @@ describe("ingestCompany", () => {
     expect(by("c1")).toMatchObject({ deadline: "2026-11-01", deadline_source: "ats", rolling: true });
     expect(by("c2")).toMatchObject({ deadline: null, deadline_source: null });
   });
+
+  it("jobContentHash is unchanged from before opensOn existed for jobs without opensOn", async () => {
+    const { contentHash } = await import("@/lib/ingest/fingerprint");
+    const j = { title: "Data Analyst Intern", deadline: "2026-11-01" };
+    // Pre-branch formula: no opensOn segment at all. Changing it would re-tag every stored job on the next ingest.
+    expect(jobContentHash(j, "text")).toBe(contentHash(`v2\nData Analyst Intern\n2026-11-01\ntext`));
+    expect(jobContentHash({ ...j, opensOn: null }, "text")).toBe(contentHash(`v2\nData Analyst Intern\n2026-11-01\ntext`));
+    expect(jobContentHash({ ...j, opensOn: "2026-09-01" }, "text")).not.toBe(jobContentHash(j, "text"));
+  });
 });
