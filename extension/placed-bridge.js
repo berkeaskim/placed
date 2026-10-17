@@ -1,4 +1,8 @@
-// Runs on the Placed app only. Two jobs:
+// Runs on every localhost / 127.0.0.1 page, at document_start. Three jobs:
+//  0. When the page is the Placed app (it renders <meta name="placed-app">), tell the service worker, which remembers
+//     this origin (loopback only) and claims Autopilot packs from it first. Runs before the PLACED_ORIGINS check on
+//     purpose: the app may run on a port this copy's config.js does not know.
+// The rest only on the Placed origins in config.js:
 //  1. Tell the page the extension is installed (data-placed-extension on <html>), so /profile/linkedin can offer
 //     the one-click LinkedIn read.
 //  2. Pass a LinkedIn scoring ticket from the page to the service worker. Only messages from this same window and
@@ -8,6 +12,17 @@
   const ARMED = "placed:linkedin-armed";
   const FAILED = "placed:linkedin-failed";
   const TOKEN_RE = /^[A-Za-z0-9_-]{20,400}\.[A-Za-z0-9_-]{43}$/;
+  const MARKER = 'meta[name="placed-app"]';
+  let reported = false;
+  const report = () => {
+    if (reported || !document.querySelector(MARKER)) return;
+    reported = true;
+    try { chrome.runtime.sendMessage({ kind: "placedSeen" }, () => void chrome.runtime.lastError); } catch { /* extension reloaded */ }
+  };
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", report, { once: true });
+  else report();
+  window.addEventListener("load", report, { once: true });
+
   const origins = globalThis.PLACED_ORIGINS || [];
   if (!origins.includes(location.origin)) return;
 

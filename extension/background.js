@@ -7,6 +7,7 @@
 //     button, link, submit-ish input, role=button, or carry submit/apply/send wording.
 importScripts("config.js");
 importScripts("lib/geometry.js");
+importScripts("lib/origins.js");
 
 const ALLOWED = ["https://job-boards.greenhouse.io", "https://boards.greenhouse.io", "https://jobs.ashbyhq.com", "https://jobs.lever.co"];
 const IDLE_MS = 60_000;
@@ -16,6 +17,7 @@ const attached = new Set();
 const idleTimers = new Map();
 
 const placedOrigin = () => String(globalThis.PLACED_ORIGIN || "").replace(/\/+$/, "");
+const placedOrigins = () => (globalThis.PLACED_ORIGINS || []).map((o) => String(o).replace(/\/+$/, ""));
 const cdp = (tabId, method, params = {}) => chrome.debugger.sendCommand({ tabId }, method, params);
 
 // ---------- sender checks ----------
@@ -110,12 +112,26 @@ async function verifyPoint(tabId, x, y, nonce) {
 }
 
 // ---------- claim ----------
-// The claim answers with a same-origin path (/api/files/...): resolve it against the Placed origin, and never fetch
-// anything that resolves elsewhere.
-function cvUrl(u) {
+// The claim goes to the first Placed origin that answers (see lib/origins.js): the one a Placed tab last reported,
+// then PLACED_ORIGIN, then the rest of PLACED_ORIGINS. The claim answers with a same-origin path (/api/files/...):
+// resolve it against the origin that answered, and never fetch anything that resolves elsewhere.
+const LAST_ORIGIN_KEY = "placedLastOrigin";
+async function lastOrigin() {
   try {
-    const url = new URL(u, `${placedOrigin()}/`);
-    return url.origin === placedOrigin() && url.pathname.startsWith("/api/files/") ? url.href : null;
+    return (await chrome.storage.local.get(LAST_ORIGIN_KEY))[LAST_ORIGIN_KEY] || null;
+  } catch {
+    return null;
+  }
+}
+async function rememberOrigin(o) {
+  const origin = globalThis.PlacedOrigins.rememberableOrigin(o);
+  if (origin && origin !== (await lastOrigin())) await chrome.storage.local.set({ [LAST_ORIGIN_KEY]: origin });
+  return Boolean(origin);
+}
+function cvUrl(u, origin) {
+  try {
+    const url = new URL(u, `${origin}/`);
+    return url.origin === origin && url.pathname.startsWith("/api/files/") ? url.href : null;
   } catch {
     return null;
   }
@@ -127,8 +143,8 @@ function toBase64(buf) {
   return btoa(s);
 }
 /** Downloads a same-origin PDF the claim pointed at, capped at CV_MAX_BYTES; null leaves that field for the student. */
-async function fetchPdf(ref, fallbackName) {
-  const href = ref && typeof ref.url === "string" ? cvUrl(ref.url) : null;
+async function fetchPdf(ref, fallbackName, origin) {
+  const href = ref && typeof ref.url === "string" ? cvUrl(ref.url, origin) : null;
   if (!href) return null;
   try {
     const r = await fetch(href, { credentials: "omit", cache: "no-store" });
@@ -141,18 +157,18 @@ async function fetchPdf(ref, fallbackName) {
 }
 async function claim(token) {
   if (typeof token !== "string" || !/^[A-Za-z0-9_-]{43}$/.test(token)) return { status: 400 };
-  let res;
-  try {
-    res = await fetch(`${placedOrigin()}/api/autopilot/claim`, {
-      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ token }), credentials: "omit", cache: "no-store",
-    });
-  } catch {
-    return { status: 0 };
-  }
+  const O = globalThis.PlacedOrigins;
+  const origins = O.claimOrigins({ last: await lastOrigin(), primary: placedOrigin(), list: placedOrigins() });
+  const hit = await O.fetchFirst(origins, "/api/autopilot/claim", {
+    method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ token }), credentials: "omit", cache: "no-store",
+  });
+  if (!hit) return { status: 0 };
+  const { origin, res } = hit;
   if (!res.ok) return { status: res.status };
   const body = await res.json().catch(() => null);
   if (!body || !Array.isArray(body.fields)) return { status: 502 };
-  const [cv, cover] = await Promise.all([fetchPdf(body.cv, "CV.pdf"), fetchPdf(body.cover, "Cover-Letter.pdf")]);
+  await rememberOrigin(origin).catch(() => false); // Placed answered here: try it first next time
+  const [cv, cover] = await Promise.all([fetchPdf(body.cv, "CV.pdf", origin), fetchPdf(body.cover, "Cover-Letter.pdf", origin)]);
   const plan = { ats: body.ats, url: body.url, fields: body.fields }; // the CV URL never reaches the page
   return { status: 200, plan, cv, cover };
 }
@@ -165,7 +181,6 @@ async function claim(token) {
 const LI_KEY = "placedLinkedIn";
 const LI_TTL_MS = 3 * 60_000;
 const LI_TOKEN_RE = /^[A-Za-z0-9_-]{20,400}\.[A-Za-z0-9_-]{43}$/;
-const placedOrigins = () => (globalThis.PLACED_ORIGINS || []).map((o) => String(o).replace(/\/+$/, ""));
 const liGet = async () => {
   const s = (await chrome.storage.session.get(LI_KEY))[LI_KEY];
   if (s && Date.now() - s.armedAt > LI_TTL_MS) { await chrome.storage.session.remove(LI_KEY); return null; }
@@ -233,7 +248,17 @@ async function liHandle(msg, sender) {
 }
 
 // ---------- messages ----------
+// A Placed tab (placed-bridge.js saw the app's <meta name="placed-app">) reports where the app runs. The origin comes
+// from the sender, never from the message, and is kept only if it is loopback.
+function fromLoopbackTab(sender) {
+  return sender.id === chrome.runtime.id && Boolean(sender.tab) && sender.frameId === 0 && globalThis.PlacedOrigins.isLoopbackOrigin(senderOrigin(sender));
+}
 chrome.runtime.onMessage.addListener((msg, sender, reply) => {
+  if (msg && msg.kind === "placedSeen") {
+    if (!fromLoopbackTab(sender)) { reply({ ok: false }); return false; }
+    rememberOrigin(senderOrigin(sender)).then((ok) => reply({ ok }), () => reply({ ok: false }));
+    return true;
+  }
   if (msg && typeof msg.kind === "string" && msg.kind.startsWith("li")) {
     liHandle(msg, sender).then(reply, (e) => reply({ ok: false, error: String(e && e.message ? e.message : e) }));
     return true;
