@@ -56,6 +56,8 @@
         "lib/fill-plan.js",
         "lib/job-match.js",
         "lib/dom.js",
+        "lib/pacing.js",
+        "aurora.js",
         "fillers/greenhouse.js",
         "fillers/ashby.js",
         "fillers/lever.js",
