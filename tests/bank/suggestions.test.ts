@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { LOCAL_USER_ID as U } from "@/lib/auth/local-user";
 import { db } from "@/lib/db/client";
 import { bankBullets, bankEntries, bankSources, bankSuggestions } from "@/lib/db/schema";
@@ -124,5 +124,28 @@ describe("bank suggestion review", () => {
     const sg = insertSuggestion(U, { sourceId: s, kind: "new_bullet", targetEntryId: entry.id, payload: { text: "T", sourceText: "T" } });
     expect(() => acceptSuggestion(U, sg.id, { editedText: "   " })).toThrow("Bullet text can't be empty");
     expect(listSuggestions(U, "pending")).toHaveLength(1);
+  });
+
+  it("acceptAllFromSource logs a suggestion it had to skip and carries on", () => {
+    const s = src();
+    const bad = insertSuggestion(U, { sourceId: s, kind: "new_entry", targetEntryId: null, payload: { candidate: cand({ section: "bogus" as never }) } });
+    insertSuggestion(U, { sourceId: s, kind: "new_entry", targetEntryId: null, payload: { candidate: cand({ org: "Good Co" }) } });
+    const err = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      expect(acceptAllFromSource(U, s)).toBe(1);
+      expect(err).toHaveBeenCalledWith("acceptAllFromSource: skipped", bad.id, expect.stringMatching(/CHECK constraint/i));
+    } finally { err.mockRestore(); }
+    expect(listSuggestions(U, "pending").map((x) => x.id)).toEqual([bad.id]);
+  });
+
+  it("merge_into with bulletIndexes adds only the ticked bullets", () => {
+    const e = seedEntry("Foo Partners");
+    const s = src();
+    const c = cand({ bullets: [{ text: "Ran the onboarding for new analysts", sourceText: "a" }, { text: "Wrote the quarterly market summary", sourceText: "b" }] });
+    const sg = insertSuggestion(U, { sourceId: s, kind: "merge_into", targetEntryId: null, payload: { candidate: c, targets: [e.id] } });
+    acceptSuggestion(U, sg.id, { targetEntryId: e.id, bulletIndexes: [0] });
+    const texts = getBank(U).entries.find((x) => x.id === e.id)!.bullets.map((b) => b.text);
+    expect(texts).toContain("Ran the onboarding for new analysts");
+    expect(texts).not.toContain("Wrote the quarterly market summary");
   });
 });

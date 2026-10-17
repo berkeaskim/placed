@@ -7,7 +7,7 @@ import { parseCV } from "../ai/parseCV";
 import { aiMode } from "../ai/config";
 import { extractPostBullets } from "../ai/extractPostBullets";
 import { AI_NOT_SET_UP, AiError } from "../ai/provider";
-import { numberSet } from "../verify/tailoring";
+import { numberSet, unsupportedInSource } from "../verify/tailoring";
 import { assignIds } from "../cv/ids";
 import { extractPdf } from "../cv/pdf-text";
 import { parseLinkedInExport, type ParsedLinkedIn } from "../linkedin/parse-export";
@@ -151,34 +151,52 @@ function bulletKeys(kind: BankSuggestionKind, target: string | null, p: BankSugg
   return [];
 }
 
+const NEUTRAL_TITLE = "Project from LinkedIn post";
+
+/** The AI's project title, kept only when every word of 3+ letters is in the post and it names no employer the post doesn't. */
+function groundedTitle(title: string | null, post: string): string {
+  const t = title?.trim() ?? "";
+  if (!t) return NEUTRAL_TITLE;
+  const postWords = new Set(normText(post).split(" "));
+  const words = normText(t).split(" ").filter((w) => /[a-z]{3,}/.test(w));
+  return words.every((w) => postWords.has(w)) && unsupportedInSource(t, post).length === 0 ? t : NEUTRAL_TITLE;
+}
+
 /**
  * LinkedIn posts -> pending suggestions. The AI proposes bullets; one is kept only if its excerpt (at least 15 characters)
- * is quoted from the post and every number in it appears in the post. Anything else is counted in `dropped`.
- * Bullets for no existing entry that share a project title become one new_entry. Pending, rejected and accepted
- * suggestions, and bullets already in the bank, are never suggested again.
+ * is quoted from the post, every number in it appears in the post, and the gate's word-metric and known-employer checks
+ * pass against the post. Anything else is counted in `dropped`. A project title not backed by the post becomes
+ * "Project from LinkedIn post". Bullets for no existing entry that share a project title become one new_entry. Pending,
+ * rejected and accepted suggestions, and bullets already in the bank, are never suggested again: the bank and the
+ * de-dup keys are re-read after the AI call, in the same synchronous block as the inserts, so a double submit can't
+ * insert twice.
  */
 export async function importPosts(userId: string, posts: string[]): Promise<{ suggestions: number; dropped: number }> {
   if (aiMode() === "off") throw new AiError(AI_NOT_SET_UP);
-  const seen = new Set(listSuggestions(userId).flatMap((s) => bulletKeys(s.kind, s.targetEntryId, s.payload)));
   let suggestions = 0;
   let dropped = 0;
   for (const post of posts.map((p) => p.trim()).filter(Boolean)) {
     const { id: sourceId } = upsertSource(userId, "linkedin_post", sha256(new TextEncoder().encode(post)), post);
+    const before = getBank(userId);
+    const { items } = await extractPostBullets(post, before.entries.map((e) => ({ id: e.id, org: e.org, title: e.title })));
+    // ---- synchronous from here to the inserts (better-sqlite3), so concurrent imports see each other's rows ----
     const bank = getBank(userId);
-    const { items } = await extractPostBullets(post, bank.entries.map((e) => ({ id: e.id, org: e.org, title: e.title })));
+    const seen = new Set(listSuggestions(userId).flatMap((s) => bulletKeys(s.kind, s.targetEntryId, s.payload)));
     const flat = squash(post);
     const postNums = numberSet(post);
     const groups = new Map<string, CandidateEntry>();
     for (const it of items) {
+      const text = it.text.trim();
       const excerpt = squash(it.excerpt);
-      const grounded = excerpt.length >= MIN_EXCERPT && flat.includes(excerpt) && [...numberSet(it.text)].every((n) => postNums.has(n));
+      const grounded = text.length > 0 && excerpt.length >= MIN_EXCERPT && flat.includes(excerpt)
+        && [...numberSet(text)].every((n) => postNums.has(n)) && unsupportedInSource(text, post).length === 0;
       if (!grounded) { dropped++; continue; }
       const target = it.entryHint
         ? bank.entries.find((e) => sameEntry({ org: it.entryHint!.org, title: it.entryHint!.title, startYm: null, endYm: null }, e))
         : undefined;
-      const bullet = { text: it.text, sourceText: it.excerpt };
+      const bullet = { text, sourceText: it.excerpt };
       if (target) {
-        if (isDupBullet(it.text, target.bullets.map((b) => b.text))) continue;
+        if (isDupBullet(text, target.bullets.map((b) => b.text))) continue;
         const payload: NewBulletPayload = bullet;
         const [key] = bulletKeys("new_bullet", target.id, payload);
         if (seen.has(key)) continue;
@@ -187,9 +205,9 @@ export async function importPosts(userId: string, posts: string[]): Promise<{ su
         suggestions++;
         continue;
       }
-      const title = it.newProjectTitle?.trim() || "Project";
-      const held = bank.entries.some((e) => e.section === "projects" && normText(e.title) === normText(title) && isDupBullet(it.text, e.bullets.map((b) => b.text)));
-      const key = `e|${normText(title)}|${normText(it.text)}`;
+      const title = groundedTitle(it.newProjectTitle, post);
+      const held = bank.entries.some((e) => e.section === "projects" && normText(e.title) === normText(title) && isDupBullet(text, e.bullets.map((b) => b.text)));
+      const key = `e|${normText(title)}|${normText(text)}`;
       if (held || seen.has(key)) continue;
       seen.add(key);
       const g = groups.get(normText(title)) ?? {

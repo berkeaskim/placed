@@ -660,6 +660,29 @@ const EMPLOYER_RES = KNOWN_EMPLOYERS.map((k) => ({
   res: [k.name, ...(k.aliases ?? [])].map((n) => new RegExp(`(?<![A-Za-z0-9])${escapeRegex(n).replace(/\\?\s+/g, "\\s+")}(?![A-Za-z0-9])`, k.caseSensitive ? "g" : "gi")),
 }));
 
+/**
+ * Experience Bank (spec §4): the gate's word-metric check ("tripled", "dozens of") and known-employer check for one line
+ * against a free-text source (a LinkedIn post). Returns the claims the source doesn't back; empty means the line passes.
+ * A known employer counts as backed when the source names it in any case (a post is not a CV, so no name-case rule).
+ */
+export function unsupportedInSource(text: string, source: string): string[] {
+  const out: string[] = [];
+  const src = stripContacts(normCurrency(source));
+  const keys = supportKeys(src);
+  const t = normCurrency(text);
+  for (const w of wordMetrics(t)) {
+    const at = t.indexOf(w.raw);
+    const ok = w.key.startsWith("v:") ? vagueBacked(w.key, vagueNoun(t, at + w.raw.length), keys, src) : keySupported(w.key, keys);
+    if (!ok) out.push(w.raw);
+  }
+  for (const { k, res } of EMPLOYER_RES) {
+    const named = [...new Set(res.flatMap((re) => [...text.matchAll(re)]
+      .filter((m) => !ordinaryWordAtSentenceStart(text, m.index!, m[0], k, source)).map((m) => m[0])))];
+    if (named.length && !res.some((re) => [...source.matchAll(re)].length > 0)) out.push(...named.filter((n) => !out.includes(n)));
+  }
+  return out;
+}
+
 /** Fix round 5 (ruling e): skills implied by a tool on the CV (canonical vocab names). */
 const IMPLIED_BY: Record<string, string[]> = {
   "Data Visualisation": ["Tableau", "Power BI", "Looker"],

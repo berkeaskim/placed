@@ -25,13 +25,24 @@ function addToEntry(userId: string, entryId: string, texts: { text: string; sour
   appendEntrySource(userId, entryId, sourceId);
 }
 
-function apply(userId: string, s: BankSuggestion, opts: { editedText?: string; targetEntryId?: string }): void {
+export type AcceptOpts = { editedText?: string; targetEntryId?: string; bulletIndexes?: number[] };
+
+/** new_entry / merge_into: the ticked bullets only (all when `bulletIndexes` is absent); none ticked is refused. */
+function ticked<T>(bullets: T[], bulletIndexes: number[] | undefined): T[] {
+  if (bulletIndexes === undefined) return bullets;
+  const keep = new Set(bulletIndexes);
+  const out = bullets.filter((_, i) => keep.has(i));
+  if (!out.length) throw new Error("Tick at least one bullet to add");
+  return out;
+}
+
+function apply(userId: string, s: BankSuggestion, opts: AcceptOpts): void {
   if (s.kind === "new_entry") {
     const c = (s.payload as NewEntryPayload).candidate;
     insertEntry(userId, {
       section: c.section, org: c.org, title: c.title, dates: c.dates, startYm: c.startYm, endYm: c.endYm, location: c.location,
       pinned: false, hidden: false, sourceIds: [s.sourceId],
-      bullets: c.bullets.map((b, i) => ({ text: b.text, position: i, pinned: false, hidden: false, sourceIds: [s.sourceId], sourceText: b.sourceText })),
+      bullets: ticked(c.bullets, opts.bulletIndexes).map((b, i) => ({ text: b.text, position: i, pinned: false, hidden: false, sourceIds: [s.sourceId], sourceText: b.sourceText })),
     });
   } else if (s.kind === "new_bullet") {
     const p = s.payload as NewBulletPayload;
@@ -49,12 +60,12 @@ function apply(userId: string, s: BankSuggestion, opts: { editedText?: string; t
   } else {
     const p = s.payload as MergeIntoPayload;
     if (!opts.targetEntryId || !p.targets.includes(opts.targetEntryId)) throw new Error("Pick one of the matching entries to merge into");
-    addToEntry(userId, opts.targetEntryId, p.candidate.bullets, s.sourceId, false);
+    addToEntry(userId, opts.targetEntryId, ticked(p.candidate.bullets, opts.bulletIndexes), s.sourceId, false);
   }
 }
 
 /** Resolved or unknown suggestions are a no-op. Each accept is atomic with its status change. */
-export function acceptSuggestion(userId: string, id: string, opts: { editedText?: string; targetEntryId?: string } = {}): void {
+export function acceptSuggestion(userId: string, id: string, opts: AcceptOpts = {}): void {
   if (opts.editedText !== undefined && !opts.editedText.trim()) throw new Error("Bullet text can't be empty");
   db.transaction(() => {
     const s = getSuggestion(userId, id);
@@ -83,8 +94,9 @@ export function acceptAllFromSource(userId: string, sourceId: string): number {
     try {
       acceptSuggestion(userId, s.id);
       n++;
-    } catch {
+    } catch (e) {
       // the transaction rolled back; leave this one pending and carry on
+      console.error("acceptAllFromSource: skipped", s.id, e instanceof Error ? e.message : String(e));
     }
   }
   return n;
