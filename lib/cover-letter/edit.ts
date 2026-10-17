@@ -4,7 +4,7 @@ import { streamText } from "@/lib/ai/provider";
 import { buildDraftPrompt, HONESTY_RULES, lengthBand, MARKER_RULES, STYLE_BANS, type DraftInput } from "./draft";
 import { MarkerParser, type Marked } from "./stream-parse";
 import type { LintHit, Span } from "./types";
-import { verifyOutput } from "./verify";
+import { judgeSentences, verifyOutput, type JudgedSentence } from "./verify";
 
 export type EditKind = "shorter" | "remove_flag" | "add_close" | "more_formal" | "free";
 export type EditEvent =
@@ -29,9 +29,10 @@ function paragraphRanges(text: string): Range[] {
 }
 
 const SALUTATION = /^(?:dear|hi|hello)\b/i;
-const SIGN_OFF = /^(?:yours (?:sincerely|faithfully)|kind regards|best wishes|best regards|regards|many thanks|best)\b/i;
+const SIGN_OFF_LINE = /^(?:yours (?:sincerely|faithfully)|kind regards|best wishes|best regards|regards|many thanks|best),?\s*$/i;
 const salutation = (p: string) => SALUTATION.test(p) && !p.includes("\n") && p.trim().split(/\s+/).length <= 12;
-const signOff = (p: string) => SIGN_OFF.test(p.trim()) && p.trim().split("\n").length <= 3;
+/** A bare sign-off line, optionally followed by one name line. "Many thanks for considering…" is body text. */
+const signOff = (p: string) => { const l = p.trim().split("\n"); return l.length <= 2 && SIGN_OFF_LINE.test(l[0].trim()); };
 
 /** Indexes of the paragraphs the writer may rewrite: everything but the salutation and the sign-off. */
 function bodyIndexes(text: string, paras: Range[]): number[] {
@@ -103,7 +104,7 @@ function asSentence(text: string, s: Span, picked: Set<string>): Marked {
  * paragraphs rebuilt from their spans, the edited paragraph's from `sentences`). Spans outside the region keep their
  * old verdicts and flags, shifted; only the edited paragraph takes the new spans. Lint covers the whole letter.
  */
-function finalize(o: { text: string; spans: Span[]; region: Range; piece: string; sentences: Marked[]; own: Span[]; input: DraftInput }) {
+function finalize(o: { text: string; spans: Span[]; region: Range; piece: string; sentences: Marked[]; own: Span[]; input: DraftInput; judged?: JudgedSentence[]; keep?: Span[] }) {
   const { text, spans, region, piece, input } = o;
   const text2 = text.slice(0, region.start) + piece + text.slice(region.end);
   const delta = piece.length - (region.end - region.start);
@@ -113,9 +114,12 @@ function finalize(o: { text: string; spans: Span[]; region: Range; piece: string
   const ai = (list: Span[], t: string) => list.filter((s) => s.kind === "ai").map((s) => asSentence(t, s, picked));
   const sentences = [...ai(before, text2), ...o.sentences, ...ai(after, text2)];
   const ownSpans = [...before, ...after].filter((s) => s.kind === "theirs").concat(o.own);
-  const v = verifyOutput({ text: text2, sentences, input, ownSpans });
+  // The judge saw only the edited paragraph's sentences: shift its indexes past the sentences before it.
+  const skip = ai(before, text2).length;
+  const judged = (o.judged ?? []).map((j) => ({ ...j, index: j.index + skip }));
+  const v = verifyOutput({ text: text2, sentences, input, ownSpans, judged });
   const pieceEnd = region.start + piece.length;
-  const mine = v.spans.filter((s) => s.start >= region.start && s.end <= pieceEnd);
+  const mine = o.keep ?? v.spans.filter((s) => s.start >= region.start && s.end <= pieceEnd);
   return { text: text2, spans: [...before, ...mine, ...after].sort((a, b) => a.start - b.start), lint: v.lint };
 }
 
@@ -165,6 +169,8 @@ function editPrompt(i: { kind: Exclude<EditKind, "remove_flag">; instruction?: s
  */
 export async function* applyEdit(i: {
   text: string; spans: Span[]; kind: EditKind; instruction?: string; input: DraftInput; signal?: AbortSignal;
+  /** Sentence judge for the rewritten paragraph; defaults to `judgeSentences`. Its verdicts only add flags. */
+  judge?: typeof judgeSentences;
 }): AsyncIterable<EditEvent> {
   const { text, spans, input } = i;
   const plan = planEdit(text, spans, i.kind, i.instruction);
@@ -173,20 +179,26 @@ export async function* applyEdit(i: {
   if ("span" in plan) {
     const s = plan.span;
     const index = paras.findIndex((p) => s.start >= p.start && s.start <= p.end);
-    const region = paras[index];
+    const para = paras[index];
     yield { phase: "target", paragraph: index };
     const cut = removalRange(text, s);
     const gone = cut.end - cut.start;
     const map = (p: number) => (p <= cut.start ? p : p >= cut.end ? p - gone : cut.start);
-    const piece = text.slice(region.start, cut.start) + text.slice(cut.end, region.end);
-    const inside = spans.filter((x) => x.start >= region.start && x.end <= region.end && x !== s);
+    const piece = text.slice(para.start, cut.start) + text.slice(cut.end, para.end);
+    // The paragraph's only sentence: drop the paragraph and one separator with it.
+    const empty = !/[\p{L}\p{N}]/u.test(piece);
+    const region = !empty ? para : index > 0 ? { start: paras[index - 1].end, end: para.end } : { start: para.start, end: paras[index + 1]?.start ?? para.end };
+    const inside = spans.filter((x) => x.start >= para.start && x.end <= para.end && x !== s);
     const moved = (x: Span): Span => ({ ...x, start: map(x.start), end: map(x.end) });
     const picked = new Set(input.pickedFacts.map((f) => f.id.toLowerCase()));
     const ai = inside.filter((x) => x.kind === "ai").map(moved).filter((x) => x.end > x.start);
+    const kept = empty ? [] : inside.map(moved).filter((x) => x.end > x.start);
     const done = finalize({
-      text, spans, region, piece, input,
-      sentences: ai.map((x) => asSentence(text.slice(0, cut.start) + text.slice(cut.end), x, picked)),
-      own: inside.filter((x) => x.kind === "theirs").map(moved),
+      text, spans, region, piece: empty ? "" : piece, input,
+      // Unchanged sibling sentences are the same text, moved: their verdicts and flags carry over.
+      keep: kept,
+      sentences: empty ? [] : ai.map((x) => asSentence(text.slice(0, cut.start) + text.slice(cut.end), x, picked)),
+      own: empty ? [] : inside.filter((x) => x.kind === "theirs").map(moved),
     });
     yield { phase: "done", ...done };
     return;
@@ -238,5 +250,6 @@ export async function* applyEdit(i: {
     from = at + (s.end - s.start);
   }
 
-  yield { phase: "done", ...finalize({ text, spans, region, piece, sentences, own, input }) };
+  const judged = await (i.judge ?? judgeSentences)({ sentences, input });
+  yield { phase: "done", ...finalize({ text, spans, region, piece, sentences, own, input, judged }) };
 }

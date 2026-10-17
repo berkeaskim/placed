@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { FIXTURE_ANSWERS } from "./fixtures";
 import { applyEdit, planEdit, type EditKind } from "@/lib/cover-letter/edit";
 import type { Span } from "@/lib/cover-letter/types";
 import { countWords } from "@/lib/cover-letter/rules";
@@ -12,9 +13,10 @@ const base = () => {
   const m = parseMarked(readFileSync("fixtures/ai/coverLetterDraft/default.txt", "utf8"));
   return { text: m.text, spans: verifyOutput({ ...m, input, ownSpans: [] }).spans };
 };
-const run = async (kind: EditKind, instruction?: string, b = base()) => {
+const noJudge = async () => [];
+const run = async (kind: EditKind, instruction?: string, b = base(), judge: Parameters<typeof applyEdit>[0]["judge"] = noJudge) => {
   const events: { phase: string; [k: string]: unknown }[] = [];
-  for await (const ev of applyEdit({ ...b, kind, instruction, input })) events.push(ev);
+  for await (const ev of applyEdit({ ...b, kind, instruction, input, judge })) events.push(ev);
   return { events, done: events.find((e) => e.phase === "done") as unknown as Done, before: b };
 };
 const paragraphs = (t: string) => t.split(/\n[ \t]*\n/);
@@ -107,5 +109,72 @@ describe("applyEdit", () => {
     const b = base();
     // paragraph 3 holds the a4 answer; the shorter fixture has no such passage
     await expect(run("shorter", "make paragraph 3 shorter", b)).rejects.toThrow(/locked/i);
+  });
+});
+
+describe("sign-off detection", () => {
+  const withThanks = (b = base()) => {
+    const text = b.text.replace("Yours faithfully,", "Many thanks for considering my application.\n\nYours faithfully,");
+    return { text, spans: b.spans.map((s) => (s.start >= b.text.indexOf("Yours faithfully") ? { ...s, start: s.start + 42, end: s.end + 42 } : s)) };
+  };
+  it("treats 'Many thanks for considering…' as a body paragraph", () => {
+    const b = withThanks();
+    const n = paragraphs(b.text).length;
+    expect(planEdit(b.text, b.spans, "shorter", "the closing paragraph")).toEqual({ paragraph: n - 2 });
+    expect(planEdit(b.text, b.spans, "add_close")).toEqual({ paragraph: n - 1 });
+  });
+});
+
+describe("kinds with fixtures", () => {
+  it.each(["more_formal", "free"] as const)("%s rewrites the opening and keeps the locked answer", async (kind) => {
+    const { done, before } = await run(kind, "the opening");
+    const [bp, ap] = [paragraphs(before.text), paragraphs(done.text)];
+    expect(ap[1]).not.toBe(bp[1]);
+    expect(ap.filter((_, i) => i !== 1)).toEqual(bp.filter((_, i) => i !== 1));
+    const a1 = FIXTURE_ANSWERS[0].text!;
+    expect(done.spans.filter((s) => s.kind === "theirs" && done.text.slice(s.start, s.end) === a1)).toHaveLength(1);
+    const p1 = done.text.indexOf(ap[1]);
+    expect(done.spans.filter((s) => s.kind === "ai" && s.flag && s.start >= p1 && s.end <= p1 + ap[1].length)).toEqual([]);
+  });
+});
+
+describe("judge flags", () => {
+  const judgedBase = () => {
+    const m = parseMarked(readFileSync("fixtures/ai/coverLetterDraft/default.txt", "utf8"));
+    const index = m.sentences.findIndex((s) => s.text.startsWith("Presenting it each week"));
+    const v = verifyOutput({ ...m, input, ownSpans: [], judged: [{ index, about: "me", refs: ["x1-b0"], verdict: "unsupported" }] });
+    return { text: m.text, spans: v.spans, index };
+  };
+
+  it("remove_flag carries over the flags of sibling sentences", async () => {
+    const b = judgedBase();
+    expect(b.spans.some((s) => s.flag === "not in the job post or your picked facts")).toBe(true);
+    const { done } = await run("remove_flag", undefined, b);
+    const f = done.spans.filter((s) => s.flag === "not in the job post or your picked facts");
+    expect(f).toHaveLength(1);
+    expect(done.text.slice(f[0].start, f[0].end)).toMatch(/^Presenting it each week/);
+  });
+
+  it("a rewrite re-runs the judge on the edited paragraph only, and its verdicts add flags", async () => {
+    const seen: string[][] = [];
+    const judge = async (a: { sentences: { text: string }[] }) => {
+      seen.push(a.sentences.map((s) => s.text));
+      return [{ index: 0, about: "them" as const, refs: ["jd"], verdict: "generic" as const }];
+    };
+    const { done } = await run("shorter", "the opening", base(), judge as never);
+    expect(seen).toHaveLength(1);
+    expect(seen[0]).toHaveLength(2);
+    const f = done.spans.find((s) => s.flag === "would work for any firm");
+    expect(done.text.slice(f!.start, f!.end)).toMatch(/^I am applying for the 2027/);
+  });
+});
+
+describe("remove_flag on a paragraph's only sentence", () => {
+  it("collapses the paragraph and its separator", async () => {
+    const text = "Dear Hiring Manager,\n\nWe placed 3rd of 62 teams.\n\nI ran the desk.\n\nYours faithfully,";
+    const spans: Span[] = [{ start: 22, end: 48, kind: "ai", refs: ["p1-b0"], flag: "unsupported number" }];
+    const { done } = await run("remove_flag", undefined, { text, spans });
+    expect(done.text).toBe("Dear Hiring Manager,\n\nI ran the desk.\n\nYours faithfully,");
+    expect(done.text).not.toMatch(/\n{3}/);
   });
 });
