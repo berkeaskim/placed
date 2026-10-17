@@ -1,8 +1,12 @@
 import { revalidateTag } from "next/cache";
 import { getSetting, setSetting } from "@/lib/settings/store";
 import { IngestBusyError, ingestRunning, lastIngestAt, runIngest } from "./local";
+import { discoverIfDue } from "./discover";
 
 export const INTERVAL_SETTING = "ingest.intervalHours";
+/** "HH:MM" local time: a run every morning (or whenever) at that time. Set → wins over the interval. */
+export const DAILY_AT_SETTING = "ingest.dailyAt";
+export const DEFAULT_DAILY_AT = "07:00";
 export const INTERVAL_CHOICES = [0, 3, 6, 12, 24] as const;
 export const DEFAULT_INTERVAL_HOURS = 6;
 const CHECK_MS = 15 * 60 * 1000;
@@ -22,13 +26,45 @@ export function ingestIntervalHours(): number {
 export function setIngestIntervalHours(h: number): void {
   if (!(INTERVAL_CHOICES as readonly number[]).includes(h)) throw new Error("unsupported interval");
   setSetting(INTERVAL_SETTING, String(h));
+  setSetting(DAILY_AT_SETTING, null);
+}
+
+const HHMM = /^([01]\d|2[0-3]):([0-5]\d)$/;
+
+/** The daily run time ("07:00"), null when the schedule is an interval. */
+export function ingestDailyAt(): string | null {
+  const v = getSetting(DAILY_AT_SETTING)?.trim() ?? "";
+  return HHMM.test(v) ? v : null;
+}
+
+export function setIngestDailyAt(at: string): void {
+  if (!HHMM.test(at)) throw new Error("unsupported time");
+  setSetting(DAILY_AT_SETTING, at);
+}
+
+/** The latest moment at or before `now` when the clock read `at` (local time). */
+function lastOccurrence(at: string, now: number): number {
+  const [h, m] = at.split(":").map(Number);
+  const d = new Date(now);
+  d.setHours(h, m, 0, 0);
+  if (d.getTime() > now) d.setDate(d.getDate() - 1);
+  return d.getTime();
 }
 
 /** When the next background run is due (ISO), null when scheduling is off. Overdue (or never run) → now. */
 export function nextIngestAt(now = Date.now()): string | null {
+  const last = lastIngestAt();
+  const at = ingestDailyAt();
+  if (at) {
+    // Missed the last slot (asleep, app closed) → catch up now; otherwise the next slot.
+    const prev = lastOccurrence(at, now);
+    if (!last || Date.parse(last) < prev) return new Date(now).toISOString();
+    const next = new Date(prev);
+    next.setDate(next.getDate() + 1);
+    return next.toISOString();
+  }
   const h = ingestIntervalHours();
   if (h === 0) return null;
-  const last = lastIngestAt();
   const due = last ? Date.parse(last) + h * HOUR : now;
   return new Date(Math.max(due, now)).toISOString();
 }
@@ -50,6 +86,7 @@ export async function ingestTick(now = Date.now()): Promise<"ran" | "skipped" | 
   if (!ingestDue(now)) return "skipped";
   if (ingestRunning()) return "busy";
   try {
+    await discoverIfDue();
     const s = await runIngest();
     console.log(`[ingest] background run: ${s.newJobs} new jobs from ${s.companies - s.failed}/${s.companies} companies`);
     try { revalidateTag("jobs", { expire: 0 }); } catch { /* outside a request; the feed keys its cache on the last run anyway */ }
