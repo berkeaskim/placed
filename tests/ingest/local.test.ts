@@ -73,6 +73,17 @@ describe("sqliteStore", () => {
     expect(await store.markDead(id, [])).toBe(2);
     db.delete(jobs).run();
   });
+
+  it("persists the empty-listing streak per company", async () => {
+    const store = sqliteStore();
+    const id = acmeId();
+    expect(await store.emptyRuns(id)).toBe(0);
+    await store.setEmptyRuns(id, 1);
+    expect(await store.emptyRuns(id)).toBe(1);
+    expect(await sqliteStore().emptyRuns(id)).toBe(1);
+    await store.setEmptyRuns(id, 0);
+    expect(await store.emptyRuns(id)).toBe(0);
+  });
 });
 
 describe("runIngest", () => {

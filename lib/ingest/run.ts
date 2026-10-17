@@ -22,6 +22,9 @@ export interface IngestStore {
   upsert(rows: JobRow[]): Promise<void>;
   touch(companyId: number, extIds: string[]): Promise<void>;
   markDead(companyId: number, liveExtIds: string[]): Promise<number>;
+  /** Consecutive runs whose raw listing was empty, persisted per company. */
+  emptyRuns(companyId: number): Promise<number>;
+  setEmptyRuns(companyId: number, n: number): Promise<void>;
 }
 
 export type IngestDeps = {
@@ -34,6 +37,11 @@ export type IngestDeps = {
 };
 
 export const MAX_TAGS_PER_COMPANY = 25;
+/**
+ * An empty listing closes the board's live jobs only once it has come back empty this many runs in a row. A single
+ * empty 200 is as likely a transient ATS glitch as a real "nothing open", and closing on it would wipe the board.
+ */
+export const EMPTY_RUNS_TO_CLOSE = 2;
 /** Bump to force every job to be re-processed once (e.g. after changing deterministic extraction). */
 export const HASH_VERSION = "v2";
 
@@ -99,6 +107,11 @@ export async function ingestCompany(c: CompanyRow, deps: IngestDeps) {
   }
   if (rows.length) await deps.store.upsert(rows);
   if (unchanged.length) await deps.store.touch(c.id, unchanged);
-  const dead = await deps.store.markDead(c.id, keptIds);
-  return { fetched: raw.length, kept: keptIds.length, tagged, failed, pending, dead };
+  // Keyed on the raw listing, not keptIds: postings that all fail the filters are a real answer, not a glitch.
+  const prevEmpty = await deps.store.emptyRuns(c.id);
+  const emptyRuns = raw.length ? 0 : prevEmpty + 1;
+  if (emptyRuns !== prevEmpty) await deps.store.setEmptyRuns(c.id, emptyRuns);
+  const heldEmpty = emptyRuns > 0 && emptyRuns < EMPTY_RUNS_TO_CLOSE;
+  const dead = heldEmpty ? 0 : await deps.store.markDead(c.id, keptIds);
+  return { fetched: raw.length, kept: keptIds.length, tagged, failed, pending, dead, heldEmpty };
 }

@@ -9,15 +9,18 @@ const raw = (over: Partial<RawJob>): RawJob => ({
   remote: false, html: "<h3>Requirements</h3><ul><li>SQL</li></ul>", postedAt: null, ...over,
 });
 
-function fakeStore(existing = new Map<string, { content_hash: string | null; tag_status: string }>()) {
+function fakeStore(existing = new Map<string, { content_hash: string | null; tag_status: string }>(), emptyRuns = 0) {
   const upserted: JobRow[] = [];
+  const state = { emptyRuns };
   const store: IngestStore = {
     existing: async () => existing,
     upsert: async (rows) => { upserted.push(...rows); },
     touch: vi.fn(async () => {}),
     markDead: vi.fn(async () => 2),
+    emptyRuns: async () => state.emptyRuns,
+    setEmptyRuns: vi.fn(async (_id: number, n: number) => { state.emptyRuns = n; }),
   };
-  return { store, upserted };
+  return { store, upserted, state };
 }
 
 describe("ingestCompany", () => {
@@ -59,6 +62,51 @@ describe("ingestCompany", () => {
     const { store } = fakeStore();
     await expect(ingestCompany(company, { fetchJobs: async () => { throw new Error("HTTP 500"); }, tagJob: vi.fn() as never, store })).rejects.toThrow();
     expect(store.markDead).not.toHaveBeenCalled();
+  });
+
+  it("holds the board's live jobs open on the first empty listing", async () => {
+    const { store, state } = fakeStore();
+    const r = await ingestCompany(company, { fetchJobs: async () => [], tagJob: vi.fn() as never, store });
+    expect(store.markDead).not.toHaveBeenCalled();
+    expect(state.emptyRuns).toBe(1);
+    expect(r).toMatchObject({ fetched: 0, kept: 0, dead: 0, heldEmpty: true });
+  });
+
+  it("closes the board's jobs once the listing is empty on a second consecutive run", async () => {
+    const { store, state } = fakeStore();
+    const deps = { fetchJobs: async () => [], tagJob: vi.fn() as never, store };
+    await ingestCompany(company, deps);
+    const r = await ingestCompany(company, deps);
+    expect(store.markDead).toHaveBeenCalledTimes(1);
+    expect(store.markDead).toHaveBeenCalledWith(1, []);
+    expect(state.emptyRuns).toBe(2);
+    expect(r).toMatchObject({ dead: 2, heldEmpty: false });
+  });
+
+  it("a non-empty listing resets the empty streak, so empty-full-empty never closes anything", async () => {
+    const { store, state } = fakeStore();
+    const empty = { fetchJobs: async () => [], tagJob: vi.fn() as never, store };
+    await ingestCompany(company, empty);
+    await ingestCompany(company, { fetchJobs: async () => [raw({})], tagJob: async (i) => heuristicTagJob(i), store });
+    expect(state.emptyRuns).toBe(0);
+    vi.mocked(store.markDead).mockClear();
+    await ingestCompany(company, empty);
+    expect(store.markDead).not.toHaveBeenCalled();
+    expect(state.emptyRuns).toBe(1);
+  });
+
+  it("does not hold when postings came back but none passed the filters", async () => {
+    const { store, state } = fakeStore();
+    const r = await ingestCompany(company, { fetchJobs: async () => [raw({ title: "Senior Data Engineer" })], tagJob: vi.fn() as never, store });
+    expect(store.markDead).toHaveBeenCalledWith(1, []);
+    expect(state.emptyRuns).toBe(0);
+    expect(r.heldEmpty).toBe(false);
+  });
+
+  it("does not touch the empty streak when nothing changed", async () => {
+    const { store } = fakeStore();
+    await ingestCompany(company, { fetchJobs: async () => [raw({})], tagJob: async (i) => heuristicTagJob(i), store });
+    expect(store.setEmptyRuns).not.toHaveBeenCalled();
   });
 
   it("stores deterministic deadlines with provenance and ignores the tagger's deadline", async () => {

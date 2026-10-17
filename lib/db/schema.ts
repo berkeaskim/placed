@@ -125,6 +125,8 @@ export const companies = sqliteTable("companies", {
   /** "seed" (seed/companies.yml) or "discovered" (added by the AI company search, lib/ingest/discover.ts). */
   source: text("source").notNull().default("seed"),
   added_at: text("added_at"),
+  /** Consecutive ingest runs whose listing came back empty (lib/ingest/run.ts holds jobs open until it reaches 2). */
+  empty_runs: integer("empty_runs").notNull().default(0),
 }, (t) => [
   unique("companies_ats_slug_key").on(t.ats, t.slug),
   check("companies_ats_check", inList("ats", ATS_VALUES)),

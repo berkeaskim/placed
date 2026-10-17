@@ -15,6 +15,7 @@ describe("per-company tag cap", () => {
     const store: IngestStore = {
       existing: async () => new Map(), upsert: async (r) => { upserted.push(...r); },
       touch: vi.fn(async () => {}), markDead: vi.fn(async () => 0),
+      emptyRuns: async () => 0, setEmptyRuns: async () => {},
     };
     const tag = vi.fn(async (i: { title: string; textLines: string[] }) => heuristicTagJob(i));
     const r = await ingestCompany(company, { fetchJobs: async () => [1, 2, 3, 4, 5].map(raw), tagJob: tag, store, maxTags: 2 });
