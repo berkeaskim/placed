@@ -12,6 +12,19 @@ export function openCoverLetterCard(target: OutputTarget, autopilot = false): vo
   window.dispatchEvent(new CustomEvent<Open>(EVENT, { detail: { target, autopilot } }));
 }
 
+export const COVER_READY_EVENT = "placed:cover-letter-ready";
+
+/** Tells the Autopilot chat an output was marked ready; `key` is `"upload"` or the output's field key. */
+export function announceCoverReady(key: string): void {
+  window.dispatchEvent(new CustomEvent<string>(COVER_READY_EVENT, { detail: key }));
+}
+
+export function onCoverReady(cb: (key: string) => void): () => void {
+  const on = (e: Event) => cb((e as CustomEvent<string>).detail);
+  window.addEventListener(COVER_READY_EVENT, on);
+  return () => window.removeEventListener(COVER_READY_EVENT, on);
+}
+
 const keyOf = (t: OutputTarget) => (t.kind === "upload" ? "upload" : `field:${t.fieldKey}`);
 
 /** The manual entry point: a full cover letter for the upload. */

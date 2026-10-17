@@ -2,7 +2,7 @@
 import { and, eq } from "drizzle-orm";
 import { requireUser } from "@/lib/auth/local-user";
 import { db } from "@/lib/db/client";
-import { autopilotPacks, autopilotVault, jobs } from "@/lib/db/schema";
+import { autopilotPacks, autopilotVault, coverLetterOutputs, coverLetters, jobs } from "@/lib/db/schema";
 import { buildPack, draftInputFor, generateDraft, getVault } from "@/lib/autopilot/server";
 import { suggestIdeas, type Idea } from "@/lib/autopilot/ideas";
 import { reviseAnswer, type ReviseHow } from "@/lib/autopilot/revise";
@@ -156,4 +156,16 @@ export async function reviseFor(jobId: string, fieldKey: string, text: string, h
   if (!uid) return { ok: false };
   const input = await draftInputFor(uid, jobId, fieldKey);
   return input ? { ok: true, draft: await reviseAnswer(input, text, how) } : { ok: false };
+}
+
+/** Keys (`"upload"` or the field key, as `coverKey` names them) of this job's cover letter outputs that are marked ready. */
+export async function coverReadyKeys(jobId: string): Promise<string[]> {
+  const { user } = await requireUser();
+  if (!env.autopilot || !isUuid(jobId)) return [];
+  const letter = db.select({ id: coverLetters.id }).from(coverLetters)
+    .where(and(eq(coverLetters.user_id, user.id), eq(coverLetters.job_id, jobId))).get();
+  if (!letter) return [];
+  return db.select({ target: coverLetterOutputs.target }).from(coverLetterOutputs)
+    .where(and(eq(coverLetterOutputs.letter_id, letter.id), eq(coverLetterOutputs.status, "ready"))).all()
+    .map((o) => (o.target.kind === "upload" ? "upload" : o.target.fieldKey));
 }

@@ -14,10 +14,10 @@ vi.mock("@/lib/autopilot/server", () => ({
 }));
 vi.mock("@/lib/autopilot/ideas", () => ({ suggestIdeas: async () => [{ text: "an angle", refs: ["x"] }] }));
 vi.mock("@/lib/autopilot/revise", () => ({ reviseAnswer: async () => h.draft }));
-import { openAndFill, setAnswer, preparePack, draftFor, ideasFor, reviseFor } from "@/app/(app)/jobs/[id]/autopilot-actions";
+import { openAndFill, setAnswer, preparePack, draftFor, ideasFor, reviseFor, coverReadyKeys } from "@/app/(app)/jobs/[id]/autopilot-actions";
 import { openVault, sealVault } from "@/lib/autopilot/vault-crypto";
 import { db } from "@/lib/db/client";
-import { autopilotPacks, autopilotVault } from "@/lib/db/schema";
+import { autopilotPacks, autopilotVault, coverLetterOutputs, coverLetters } from "@/lib/db/schema";
 import { LOCAL_USER_ID as UID } from "@/lib/auth/local-user";
 import { seedJob, withTempDb } from "../cv/temp-db";
 
@@ -201,5 +201,18 @@ describe("autopilot actions", () => {
     expect(await reviseFor(JOB, "d1", "  ", "tidy")).toEqual({ ok: false });
     await reviseFor(JOB, "d1", "text", "tidy");
     expect(snapshot()).toBe(before);
+  });
+  it("coverReadyKeys lists ready outputs only", async () => {
+    const letter = db.insert(coverLetters).values({ user_id: UID, job_id: JOB }).returning().get();
+    const out = (target: unknown, status: "draft" | "ready") => ({ letter_id: letter.id, target: target as never, mode: "full_letter", status });
+    db.insert(coverLetterOutputs).values([out({ kind: "upload" }, "ready"), out({ kind: "field", fieldKey: "d1", label: "Why us?" }, "draft")]).run();
+    expect(await coverReadyKeys(JOB)).toEqual(["upload"]);
+    db.update(coverLetterOutputs).set({ status: "ready" }).run();
+    expect((await coverReadyKeys(JOB)).sort()).toEqual(["d1", "upload"]);
+    h.on = false;
+    expect(await coverReadyKeys(JOB)).toEqual([]);
+    h.on = true;
+    expect(await coverReadyKeys("nope")).toEqual([]);
+    db.delete(coverLetters).run();
   });
 });

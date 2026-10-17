@@ -9,6 +9,7 @@ import type { CardView } from "@/lib/cover-letter/service";
 import type { Mode, OutputTarget } from "@/lib/cover-letter/types";
 import { cardReducer, initialCardState, outputOf, readyToDraft, type CardEvent, type UserAction } from "./card-state";
 import { ChatPane, type ChatHandlers } from "./chat-pane";
+import { announceCoverReady } from "./cover-letter-host";
 import { LetterPane, type LetterHandlers } from "./letter-pane";
 
 const GENERIC = "Something went wrong. Please try again.";
@@ -137,6 +138,10 @@ export function CoverLetterCard({ jobId, target, autopilot = false, onClose }: {
     if (my !== seq.current) return;
     if ("error" in r) { dispatch({ type: "error", message: r.error }); return; }
     if (a.kind === "open") setInitial(new Set([...r.chat.map((m) => m.id), ...(r.researchState === "running" ? [] : ["research"])]));
+    if (a.kind === "ready") {
+      const o = outputOf(r, a.outputId);
+      if (o?.status === "ready") announceCoverReady(o.target.kind === "upload" ? "upload" : o.target.fieldKey);
+    }
     dispatch({ type: "view", view: r });
   }, [jobId, target, stream]);
 
