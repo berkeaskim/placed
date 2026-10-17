@@ -69,4 +69,9 @@ describe("bankofamerica", () => {
     expect(err.message).toMatch(/^bankofamerica\//);
     expect(endpointFor({ ats: "bankofamerica", slug: "uk", name: "Bank of America" })).toContain("bankofamerica.com");
   });
+
+  it("fails the board when a kept UK row has no jcrURL instead of dropping it", async () => {
+    const rows = [row(0), { ...row(2), jcrURL: undefined }];
+    await expect(fetchBankOfAmerica("uk", () => true, serve({ totalMatches: 2, jobsList: rows }), async () => {})).rejects.toThrow(/jcrURL/);
+  });
 });

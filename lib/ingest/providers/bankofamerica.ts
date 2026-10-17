@@ -68,7 +68,8 @@ export async function fetchBankOfAmerica(
   for (const r of rows) {
     if (!r.postingTitle || !keepTitle(r.postingTitle)) continue;
     const j = normalizeBankOfAmerica(r);
-    if (j && !seen.has(j.extId)) { seen.add(j.extId); jobs.push(j); }
+    if (!j) throw new Error(`posting ${r.jobRequisitionId ?? "?"} has no jobRequisitionId/jcrURL; refusing to drop it silently`);
+    if (!seen.has(j.extId)) { seen.add(j.extId); jobs.push(j); }
   }
   return { jobs, listed: rows.length };
 }

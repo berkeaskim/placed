@@ -90,8 +90,15 @@ export async function fetchOracle(
   }
   const { items } = run;
   const ids = [...new Set(items.filter((j) => j.Id && j.Title && keepTitle(j.Title)).map((j) => String(j.Id)))];
-  // A failed detail fails the board: a silently skipped posting would be marked dead.
-  const details = await mapLimit(ids, ORACLE_CONCURRENCY, async (id) =>
-    normalizeOracleDetail(await getJson(detailUrl(slug, host, id), fetchImpl, { method: "GET" }, sleep), host, slug));
+  // A failed or malformed detail fails the board: a silently skipped posting would be marked dead.
+  // Only an empty items array (the posting closed between list and detail) is skipped.
+  const details = await mapLimit(ids, ORACLE_CONCURRENCY, async (id) => {
+    const json = (await getJson(detailUrl(slug, host, id), fetchImpl, { method: "GET" }, sleep)) as { items?: unknown } | null;
+    if (!Array.isArray(json?.items)) throw new Error(`detail for ${id} has no items array; refusing to drop it silently`);
+    if (json.items.length === 0) return null;
+    const j = normalizeOracleDetail(json, host, slug);
+    if (!j) throw new Error(`detail for ${id} has no Id/Title; refusing to drop it silently`);
+    return j;
+  });
   return { jobs: details.filter((j): j is RawJob => j !== null), listed: items.length };
 }

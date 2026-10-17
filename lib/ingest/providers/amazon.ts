@@ -70,7 +70,8 @@ export async function fetchAmazon(
   for (const r of rows) {
     if (!r.title || !keepTitle(r.title)) continue;
     const j = normalizeAmazon(r);
-    if (j && !seen.has(j.extId)) { seen.add(j.extId); jobs.push(j); }
+    if (!j) throw new Error(`posting ${r.id_icims ?? "?"} has no id_icims/job_path; refusing to drop it silently`);
+    if (!seen.has(j.extId)) { seen.add(j.extId); jobs.push(j); }
   }
   return { jobs, listed: rows.length };
 }

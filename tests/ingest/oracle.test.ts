@@ -9,7 +9,7 @@ const HOST = "jpmc.fa.oraclecloud.com";
 const SLUG = "CX_1001/300000000289276";
 
 /** Fake Oracle: `total` requisitions across pages; titles alternate intern / senior. */
-function fakeOracle(total: number, opts: { failOffset?: number; reportedTotal?: number; dup?: boolean; hiddenOne?: boolean; shortPage1?: boolean; drift?: boolean } = {}) {
+function fakeOracle(total: number, opts: { failOffset?: number; reportedTotal?: number; dup?: boolean; hiddenOne?: boolean; shortPage1?: boolean; drift?: boolean; detail?: (id: string) => unknown } = {}) {
   const calls: string[] = [];
   let runs = 0;
   const impl = vi.fn(async (url: string) => {
@@ -32,6 +32,7 @@ function fakeOracle(total: number, opts: { failOffset?: number; reportedTotal?: 
       return Response.json({ items: [{ TotalJobsCount: opts.reportedTotal ?? total, requisitionList }] });
     }
     const id = /Id="(\d+)"/.exec(finder)![1];
+    if (opts.detail) return Response.json(opts.detail(id));
     return Response.json({ items: [{ Id: id, Title: `Summer Internship ${id}`, ExternalPostedStartDate: "2026-10-01T09:00:00+00:00",
       PrimaryLocation: "LONDON, United Kingdom", ExternalDescriptionStr: "<p>Hi</p>" }] });
   }) as unknown as typeof fetch;
@@ -130,5 +131,14 @@ describe("oracle", () => {
     expect(err.message).toMatch(/^oracle\//);
     expect(() => endpointFor({ ats: "oracle", slug: SLUG, name: "JPMorgan" })).toThrow(/apiHost/);
     expect(endpointFor({ ats: "oracle", slug: SLUG, name: "JPMorgan", apiHost: HOST })).toContain(HOST);
+  });
+
+  it("fails the board when a detail has no items array or an unusable item; skips one with empty items (closed)", async () => {
+    const run = (detail: (id: string) => unknown) => fetchOracle(SLUG, HOST, (t) => /intern/i.test(t), fakeOracle(4, { detail }).impl, async () => {});
+    const ok = (id: string) => ({ items: [{ Id: id, Title: `Summer Internship ${id}`, PrimaryLocation: "LONDON, United Kingdom", ExternalDescriptionStr: "<p>Hi</p>" }] });
+    await expect(run((id) => (id === "2" ? {} : ok(id)))).rejects.toThrow(/items/);
+    await expect(run((id) => (id === "2" ? { items: [{ Id: id }] } : ok(id)))).rejects.toThrow(/detail/);
+    const r = await run((id) => (id === "2" ? { items: [] } : ok(id)));
+    expect(r.jobs.map((j) => j.extId)).toEqual(["0"]);
   });
 });

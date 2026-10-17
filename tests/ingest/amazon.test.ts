@@ -83,4 +83,11 @@ describe("amazon", () => {
     expect(err.message).toMatch(/^amazon\//);
     expect(endpointFor({ ats: "amazon", slug: "uk", name: "Amazon" })).toContain("amazon.jobs");
   });
+
+  it("fails the board when a kept posting has no job_path instead of dropping it", async () => {
+    const impl = vi.fn(async () => Response.json({ hits: 2, jobs: [
+      { id_icims: "1", title: "Summer Intern", job_path: "/en-gb/jobs/1/x" }, { id_icims: "2", title: "Summer Intern 2" },
+    ] })) as unknown as typeof fetch;
+    await expect(fetchAmazon("uk", () => true, impl, async () => {})).rejects.toThrow(/job_path/);
+  });
 });

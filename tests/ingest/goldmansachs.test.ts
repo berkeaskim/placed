@@ -83,4 +83,11 @@ describe("goldmansachs", () => {
     expect(err.message).toMatch(/^goldmansachs\//);
     expect(endpointFor({ ats: "goldmansachs", slug: "uk", name: "Goldman Sachs" })).toContain("api-higher.gs.com");
   });
+
+  it("fails the board when a kept role has no externalSource.sourceId instead of dropping it", async () => {
+    const impl = vi.fn(async () => Response.json({ data: { roleSearch: { totalCount: 2, items: [
+      { roleId: "1_GS", jobTitle: "2027 Summer Analyst", externalSource: { sourceId: "1" } }, { roleId: "2_GS", jobTitle: "2027 Summer Analyst B" },
+    ] } } })) as unknown as typeof fetch;
+    await expect(fetchGoldman("uk", () => true, impl, async () => {})).rejects.toThrow(/sourceId/);
+  });
 });

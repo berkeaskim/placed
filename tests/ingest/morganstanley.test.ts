@@ -68,4 +68,9 @@ describe("morganstanley", () => {
     expect(err.message).toMatch(/^morganstanley\//);
     expect(endpointFor({ ats: "morganstanley", slug: "uk", name: "Morgan Stanley" })).toContain("morganstanley.com");
   });
+
+  it("fails the board when a kept UK row has no url instead of dropping it", async () => {
+    const rows = [row(0), { ...row(2), url: undefined }];
+    await expect(fetchMorganStanley("uk", () => true, serve({ totalResults: 2, resultSet: rows }), async () => {})).rejects.toThrow(/url/);
+  });
 });

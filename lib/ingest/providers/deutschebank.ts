@@ -85,7 +85,8 @@ export async function fetchDeutscheBank(
   for (const r of uk) {
     if (!r.PositionTitle || !keepTitle(r.PositionTitle)) continue;
     const j = normalizeDeutscheBank(r);
-    if (j && !seen.has(j.extId)) { seen.add(j.extId); jobs.push(j); }
+    if (!j) throw new Error(`position ${r.PositionID ?? "?"} has no PositionID/PositionURI; refusing to drop it silently`);
+    if (!seen.has(j.extId)) { seen.add(j.extId); jobs.push(j); }
   }
   return { jobs, listed: uk.length };
 }

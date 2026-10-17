@@ -93,4 +93,10 @@ describe("deutschebank", () => {
     expect(err.message).toMatch(/^deutschebank\//);
     expect(endpointFor({ ats: "deutschebank", slug: "uk", name: "Deutsche Bank" })).toContain("beesite.de");
   });
+
+  it("fails the board when a kept UK row has no PositionURI instead of dropping it", async () => {
+    const bad = item(2);
+    delete (bad.MatchedObjectDescriptor as { PositionURI?: string }).PositionURI;
+    await expect(fetchDeutscheBank("uk", () => true, fake([item(0), bad]).impl, async () => {})).rejects.toThrow(/PositionURI/);
+  });
 });

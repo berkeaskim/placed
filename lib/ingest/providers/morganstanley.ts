@@ -61,7 +61,8 @@ export async function fetchMorganStanley(
   for (const r of rows) {
     if (!r.jobTitle || !keepTitle(r.jobTitle)) continue;
     const j = normalizeMorganStanley(r);
-    if (j && !seen.has(j.extId)) { seen.add(j.extId); jobs.push(j); }
+    if (!j) throw new Error(`opportunity ${r.jobNumber ?? "?"} has no jobNumber/url; refusing to drop it silently`);
+    if (!seen.has(j.extId)) { seen.add(j.extId); jobs.push(j); }
   }
   return { jobs, listed: rows.length };
 }

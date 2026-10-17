@@ -87,7 +87,8 @@ export async function fetchGoldman(
   for (const r of rows) {
     if (!r.jobTitle || !keepTitle(r.jobTitle)) continue;
     const j = normalizeGoldman(r);
-    if (j && !seen.has(j.extId)) { seen.add(j.extId); jobs.push(j); }
+    if (!j) throw new Error(`role ${r.roleId ?? "?"} has no roleId/externalSource.sourceId; refusing to drop it silently`);
+    if (!seen.has(j.extId)) { seen.add(j.extId); jobs.push(j); }
   }
   return { jobs, listed: rows.length };
 }
