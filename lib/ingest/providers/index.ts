@@ -9,6 +9,7 @@ import { fetchAmazon, amazonSearchUrl } from "./amazon";
 import { fetchGoldman, goldmanEndpoint } from "./goldmansachs";
 import { fetchMorganStanley, morganStanleyUrl } from "./morganstanley";
 import { fetchBankOfAmerica, bankOfAmericaUrl } from "./bankofamerica";
+import { fetchDeutscheBank, deutscheBankUrl } from "./deutschebank";
 import type { AtsKind } from "@/lib/db/schema";
 import { passesTitleFilter } from "../filter";
 import { loadProgrammes, programmeToRawJob, visibleProgrammes } from "../curated";
@@ -70,6 +71,11 @@ export function endpointFor(c: CompanySeed): string {
         throw new ProviderError(`bankofamerica/${c.slug}: ${(e as Error).message}`);
       }
     case "deutschebank":
+      try {
+        return deutscheBankUrl(c.slug, 1);
+      } catch (e) {
+        throw new ProviderError(`deutschebank/${c.slug}: ${(e as Error).message}`);
+      }
     case "eightfold":
     case "phenom":
     case "apple":
@@ -131,6 +137,13 @@ export async function fetchJobs(c: CompanySeed, plainFetch: typeof fetch = fetch
       return (await fetchBankOfAmerica(c.slug, passesTitleFilter, fetchImpl)).jobs;
     } catch (e) {
       throw new ProviderError(`bankofamerica/${c.slug}: ${(e as Error).message}`);
+    }
+  }
+  if (c.ats === "deutschebank") {
+    try {
+      return (await fetchDeutscheBank(c.slug, passesTitleFilter, fetchImpl)).jobs;
+    } catch (e) {
+      throw new ProviderError(`deutschebank/${c.slug}: ${(e as Error).message}`);
     }
   }
   if (c.ats === "amazon") {
