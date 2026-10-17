@@ -1,0 +1,125 @@
+{
+ "status": 200,
+ "error": null,
+ "data": {
+  "count": 73,
+  "positions": [
+   {
+    "id": 1970393556978182,
+    "displayJobId": "200050081",
+    "name": "ITIM Sub-regional lead",
+    "locations": [
+     "Spain, Madrid, Madrid",
+     "Poland, Mazowieckie, Warsaw",
+     "United Kingdom, London, London",
+     "Ireland, Dublin, Dublin"
+    ],
+    "standardizedLocations": [
+     "Madrid, MD, ES",
+     "Warsaw, Masovian Voivodeship, PL",
+     "London, England, GB",
+     "Dublin, D, IE"
+    ],
+    "postedTs": 1790804155,
+    "stars": 0,
+    "department": "Construction Project Management",
+    "creationTs": 1787183812,
+    "isHot": 0,
+    "workLocationOption": "onsite",
+    "locationFlexibility": null,
+    "atsJobId": "200050081",
+    "positionUrl": "/careers/job/1970393556978182"
+   },
+   {
+    "id": 1970393557023772,
+    "displayJobId": "200059739",
+    "name": "Solution Sales Advisor - Microsoft Frontier Company",
+    "locations": [
+     "United Kingdom, London, London",
+     "Ireland, Dublin, Dublin",
+     "France, Hauts-de-Seine, Issy Les Moulineaux",
+     "Belgium, Flemish Brabant, Zaventem",
+     "Netherlands, Noord-Holland, Schiphol"
+    ],
+    "standardizedLocations": [
+     "London, England, GB",
+     "Dublin, D, IE",
+     "Issy-les-Moulineaux, IDF, FR",
+     "Zaventem, Flanders, BE",
+     "Schiphol, NH, NL"
+    ],
+    "postedTs": 1792180846,
+    "stars": 0,
+    "department": "Solution Sales Advisory",
+    "creationTs": 1791179687,
+    "isHot": 0,
+    "workLocationOption": "onsite",
+    "locationFlexibility": null,
+    "atsJobId": "200059739",
+    "positionUrl": "/careers/job/1970393557023772"
+   },
+   {
+    "id": 1970393557004701,
+    "displayJobId": "200057282",
+    "name": "Strategic Account Technology Strategist",
+    "locations": [
+     "Denmark, Multiple Locations, Multiple Locations",
+     "United Kingdom, London, London"
+    ],
+    "standardizedLocations": [
+     "DK",
+     "London, England, GB"
+    ],
+    "postedTs": 1790610152,
+    "stars": 0,
+    "department": "Strategic Account Technology",
+    "creationTs": 1790010602,
+    "isHot": 0,
+    "workLocationOption": "onsite",
+    "locationFlexibility": null,
+    "atsJobId": "200057282",
+    "positionUrl": "/careers/job/1970393557004701"
+   },
+   {
+    "id": 1970393557040084,
+    "displayJobId": "200061635",
+    "name": "Applied Sciences Intern",
+    "locations": [
+     "United Kingdom, London, London"
+    ],
+    "standardizedLocations": [
+     "London, England, GB"
+    ],
+    "postedTs": 1792050565,
+    "stars": 0,
+    "department": "Applied Sciences",
+    "creationTs": 1791887081,
+    "isHot": 0,
+    "workLocationOption": "onsite",
+    "locationFlexibility": null,
+    "atsJobId": "200061635",
+    "positionUrl": "/careers/job/1970393557040084"
+   },
+   {
+    "id": 1970393557007444,
+    "displayJobId": "200057786",
+    "name": "Sales Director- ISVs - Software Digital Platforms",
+    "locations": [
+     "United Kingdom, Multiple Locations, Multiple Locations"
+    ],
+    "standardizedLocations": [
+     "GB"
+    ],
+    "postedTs": 1790368582,
+    "stars": 0,
+    "department": "Sales Management",
+    "creationTs": 1790188883,
+    "isHot": 0,
+    "workLocationOption": "onsite",
+    "locationFlexibility": null,
+    "atsJobId": "200057786",
+    "positionUrl": "/careers/job/1970393557007444"
+   }
+  ]
+ }
+}

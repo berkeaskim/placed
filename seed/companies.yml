@@ -191,5 +191,8 @@
 # Deutsche Bank graduate search (beesite), country id 71 = UK. Workday db/DBWebSite (above) has no early-careers roles. No descriptions available (list text only).
 - { slug: uk, name: Deutsche Bank, ats: deutschebank, employer: deutschebank, enabled: true }
 
+# Microsoft careers (Eightfold PCSX), UK rows; slug = Eightfold `domain`, apiHost = careers host. No early-careers filter exists, so the title filter does the work.
+- { slug: microsoft.com, name: Microsoft, ats: eightfold, apiHost: apply.careers.microsoft.com, employer: microsoft, enabled: true }
+
 # PwC UK student site (Workday, mixes PwC firms worldwide; the ingest location filter keeps UK and Europe, so Netherlands roles currently pass).
 - { slug: pwc/CRM_Campus_Careers_Site, name: PwC, ats: workday, apiHost: pwc.wd3.myworkdayjobs.com, employer: pwc, enabled: true }

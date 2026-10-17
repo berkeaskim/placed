@@ -1,0 +1,17 @@
+{
+ "status": 200,
+ "error": null,
+ "data": {
+  "id": 1970393557040084,
+  "displayJobId": "200061635",
+  "name": "Applied Sciences Intern",
+  "locations": [
+   "United Kingdom, London, London"
+  ],
+  "postedTs": 1792050565,
+  "workLocationOption": "onsite",
+  "positionUrl": "/careers/job/1970393557040084",
+  "publicUrl": "https://apply.careers.microsoft.com/careers/job/1970393557040084",
+  "jobDescription": "<b>Overview</b><br><p>Come build community, explore your passions and do your best work at Microsoft with thousands of University interns from every corner of the world. This opportunity will allow you to bring your aspirations, talent, potential\u2014and excitement for the journey ahead. \u00a0</p><p>As an Applied Science Intern at Microsoft, you will be at the forefront of technological innovation, working collaboratively to bring research to life in our products and services. You'll gain expertise in cutting-edge research areas, apply advanced concepts to real-world needs, and use state-of-the-art tools to make a tangible impact on product quality and business outcomes. You'll contribute to the creation of intelligent solutions through data analysis, modeling, and machine learning, ensuring our products remain at the leading edge of innovation.</p><p>At Microsoft, Interns work on real-world projects in collaboration with teams across the world, while having fun along the way. You\u2019ll be empowered to build community, explore your passions and achieve your goals. This is your chance to bring your solutions and ideas to life while working on cutting-edge technology.</p><p>Microsoft\u2019s mission is to empower every person and every organization on the planet to achieve more. As employees we come together with a growth mindset, innovate to empower others, and collaborate to realize our shared goals. Each day we build on our values of respect, integrity, and accountability to create a culture of inclusion where everyone can thrive at work and beyond.</p><br><br><b>Responsibilities</b><br><ul><li>Contribute in the development of state-of-the-art techniques advancing the capabilities of Microsoft 365 Copilot, with a particular emphasis on graph-based information retrieval, contextualizati"
+ }
+}
