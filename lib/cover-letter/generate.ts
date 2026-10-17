@@ -5,7 +5,7 @@ import type { LetterRow, OutputRow } from "@/lib/db/schema";
 import { buildDraftPrompt, HONESTY_RULES, MARKER_RULES, STYLE_BANS, streamDraft, type DraftInput } from "./draft";
 import { applyEdit, type EditKind } from "./edit";
 import {
-  CardError, cardView, draftInput, ensureEvidence, generationTarget, type CardView, type Ctx,
+  CardError, cardView, claimStreaming, draftInput, ensureEvidence, generationTarget, touchStreaming, type CardView, type Ctx,
 } from "./service";
 import { getOrCreateLetter, pushUndo, saveLetter, upsertOutput } from "./store";
 import type { Marked } from "./stream-parse";
@@ -88,15 +88,12 @@ async function* draftFlow(ctx: Ctx, letter: LetterRow, o: OutputRow, signal: Abo
   const fixtureKey = ctx.job.extId;
   const sentences: Marked[] = [];
   let visible = "";
-  let beat = Date.now();
   for await (const r of streamDraft(input, { signal, fixtureKey })) {
     sentences.push(...r.closed);
     if (r.visible) {
       visible += r.visible;
       yield { event: "delta", data: { visible: r.visible } };
     }
-    // Keeps a long (Ollama) stream from looking stale to openCard.
-    if (Date.now() - beat > HEARTBEAT_MS) { saveLetter(letter.id, { draft_state: "streaming" }); beat = Date.now(); }
   }
   if (signal.aborted) return;
   yield { event: "phase", data: { phase: "checking" } };
@@ -135,29 +132,54 @@ async function* editFlow(ctx: Ctx, letter: LetterRow, o: OutputRow, body: Extrac
   upsertOutput(letter.id, o.target, { text: result.text, spans: result.spans, lint: result.lint, status: "draft", pdf_path: null });
 }
 
-/**
- * A draft or an edit as SSE events. `draft_state` is "streaming" while it runs, "done" after, and "interrupted" when
- * the client goes away (abort, or the consumer stops reading); an error restores the previous state.
- */
-export async function* runGeneration(userId: string, jobId: string, body: GenerateBody, signal: AbortSignal): AsyncGenerator<SseEvent> {
-  const { ctx, letter, output } = generationTarget(userId, jobId, body.outputId);
+type Claim = { before: LetterRow["draft_state"] };
+
+/** Claims the letter for one generation (atomic), or null when another one is already running. */
+export function claimGeneration(userId: string, jobId: string, body: GenerateBody): Claim | null {
+  const { letter } = generationTarget(userId, jobId, body.outputId);
   const before = letter.draft_state === "streaming" ? "idle" : letter.draft_state;
-  saveLetter(letter.id, { draft_state: "streaming" });
+  return claimStreaming(letter) ? { before } : null;
+}
+
+/** A claim whose stream never started (the client left before the first read): release it as "interrupted". */
+export function abandonClaim(userId: string, jobId: string): void {
+  const letter = getOrCreateLetter(userId, jobId);
+  if (letter.draft_state === "streaming") saveLetter(letter.id, { draft_state: "interrupted" });
+}
+
+/**
+ * A draft or an edit as SSE events. `draft_state` is "streaming" while it runs (claimed atomically, here or by the
+ * route), refreshed every 15 s so a slow model, judge or repair never looks stale; "done" after; "interrupted" when the
+ * client goes away (abort, or the consumer stops reading). An error before "done" restores the previous state.
+ */
+export async function* runGeneration(userId: string, jobId: string, body: GenerateBody, signal: AbortSignal, claimed?: Claim): AsyncGenerator<SseEvent> {
+  const claim = claimed ?? claimGeneration(userId, jobId, body);
+  if (!claim) {
+    yield { event: "error", data: { message: "A draft is already being written." } };
+    return;
+  }
+  const { ctx, letter, output } = generationTarget(userId, jobId, body.outputId);
+  const timer = setInterval(() => touchStreaming(letter.id), HEARTBEAT_MS);
+  timer.unref?.();
   let settled = false;
   try {
     if (body.kind === "draft") yield* draftFlow(ctx, letter, output, signal);
     else yield* editFlow(ctx, letter, output, body, signal);
     if (signal.aborted) return;
+    clearInterval(timer);
     saveLetter(letter.id, { draft_state: "done" });
     settled = true;
     yield { event: "done", data: await cardView(userId, jobId) };
   } catch (e) {
     if (signal.aborted) return;
     console.error("[cover-letter] generation failed:", e instanceof Error ? e.message : "unknown error");
-    saveLetter(letter.id, { draft_state: before });
+    clearInterval(timer);
+    // Once "done" is saved, a later failure (building the view) must not roll it back.
+    if (!settled) saveLetter(letter.id, { draft_state: claim.before });
     settled = true;
     yield { event: "error", data: { message: e instanceof CardError || e instanceof AiError ? e.message : GENERIC } };
   } finally {
+    clearInterval(timer);
     if (!settled && getOrCreateLetter(userId, jobId).draft_state === "streaming") saveLetter(letter.id, { draft_state: "interrupted" });
   }
 }

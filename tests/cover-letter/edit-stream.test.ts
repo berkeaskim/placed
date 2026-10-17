@@ -16,7 +16,7 @@ const A4 = FIXTURE_ANSWERS[3].text!;
 const m = parseMarked(readFileSync("fixtures/ai/coverLetterDraft/default.txt", "utf8"));
 const spans = verifyOutput({ ...m, input, ownSpans: [] }).spans;
 const run = async (instruction: string) => {
-  let done: any;
+  let done: unknown;
   for await (const e of applyEdit({ text: m.text, spans, kind: "free", instruction, input, judge: async () => [] })) if (e.phase === "done") done = e;
   return done as { text: string; spans: { start: number; end: number; kind: string; refs: string[]; flag?: string }[] };
 };

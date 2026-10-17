@@ -2,7 +2,9 @@ import { eq } from "drizzle-orm";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import { db } from "@/lib/db/client";
 import { coverLetters } from "@/lib/db/schema";
-import { openCard, researchSettled, type CardView } from "@/lib/cover-letter/service";
+import { claimStreaming, openCard, researchSettled, type CardView } from "@/lib/cover-letter/service";
+import { getOrCreateLetter } from "@/lib/cover-letter/store";
+import { claimGeneration } from "@/lib/cover-letter/generate";
 import { seedNorthbridgeJob, seedStudent, U } from "./seed";
 
 vi.stubEnv("AI_MODE", "fixture");
@@ -88,6 +90,19 @@ describe("POST /api/cover-letter/[jobId]/draft", () => {
     expect((await call(ok.jobId, { outputId: ok.outputId, kind: "nope" })).status).toBe(400);
     expect((await call(ok.jobId, { outputId: crypto.randomUUID(), kind: "draft" })).status).toBe(404);
     expect((await call("not-a-uuid", { outputId: ok.outputId, kind: "draft" })).status).toBe(400);
+  });
+
+  it("lets only one of two simultaneous generations start", async () => {
+    const { jobId, outputId, letterId } = await freshLetter();
+    const [a, b] = await Promise.all([call(jobId, { outputId, kind: "draft" }), call(jobId, { outputId, kind: "draft" })]);
+    expect([a.status, b.status].sort()).toEqual([200, 409]);
+    await readSse(a.status === 200 ? a : b);
+    expect(draftState(letterId)).toBe("done");
+    // The claim itself is atomic: two claims made from the same read of the row, only the first lands.
+    const row = getOrCreateLetter(U, jobId);
+    expect(claimStreaming(row)).toBe(true);
+    expect(claimStreaming(row)).toBe(false);
+    expect(claimGeneration(U, jobId, { outputId, kind: "draft" })).toBeNull();
   });
 
   it("emits an error event and leaves no letter streaming when the AI call fails", async () => {

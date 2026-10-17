@@ -2,7 +2,7 @@ import "server-only";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/lib/db/client";
 import {
-  autopilotPacks, companies, confirmedFacts, coverLetterStories, cvs, jobs,
+  autopilotPacks, companies, confirmedFacts, coverLetters, coverLetterStories, cvs, jobs,
   type CL_DRAFT_STATE_VALUES, type CL_RESEARCH_STATE_VALUES, type LetterRow, type OutputRow,
 } from "@/lib/db/schema";
 import type { NormalizedForm } from "@/lib/autopilot/forms/types";
@@ -14,9 +14,9 @@ import { buildEvidence, pickStoryEntry, type Evidence } from "./evidence";
 import { canMarkReady } from "./gate";
 import { aiPolicyBlocks, chooseMode } from "./mode";
 import { renderLetterPdf } from "./pdf";
-import { findPerson, maskPerson } from "./person";
+import { findPersons, maskPersons } from "./person";
 import { nextQuestion } from "./questions";
-import { defaultResearchDeps, researchCompany } from "./research";
+import { defaultResearchDeps, researchCompany, researchKey } from "./research";
 import { countWords, lintLetter, RULES } from "./rules";
 import { diffSpans } from "./spans";
 import {
@@ -78,7 +78,6 @@ export function loadCtx(userId: string, jobId: string): Ctx {
 const jdText = (ctx: Ctx) => ctx.job.jdLines.join("\n");
 const feedbackOnly = (ctx: Ctx) => aiPolicyBlocks(jdText(ctx));
 const storyEntry = (ctx: Ctx) => (ctx.cv ? pickStoryEntry(ctx.cv, ctx.job.jdLines) : null);
-const researchKey = (ctx: Ctx) => `${ctx.job.company.toLowerCase()}|`;
 
 function getOutput(letter: LetterRow, outputId: string): OutputRow {
   const o = listOutputs(letter.id).find((x) => x.id === outputId);
@@ -123,7 +122,7 @@ function outputView(o: OutputRow): OutputView {
 function view(ctx: Ctx, row: LetterRow): CardView {
   const letter = syncChat(ctx, row);
   const outputs = listOutputs(letter.id).map(outputView);
-  const pending = letter.answers.find((a) => a.person && a.person.ok === null)?.person;
+  const pending = letter.answers.flatMap((a) => a.persons ?? []).find((p) => p.ok === null);
   return {
     letterId: letter.id, company: ctx.job.company, role: ctx.job.role, chat: letter.chat, next: questionFor(ctx, letter),
     researchState: letter.research_state as ResearchState, draftState: letter.draft_state as DraftState, facts: letter.facts, outputs,
@@ -163,7 +162,9 @@ function startResearch(ctx: Ctx, letter: LetterRow): void {
         : `Researching ${company} didn't work this time, so I'll work from the job post.`,
     })];
     saveLetter(cur.id, { research_state: state, facts, chat: [...cur.chat, ...note] });
-  })().finally(() => running.delete(letter.id));
+  })()
+    .catch((e) => console.error("[cover-letter] saving research:", e instanceof Error ? e.message : "unknown error"))
+    .finally(() => running.delete(letter.id));
   running.set(letter.id, p);
 }
 
@@ -229,14 +230,14 @@ function putAnswer(answers: Answer[], a: Omit<Answer, "id">): Answer[] {
 }
 
 /** Names the student wrote that are not the firm, the role, the job post or their own CV. */
-function personIn(ctx: Ctx, text: string, prev?: Answer): Answer["person"] {
+function personsIn(ctx: Ctx, text: string, prev?: Answer): Answer["persons"] {
   const cv = ctx.cv;
   const avoid = [ctx.job.company, ctx.job.role, ...ctx.job.jdLines,
     ...(cv ? [...cv.experience, ...cv.projects, ...cv.leadership].flatMap((e) => [e.org, e.title, e.location]) : []),
     ...(cv ? cv.education.flatMap((e) => [e.institution, e.degree]) : [])].filter(Boolean);
-  const name = findPerson(text, avoid);
-  if (!name) return undefined;
-  return { name, ok: prev?.person?.name === name ? prev.person.ok : null };
+  const names = findPersons(text, avoid);
+  if (!names.length) return undefined;
+  return names.map((name) => ({ name, ok: prev?.persons?.find((p) => p.name === name)?.ok ?? null }));
 }
 
 export async function answerQuestion(userId: string, jobId: string, question: Answer["question"], raw: string | null): Promise<CardView> {
@@ -248,8 +249,9 @@ export async function answerQuestion(userId: string, jobId: string, question: An
   const text = raw?.trim() || null;
   const prev = letter.answers.find((a) => a.question === question);
   const entry = question === "story" ? storyEntry(ctx) : null;
-  const person = text && (question === "why_firm" || question === "touchpoint") ? personIn(ctx, text, prev) : undefined;
-  const answers = putAnswer(letter.answers, { question, text, ...(entry ? { cvEntryId: entry.id } : {}), ...(person ? { person } : {}) });
+  // Any answer can name someone, and any answer may be quoted in the letter.
+  const persons = text ? personsIn(ctx, text, prev) : undefined;
+  const answers = putAnswer(letter.answers, { question, text, ...(entry ? { cvEntryId: entry.id } : {}), ...(persons ? { persons } : {}) });
   const chat = [...letter.chat, msg({ from: "me", text: text ?? "Skip", questionId: question })];
   saveLetter(letter.id, { answers, chat });
   if (text && question === "why_firm") rememberOnce(userId, { kind: "why_firm", company: ctx.job.company, text });
@@ -284,14 +286,15 @@ export async function applySavedStory(userId: string, jobId: string, storyId: st
 export async function confirmPerson(userId: string, jobId: string, name: string, ok: boolean): Promise<CardView> {
   const ctx = loadCtx(userId, jobId);
   const letter = getOrCreateLetter(userId, jobId);
-  const answers = letter.answers.map((a) => (a.person?.name === name ? { ...a, person: { name, ok: ok === true } } : a));
+  const answers = letter.answers.map((a) => (a.persons?.some((p) => p.name === name)
+    ? { ...a, persons: a.persons.map((p) => (p.name === name ? { name, ok: ok === true } : p)) } : a));
   saveLetter(letter.id, { answers });
   return view(ctx, getOrCreateLetter(userId, jobId));
 }
 
 // ---------------------------------------------------------------- draft input
 
-const rivalsFor = (ctx: Ctx) => getResearch(researchKey(ctx))?.rivals ?? [];
+const rivalsFor = (ctx: Ctx) => getResearch(researchKey(ctx.job.company, null))?.rivals ?? [];
 
 /** The evidence pack, built once per letter (may throw on an AI error). */
 export async function ensureEvidence(ctx: Ctx, letter: LetterRow): Promise<Evidence> {
@@ -308,7 +311,11 @@ export async function ensureEvidence(ctx: Ctx, letter: LetterRow): Promise<Evide
 export function draftInput(ctx: Ctx, letter: LetterRow, o: OutputRow, evidence: Evidence): DraftInput {
   if (!ctx.cv) throw new CardError("Upload your CV first: the letter is built from it.");
   const company = ctx.job.company;
-  const answers = letter.answers.map((a) => (a.text && a.person && a.person.ok !== true ? { ...a, text: maskPerson(a.text, a.person.name, company) } : a));
+  const people = letter.answers.flatMap((a) => a.persons ?? []);
+  const keep = people.filter((p) => p.ok === true).map((p) => p.name);
+  const masked = [...new Set(people.filter((p) => p.ok !== true).map((p) => p.name))];
+  // Every answer is masked against every unconfirmed name, so a name repeated in another answer does not leak.
+  const answers = masked.length ? letter.answers.map((a) => (a.text ? { ...a, text: maskPersons(a.text, masked, company, keep) } : a)) : letter.answers;
   const pickedIds = new Set(letter.answers.find((a) => a.question === "facts")?.pickedFactIds ?? []);
   return {
     mode: o.mode as Mode, limit: o.limit, company, role: ctx.job.role, ref: null, cv: ctx.cv, jdLines: ctx.job.jdLines,
@@ -399,12 +406,17 @@ export async function markReady(userId: string, jobId: string, outputId: string)
   return view(ctx, letter);
 }
 
+function checkLimit(limit: unknown): asserts limit is Limit {
+  const l = limit as Exclude<Limit, null>;
+  if (limit !== null && !(l && (l.unit === "words" || l.unit === "chars") && Number.isInteger(l.max) && l.max > 0 && l.max <= 10_000)) {
+    throw new CardError("That limit doesn't look right");
+  }
+}
+
 export async function addFieldOutput(userId: string, jobId: string, label: string, limit: Limit): Promise<CardView> {
   const name = typeof label === "string" ? label.trim() : "";
   if (!name || name.length > 300) throw new CardError("Give the question a label");
-  if (limit !== null && !(limit && (limit.unit === "words" || limit.unit === "chars") && Number.isInteger(limit.max) && limit.max > 0 && limit.max <= 10_000)) {
-    throw new CardError("That limit doesn't look right");
-  }
+  checkLimit(limit);
   const ctx = loadCtx(userId, jobId);
   const letter = getOrCreateLetter(userId, jobId);
   const keys = new Set(listOutputs(letter.id).flatMap((x) => (x.target.kind === "field" ? [x.target.fieldKey] : [])));
@@ -415,6 +427,43 @@ export async function addFieldOutput(userId: string, jobId: string, label: strin
   const m = chooseMode({ target, fieldType: "textarea", wordLimit: limit?.unit === "words" ? limit.max : undefined, charLimit: limit?.unit === "chars" ? limit.max : undefined, jdText: "" });
   upsertOutput(letter.id, target, { mode: m.mode, limit: m.limit });
   return view(ctx, letter);
+}
+
+const MANUAL_MODES = new Set<Mode>(["full_letter", "short_letter", "field_answer", "short_note"]);
+const streamingNow = (l: LetterRow) => l.draft_state === "streaming" && Date.now() - Date.parse(l.updated_at) < STALE_STREAM_MS;
+
+/**
+ * The manual entry point's segmented control. The output starts again as an empty draft in the new mode (the old
+ * text goes on the undo stack); a field answer keeps the given limit, or the rules' default of 300 words.
+ */
+export async function setMode(userId: string, jobId: string, outputId: string, mode: Mode, limit?: Limit): Promise<CardView> {
+  if (!MANUAL_MODES.has(mode)) throw new CardError("Unknown mode");
+  if (limit !== undefined) checkLimit(limit);
+  const ctx = loadCtx(userId, jobId);
+  const letter = getOrCreateLetter(userId, jobId);
+  const o = getOutput(letter, outputId);
+  if (streamingNow(letter)) throw new CardError("Wait for the letter to finish writing first.");
+  const lim: Limit = mode === "field_answer" ? (limit ?? { unit: "words", max: RULES.modes.field_answer.defaultWords ?? 300 }) : null;
+  if (o.text) pushUndo(o.id, { text: o.text, spans: o.spans });
+  upsertOutput(letter.id, o.target, { mode, limit: lim, text: "", spans: [], lint: [], status: "draft", pdf_path: null });
+  return view(ctx, letter);
+}
+
+/**
+ * Atomically marks the letter "streaming" for one generation: the update only lands if the row is unchanged since
+ * `letter` was read, so of two simultaneous requests exactly one wins. Returns false for the loser.
+ */
+export function claimStreaming(letter: LetterRow): boolean {
+  if (streamingNow(letter)) return false;
+  const r = db.update(coverLetters).set({ draft_state: "streaming", updated_at: new Date().toISOString() })
+    .where(and(eq(coverLetters.id, letter.id), eq(coverLetters.draft_state, letter.draft_state), eq(coverLetters.updated_at, letter.updated_at))).run();
+  return r.changes === 1;
+}
+
+/** Heartbeat: refreshes `updated_at` while (and only while) the letter is still streaming. */
+export function touchStreaming(letterId: string): void {
+  db.update(coverLetters).set({ updated_at: new Date().toISOString() })
+    .where(and(eq(coverLetters.id, letterId), eq(coverLetters.draft_state, "streaming"))).run();
 }
 
 /** For the route: the letter and output a generation runs on, plus whether it may run. */

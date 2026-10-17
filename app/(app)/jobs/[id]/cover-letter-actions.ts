@@ -3,7 +3,7 @@ import { requireUser } from "@/lib/auth/local-user";
 import { isUuid } from "@/lib/feed/save-result";
 import * as svc from "@/lib/cover-letter/service";
 import type { CardView } from "@/lib/cover-letter/service";
-import type { Answer, Limit, OutputTarget } from "@/lib/cover-letter/types";
+import type { Answer, Limit, Mode, OutputTarget } from "@/lib/cover-letter/types";
 
 /** Every action returns the whole card, or an error to show the student. */
 export type CardResult = CardView | { error: string };
@@ -74,4 +74,10 @@ export async function markReady(jobId: string, outputId: string): Promise<CardRe
 
 export async function addFieldOutput(jobId: string, label: string, limit: Limit): Promise<CardResult> {
   return run(jobId, (u, j) => svc.addFieldOutput(u, j, label, limit));
+}
+
+/** The manual entry point's mode control: the output restarts as an empty draft in the new mode. */
+export async function setMode(jobId: string, outputId: string, mode: Mode, limit?: Limit): Promise<CardResult> {
+  if (!idOk(outputId)) return { error: "Unknown letter" };
+  return run(jobId, (u, j) => svc.setMode(u, j, outputId, mode, limit));
 }

@@ -6,8 +6,8 @@ export type LintHit = { ruleId: string; label: string; severity: "block" | "high
 export type Fact = { id: string; claim: string; url: string; publisher: string; date: string | null };
 export type Answer = {
   id: string; question: "why_firm" | "facts" | "story" | "touchpoint" | "product"; text: string | null; pickedFactIds?: string[]; cvEntryId?: string;
-  /** A person the answer names: `ok` null until the student confirms (true) or declines (false); unconfirmed names are masked in prompts. */
-  person?: { name: string; ok: boolean | null };
+  /** People the answer names: `ok` null until the student confirms (true) or declines (false); all but confirmed names are masked in prompts. */
+  persons?: { name: string; ok: boolean | null }[];
 };
 export type OutputTarget = { kind: "upload" } | { kind: "field"; fieldKey: string; label: string };
 export type OutputStatus = "draft" | "ready";

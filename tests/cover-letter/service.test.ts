@@ -116,6 +116,28 @@ describe("the interview", () => {
     expect(buildDraftPrompt(await draftInputFor(U, jobId, outputId)).prompt).toContain("Sarah Khan told me");
   });
 
+  it("gates every named person, in any answer kind, one confirmation at a time", async () => {
+    const jobId = seedNorthbridgeJob();
+    await actions.openCoverLetter(jobId);
+    await researchSettled();
+    let v = view(await actions.answerQuestion(jobId, "why_firm", "I met Sarah Khan and James Patel at the fair."));
+    expect(v.confirmPerson).toEqual({ name: "Sarah Khan" });
+    const outputId = v.outputs[0].id;
+    const prompt = async () => buildDraftPrompt(await draftInputFor(U, jobId, outputId)).prompt;
+    expect(await prompt()).not.toMatch(/Sarah|Khan|James|Patel/);
+    v = view(await actions.confirmPersonAction(jobId, "Sarah Khan", true));
+    expect(v.confirmPerson).toEqual({ name: "James Patel" });
+    expect(await prompt()).toContain("Sarah Khan");
+    expect(await prompt()).not.toMatch(/James|Patel/);
+    v = view(await actions.answerQuestion(jobId, "story", "Tom Hughes and I rebuilt the rates model."));
+    expect(v.confirmPerson).toEqual({ name: "James Patel" });
+    v = view(await actions.confirmPersonAction(jobId, "James Patel", false));
+    expect(v.confirmPerson).toEqual({ name: "Tom Hughes" });
+    const p = await prompt();
+    expect(p).not.toMatch(/James|Patel|Tom Hughes/);
+    expect(p).toContain("a Northbridge Capital associate and I rebuilt the rates model.");
+  });
+
   it("does not take the company or event words for a person", async () => {
     const jobId = seedNorthbridgeJob();
     await actions.openCoverLetter(jobId);
@@ -183,6 +205,21 @@ describe("edits and Ready", () => {
     const v = view(await actions.addFieldOutput(jobId, "Why Northbridge?", { unit: "words", max: 200 }));
     expect(v.outputs).toHaveLength(2);
     expect(v.outputs[1]).toMatchObject({ target: { kind: "field", label: "Why Northbridge?" }, mode: "field_answer", limit: { unit: "words", max: 200 } });
+  });
+
+  it("setMode restarts the output as an empty draft in the new mode, undoable", async () => {
+    const jobId = seedNorthbridgeJob();
+    const v = await interview(jobId);
+    const outputId = v.outputs[0].id;
+    await drain(jobId, outputId);
+    const before = view(await actions.openCoverLetter(jobId)).outputs[0];
+    let o = view(await actions.setMode(jobId, outputId, "field_answer")).outputs[0];
+    expect(o).toMatchObject({ mode: "field_answer", limit: { unit: "words", max: 300 }, text: "", spans: [], lint: [], status: "draft" });
+    o = view(await actions.setMode(jobId, outputId, "short_note")).outputs[0];
+    expect(o).toMatchObject({ mode: "short_note", limit: null });
+    expect(view(await actions.setMode(jobId, outputId, "field_answer", { unit: "chars", max: 1000 })).outputs[0].limit).toEqual({ unit: "chars", max: 1000 });
+    expect(await actions.setMode(jobId, outputId, "skip")).toHaveProperty("error");
+    expect(view(await actions.undoEdit(jobId, outputId)).outputs[0].text).toBe(before.text);
   });
 
   it("rejects bad input from the client", async () => {

@@ -61,12 +61,15 @@ function finish(raw: z.infer<typeof schema>, allowed: Set<string>, now: number):
   return { facts, rivals: raw.rivals.slice(0, 3) };
 }
 
+/** The `company_research` cache key: lowercased company + "|" + division. */
+export const researchKey = (company: string, division: string | null) => `${company.toLowerCase()}|${division ?? ""}`;
+
 export async function researchCompany(
   input: { company: string; division: string | null; jdText: string },
   deps: ResearchDeps,
 ): Promise<ResearchResult> {
   const { company, division } = input;
-  const key = `${company.toLowerCase()}|${division ?? ""}`;
+  const key = researchKey(company, division);
   const now = deps.now();
   try {
     const cached = getResearch(key, now);

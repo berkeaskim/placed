@@ -18,23 +18,31 @@ const PAIR = new RegExp(`(?<![\\p{L}])(${WORD})(?=\\s+(${WORD})(?![\\p{L}]))`, "
 
 const lowerWords = (texts: string[]) => new Set(texts.join(" ").toLowerCase().match(/\p{L}[\p{L}'’-]*/gu) ?? []);
 
-/** The first capitalised two-word name in `text` whose words are neither stock words nor in `avoid` (company, role, job post, CV names). */
-export function findPerson(text: string, avoid: string[]): string | null {
+/** Every capitalised two-word name in `text` (in order, once each) whose words are neither stock words nor in `avoid` (company, role, job post, CV names). */
+export function findPersons(text: string, avoid: string[]): string[] {
   const known = lowerWords(avoid);
+  const out: string[] = [];
   for (const m of text.matchAll(PAIR)) {
     const [a, b] = [m[1], m[2]];
     if ([a, b].some((w) => NOT_NAMES.has(w.toLowerCase()) || known.has(w.toLowerCase()))) continue;
-    return `${a} ${b}`;
+    if (!out.includes(`${a} ${b}`)) out.push(`${a} ${b}`);
   }
-  return null;
+  return out;
 }
 
 const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-/** Replaces the full name, then either half on its own, with "a {company} associate". */
-export function maskPerson(text: string, name: string, company: string): string {
+const wordRe = (w: string) => new RegExp(`(?<![\\p{L}])${escapeRe(w)}(?![\\p{L}])`, "gu");
+
+/**
+ * Replaces each masked name, then either half on its own, with "a {company} associate". A half that is also part of a
+ * name in `keep` (confirmed) is left alone, so "Khan" in a confirmed "Sarah Khan" survives masking "James Khan".
+ */
+export function maskPersons(text: string, names: string[], company: string, keep: string[] = []): string {
   const stand = `a ${company} associate`;
-  let out = text.replace(new RegExp(`(?<![\\p{L}])${escapeRe(name)}(?![\\p{L}])`, "gu"), stand);
-  for (const part of name.split(" ")) out = out.replace(new RegExp(`(?<![\\p{L}])${escapeRe(part)}(?![\\p{L}])`, "gu"), stand);
+  const kept = new Set(keep.flatMap((k) => k.split(" ")));
+  let out = text;
+  for (const name of names) out = out.replace(wordRe(name), stand);
+  for (const name of names) for (const part of name.split(" ")) if (!kept.has(part)) out = out.replace(wordRe(part), stand);
   return out;
 }
