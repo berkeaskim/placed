@@ -267,6 +267,21 @@ npm run ingest
 
 New jobs are tagged by your AI backend once, then cached. No key is needed to fetch jobs.
 
+**On a schedule.** While Placed is open it also refreshes on its own: every few hours, or **every morning** at a time
+you pick in **Settings → Job search**. To keep that going while the app is closed (macOS), install the background agent once:
+
+```bash
+npm run schedule:install
+```
+
+It wakes every 30 minutes (and when the Mac wakes) and runs `npm run ingest -- --if-due`, which does nothing unless the
+schedule says a run is due. `npm run schedule:uninstall` removes it. On Linux, the cron line is printed by `npm run schedule:status`.
+
+**New companies.** With an AI provider set up, Placed asks it once a week for employers that fit your profile and
+aren't watched yet, checks each one against its live careers board (it must exist and have open postings), and adds the
+ones that pass. Nothing the AI makes up gets stored. Run it any time with **Settings → Job search → Find new companies**,
+and remove any company it added from the same place.
+
 ## The Chrome extension (Autopilot and LinkedIn score)
 
 The extension fills application forms on Greenhouse, Ashby and Lever (it never presses *Submit*) and captures your
@@ -286,6 +301,7 @@ See [`extension/README.md`](extension/README.md) for how it works and what it wi
 | `npm run dev` | Start the app on <http://127.0.0.1:3000> |
 | `npm run build` then `npm start` | Production build, also bound to `127.0.0.1` |
 | `npm run ingest` | Pull fresh jobs from every configured ATS board |
+| `npm run schedule:install` / `schedule:uninstall` | Keep the job refresh running while Placed is closed (macOS LaunchAgent) |
 | `npm test` | Unit tests (Vitest, each file on a temp database) |
 | `npm run e2e` | End-to-end run (Playwright, temp database, recorded AI outputs) |
 | `npm run typecheck` / `npm run lint` | Type-check / lint the project |

@@ -114,6 +114,9 @@ export const companies = sqliteTable("companies", {
   ats: text("ats", { enum: ATS_VALUES }).notNull(),
   api_host: text("api_host"),
   enabled: bool("enabled").notNull().default(true),
+  /** "seed" (seed/companies.yml) or "discovered" (added by the AI company search, lib/ingest/discover.ts). */
+  source: text("source").notNull().default("seed"),
+  added_at: text("added_at"),
 }, (t) => [
   unique("companies_ats_slug_key").on(t.ats, t.slug),
   check("companies_ats_check", inList("ats", ATS_VALUES)),

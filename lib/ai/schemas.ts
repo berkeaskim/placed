@@ -100,3 +100,13 @@ export const TailoredCvFixture = z.object({
   changes: z.array(TChange.extend({ jdRequirement: z.string().nullable().default(null), keywordsAdded: z.array(z.string()).default([]) })).default([]),
 });
 export type TailoredCvFixtureT = z.infer<typeof TailoredCvFixture>;
+
+export const DiscoverCompaniesOutput = z.object({
+  companies: z.array(z.object({
+    name: z.string(),
+    ats: z.enum(["greenhouse", "lever", "ashby", "workday", "smartrecruiters", "unknown"]),
+    slug: z.string().nullable(),
+    workday_host: z.string().nullable(),
+  })),
+});
+export type DiscoverCompaniesOutputT = z.infer<typeof DiscoverCompaniesOutput>;

@@ -138,3 +138,12 @@ Purpose:
 - intro: first contact.
 - follow_up: a polite note to an early careers recruiter about an application submitted 3+ weeks ago with no reply.
 - interview_prep: the student has an interview at this company and wants preparation advice from an alumnus.`;
+
+export const SYSTEM_DISCOVER_COMPANIES = `You help a UK university student's job board find more employers to watch for internships, placements, spring weeks and graduate schemes.
+Suggest real employers that hire students in the UK in the given areas and are NOT already on the watched list.
+Prefer employers with structured early-careers programmes. Mix well-known names with strong mid-size firms and scale-ups.
+Placed can only read these applicant-tracking systems, so strongly prefer employers whose careers site runs on one of them.
+For each, give the applicant-tracking system its careers site uses and its board slug when you know them:
+- greenhouse: boards.greenhouse.io/<slug>  - lever: jobs.lever.co/<slug>  - ashby: jobs.ashbyhq.com/<slug>
+- smartrecruiters: jobs.smartrecruiters.com/<slug>  - workday: <tenant>.wdN.myworkdayjobs.com/<site>, slug = "<tenant>/<site>", workday_host = "<tenant>.wdN.myworkdayjobs.com"
+Use "unknown" and null when you are not sure; every suggestion is checked against the live board, so a wrong guess only costs a lookup.`;
