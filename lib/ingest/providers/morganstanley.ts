@@ -54,6 +54,8 @@ export async function fetchMorganStanley(
   if (ids.size < json.totalResults) throw new Error(`partial list: ${ids.size} unique of ${json.totalResults} postings`);
   const country = COUNTRY[slug];
   const rows = json.resultSet.filter((r) => r.country === country);
+  // A renamed country value or vanished UK rows in a non-empty worldwide list must not read as "every UK job closed".
+  if (rows.length === 0) throw new Error(`no ${country} rows in a non-empty listing; refusing to close the board`);
   const seen = new Set<string>();
   const jobs: RawJob[] = [];
   for (const r of rows) {

@@ -185,5 +185,5 @@
 # Morgan Stanley students & graduates resultset.json, UK rows only. Workday ms/External (above) has no campus roles.
 - { slug: uk, name: Morgan Stanley, ats: morganstanley, employer: morganstanley, enabled: true }
 
-# PwC UK student site (Workday, mixes PwC firms worldwide; the ingest location filter keeps UK).
+# PwC UK student site (Workday, mixes PwC firms worldwide; the ingest location filter keeps UK and Europe, so Netherlands roles currently pass).
 - { slug: pwc/CRM_Campus_Careers_Site, name: PwC, ats: workday, apiHost: pwc.wd3.myworkdayjobs.com, employer: pwc, enabled: true }

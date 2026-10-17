@@ -74,7 +74,7 @@ describe("goldmansachs", () => {
   });
 
   it("fails when totalCount changes between pages", async () => {
-    await expect(fetchGoldman("uk", () => true, fakeGs(GS_PAGE + 5, { shrinkAfterFirst: true }).impl, async () => {})).rejects.toThrow(/changed|partial/);
+    await expect(fetchGoldman("uk", () => true, fakeGs(GS_PAGE + 5, { shrinkAfterFirst: true }).impl, async () => {})).rejects.toThrow(/changed/);
   });
 
   it("wraps failures as ProviderError starting goldmansachs/", async () => {

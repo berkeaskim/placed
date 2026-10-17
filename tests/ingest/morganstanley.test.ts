@@ -53,6 +53,11 @@ describe("morganstanley", () => {
     await expect(fetchMorganStanley("uk", () => true, serve({ totalResults: 0, resultSet: [] }), async () => {})).rejects.toThrow(/empty listing/);
   });
 
+  it("refuses a non-empty listing with no UK rows", async () => {
+    const rows = [row(0, "Japan"), row(1, "Japan")];
+    await expect(fetchMorganStanley("uk", () => true, serve({ totalResults: 2, resultSet: rows }), async () => {})).rejects.toThrow(/no United Kingdom rows/);
+  });
+
   it("rejects a response without totalResults/resultSet", async () => {
     await expect(fetchMorganStanley("uk", () => true, serve({ status: "ok" }), async () => {})).rejects.toThrow(/totalResults/);
   });
