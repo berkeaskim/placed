@@ -117,7 +117,7 @@ export type CourseFieldOutputT = z.infer<typeof CourseFieldOutput>;
 
 export const PostBulletsOutput = z.object({
   items: z.array(z.object({
-    text: z.string().max(300),
+    text: z.string().min(1).max(300),
     entryHint: z.object({ org: z.string(), title: z.string() }).nullable(),
     newProjectTitle: z.string().max(120).nullable(),
     excerpt: z.string().max(600),

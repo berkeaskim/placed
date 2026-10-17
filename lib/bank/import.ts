@@ -25,13 +25,13 @@ type Source = { kind: BankSourceKind; ref: string | null; rawText: string };
 const normText = (s: string) => s.toLowerCase().replace(/[^a-z0-9\s]/g, " ").split(/\s+/).filter(Boolean).join(" ");
 const candKey = (c: CandidateEntry) => `${normOrg(c.org)}|${c.title.toLowerCase().trim()}|${c.startYm ?? ""}`;
 
-export function payloadKey(kind: BankSuggestionKind, targetEntryId: string | null, payload: BankSuggestionPayload): string {
+function payloadKey(kind: BankSuggestionKind, targetEntryId: string | null, payload: BankSuggestionPayload): string {
   const body = kind === "new_bullet" ? normText((payload as NewBulletPayload).text) : candKey((payload as NewEntryPayload | MergeIntoPayload).candidate);
   return `${kind}|${targetEntryId ?? ""}|${body}`;
 }
 
 /** De-dup keys of every pending or rejected suggestion: a re-import must not resurface them. */
-export function openSuggestionKeys(userId: string): Set<string> {
+function openSuggestionKeys(userId: string): Set<string> {
   return new Set(
     listSuggestions(userId).filter((s) => s.status === "rejected" || s.status === "pending")
       .map((s) => payloadKey(s.kind, s.targetEntryId, s.payload)),
@@ -139,20 +139,27 @@ export async function importCvPdf(userId: string, pdfBytes: Uint8Array) {
 }
 
 const squash = (s: string) => s.replace(/\s+/g, " ").trim();
+const MIN_EXCERPT = 15;
+
+/** One key per bullet, so a post's bullets de-dup individually (payloadKey alone ignores a new_entry's bullets). */
+function bulletKeys(kind: BankSuggestionKind, target: string | null, p: BankSuggestionPayload): string[] {
+  if (kind === "new_bullet") return [`b|${target ?? ""}|${normText((p as NewBulletPayload).text)}`];
+  if (kind === "new_entry") {
+    const c = (p as NewEntryPayload).candidate;
+    return c.bullets.map((b) => `e|${normText(c.title)}|${normText(b.text)}`);
+  }
+  return [];
+}
 
 /**
- * LinkedIn posts -> pending suggestions. The AI proposes bullets; one is kept only if its excerpt is quoted from the post
- * and every number in it appears in the post. Anything else is counted in `dropped`.
+ * LinkedIn posts -> pending suggestions. The AI proposes bullets; one is kept only if its excerpt (at least 15 characters)
+ * is quoted from the post and every number in it appears in the post. Anything else is counted in `dropped`.
+ * Bullets for no existing entry that share a project title become one new_entry. Pending, rejected and accepted
+ * suggestions, and bullets already in the bank, are never suggested again.
  */
 export async function importPosts(userId: string, posts: string[]): Promise<{ suggestions: number; dropped: number }> {
   if (aiMode() === "off") throw new AiError(AI_NOT_SET_UP);
-  // payloadKey ignores a new_entry's bullets, so add the bullet text: two bullets under one project title must not collide.
-  const postKey = (kind: BankSuggestionKind, target: string | null, p: BankSuggestionPayload) =>
-    `${payloadKey(kind, target, p)}|${normText(kind === "new_bullet" ? (p as NewBulletPayload).text : (p as NewEntryPayload).candidate.bullets.map((b) => b.text).join(" "))}`;
-  const seen = new Set(
-    listSuggestions(userId).filter((s) => s.status === "rejected" || s.status === "pending")
-      .filter((s) => s.kind !== "merge_into").map((s) => postKey(s.kind, s.targetEntryId, s.payload)),
-  );
+  const seen = new Set(listSuggestions(userId).flatMap((s) => bulletKeys(s.kind, s.targetEntryId, s.payload)));
   let suggestions = 0;
   let dropped = 0;
   for (const post of posts.map((p) => p.trim()).filter(Boolean)) {
@@ -161,27 +168,38 @@ export async function importPosts(userId: string, posts: string[]): Promise<{ su
     const { items } = await extractPostBullets(post, bank.entries.map((e) => ({ id: e.id, org: e.org, title: e.title })));
     const flat = squash(post);
     const postNums = numberSet(post);
+    const groups = new Map<string, CandidateEntry>();
     for (const it of items) {
       const excerpt = squash(it.excerpt);
-      const grounded = excerpt.length > 0 && flat.includes(excerpt) && [...numberSet(it.text)].every((n) => postNums.has(n));
+      const grounded = excerpt.length >= MIN_EXCERPT && flat.includes(excerpt) && [...numberSet(it.text)].every((n) => postNums.has(n));
       if (!grounded) { dropped++; continue; }
       const target = it.entryHint
         ? bank.entries.find((e) => sameEntry({ org: it.entryHint!.org, title: it.entryHint!.title, startYm: null, endYm: null }, e))
         : undefined;
-      const kind: BankSuggestionKind = target ? "new_bullet" : "new_entry";
-      const payload: BankSuggestionPayload = target
-        ? { text: it.text, sourceText: it.excerpt }
-        : {
-          candidate: {
-            section: "projects", org: "", title: it.newProjectTitle?.trim() || "Project", dates: "", startYm: null, endYm: null, location: "",
-            bullets: [{ text: it.text, sourceText: it.excerpt }],
-          },
-        };
-      if (target && isDupBullet(it.text, target.bullets.map((b) => b.text))) continue;
-      const key = postKey(kind, target?.id ?? null, payload);
-      if (seen.has(key)) continue;
+      const bullet = { text: it.text, sourceText: it.excerpt };
+      if (target) {
+        if (isDupBullet(it.text, target.bullets.map((b) => b.text))) continue;
+        const payload: NewBulletPayload = bullet;
+        const [key] = bulletKeys("new_bullet", target.id, payload);
+        if (seen.has(key)) continue;
+        seen.add(key);
+        insertSuggestion(userId, { sourceId, kind: "new_bullet", targetEntryId: target.id, payload });
+        suggestions++;
+        continue;
+      }
+      const title = it.newProjectTitle?.trim() || "Project";
+      const held = bank.entries.some((e) => e.section === "projects" && normText(e.title) === normText(title) && isDupBullet(it.text, e.bullets.map((b) => b.text)));
+      const key = `e|${normText(title)}|${normText(it.text)}`;
+      if (held || seen.has(key)) continue;
       seen.add(key);
-      insertSuggestion(userId, { sourceId, kind, targetEntryId: target?.id ?? null, payload });
+      const g = groups.get(normText(title)) ?? {
+        section: "projects", org: "", title, dates: "", startYm: null, endYm: null, location: "", bullets: [],
+      } satisfies CandidateEntry;
+      g.bullets.push(bullet);
+      groups.set(normText(title), g);
+    }
+    for (const candidate of groups.values()) {
+      insertSuggestion(userId, { sourceId, kind: "new_entry", targetEntryId: null, payload: { candidate } });
       suggestions++;
     }
   }

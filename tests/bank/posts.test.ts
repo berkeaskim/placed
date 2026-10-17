@@ -2,7 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { LOCAL_USER_ID as U } from "@/lib/auth/local-user";
 import { db } from "@/lib/db/client";
 import { bankBullets, bankEntries, bankSources, bankSuggestions } from "@/lib/db/schema";
-import { insertEntry, listSuggestions } from "@/lib/bank/store";
+import { getBank, insertEntry, listSuggestions } from "@/lib/bank/store";
+import { acceptSuggestion } from "@/lib/bank/suggestions";
 import { importPosts } from "@/lib/bank/import";
 import { AI_NOT_SET_UP, AiError } from "@/lib/ai/provider";
 import type { NewBulletPayload, NewEntryPayload } from "@/lib/bank/types";
@@ -82,5 +83,25 @@ describe("importPosts", () => {
     await expect(importPosts(U, [POST])).rejects.toThrow(AI_NOT_SET_UP);
     await expect(importPosts(U, [POST])).rejects.toBeInstanceOf(AiError);
     expect(db.select().from(bankSources).all()).toHaveLength(0);
+  });
+
+  it("drops an excerpt shorter than 15 characters", async () => {
+    override.items = [item({ excerpt: "1st place" })];
+    expect(await importPosts(U, [POST])).toEqual({ suggestions: 0, dropped: 1 });
+  });
+
+  it("groups bullets with the same project title into one new_entry", async () => {
+    override.items = [item(), item({ text: "Built the pricing API in Python", excerpt: "I built the pricing API in Python." })];
+    expect((await importPosts(U, [POST])).suggestions).toBe(1);
+    const [s] = listSuggestions(U, "pending");
+    expect((s.payload as NewEntryPayload).candidate.bullets).toHaveLength(2);
+  });
+
+  it("after accepting the new_entry, re-importing the same post suggests nothing", async () => {
+    expect((await importPosts(U, [POST])).suggestions).toBe(1);
+    acceptSuggestion(U, listSuggestions(U, "pending")[0].id);
+    expect(getBank(U).entries).toHaveLength(1);
+    expect(await importPosts(U, [POST])).toEqual({ suggestions: 0, dropped: 0 });
+    expect(listSuggestions(U, "pending")).toHaveLength(0);
   });
 });
