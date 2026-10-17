@@ -65,22 +65,29 @@ export async function fetchOracle(
     if (typeof w?.TotalJobsCount !== "number") throw new Error("listing has no TotalJobsCount");
     return { total: w.TotalJobsCount, rows: w.requisitionList ?? [] };
   };
-  const first = await page(0);
-  const total = first.total;
-  if (total > ORACLE_MAX_PAGES * ORACLE_PAGE) throw new Error(`board has ${total} postings, over the ${ORACLE_MAX_PAGES * ORACLE_PAGE} cap`);
-  const pages = Math.ceil(total / ORACLE_PAGE);
-  const rest = await mapLimit(Array.from({ length: Math.max(0, pages - 1) }, (_, i) => (i + 1) * ORACLE_PAGE), ORACLE_CONCURRENCY, page);
-  const all = [first, ...rest];
-  const items = all.flatMap((p) => p.rows);
-  const unique = new Set(items.map((j) => j.Id).filter(Boolean)).size;
-  // Live quirk (JPMorgan 2026-10-17): TotalJobsCount is one higher than the rows the API ever returns, deterministically,
-  // with every page but the last full. Tolerate exactly that one row; any short page before the end is a partial list.
-  const pagesFull = all.slice(0, -1).every((p) => p.rows.length === ORACLE_PAGE);
-  if (unique < total - (pagesFull ? 1 : 0)) {
-    // Postings can close between page fetches; accept the run only if the board itself shrank to what we saw.
-    const again = await page(0);
-    if (again.total > unique + (pagesFull ? 1 : 0)) throw new Error(`partial list: ${unique} unique of ${total} postings`);
+  const listAll = async () => {
+    const first = await page(0);
+    if (first.total > ORACLE_MAX_PAGES * ORACLE_PAGE) throw new Error(`board has ${first.total} postings, over the ${ORACLE_MAX_PAGES * ORACLE_PAGE} cap`);
+    const pages = Math.ceil(first.total / ORACLE_PAGE);
+    const rest = await mapLimit(Array.from({ length: Math.max(0, pages - 1) }, (_, i) => (i + 1) * ORACLE_PAGE), ORACLE_CONCURRENCY, page);
+    const all = [first, ...rest];
+    const items = all.flatMap((p) => p.rows);
+    const idSet = new Set(items.map((j) => (j.Id === undefined ? "" : String(j.Id))).filter(Boolean));
+    return { total: first.total, items, idSet, pagesFull: all.slice(0, -1).every((p) => p.rows.length === ORACLE_PAGE) };
+  };
+  const run = await listAll();
+  if (run.idSet.size < run.total) {
+    // Live quirk (JPMorgan 2026-10-17): TotalJobsCount is one above the rows the API ever returns, with every page but the last full.
+    // A posting closing mid-run shifts later rows up under offset paging and skips one, which looks identical (1 short). So a
+    // 1-row shortfall is accepted only if a second full listing gives the same total and the identical id set; anything else is partial.
+    const shortBy = run.total - run.idSet.size;
+    const partial = () => new Error(`partial list: ${run.idSet.size} unique of ${run.total} postings`);
+    if (shortBy !== 1 || !run.pagesFull) throw partial();
+    const again = await listAll();
+    const same = again.total === run.total && again.pagesFull && again.idSet.size === run.idSet.size && [...run.idSet].every((id) => again.idSet.has(id));
+    if (!same) throw partial();
   }
+  const { items } = run;
   const ids = [...new Set(items.filter((j) => j.Id && j.Title && keepTitle(j.Title)).map((j) => String(j.Id)))];
   // A failed detail fails the board: a silently skipped posting would be marked dead.
   const details = await mapLimit(ids, ORACLE_CONCURRENCY, async (id) =>

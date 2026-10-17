@@ -9,8 +9,9 @@ const HOST = "jpmc.fa.oraclecloud.com";
 const SLUG = "CX_1001/300000000289276";
 
 /** Fake Oracle: `total` requisitions across pages; titles alternate intern / senior. */
-function fakeOracle(total: number, opts: { failOffset?: number; reportedTotal?: number; dup?: boolean; hiddenOne?: boolean } = {}) {
+function fakeOracle(total: number, opts: { failOffset?: number; reportedTotal?: number; dup?: boolean; hiddenOne?: boolean; shortPage1?: boolean; drift?: boolean } = {}) {
   const calls: string[] = [];
+  let runs = 0;
   const impl = vi.fn(async (url: string) => {
     calls.push(url);
     const u = new URL(url);
@@ -22,9 +23,10 @@ function fakeOracle(total: number, opts: { failOffset?: number; reportedTotal?: 
     if (u.pathname.endsWith("/recruitingCEJobRequisitions")) {
       const offset = Number(/offset=(\d+)/.exec(finder)![1]);
       if (offset === opts.failOffset) return new Response("x", { status: 404 });
-      const n = Math.max(0, Math.min(ORACLE_PAGE, total - offset - (opts.hiddenOne ? 1 : 0)));
+      if (offset === 0) runs++;
+      const n = opts.shortPage1 && offset === ORACLE_PAGE ? ORACLE_PAGE - 1 : Math.max(0, Math.min(ORACLE_PAGE, total - offset - (opts.hiddenOne ? 1 : 0)));
       const requisitionList = Array.from({ length: n }, (_, k) => {
-        const i = opts.dup ? 0 : offset + k;
+        const i = opts.dup ? 0 : offset + k + (opts.drift && runs > 1 && offset === 0 && k === 0 ? 1000 : 0);
         return { Id: String(i), Title: i % 2 ? "Senior Associate" : `Summer Internship ${i}`, PrimaryLocation: "LONDON, United Kingdom" };
       });
       return Response.json({ items: [{ TotalJobsCount: opts.reportedTotal ?? total, requisitionList }] });
@@ -99,6 +101,22 @@ describe("oracle", () => {
   it("tolerates the live one-row TotalJobsCount overshoot only when every earlier page is full", async () => {
     const ok = fakeOracle(45, { hiddenOne: true });
     expect((await fetchOracle(SLUG, HOST, () => false, ok.impl, async () => {})).listed).toBe(44);
+  });
+
+  it("rejects a 1-row shortfall when an earlier page was short (paging drift, not the phantom row)", async () => {
+    const { impl } = fakeOracle(70, { shortPage1: true });
+    await expect(fetchOracle(SLUG, HOST, () => false, impl, async () => {})).rejects.toThrow(/partial/);
+  });
+
+  it("rejects when the re-listing returns a different id set (a row moved mid-run)", async () => {
+    const { impl } = fakeOracle(45, { hiddenOne: true, drift: true });
+    await expect(fetchOracle(SLUG, HOST, () => false, impl, async () => {})).rejects.toThrow(/partial/);
+  });
+
+  it("accepts the phantom row only after two identical listings", async () => {
+    const { impl, calls } = fakeOracle(45, { hiddenOne: true });
+    await fetchOracle(SLUG, HOST, () => false, impl, async () => {});
+    expect(calls.filter((u) => /offset=0,/.test(decodeURIComponent(u)))).toHaveLength(2);
   });
 
   it("wraps provider failures as ProviderError starting oracle/", async () => {
