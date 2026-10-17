@@ -152,3 +152,16 @@ describe("remembered answers", () => {
     expect(planOf([rtw], {}, { "what is your right to work status": "Option B" }).it[0]).toMatchObject({ group: "confirm", value: "b" });
   });
 });
+
+describe("cover group", () => {
+  const mk = (label: string, type: FormField["type"]): FormField => ({ key: "k", label, type, required: false, options: [], target: "t" });
+  const pack = (f: FormField) => assemblePack({ ...form, fields: [f] }, AYSE_CORE, {}, {})[0];
+  it("puts a cover file field and a motivation textarea in the cover group", () => {
+    expect(pack(mk("Cover Letter", "file")).group).toBe("cover");
+    expect(pack(mk("Why do you want to join us?", "textarea")).group).toBe("cover");
+  });
+  it("leaves cover items for the student in the fill plan for now", () => {
+    const it = [pack(mk("Cover Letter", "file"))];
+    expect(toFillPlan(it, {})[0]).toMatchObject({ mode: "yours", value: null });
+  });
+});

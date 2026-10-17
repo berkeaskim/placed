@@ -4,7 +4,7 @@ import { findRemembered, normLabel, vaultValue, type Core, type Extra } from "./
 import type { FormField, NormalizedForm } from "./forms/types";
 import type { DraftResult } from "./drafts";
 
-export type PackGroup = "vault" | "ask" | "confirm" | "draft" | "yours";
+export type PackGroup = "vault" | "ask" | "confirm" | "draft" | "cover" | "yours";
 export type PackItem = { field: FormField; group: PackGroup; value: string | string[] | null; sourceLabel: string | null; draft?: DraftResult };
 export type Answer = { value: string | string[]; approved?: boolean };
 export type Answers = Record<string, Answer>;
@@ -48,7 +48,8 @@ export function assemblePack(form: NormalizedForm, core: Partial<Core>, extra: E
     };
     switch (c.kind) {
       case "eeo": case "consent": case "yours": return item("yours");
-      case "file": return c.which === "cv" ? item("vault", null, "your tailored CV") : item("yours");
+      case "file": return c.which === "cv" ? item("vault", null, "your tailored CV") : c.which === "cover" ? item("cover") : item("yours");
+      case "motivation": return item("cover");
       case "freeText": return { ...item("draft"), draft: drafts[field.key] };
       case "extra": {
         const r = recall();
@@ -89,7 +90,8 @@ export function toFillPlan(items: PackItem[], answers: Answers): FillInstruction
   return items.map(({ field, group, value, sourceLabel }): FillInstruction => {
     const base = { target: field.target, type: field.type, label: field.label, sourceLabel };
     const a = answers[field.key];
-    if (group === "yours") return { ...base, mode: "yours", value: null };
+    // Task 13 switches cover items to fill once the writer produces a ready output.
+    if (group === "yours" || group === "cover") return { ...base, mode: "yours", value: null };
     if (group === "draft") {
       const empty = !a || (Array.isArray(a.value) ? a.value.every((x) => !x.trim()) : !a.value.trim());
       return a?.approved && !empty ? { ...base, mode: "fill", value: a.value, sourceLabel: "your approved answer" } : { ...base, mode: "yours", value: null };

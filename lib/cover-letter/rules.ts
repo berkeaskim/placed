@@ -18,6 +18,7 @@ type Counters = {
   paragraphCvMin: number;
   paragraphMaxWords: number;
   iStartRatioMax: number;
+  aiPolicy: string;
 };
 type ModeBand = { words?: [number, number] | null; hardMax?: number; defaultWords?: number; fillRatio?: [number, number] };
 type RulesFile = {
