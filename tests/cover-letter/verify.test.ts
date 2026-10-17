@@ -159,7 +159,7 @@ describe("repair", () => {
     const m = letter(`${a1}⟦you:a1⟧ I ran the trading desk of a £50k student investment fund with 12 traders.⟦me:x1-b0⟧`);
     const i = { ...m, input: fixtureDraftInput(), ownSpans: [], judged: okVerdicts(m.sentences) };
     const rewrite = vi.fn(async () => "I ran the trading desk of a £50k student investment fund.");
-    const r = await repair(i, verifyOutput(i), rewrite);
+    const r = await repair(i, verifyOutput(i), rewrite, 2, async (s) => okVerdicts(s));
     expect(rewrite).toHaveBeenCalledTimes(1);
     expect(flagged(r.spans)).toEqual([]);
     expect(r.text).toContain(a1);
@@ -173,7 +173,7 @@ describe("repair", () => {
     const start = m.text.indexOf("I typed");
     const own: Span = { start, end: start + "I typed this myself.".length, kind: "theirs", refs: [] };
     const i = { ...m, input: fixtureDraftInput(), ownSpans: [own], judged: okVerdicts(m.sentences) };
-    const r = await repair(i, verifyOutput(i), async () => "I ran the fund's trading desk.");
+    const r = await repair(i, verifyOutput(i), async () => "I ran the fund's trading desk.", 2, async (s) => okVerdicts(s));
     const mine = r.spans.find((s) => s.kind === "theirs")!;
     expect(at(r.text, mine)).toBe("I typed this myself.");
     expect(flagged(r.spans)).toEqual([]);
@@ -260,7 +260,7 @@ describe("fix round 1: furniture, firm claims, judge, half-owned text", () => {
     const own2: Span = { start: s2, end: s2 + mineText.length, kind: "theirs", refs: [] };
     const i2 = { ...bad, input: fixtureDraftInput(), ownSpans: [own2], judged: okVerdicts(bad.sentences) };
     const rewrite = vi.fn<(s: string, r: string) => Promise<string>>(async () => "I ran the trading desk of a £50k student investment fund,");
-    const r = await repair(i2, verifyOutput(i2), rewrite);
+    const r = await repair(i2, verifyOutput(i2), rewrite, 2, async (s) => okVerdicts(s));
     expect(rewrite).toHaveBeenCalledTimes(1);
     expect(rewrite.mock.calls[0][0]).toBe("I ran the trading desk of a £50k fund with 12 traders,");
     const mine = r.spans.find((s) => s.kind === "theirs")!;
@@ -302,13 +302,14 @@ describe("judge results", () => {
     try {
       const d = parseMarked(readFileSync("fixtures/ai/coverLetterDraft/default.txt", "utf8"));
       const j = await judgeSentences({ sentences: d.sentences, input: fixtureDraftInput() });
-      expect(j.map((x) => x.index)).toEqual([1, 2, 3, 4, 6, 8, 9, 11, 12, 14, 15]);
+      expect(j.map((x) => x.index)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
       expect(j.every((x) => x.verdict === "ok")).toBe(true);
       const v = verifyOutput({ ...d, input: fixtureDraftInput(), ownSpans: [], judged: j });
       expect(flagged(v.spans).map((s) => [at(d.text, s), s.flag])).toEqual([["We placed 3rd of 62 teams.", "unsupported number"]]);
-      // With no verdicts at all, every AI-written sentence about the firm is flagged as unchecked (fail closed).
-      const none = flagged(verifyOutput({ ...d, input: fixtureDraftInput(), ownSpans: [] }).spans).map((s) => s.flag);
-      expect(none.filter((f) => f === "couldn't check this claim about the firm")).toHaveLength(8);
+      // With no verdicts at all, every AI-written piece is flagged as unchecked (fail closed).
+      const none = flagged(verifyOutput({ ...d, input: fixtureDraftInput(), ownSpans: [] }).spans).map((s) => [at(d.text, s), s.flag]);
+      expect(none.filter(([, f]) => f !== "couldn't check this claim about the firm")).toEqual([["We placed 3rd of 62 teams.", "unsupported number"]]);
+      expect(none).toHaveLength(13); // every AI-written piece but the courtesy close
       // Indexes that point at sentences the judge was not shown are dropped.
       expect(await judgeSentences({ sentences: d.sentences.slice(0, 3), input: fixtureDraftInput() })).toEqual([{ index: 1, about: "them", refs: ["jd"], verdict: "ok" }, { index: 2, about: "you", refs: ["a1"], verdict: "ok" }]);
     } finally {
@@ -585,12 +586,13 @@ describe("round 4: fail closed on the judge, firm words from firm sources", () =
     }
   });
 
-  it("courtesy and sentences with no firm reference need no verdict", () => {
+  it("only pure courtesy needs no verdict; every other AI sentence does (round 5)", () => {
     for (const body of [
       "Thank you for your consideration.⟦me:⟧",
       "I look forward to hearing from you.⟦me:⟧",
-      "I ran the trading desk of a £50k student investment fund.⟦me:x1-b0⟧",
     ]) expect(run(body, "none"), body).toEqual({ flags: [], ready: true });
+    expect(run("I ran the trading desk of a £50k student investment fund.⟦me:x1-b0⟧", "none")).toEqual({ flags: [NO_VERDICT], ready: false });
+    expect(run("I ran the trading desk of a £50k student investment fund.⟦me:x1-b0⟧", "ok")).toEqual({ flags: [], ready: true });
   });
 
   it("a pronoun clause about the firm with no name needs a verdict", () => {
@@ -631,5 +633,73 @@ describe("round 4: fail closed on the judge, firm words from firm sources", () =
     const r = await repair(i, verifyOutput(i), rewrite);
     expect(rewrite).not.toHaveBeenCalled();
     expect(flagged(r.spans).map((s) => s.flag)).toEqual([NO_VERDICT]);
+  });
+});
+
+describe("round 5: generic firm references, quoted-answer pieces, the student's predicate, them-sentences", () => {
+  // "none": the judge says nothing about the probe sentence (the opening keeps its "ok").
+  const run = (raw: string, judged: "none" | "ok") => {
+    const m = parseMarked(raw);
+    const probe = m.sentences.length - 2; // before the sign-off
+    const v = verifyOutput({ ...m, input: fixtureDraftInput(), ownSpans: [], judged: okVerdicts(m.sentences).filter((j) => judged === "ok" || j.index !== probe) });
+    return { flags: flagged(v.spans).map((s) => s.flag), ready: canMarkReady({ text: m.text, spans: v.spans, lint: v.lint, limit: null }).ok };
+  };
+  const wrap = (body: string) => "Dear Hiring Manager,\n\n" + OPEN + body + "\n\nYours faithfully,";
+  const a1 = FIXTURE_ANSWERS[0].text!.slice(0, -1);
+  const PROBES = [
+    // 1. generic firm nouns, "here" and "there"
+    "I am applying because the bank pays every analyst a guaranteed bonus.⟦me:⟧",
+    "I am applying here because analysts get guaranteed bonuses.⟦me:⟧",
+    "I want to join the bank because analysts get guaranteed bonuses.⟦me:⟧",
+    "I want to join this firm since analysts receive guaranteed bonuses.⟦me:⟧",
+    "I am drawn to a bank whose analysts get guaranteed bonuses.⟦me:⟧",
+    "I am applying to the desk that paid analysts record bonuses last year.⟦me:⟧",
+    "I am keen to join after the bank's record year.⟦me:⟧",
+    "I built a rates scenario model in Python, and the bank pays analysts guaranteed bonuses.⟦me:x1-b1⟧",
+    "I ran a trading desk, so the guaranteed bonuses at the bank appeal to me.⟦me:x1-b0⟧",
+    // 2. AI pieces of a quoted-answer sentence that names the firm
+    `${a1}, along with guaranteed bonuses for every analyst.⟦you:a1⟧`,
+    `${a1}, and so did its guaranteed bonuses.⟦you:a1⟧`,
+    `${a1}, and I hear analysts get guaranteed bonuses.⟦you:a1⟧`,
+    // 3. claims in the student's predicate before the firm
+    "I admire the generous analyst pay offered by Northbridge.⟦me:⟧",
+    "I am excited by the four-day week promised by Northbridge.⟦me:⟧",
+    "I was told analysts never work weekends, which is why I chose your firm.⟦me:⟧",
+    "I know analysts get guaranteed bonuses, so I am applying to Northbridge.⟦me:⟧",
+    "I want the guaranteed bonuses and flexible hours offered to analysts joining your desk.⟦me:⟧",
+    "I want a guaranteed bonus; Northbridge.⟦me:⟧",
+    // 4. them-sentences
+    "Northbridge pays summer analysts guaranteed bonuses.⟦them:jd⟧",
+  ];
+
+  it("with no verdict, every probe is flagged", () => {
+    for (const body of PROBES) {
+      const r = run(wrap(body), "none");
+      expect(r.ready, body).toBe(false);
+    }
+  });
+
+  it("with the judge saying ok, every probe is flagged deterministically", () => {
+    for (const body of PROBES) {
+      const r = run(wrap(body), "ok");
+      expect(r.flags.length, body).toBeGreaterThan(0);
+      expect(r.flags, body).not.toContain(NO_VERDICT);
+      expect(r.ready, body).toBe(false);
+    }
+  });
+
+  it("the intent sentences still pass with ok", () => {
+    for (const body of [
+      "That is why I am applying to Northbridge.⟦me:⟧",
+      "My experience on the fund fits your Markets programme.⟦me:x1-b0⟧",
+      "I would value the opportunity to contribute to your team.⟦me:⟧",
+    ]) expect(run(wrap(body), "ok"), body).toEqual({ flags: [], ready: true });
+  });
+
+  it("a repair rewrite to a generic-firm claim is not Ready when the judge says nothing", async () => {
+    const m = letter("I want to join Northbridge for its guaranteed bonuses.⟦me:⟧");
+    const i = { ...m, input: fixtureDraftInput(), ownSpans: [], judged: okVerdicts(m.sentences) };
+    const r = await repair(i, verifyOutput(i), async () => "I want to join the bank because analysts get guaranteed bonuses.", 2, async () => []);
+    expect(canMarkReady({ text: r.text, spans: r.spans, lint: r.lint, limit: null }).ok).toBe(false);
   });
 });

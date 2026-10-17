@@ -33,10 +33,26 @@
       "verdict": "ok"
     },
     {
+      "index": 5,
+      "about": "you",
+      "refs": [
+        "a3"
+      ],
+      "verdict": "ok"
+    },
+    {
       "index": 6,
       "about": "me",
       "refs": [
         "p1-b0"
+      ],
+      "verdict": "ok"
+    },
+    {
+      "index": 7,
+      "about": "me",
+      "refs": [
+        "x1-b1"
       ],
       "verdict": "ok"
     },
@@ -58,6 +74,14 @@
       "verdict": "ok"
     },
     {
+      "index": 10,
+      "about": "me",
+      "refs": [
+        "x1-b0"
+      ],
+      "verdict": "ok"
+    },
+    {
       "index": 11,
       "about": "them",
       "refs": [
@@ -70,6 +94,14 @@
       "about": "them",
       "refs": [
         "jd"
+      ],
+      "verdict": "ok"
+    },
+    {
+      "index": 13,
+      "about": "me",
+      "refs": [
+        "x2-b0"
       ],
       "verdict": "ok"
     },

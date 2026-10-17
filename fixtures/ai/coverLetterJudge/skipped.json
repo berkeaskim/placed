@@ -9,6 +9,14 @@
       "verdict": "ok"
     },
     {
+      "index": 2,
+      "about": "me",
+      "refs": [
+        "x1-b0"
+      ],
+      "verdict": "ok"
+    },
+    {
       "index": 3,
       "about": "them",
       "refs": [
@@ -21,6 +29,22 @@
       "about": "them",
       "refs": [
         "jd"
+      ],
+      "verdict": "ok"
+    },
+    {
+      "index": 5,
+      "about": "me",
+      "refs": [
+        "x1-b1"
+      ],
+      "verdict": "ok"
+    },
+    {
+      "index": 6,
+      "about": "me",
+      "refs": [
+        "p1-b0"
       ],
       "verdict": "ok"
     },
@@ -53,6 +77,22 @@
       "about": "them",
       "refs": [
         "jd"
+      ],
+      "verdict": "ok"
+    },
+    {
+      "index": 11,
+      "about": "me",
+      "refs": [
+        "x1-b0"
+      ],
+      "verdict": "ok"
+    },
+    {
+      "index": 12,
+      "about": "me",
+      "refs": [
+        "x2-b0"
       ],
       "verdict": "ok"
     },

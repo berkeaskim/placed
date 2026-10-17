@@ -36,10 +36,10 @@ no `⟦you⟧` sentence and the why-them part cites only `⟦them:jd⟧`.
 `spaced.txt` is `default.txt` with a space before every marker, as small models write it (the draft is stored with the
 spacing the paper renders). The job post's last line carries the reference `SA-MKT-27` that the opening quotes.
 `coverLetterJudge/default.json` (and `e2e-cl.json`, the same verdicts held back 1.5s) is the judge's verdict on
-`default.txt`: an explicit "ok" for every sentence that references the firm (its `them` sentences, and the `me`/`you`
-sentences naming it, using a pronoun that may point at it, or with no student in them). `skipped.json` does the same for
-`skipped.txt`. The ground-check fails closed: a sentence about the firm with no verdict is flagged "couldn't check this
-claim about the firm". An "ok" never clears a deterministic flag, so the one deliberate catch stays.
+`default.txt`: an explicit "ok" for every sentence but the furniture and the courtesy close (indexes 1–15).
+`skipped.json` does the same for `skipped.txt`. The ground-check fails closed: an AI-written sentence with no verdict
+is flagged "couldn't check this claim about the firm". An "ok" never clears a deterministic flag, so the one deliberate
+catch stays.
 
 ## Other fixtures
 

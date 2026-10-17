@@ -86,7 +86,6 @@ const numbersSupported = (text: string, src: Sources) => numberTokens(text).ever
 
 // "I" only in capitals (a lowercase "i" is not the pronoun); "My" and "Me" also start sentences.
 const FIRST_PERSON = /\b(?:I|I'm|I've|I'd|I'll|[Mm]y|[Mm]e|[Mm]yself|[Mm]ine)\b/;
-const ADDRESSES_FIRM = /\b(?:you|your|yours)\b/i;
 /** Firm claims that need a firm source even in lowercase (on top of themSupported's claim words). */
 const FIRM_CLAIMS = /\b(?:records?|more than any|any other|unrivalled|unmatched|unparalleled|highest|award[- ]winning|best[- ]paid|double|triple|twice)\b/gi;
 /** Capitalised sentence openers that are not names. */
@@ -123,54 +122,63 @@ const COURTESY = [
 const isCourtesy = (text: string) =>
   text.trim().replace(/[.!?…]+$/, "").split(/\s*(?:,\s*and\s+|;\s*|,\s*)/).every((p) => COURTESY.some((re) => re.test(p.trim())));
 
-const mentionsFirm = (text: string, company: string) => {
-  const low = text.toLowerCase();
-  return ADDRESSES_FIRM.test(text) || companyTokens(company).some((w) => new RegExp(`\\b${w}\\b`).test(low));
-};
-const stemWord = (w: string) => (w.length > 5 ? w.replace(/(?:ing|ed|es|s)$/, "") : w);
 
-/** The flag for a sentence about the firm that has no verdict from the judge (error, timeout, no provider): fail closed. */
+/** The flag for an AI-written sentence that has no verdict from the judge (error, timeout, no provider): fail closed. */
 export const NO_VERDICT = "couldn't check this claim about the firm";
 const FIRM_REASON = "not in the job post or your picked facts";
-/** A third-person pronoun may point at the firm ("…for its bonuses", "…because they pay"). */
-const THIRD_PERSON = /\b(?:it|its|they|their|theirs|them|there)\b/i;
 
-/**
- * A "me" or "you" sentence that references the firm (its name, "you"/"your", a pronoun that may point at it, or no
- * student in it at all) needs an explicit "ok" from the judge. Pure courtesy is exempt.
- */
-function needsVerdict(text: string, company: string): boolean {
-  if (!/\p{L}/u.test(text) || isCourtesy(text)) return false;
-  return mentionsFirm(text, company) || THIRD_PERSON.test(text) || !FIRST_PERSON.test(text);
-}
+/** Every AI-written sentence but pure courtesy needs an explicit "ok" from the judge. */
+const needsVerdict = (text: string) => /\p{L}/u.test(text) && !isCourtesy(text);
+
+/** Generic names for the firm: "the bank", "this firm", "your desk's", "here", and "there" (not "there is/are"). */
+const GENERIC_NOUNS = "bank|banks|firm|company|business|employer|desk|desks|team|teams|division|programme|program|group|fund|house";
+const GENERIC_REF = `\\b(?:the|this|that|your|a|their)\\s+(?:${GENERIC_NOUNS})\\b(?:['’]s)?|\\bhere\\b|\\bthere\\b(?!\\s+(?:is|are|was|were)\\b)`;
+/** The firm's name, "you"/"your", or a generic name for it. */
+const firmRef = (company: string) =>
+  new RegExp(`\\b(?:you|your|yours${companyTokens(company).map((t) => `|${escapeRe(t)}`).join("")})\\b|${GENERIC_REF}`, "gi");
+const refsFirm = (text: string, company: string) => firmRef(company).test(text);
 
 /** Head nouns and plain intent words that may sit around a firm reference without saying anything about the firm. */
-const FIRM_HEADS = "team teams firm programme programmes program division desk desks role business scheme internship organisation company group people";
+const FIRM_HEADS = `${GENERIC_NOUNS.replace(/\|/g, " ")} role scheme internship organisation people`;
 const INTENT_VOCAB = "start starting career analyst analysts summer programme programmes program opportunity opportunities learn " +
   "learning contribute contributing apply applying application join joining keen hope hoping excited eager reason reasons why " +
   "fits fit suits suit next step place where why chance part grow growing develop developing build building interest interested " +
-  "position internship placement graduate year";
+  "position internship placement graduate year bring value ref wish";
+/** Linking and plain evaluative words that state no fact about the firm or the student ("the role asks for…"). */
+const PLAIN_WORDS = "run runs ask asks asked show shows showed much side sides matter matters let lets see one kind main draw way habit careful check checking";
 /** Function words: never a claim on their own. */
 const FUNCTION_WORDS = new Set(("the and for are you your yours our ours its they them their theirs there this that these those then than " +
   "with into onto from about also been being both could does have here just like were what when where which while will would should " +
-  "shall might must can may not all any but per via who how why get gets got did had has was want wants").split(" "));
-const stem = (w: string) => (w.length > 5 ? stemWord(w) : w.replace(/(?<![su])s$/, ""));
+  "shall might must can may not all any but per via who how why get gets got did had has was want wants itself far").split(" "));
+const stem = (w: string) => (w.length > 4 ? w.replace(/(?:ing|ed|(?<![su])s)$/, "") : w.replace(/(?<![su])s$/, ""));
 const wordsOf = (t: string) => (t.toLowerCase().replace(/['’]s\b/g, "").match(/[a-z][a-z-]*/g) ?? []).filter((w) => w.length >= 3 && !FUNCTION_WORDS.has(w));
+/** A word is in a vocabulary by stem, or by a shared start of 5+ letters for long words ("rotation" / "rotate"). */
+function inVocab(vocab: Set<string>, w: string): boolean {
+  const s = stem(w);
+  if (vocab.has(s)) return true;
+  if (s.length < 6) return false;
+  for (const v of vocab) if (v.length >= 6 && v.slice(0, Math.max(5, Math.min(v.length, s.length) - 3)) === s.slice(0, Math.max(5, Math.min(v.length, s.length) - 3))) return true;
+  return false;
+}
+const firmVocab = (src: Sources) =>
+  new Set([...wordsOf(src.firmLines.join(" ")), ...companyTokens(src.company), ...FIRM_HEADS.split(" "), ...INTENT_VOCAB.split(" "), ...PLAIN_WORDS.split(" ")].map(stem));
+const allVocab = (src: Sources) => new Set([...firmVocab(src), ...[...src.sourceWords].map(stem)]);
 
 /**
- * The part of a sentence naming the firm that describes the firm: everything but the student's own predicate, which
- * runs from the first first-person word to the first firm reference after it ("My experience on the fund fits" your
- * Markets programme). Nothing after that reference is the student's: "…Northbridge, which I know pays double" is firm talk.
+ * Splits a sentence that references the firm into what describes the firm and the student's own predicate. The
+ * predicate runs from the first first-person word to the first firm reference after it ("My experience on the fund
+ * fits" your Markets programme); nothing after that reference is the student's ("…Northbridge, which I know pays
+ * double" is firm talk), and nor is a lead-in before the student ("Because of its bonuses I…").
  */
-function firmPortion(text: string, company: string): string {
+function splitFirm(text: string, company: string): { firm: string; mine: string } {
   const fp = FIRST_PERSON.exec(text);
-  if (!fp) return text;
-  const ref = new RegExp(`\\b(?:you|your|yours${companyTokens(company).map((t) => `|${escapeRe(t)}`).join("")})\\b`, "gi");
+  if (!fp) return { firm: text, mine: "" };
+  const ref = firmRef(company);
   ref.lastIndex = fp.index;
   const r = ref.exec(text);
-  if (!r) return text.slice(0, fp.index);
-  // A phrase that ends "…at / of / in / as / like Northbridge" or ", Northbridge" describes the firm ("I admire the
-  // generous pay at Northbridge"): the student's predicate stops at its article, or after the student's first verb.
+  if (!r) return { firm: text.slice(0, fp.index), mine: text.slice(fp.index) };
+  // A phrase that ends "…at / of / by / for / offered Northbridge" or ", Northbridge" describes the firm ("I admire
+  // the generous pay offered by Northbridge"): the student's predicate stops at its article, or after the first verb.
   let end = r.index;
   const d = DESCRIBES.exec(text.slice(fp.index, r.index));
   if (d) {
@@ -178,30 +186,54 @@ function firmPortion(text: string, company: string): string {
     const art = [...mine.matchAll(/\b(?:the|a|an)\b/gi)].at(-1);
     end = fp.index + (art ? art.index : (/^\S+\s+\S+/.exec(mine)?.[0].length ?? 0));
   }
-  return `${text.slice(0, fp.index)} ${text.slice(end)}`;
+  return { firm: `${text.slice(0, fp.index)} ${text.slice(end)}`, mine: text.slice(fp.index, end) };
 }
 /** The text before a firm reference that makes the phrase before it a description of the firm. */
-const DESCRIBES = /(?:\b(?:at|of|in|inside|within|across|from|as|like|than)|,)\s*(?:the\s+)?$/i;
+// Not "to": it is the preposition of intent ("apply to", "bring my model to your desks").
+const DESCRIBES = /(?:\b(?:at|of|in|inside|within|across|from|as|like|than|by|with|for|behind|offered|promised)|[,;:])\s*(?:the\s+)?$/i;
 
 /**
- * In a sentence naming the firm, every content word that describes the firm comes from what may be said about it
- * (the job post, the picked facts, the role, the ref, the firm's own name) or the small intent vocabulary, never from
- * the CV or the student's answers. When in doubt a word counts as describing the firm, so this errs amber.
+ * Every content word is something that may be said about the firm, and its claims and numbers are in `firmLines`.
+ * With `loose`, words from the CV and answers count too (see `ambiguousRef`).
  */
-function firmWordsReason(text: string, src: Sources): string | null {
-  const portion = firmPortion(text, src.company);
-  const vocab = new Set([...wordsOf(src.firmLines.join(" ")), ...companyTokens(src.company), ...FIRM_HEADS.split(" "), ...INTENT_VOCAB.split(" ")].map(stem));
-  return wordsOf(portion).every((w) => vocab.has(stem(w))) && claimsSupported(portion, src.firmLines, src.company) ? null : FIRM_REASON;
+function firmVocabReason(text: string, src: Sources, loose = false): string | null {
+  const vocab = loose ? allVocab(src) : firmVocab(src);
+  return wordsOf(text).every((w) => inVocab(vocab, w)) && claimsSupported(text, src.firmLines, src.company) ? null : FIRM_REASON;
 }
 
 /**
- * AI text in a "me", courtesy or quoted-answer sentence that names the firm must pass `firmWordsReason`. Text with no
- * student in it at all is checked like a "them" sentence (names and claim words from the job post and picked facts).
- * Pure courtesy is exempt. Whether the sentence is fitting or specific is the judge's call, and it must give one.
+ * The sentence's only firm references are "the/a" + a noun the student's own CV or answers use ("the fund used in
+ * weekly investment committee meetings" is the student's fund): it may be the student's, so its words may come from
+ * any source. Claim words and numbers still need `firmLines`.
+ */
+function ambiguousRef(text: string, src: Sources): boolean {
+  const refs = [...text.matchAll(firmRef(src.company))].map((m) => m[0].toLowerCase().replace(/['’]s$/, ""));
+  return refs.length > 0 && refs.every((r) => {
+    const m = /^(?:the|a)\s+([a-z]+)$/.exec(r);
+    return !!m && src.sourceWords.has(m[1]);
+  });
+}
+
+/**
+ * In a sentence that references the firm, the words describing the firm come from what may be said about it (the job
+ * post, the picked facts, the role, the ref, the firm's name) or the small intent vocabulary, never from the CV or the
+ * answers; the student's own predicate may also use words from the CV and answers. When in doubt a word counts as
+ * describing the firm, so this errs amber.
+ */
+function firmWordsReason(text: string, src: Sources): string | null {
+  const { firm, mine } = splitFirm(text, src.company);
+  const all = allVocab(src);
+  return firmVocabReason(firm, src, ambiguousRef(text, src)) ?? (wordsOf(mine).every((w) => inVocab(all, w)) ? null : FIRM_REASON);
+}
+
+/**
+ * AI text in a "me", courtesy or quoted-answer sentence that references the firm must pass `firmWordsReason`. Text
+ * with no student in it at all is checked like a "them" sentence (names and claim words from the job post and picked
+ * facts). Pure courtesy is exempt. Whether the sentence is fitting or specific is the judge's call, and it must give one.
  */
 function firmTalkReason(text: string, src: Sources): string | null {
   if (isCourtesy(text)) return null;
-  if (mentionsFirm(text, src.company)) return firmWordsReason(text, src);
+  if (refsFirm(text, src.company)) return firmWordsReason(text, src);
   if (FIRST_PERSON.test(text)) return null;
   const r = themReason(text, ["jd", ...src.picked.keys()], src.input, src, src.cvNames);
   return r && r !== "would work for any firm" ? FIRM_REASON : null;
@@ -450,10 +482,14 @@ export function verifyOutput(v: VerifyInput): Verified {
     theirs.sort((a, b) => a.start - b.start);
     const quoted = theirs.reduce((n, t) => n + (t.end - t.start), 0);
     const thin = quoted < MIN_QUOTED_SHARE * body.trim().length;
+    // In a quoted-answer sentence that references the firm, every AI-written word outside the answer is firm talk.
+    const firmy = refsFirm(body, i.company);
     let pos = 0;
     const rest = (from: number, to: number) => {
       const piece = body.slice(from, to);
-      if (hasText(piece)) ai(start + from, start + to, [], thin ? "changed your words" : freeTextReason(piece, src) ?? verdictReason(index));
+      if (!hasText(piece)) return;
+      const reason = thin ? "changed your words" : freeTextReason(piece, src) ?? (firmy && !isCourtesy(piece) ? firmVocabReason(piece, src) : null);
+      ai(start + from, start + to, [], reason ?? verdictReason(index));
     };
     for (const t of theirs) {
       if (t.start < pos) continue;
@@ -469,7 +505,8 @@ export function verifyOutput(v: VerifyInput): Verified {
     if (about === "you") return youPiece(start, end, refs, index);
     if (about === "me") return ai(start, end, refs, meReason(body, refs, src) ?? verdictReason(index));
     if (about === "them") {
-      const reason = themReason(body, refs, i, src) ?? verdictReason(index);
+      // Beyond the cited lines' names and claim words, every word describing the firm comes from the firm's own lines.
+      const reason = themReason(body, refs, i, src) ?? (refs.length ? firmWordsReason(body, src) : null) ?? verdictReason(index);
       ai(start, end, refs, reason);
       if (!reason && refs.every((x) => x === "jd") && paraOf(start) !== firstPara) jdOnly.push({ start, end, para: paraOf(start) });
       return;
@@ -490,7 +527,7 @@ export function verifyOutput(v: VerifyInput): Verified {
     const about = tag ? tag.about : u.m.about;
     const refs = tag ? tag.refs.map(lower) : u.m.refs;
     // Fail closed: a sentence about the firm needs an explicit verdict, else its AI-written text is flagged.
-    if (about === "them" || ((about === "me" || about === "you") && needsVerdict(text.slice(r.start, r.end), i.company))) unchecked.add(u.index);
+    if (about === "them" || ((about === "me" || about === "you") && needsVerdict(text.slice(r.start, r.end)))) unchecked.add(u.index);
     for (const p of subtract(own, r.start, r.end)) {
       const q = trimRange(text, p.start, p.end);
       if (q.end <= q.start || !hasText(text.slice(q.start, q.end))) continue;
@@ -560,9 +597,9 @@ export async function judgeSentences(i: { sentences: { text: string; about: Mark
   const shown = i.sentences.map((s, index) => ({ ...s, index })).filter((s) =>
     s.about === "them"
     || (s.about === null && s.text.trim() && !furniture(s.text, d).lead && !furniture(s.text, d).trail)
-    // "me" and quoted-answer sentences that reference the firm get the swap test and support check too, intent
+    // Every "me" and quoted-answer sentence but pure courtesy gets the swap test and support check too, intent
     // included. verifyOutput flags any of these the judge returns no verdict for.
-    || ((s.about === "me" || s.about === "you") && needsVerdict(core(s.text, d), d.company)));
+    || ((s.about === "me" || s.about === "you") && needsVerdict(core(s.text, d))));
   if (!shown.length) return [];
   const esc = escapeUntrusted;
   const cv = [...cvBulletIndex(d.cv)].map(([id, t]) => `${id}: ${esc(t)}`).join("\n");
