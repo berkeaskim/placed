@@ -1,6 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
-import { AiError, AI_BAD_FORMAT, AI_REFUSAL, AI_UNAVAILABLE, type StructuredRequest } from "./provider";
+import { AiError, AI_BAD_FORMAT, AI_REFUSAL, AI_UNAVAILABLE, type StreamRequest, type StructuredRequest } from "./provider";
 import { anthropicModel } from "./models";
 import { aiApiKey } from "./config";
 
@@ -52,4 +52,29 @@ export async function anthropicStructured<T>(req: StructuredRequest<T>, c?: Mess
     }
   }
   throw new AiError(AI_BAD_FORMAT);
+}
+
+/** Streams the answer as text deltas (`text_delta` events). An aborted signal ends the stream quietly. */
+export async function* anthropicStream(req: StreamRequest, c?: MessagesClient): AsyncGenerator<string> {
+  const api: MessagesClient = c ?? defaultClient();
+  try {
+    const stream = api.messages.stream(
+      {
+        model: anthropicModel(req.tier),
+        max_tokens: req.maxTokens ?? 8000,
+        system: [{ type: "text", text: req.system, cache_control: { type: "ephemeral" } }],
+        messages: [{ role: "user", content: req.prompt }],
+      },
+      { signal: req.signal },
+    );
+    for await (const ev of stream) {
+      if (req.signal?.aborted) return;
+      if (ev.type === "content_block_delta" && ev.delta.type === "text_delta") yield ev.delta.text;
+      else if (ev.type === "message_delta" && ev.delta.stop_reason === "refusal") throw new AiError(AI_REFUSAL);
+    }
+  } catch (cause) {
+    if (cause instanceof AiError) throw cause;
+    if (req.signal?.aborted) return;
+    throw new AiError(AI_UNAVAILABLE, { cause });
+  }
 }

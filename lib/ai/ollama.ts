@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { extractPdf } from "@/lib/cv/pdf-text";
-import { AiError, AI_BAD_FORMAT, AI_UNAVAILABLE, type Part, type StructuredRequest } from "./provider";
+import { AiError, AI_BAD_FORMAT, AI_UNAVAILABLE, type Part, type StreamRequest, type StructuredRequest } from "./provider";
 import { ollamaHost, ollamaModel } from "./config";
 import { httpFetch } from "./http-fetch";
 
@@ -29,19 +29,30 @@ function parallelLimit(): number {
   return Number.isInteger(n) && n > 0 ? n : 1;
 }
 
-async function withSlot<T>(background: boolean, run: () => Promise<T>): Promise<T> {
+/** Takes a slot (waiting its turn) and returns the function that releases it. */
+async function acquireSlot(background: boolean): Promise<() => void> {
   if (active >= parallelLimit()) {
     await new Promise<void>((resolve) => waiting[background ? "background" : "interactive"].push(resolve));
   } else {
     active++;
   }
-  try {
-    return await run();
-  } finally {
+  let released = false;
+  return () => {
+    if (released) return;
+    released = true;
     // Hand the slot straight to the next caller (active stays the same), or free it.
     const next = waiting.interactive.shift() ?? waiting.background.shift();
     if (next) next();
     else active--;
+  };
+}
+
+async function withSlot<T>(background: boolean, run: () => Promise<T>): Promise<T> {
+  const release = await acquireSlot(background);
+  try {
+    return await run();
+  } finally {
+    release();
   }
 }
 
@@ -143,6 +154,61 @@ async function structured<T>(req: StructuredRequest<T>, f: FetchLike): Promise<T
     );
   }
   throw new AiError(AI_BAD_FORMAT);
+}
+
+/** Streams /api/chat NDJSON, yielding each `message.content`. Interactive priority; same timeout as structured calls. */
+export async function* ollamaStream(req: StreamRequest, f: FetchLike = httpFetch): AsyncGenerator<string> {
+  const model = ollamaModel(req.tier);
+  if (!model) throw new AiError(AI_UNAVAILABLE);
+  const release = await acquireSlot(false);
+  const timeout = AbortSignal.timeout(OLLAMA_TIMEOUT_MS);
+  const signal = req.signal ? AbortSignal.any([req.signal, timeout]) : timeout;
+  try {
+    const res = await f(`${ollamaHost()}/api/chat`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        model,
+        messages: [{ role: "system", content: req.system }, { role: "user", content: req.prompt }],
+        stream: true,
+        think: false,
+        keep_alive: "15m",
+        options: { num_ctx: OLLAMA_NUM_CTX, num_predict: req.maxTokens ?? 8000 },
+      }),
+      signal,
+    });
+    if (!res.ok || !res.body) throw new Error(`ollama ${res.status}: ${(await res.text().catch(() => "")).slice(0, 300)}`);
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buf = "";
+    const parse = (line: string): string => {
+      if (!line.trim()) return "";
+      const chunk = JSON.parse(line) as ChatChunk;
+      if (chunk.error) throw new Error(chunk.error);
+      return chunk.message?.content ?? "";
+    };
+    try {
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (req.signal?.aborted) return;
+        buf += decoder.decode(value, { stream: !done });
+        const lines = buf.split("\n");
+        buf = done ? "" : (lines.pop() ?? "");
+        for (const line of lines) {
+          const text = parse(line);
+          if (text) yield text;
+        }
+        if (done) break;
+      }
+    } finally {
+      reader.cancel().catch(() => {});
+    }
+  } catch (cause) {
+    if (req.signal?.aborted) return;
+    throw new AiError(AI_UNAVAILABLE, { cause });
+  } finally {
+    release();
+  }
 }
 
 export type OllamaModelInfo = { name: string; sizeBytes: number; parameterSize?: string; quantization?: string };

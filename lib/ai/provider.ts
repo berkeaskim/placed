@@ -1,6 +1,6 @@
 import type { z } from "zod";
 import { aiMode, aiProvider } from "@/lib/ai/config";
-import { loadFixture } from "./fixtures";
+import { loadFixture, loadTextFixture } from "./fixtures";
 
 export type Part = { type: "text"; text: string } | { type: "pdf"; base64: string };
 /** `temperature` is optional and currently never sent: Anthropic models reject it and Gemini 3 should stay at its default (gemini.ts). */
@@ -11,6 +11,9 @@ export type StructuredRequest<T> = { tier: "fast" | "smart"; system: string; par
 export type GroundedChunk = { uri: string; title: string };
 export type GroundedResult = { text: string; chunks: GroundedChunk[] };
 export type GroundedRequest = { system: string; prompt: string };
+
+/** Streamed prose (cover letters). `signal` aborts the stream; the iteration then ends quietly. */
+export type StreamRequest = { tier: "fast" | "smart"; system: string; prompt: string; signal?: AbortSignal; maxTokens?: number };
 
 export class AiError extends Error {}
 
@@ -51,6 +54,42 @@ export async function generateGrounded(req: GroundedRequest): Promise<GroundedRe
   if (provider !== "gemini") return null;
   const { geminiGrounded } = await (geminiMod ??= import("./gemini"));
   return geminiGrounded(req);
+}
+
+/** Fixture replay pace: 1-3 words per chunk, 15 ms apart, so the UI animates the same way every run. */
+async function* replayFixture(text: string, signal?: AbortSignal): AsyncGenerator<string> {
+  const words = text.match(/\S+\s*/g) ?? [];
+  for (let i = 0, k = 0; i < words.length; k++) {
+    if (signal?.aborted) return;
+    const n = (k % 3) + 1; // deterministic 1-3 word chunks
+    yield words.slice(i, i + n).join("");
+    i += n;
+    await new Promise((r) => setTimeout(r, 15));
+  }
+}
+
+/**
+ * Streams free text as deltas. Fixture mode replays `fixtures/ai/<fn>/<fixtureKey|default>.txt` (nothing if absent).
+ * Joining the deltas gives the full text; adapters throw AiError with the shared messages.
+ */
+export async function* streamText(req: StreamRequest, o: { fn: string; fixtureKey?: string }): AsyncGenerator<string> {
+  if (aiMode() === "fixture") {
+    const text = loadTextFixture(o.fn, o.fixtureKey);
+    if (text != null) yield* replayFixture(text, req.signal);
+    return;
+  }
+  const provider = aiProvider();
+  if (!provider) throw new AiError("No AI provider configured");
+  if (provider === "anthropic") {
+    const { anthropicStream } = await (anthropicMod ??= import("./anthropic"));
+    yield* anthropicStream(req);
+  } else if (provider === "ollama") {
+    const { ollamaStream } = await (ollamaMod ??= import("./ollama"));
+    yield* ollamaStream(req);
+  } else {
+    const { geminiStream } = await (geminiMod ??= import("./gemini"));
+    yield* geminiStream(req);
+  }
 }
 
 type RunAiBase<T> = {
