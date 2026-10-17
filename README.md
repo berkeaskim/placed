@@ -17,6 +17,10 @@ Track every application, prep for the interview, and get a dated plan for who to
 Bring a Claude or Gemini key, or run a model locally with Ollama.
 
 <p>
+  <img alt="3rd place, Claude Hackathon" src="https://img.shields.io/badge/%F0%9F%A5%89%203rd%20place-Claude%20Hackathon-D97757">
+</p>
+
+<p>
   <img alt="Next.js" src="https://img.shields.io/badge/Next.js-16-000000?logo=nextdotjs&logoColor=white">
   <img alt="React" src="https://img.shields.io/badge/React-19-149ECA?logo=react&logoColor=white">
   <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white">
@@ -30,7 +34,7 @@ Bring a Claude or Gemini key, or run a model locally with Ollama.
   <img alt="Vitest" src="https://img.shields.io/badge/tested%20with-Vitest%20%2B%20Playwright-6E9F18?logo=vitest&logoColor=white">
 </p>
 
-<sub>Built at the UCL hackathon, October 2026 · theme: <i>"How can we make students' lives easier?"</i></sub>
+<sub>🥉 <b>3rd place at the Claude Hackathon</b> at UCL, October 2026 · theme: <i>"How can we make students' lives easier?"</i></sub>
 
 <p>
   <a href="#features">Features</a> ·
