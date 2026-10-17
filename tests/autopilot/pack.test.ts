@@ -38,6 +38,10 @@ describe("assemblePack (Monzo)", () => {
     const again = assemblePack({ ats: "greenhouse", url: "u", fields: [gender] }, AYSE_CORE, { "how would you describe your gender identity": "Prefer not to say" }, {});
     expect(again[0]).toMatchObject({ group: "vault", value: "2", sourceLabel: "you answered this before" });
   });
+  it("a consent label that mentions diversity stays yours", () => {
+    const fields = ["I consent to the processing of my diversity data", "I have read the Equal Opportunities policy"].map((label, i) => F({ key: `c${i}`, label, type: "select", required: true, options: [{ label: "Yes", value: "1" }] }));
+    for (const i of assemblePack({ ats: "greenhouse", url: "u", fields }, AYSE_CORE, { "i consent to the processing of my diversity data": "Yes" }, {})) expect(i.group).toBe("yours");
+  });
   it("an optional ask item never blocks canOpen", () => {
     const g = F({ key: "g", label: "Gender?", type: "select", options: [{ label: "Woman", value: "1" }] });
     const item = (required: boolean): PackItem => ({ field: { ...g, required }, group: "ask", value: null, sourceLabel: null });

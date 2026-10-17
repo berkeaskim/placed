@@ -11,7 +11,7 @@ import { draftAnswer, type DraftInput, type DraftResult } from "./drafts";
 import { suggestAnswers } from "./suggest";
 import { assemblePack, toFillPlan, type Answers, type Covers, type FillInstruction, type PackItem } from "./pack";
 import { hashToken, safeNamePart } from "./handoff";
-import { isComplete, isEeoLabel, type Core, type Extra } from "./vault";
+import { isComplete, type Core, type Extra } from "./vault";
 import { openVault } from "./vault-crypto";
 import type { ParsedCV } from "@/lib/types";
 
@@ -47,7 +47,7 @@ export async function buildPack(userId: string, jobId: string): Promise<{ items:
   const drafts = existing?.drafts ?? {};
   const base = assemblePack(form, core, extra, {});
   // Questions nobody answered yet get a CV-backed suggestion, so the student only taps Confirm. Computed once, then reused.
-  const toSuggest = base.filter((i) => i.group === "ask" && answers[i.field.key] === undefined && !isEeoLabel(i.field.label) && classify(i.field.label, i.field.type).kind !== "eeo");
+  const toSuggest = base.filter((i) => i.group === "ask" && answers[i.field.key] === undefined && classify(i.field.label, i.field.type).kind !== "eeo");
   const suggested = existing?.suggestions ?? (toSuggest.length ? await suggestAnswers({ items: toSuggest, core, extra, cv, fixtureKey: job.extId }) : {});
   try {
     db.insert(autopilotPacks).values({ user_id: userId, job_id: jobId, form, answers, suggestions: suggested })

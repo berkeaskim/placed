@@ -6,7 +6,7 @@ export type Classified =
   | { kind: "vault"; key: VaultKey } | { kind: "eeo" } | { kind: "consent" } | { kind: "freeText" } | { kind: "motivation" }
   | { kind: "file"; which: "cv" | "cover" } | { kind: "yours" } | { kind: "extra" };
 
-const CONSENT = /^privacy|terms (&|and) conditions|personal data|ai policy|information provided in this application|\bi confirm\b|name is your legal name|privacy (notice|policy)|candidate data|data protection|gdpr|i (consent|agree|acknowledge|confirm that)|acknowledg|declaration|conduct policy|confidentiality agreement|terms and conditions/i;
+const CONSENT = /^privacy|terms (&|and) conditions|personal data|ai policy|information provided in this application|\bi confirm\b|name is your legal name|privacy (notice|policy)|candidate data|data protection|gdpr|i (consent|agree|acknowledge|confirm that|have read)|acknowledg|declaration|conduct policy|confidentiality agreement|terms and conditions/i;
 const YOURS = /previously (been )?(employed|worked|applied)|ever (worked|applied)|reasonable adjustment|accommodation|salary|compensation|expected pay|additional information|anything else|referr(ed|al) (to|by)|related to anyone|^if (you )?(have )?(selected|answered|chose)|^if ('?yes|other)|not listed|please specify/i;
 // Right-to-work / sponsorship answers in the Vault are UK-only: a question about another jurisdiction needs the student's own confirmation.
 const OTHER_JURISDICTION = /united states|netherlands|germany|france|spain|ireland|paris|madrid|\beu\b|europe|canada|singapore|hong kong/i;
@@ -43,8 +43,8 @@ const VAULT: [RegExp, VaultKey][] = [
 
 export function classify(label: string, type: FieldType): Classified {
   const l = label.trim();
+  if (CONSENT.test(l)) return { kind: "consent" }; // before EEO: "I consent to my diversity data being processed" is a declaration
   if (isEeoLabel(l)) return { kind: "eeo" };
-  if (CONSENT.test(l)) return { kind: "consent" };
   if (type === "file") {
     // Only a CV/resume upload gets the student's CV; transcripts, writing samples, proof of right to work etc. stay hers.
     if (/cover/i.test(l)) return { kind: "file", which: "cover" };

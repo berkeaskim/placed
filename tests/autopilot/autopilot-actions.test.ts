@@ -109,6 +109,13 @@ describe("autopilot actions", () => {
     expect(packRow()!.answers.g).toMatchObject({ value: "1" });
     expect(savedExtra()).toEqual({ "what is your gender": "Yes" }); // keyed by the stored label, never a client label
   });
+  it("rejects consent labels that mention diversity or equal opportunities", async () => {
+    h.fields = [field("c1", "I consent to the processing of my diversity data"), field("c2", "I have read the Equal Opportunities policy")];
+    writePack();
+    const before = snapshot();
+    for (const k of ["c1", "c2"]) expect(await setAnswer(JOB, k, "1")).toEqual({ ok: false });
+    expect(snapshot()).toBe(before);
+  });
   it("does not remember an EEO answer when remember is false", async () => {
     expect(await setAnswer(JOB, "g", "1", { remember: false })).toEqual({ ok: true });
     vaultUnchanged();
