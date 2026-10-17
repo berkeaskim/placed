@@ -2,6 +2,8 @@
 //   text/textarea  #<field name>            native value setter + input/change
 //   CV             input#resume[type=file]  DataTransfer + change
 //   multiselect    checkbox id="question_X[]_<valueId>"
+//   identity survey (demographic questions, 2026-10-17): multi react-select, input#<questionId>[role=combobox] in .select,
+//                  chosen values as .select__multi-value; consent checkbox #gdpr_demographic_data_consent_given_1 in .checkbox
 //   single select  react-select: input#question_X[role=combobox] in .select-shell > .select__control
 //                  (synthetic events do not open it; a trusted click does, then .select__option can be clicked)
 //   location       #candidate-location, an async react-select combobox
@@ -18,7 +20,7 @@
   }
   function box(field) {
     const el = anchor(field);
-    return el ? el.closest(".field-wrapper") || el.closest("fieldset") || el.parentElement : null;
+    return el ? el.closest(".field-wrapper") || el.closest(".select") || el.closest(".checkbox") || el.closest("fieldset") || el.parentElement : null;
   }
 
   async function pickReactSelect(input, label, ctx, { type, prefix } = {}) {
@@ -53,6 +55,19 @@
       const file = globalThis.PlacedFillPlan.fileFor(field, ctx);
       if (!file) return "yours";
       return uploadFile(anchor(field), file) ? "filled" : "missing";
+    }
+    if (field.type === "multiselect" && document.getElementById(field.target)?.getAttribute("role") === "combobox") {
+      const input = document.getElementById(field.target);
+      const shell = input.closest(".select-shell") || input.parentElement;
+      const chosen = () => [...shell.querySelectorAll(".select__multi-value__label, .select__single-value")].map((n) => n.textContent.trim());
+      const todo = globalThis.PlacedFillPlan.stillToPick(field, chosen(), D().norm);
+      if (!todo.length) return chosen().length ? "filled" : "select-yourself";
+      for (const label of todo) {
+        const r = await pickReactSelect(input, label, ctx);
+        if (r !== "filled") return r;
+        await D().sleep(120);
+      }
+      return "filled";
     }
     if (field.type === "multiselect") {
       const values = Array.isArray(field.value) ? field.value : [field.value];

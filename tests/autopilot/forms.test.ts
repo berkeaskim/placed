@@ -7,6 +7,7 @@ import { parseAshby, ashbyRef } from "@/lib/autopilot/forms/ashby";
 import { parseLever, leverRef } from "@/lib/autopilot/forms/lever";
 import { fetchForm, wordLimitOf } from "@/lib/autopilot/forms";
 import { FormUnavailableError } from "@/lib/autopilot/forms/types";
+import { isEeoLabel } from "@/lib/autopilot/vault";
 
 const lever = readFileSync("tests/fixtures/autopilot/lever-palantir.html", "utf8");
 
@@ -24,6 +25,29 @@ describe("greenhouse", () => {
     expect(f.fields.find((x) => x.target === "question_69481997[]")?.type).toBe("multiselect");
     expect(f.fields.some((x) => /latitude|longitude/i.test(x.target))).toBe(false);
     expect(f.fields.find((x) => x.target === "location")?.type).toBe("location");
+  });
+  it("reads the separate identity survey as EEO selects with every option, and its consent box", () => {
+    const demo = f.fields.filter((x) => x.key.startsWith("demographic_"));
+    expect(demo.map((x) => x.target)).toEqual(["627", "628", "629", "630", "631", "632"]);
+    for (const d of demo) {
+      expect(d).toMatchObject({ type: "multiselect", required: false });
+      expect(isEeoLabel(d.label), d.label).toBe(true);
+      expect(d.options[0].label).toBe("Prefer not to say");
+    }
+    expect(demo[0]).toMatchObject({ key: "demographic_627", label: "How would you describe your gender identity?" });
+    expect(demo[0].options).toContainEqual({ label: "Woman", value: "3317" });
+    expect(demo[5].options).toHaveLength(19);
+    const consent = f.fields.find((x) => x.key === "gdpr_demographic_data_consent_given")!;
+    expect(consent).toMatchObject({ type: "boolean", required: false, target: "gdpr_demographic_data_consent_given_1" });
+    expect(consent.label).toMatch(/I consent to Monzo/);
+    expect(new Set(f.fields.map((x) => x.key)).size).toBe(f.fields.length);
+  });
+  it("skips an absent or empty survey, and adds no consent box without one", () => {
+    const base = { questions: [{ label: "First Name", required: true, fields: [{ name: "first_name", type: "input_text" }] }], data_compliance: [{ demographic_data_consent_applies: true }] };
+    expect(parseGreenhouse(base, "b", "1").fields.map((x) => x.key)).toEqual(["first_name"]);
+    expect(parseGreenhouse({ ...base, demographic_questions: null }, "b", "1").fields).toHaveLength(1);
+    const odd = { ...base, demographic_questions: { questions: [{ id: 9, label: "Ethnicity", type: "input_text", answer_options: [] }, { id: 10, label: "Gender", type: "multi_value_single_select", answer_options: [{ id: 1, label: "Woman" }] }] } };
+    expect(parseGreenhouse(odd, "b", "1").fields.map((x) => [x.key, x.type])).toEqual([["first_name", "text"], ["demographic_10", "select"], ["gdpr_demographic_data_consent_given", "boolean"]]);
   });
   it("parses refs", () => {
     expect(greenhouseRef("https://job-boards.greenhouse.io/monzo/jobs/8232726")).toEqual({ board: "monzo", id: "8232726" });
