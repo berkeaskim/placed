@@ -265,6 +265,10 @@ npm run ingest
 
 New jobs are tagged by your AI backend once, then cached. No key is needed to fetch jobs.
 
+**After pulling an update**, run `npm run seed` once (then refresh jobs). It loads any employer boards newly added to
+[`seed/companies.yml`](seed/companies.yml) and the curated programme cards from [`seed/programmes.yml`](seed/programmes.yml);
+without it, new boards and curated cards don't appear. It keeps your jobs, CVs and tracker, and is safe to re-run.
+
 **On a schedule.** While Placed is open it also refreshes on its own: every few hours, or **every morning** at a time
 you pick in **Settings → Job search**. To keep that going while the app is closed (macOS), install the background agent once:
 
@@ -314,6 +318,7 @@ See [`extension/README.md`](extension/README.md) for how it works and what it wi
 | `npm run setup` | Create `data/`, run migrations, load the seed jobs (re-runnable) |
 | `npm run dev` | Start the app on <http://127.0.0.1:3000> |
 | `npm run build` then `npm start` | Production build, also bound to `127.0.0.1` |
+| `npm run seed` | Load newly added boards and curated programme cards after pulling an update (no ingest) |
 | `npm run ingest` | Pull fresh jobs from every configured ATS board |
 | `npm run scraper:setup` | Optional: install the stealth sidecar for boards marked `transport: stealth` |
 | `npm run schedule:install` / `schedule:uninstall` | Keep the job refresh running while Placed is closed (macOS LaunchAgent) |
