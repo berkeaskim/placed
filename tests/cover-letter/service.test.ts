@@ -7,6 +7,8 @@ import { resolveFile } from "@/lib/files";
 import { buildDraftPrompt } from "@/lib/cover-letter/draft";
 import { draftInputFor, openCard, researchSettled, retryResearch, type CardView } from "@/lib/cover-letter/service";
 import { runGeneration } from "@/lib/cover-letter/generate";
+import { getOrCreateLetter, upsertOutput } from "@/lib/cover-letter/store";
+import type { Span } from "@/lib/cover-letter/types";
 import * as actions from "@/app/(app)/jobs/[id]/cover-letter-actions";
 import { FIXTURE_ANSWERS, FIXTURE_FACTS } from "./fixtures";
 import { seedNorthbridgeJob, seedStudent, U } from "./seed";
@@ -207,6 +209,35 @@ describe("edits and Ready", () => {
     await actions.markReady(jobId, outputId);
     expect(db.select().from(xpEvents).where(and(eq(xpEvents.type, "cover_letter_ready"), eq(xpEvents.job_id, jobId))).all())
       .toMatchObject([{ xp: 20 }]);
+  });
+
+  it("confirmTrue refuses a sentence with a blocking hit, the greeting, the sign-off and unsourced text", async () => {
+    const jobId = seedNorthbridgeJob();
+    await actions.openCoverLetter(jobId);
+    await researchSettled();
+    const letter = getOrCreateLetter(U, jobId);
+    const text = "Dear Team at Rival Capital,\n\nI am applying for the Summer Analyst – Markets role at Northbridge Capital. I led a desk at [Company Name] with 9 traders. I am keen. I ran a fund with 7 people.\n\nYours faithfully,\nAlex Morgan";
+    const at = (t: string) => text.indexOf(t);
+    const ai = (t: string, flag: string): Span => ({ start: at(t), end: at(t) + t.length, kind: "ai", refs: [], flag });
+    const spans: Span[] = [
+      ai("Dear Team at Rival Capital,", "check the greeting"),
+      ai("I led a desk at [Company Name] with 9 traders.", "unsupported number"),
+      ai("I am keen.", "no source"),
+      ai("I ran a fund with 7 people.", "unsupported number"),
+      ai("Yours faithfully,\nAlex Morgan", "check the sign-off"),
+    ];
+    const o = upsertOutput(letter.id, { kind: "upload" }, { text, spans, lint: [], status: "draft" });
+    const facts = () => db.select().from(confirmedFacts).where(eq(confirmedFacts.user_id, U)).all().length;
+    const n = facts();
+    for (const s of spans.filter((x) => x.flag !== "unsupported number" || x.start === at("I led"))) {
+      const r = await actions.confirmTrue(jobId, o.id, s.start);
+      expect(r).toHaveProperty("error");
+      expect((r as { error: string }).error).toMatch(/can't|cannot|edit/i);
+    }
+    expect(facts()).toBe(n);
+    const ok = view(await actions.confirmTrue(jobId, o.id, at("I ran a fund"))).outputs[0];
+    expect(ok.spans.find((s) => s.start === at("I ran a fund"))?.kind).toBe("theirs");
+    expect(facts()).toBe(n + 1);
   });
 
   it("saveText makes the edit the student's, resets Ready, and undoEdit restores the previous text", async () => {

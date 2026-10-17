@@ -377,6 +377,9 @@ export async function undoEdit(userId: string, jobId: string, outputId: string):
   return view(ctx, letter);
 }
 
+/** Flags "This is true" cannot clear: letter furniture and text with no source at all must be edited instead. */
+const NOT_CONFIRMABLE = new Set(["check the greeting", "check the sign-off", "no source"]);
+
 /** "This is true": the claim joins confirmed_facts (grounding later letters and tailoring) and the span becomes theirs. */
 export async function confirmTrue(userId: string, jobId: string, outputId: string, spanStart: number): Promise<CardView> {
   const ctx = loadCtx(userId, jobId);
@@ -384,6 +387,10 @@ export async function confirmTrue(userId: string, jobId: string, outputId: strin
   const o = getOutput(letter, outputId);
   const span = o.spans.find((s) => s.start === spanStart && s.kind === "ai");
   if (!span) throw new CardError("There is nothing to confirm there");
+  if (span.flag && NOT_CONFIRMABLE.has(span.flag)) throw new CardError("This can't be confirmed as true. Edit it in your own words instead.");
+  // A placeholder, another employer or a banned phrase inside the sentence would stop blocking once it is theirs.
+  const blocked = relint(ctx, letter, o, o.text, o.spans).some((h) => h.severity === "block" && h.scope !== "letter" && h.start < span.end && h.end > span.start);
+  if (blocked) throw new CardError("This sentence has something that has to change first. Edit it in your own words instead.");
   const claim = o.text.slice(span.start, span.end).trim().slice(0, 500);
   if (claim) db.insert(confirmedFacts).values({ user_id: userId, claim }).run();
   const spans = o.spans.map((s) => (s === span ? { start: s.start, end: s.end, kind: "theirs" as const, refs: s.refs } : s));

@@ -38,6 +38,21 @@ describe("canMarkReady", () => {
     expect(canMarkReady({ text, spans: [span], lint: hits, limit: null })).toEqual({ ok: true });
   });
 
+  it("a placeholder, a chatbot leftover or another employer blocks even in the student's own text", () => {
+    const base = "Dear Hiring Manager,\n\nI am applying for the Summer Analyst – Markets role at Northbridge Capital. I loved my time at [Company Name] and at Rival Capital.\n\nYours faithfully,\nAlex Morgan";
+    const span: Span = { start: base.indexOf("I loved"), end: base.indexOf("Capital.\n\nYours") + 8, kind: "theirs", refs: [] };
+    const hits = lintLetter(base, { mode: "full_letter", limit: null, company: FIXTURE_COMPANY, role: FIXTURE_ROLE, otherEmployers: ["Rival Capital"], ownSpans: [span] });
+    const r = canMarkReady({ text: base, spans: [span], lint: hits, limit: null });
+    expect(r.ok).toBe(false);
+    if (!r.ok) {
+      expect(r.reasons).toContain("Placeholder");
+      expect(r.reasons).toContain("Another employer named: Rival Capital");
+    }
+    const chat = BODY + " As an AI language model, I cannot say.";
+    const own: Span = { start: BODY.length + 1, end: chat.length, kind: "theirs", refs: [] };
+    expect(canMarkReady({ text: chat, spans: [own], lint: lint(chat, [own]), limit: null }).ok).toBe(false);
+  });
+
   it("the same words written by the AI do block", () => {
     const text = BODY + " I am a real team player!";
     expect(canMarkReady({ text, spans: [], lint: lint(text), limit: null }).ok).toBe(false);
