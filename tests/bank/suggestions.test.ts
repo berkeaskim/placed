@@ -1,3 +1,4 @@
+import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
 import { LOCAL_USER_ID as U } from "@/lib/auth/local-user";
 import { db } from "@/lib/db/client";
@@ -100,6 +101,28 @@ describe("bank suggestion review", () => {
     const s = src("linkedin_post", "p");
     insertSuggestion(U, { sourceId: s, kind: "new_entry", targetEntryId: null, payload: { candidate: cand() } });
     expect(() => acceptAllFromSource(U, s)).toThrow("Posts are reviewed one by one");
+    expect(listSuggestions(U, "pending")).toHaveLength(1);
+  });
+
+  it("acceptAllFromSource rejects orphaned new_bullet suggestions and carries on", () => {
+    const s = src();
+    const a = seedEntry("Acme");
+    const b = seedEntry("Beta");
+    const o = insertSuggestion(U, { sourceId: s, kind: "new_bullet", targetEntryId: a.id, payload: { text: "Orphan bullet", sourceText: "Orphan bullet" } });
+    insertSuggestion(U, { sourceId: s, kind: "new_bullet", targetEntryId: b.id, payload: { text: "Fine bullet", sourceText: "Fine bullet" } });
+    db.delete(bankBullets).where(eq(bankBullets.entry_id, a.id)).run();
+    db.delete(bankEntries).where(eq(bankEntries.id, a.id)).run();
+    expect(acceptAllFromSource(U, s)).toBe(1);
+    expect(listSuggestions(U, "rejected").map((x) => x.id)).toEqual([o.id]);
+    expect(listSuggestions(U, "pending")).toHaveLength(0);
+    expect(getBank(U).entries.find((e) => e.id === b.id)!.bullets.map((x) => x.text)).toContain("Fine bullet");
+  });
+
+  it("rejects blank editedText", () => {
+    const s = src();
+    const entry = seedEntry();
+    const sg = insertSuggestion(U, { sourceId: s, kind: "new_bullet", targetEntryId: entry.id, payload: { text: "T", sourceText: "T" } });
+    expect(() => acceptSuggestion(U, sg.id, { editedText: "   " })).toThrow("Bullet text can't be empty");
     expect(listSuggestions(U, "pending")).toHaveLength(1);
   });
 });

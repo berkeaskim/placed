@@ -55,6 +55,7 @@ function apply(userId: string, s: BankSuggestion, opts: { editedText?: string; t
 
 /** Resolved or unknown suggestions are a no-op. Each accept is atomic with its status change. */
 export function acceptSuggestion(userId: string, id: string, opts: { editedText?: string; targetEntryId?: string } = {}): void {
+  if (opts.editedText !== undefined && !opts.editedText.trim()) throw new Error("Bullet text can't be empty");
   db.transaction(() => {
     const s = getSuggestion(userId, id);
     if (!s || s.status !== "pending") return;
@@ -75,8 +76,16 @@ export function acceptAllFromSource(userId: string, sourceId: string): number {
   let n = 0;
   for (const s of listSuggestions(userId, "pending")) {
     if (s.sourceId !== sourceId || s.kind === "merge_into") continue;
-    acceptSuggestion(userId, s.id);
-    n++;
+    if (s.kind === "new_bullet" && !getBank(userId).entries.some((e) => e.id === s.targetEntryId)) {
+      rejectSuggestion(userId, s.id); // orphaned: its target entry was deleted
+      continue;
+    }
+    try {
+      acceptSuggestion(userId, s.id);
+      n++;
+    } catch {
+      // the transaction rolled back; leave this one pending and carry on
+    }
   }
   return n;
 }
