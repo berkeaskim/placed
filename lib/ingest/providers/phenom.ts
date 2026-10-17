@@ -53,28 +53,44 @@ export function normalizePhenom(item: unknown, host: string): RawJob | null {
   };
 }
 
-/** Pages the whole UK list. Fails the board (no false closures) unless unique ids cover `totalHits` and it held steady. */
+/**
+ * Pages the whole UK list and dedupes by jobId. Fails the board (no false closures) unless unique ids cover `totalHits` and it held steady.
+ * Live 2026-10-17: one run saw 104 unique of 112 (rows fetched = 112, so some ids repeated and others were missing: paging overlap while the
+ * unsorted order shifted, or per-location rows). A shortfall therefore re-lists once: the second listing is used if complete; if both are short,
+ * they are accepted only when they have the identical id set and returned at least `totalHits` rows (persistent repeats), else the board fails.
+ */
 export async function fetchPhenom(
   slug: string, host: string, keepTitle: (t: string) => boolean, fetchImpl: typeof fetch = fetch,
   sleep: (ms: number) => Promise<void> = defaultSleep,
 ): Promise<{ jobs: RawJob[]; listed: number }> {
-  const rows: PhRow[] = [];
-  let total = -1;
-  for (let page = 0; ; page++) {
-    if (page >= PHENOM_MAX_PAGES) throw new Error(`more than ${PHENOM_MAX_PAGES} pages`);
-    const json = (await getJson(phenomUrl(host), fetchImpl, { method: "POST", body: phenomBody(slug, rows.length) }, sleep)) as PhList;
-    const rs = json?.refineSearch;
-    if (typeof rs?.totalHits !== "number" || !Array.isArray(rs.data?.jobs)) throw new Error("listing has no totalHits/jobs");
-    if (total >= 0 && rs.totalHits !== total) throw new Error(`totalHits changed mid-run (${total} to ${rs.totalHits}); partial list refused`);
-    if (rs.totalHits === 0) throw new Error("empty listing (totalHits 0); refusing to close the board");
-    total = rs.totalHits;
-    rows.push(...rs.data.jobs);
-    // The empty-page break relies on the ids-vs-total check below to reject a short list.
-    if (rows.length >= total || rs.data.jobs.length === 0) break;
+  const listAll = async () => {
+    const rows: PhRow[] = [];
+    let total = -1;
+    for (let page = 0; ; page++) {
+      if (page >= PHENOM_MAX_PAGES) throw new Error(`more than ${PHENOM_MAX_PAGES} pages`);
+      const json = (await getJson(phenomUrl(host), fetchImpl, { method: "POST", body: phenomBody(slug, rows.length) }, sleep)) as PhList;
+      const rs = json?.refineSearch;
+      if (typeof rs?.totalHits !== "number" || !Array.isArray(rs.data?.jobs)) throw new Error("listing has no totalHits/jobs");
+      if (total >= 0 && rs.totalHits !== total) throw new Error(`totalHits changed mid-run (${total} to ${rs.totalHits}); partial list refused`);
+      if (rs.totalHits === 0) throw new Error("empty listing (totalHits 0); refusing to close the board");
+      total = rs.totalHits;
+      rows.push(...rs.data.jobs);
+      if (rows.length >= total || rs.data.jobs.length === 0) break;
+    }
+    const idSet = new Set(rows.map((r) => (r.jobId === undefined ? "" : String(r.jobId))).filter(Boolean));
+    return { total, rows, idSet };
+  };
+  let run = await listAll();
+  if (run.idSet.size < run.total) {
+    const again = await listAll();
+    if (again.total === run.total && again.idSet.size >= again.total) run = again;
+    else {
+      const same = again.total === run.total && again.idSet.size === run.idSet.size && [...run.idSet].every((id) => again.idSet.has(id));
+      if (!same || run.rows.length < run.total || again.rows.length < again.total)
+        throw new Error(`partial list: ${Math.min(run.idSet.size, again.idSet.size)} unique of ${run.total} postings`);
+    }
   }
-  const ids = new Set(rows.map((r) => (r.jobId === undefined ? "" : String(r.jobId))).filter(Boolean));
-  if (ids.size < total) throw new Error(`partial list: ${ids.size} unique of ${total} postings`);
-  const uk = rows.filter((r) => ukLocation(r));
+  const uk = run.rows.filter((r) => ukLocation(r));
   if (uk.length === 0) throw new Error("no UK rows in a non-empty listing; refusing to close the board");
   const seen = new Set<string>();
   const jobs: RawJob[] = [];
@@ -83,5 +99,5 @@ export async function fetchPhenom(
     const j = normalizePhenom(r, host);
     if (j && !seen.has(j.extId)) { seen.add(j.extId); jobs.push(j); }
   }
-  return { jobs, listed: rows.length };
+  return { jobs, listed: run.rows.length };
 }

@@ -8,15 +8,21 @@ const HOST = "careers.bcg.com";
 const SLUG = "external/page11";
 
 /** Fake Phenom widgets endpoint: `total` UK jobs, PHENOM_PAGE per page; even indexes are internships, odd are senior. */
-function fakePhenom(total: number, opts: { reportedTotal?: number; dup?: boolean; shrinkAfterFirst?: boolean; status?: number; nonUk?: boolean } = {}) {
+function fakePhenom(total: number, opts: { reportedTotal?: number; dup?: boolean; repeat?: boolean; flaky?: boolean; drift?: boolean; shrinkAfterFirst?: boolean; status?: number; nonUk?: boolean } = {}) {
   const bodies: { from: number; size: number; ddoKey: string; selected_fields: { country: string[] } }[] = [];
+  let listing = 0;
   const impl = vi.fn(async (_url: string, init?: RequestInit) => {
     if (opts.status) return new Response("x", { status: opts.status });
     const b = JSON.parse(String(init?.body));
     bodies.push(b);
+    if (b.from === 0) listing++;
     const totalHits = b.from > 0 && opts.shrinkAfterFirst ? total - 1 : (opts.reportedTotal ?? total);
     const jobs = Array.from({ length: Math.max(0, Math.min(b.size, total - b.from)) }, (_, k) => {
-      const i = opts.dup ? 0 : b.from + k;
+      let i = opts.dup ? 0 : b.from + k;
+      // repeat: rows 5.. repeat ids 0.. (per-location rows of one job); flaky: only the first listing overlaps; drift: ids change per listing
+      if (opts.repeat && i >= total - 8) i = i - 8;
+      if (opts.flaky && listing === 1 && i >= total - 8) i = i - 8;
+      if (opts.drift) i += listing * 3;
       const loc = opts.nonUk ? "Paris, France" : "London, United Kingdom";
       return { jobId: String(500 + i), title: i % 2 ? `Senior Manager ${i}` : `Consulting Internship ${i}`, location: loc, multi_location: [loc],
         postedDate: "2026-10-05T00:00:00.000+0000", descriptionTeaser: "<p>T</p>" };
@@ -77,7 +83,7 @@ describe("phenom", () => {
 
   it("fails on partial list", async () => {
     await expect(fetchPhenom(SLUG, HOST, () => true, fakePhenom(30, { reportedTotal: 45 }).impl, async () => {})).rejects.toThrow(/partial/);
-    await expect(fetchPhenom(SLUG, HOST, () => true, fakePhenom(30, { dup: true }).impl, async () => {})).rejects.toThrow(/partial/);
+    await expect(fetchPhenom(SLUG, HOST, () => true, fakePhenom(30, { repeat: true, drift: true }).impl, async () => {})).rejects.toThrow(/partial/);
   });
 
   it("refuses an empty listing", async () => {
@@ -98,5 +104,20 @@ describe("phenom", () => {
     expect(err.message).toMatch(/^phenom\//);
     expect(() => endpointFor({ ats: "phenom", slug: SLUG, name: "BCG" })).toThrow(/apiHost/);
     expect(endpointFor({ ats: "phenom", slug: SLUG, name: "BCG", apiHost: HOST })).toBe("https://careers.bcg.com/widgets");
+  });
+
+  it("recovers when one listing has repeated ids (104 unique of 112 shape): the re-listing is complete", async () => {
+    const { impl, bodies } = fakePhenom(112, { flaky: true });
+    const r = await fetchPhenom(SLUG, HOST, () => true, impl, async () => {});
+    expect(r.jobs).toHaveLength(112);
+    expect(bodies.filter((b) => b.from === 0)).toHaveLength(2);
+  });
+
+  it("accepts persistent per-location repeats only when two listings give the identical id set, deduping by jobId", async () => {
+    const { impl } = fakePhenom(112, { repeat: true });
+    const r = await fetchPhenom(SLUG, HOST, () => true, impl, async () => {});
+    expect(r.listed).toBe(112);
+    expect(r.jobs).toHaveLength(104);
+    expect(new Set(r.jobs.map((j) => j.extId)).size).toBe(104);
   });
 });
