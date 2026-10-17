@@ -29,6 +29,13 @@
       "when": 1792197101131,
       "tag": "0003_companies_source",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1792198191718,
+      "tag": "0004_profile_course",
+      "breakpoints": true
     }
   ]
 }

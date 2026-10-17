@@ -114,7 +114,8 @@ function discoverInput(): DiscoverInput {
   const target = p?.target_archetype as Archetype | null | undefined;
   const top = (p?.archetypes ?? []).slice().sort((a, b) => b.score - a.score).slice(0, 3).map((a) => a.key as Archetype);
   const areas = [...new Set([target, ...top].filter((a): a is Archetype => !!a))].map((a) => ARCHETYPE_LABELS[a]);
-  if (p?.field) areas.push(`studies ${p.field}`);
+  const studies = p?.course || p?.field;
+  if (studies) areas.push(`studies ${studies}`);
   const known = db.select({ name: companies.name }).from(companies).all().map((c) => c.name);
   return { areas, regions: p?.location_pref ?? [], year: p?.year ?? null, known };
 }

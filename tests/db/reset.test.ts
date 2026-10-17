@@ -28,7 +28,7 @@ const U = LOCAL_USER_ID;
 const TARGET = OUTREACH_TARGET_VALUES[0];
 function seed() {
   ensureProfile(U, "you@localhost");
-  db.update(profiles).set({ year: "2nd", field: "Economics", location_pref: ["uk"], skills: ["SQL"], onboarded: true, xp: 120, level: 2, streak_days: 3, last_active_date: "2026-10-16" })
+  db.update(profiles).set({ year: "2nd", field: "Economics", course: "Economics", university: "University of Leeds", location_pref: ["uk"], skills: ["SQL"], onboarded: true, xp: 120, level: 2, streak_days: 3, last_active_date: "2026-10-16" })
     .where(eq(profiles.user_id, U)).run();
   const c = db.insert(companies).values({ slug: `acme-${Math.random()}`, name: "Acme", ats: "greenhouse" }).returning().get();
   const j = db.insert(jobs).values({ company_id: c.id, ext_id: "1", title: "Intern", url: "https://x" }).returning().get();
@@ -63,7 +63,7 @@ describe("resetUserData", () => {
 
     for (const t of [cvs, cvScores, applications, outreach, xpEvents, badges]) expect(db.select().from(t).all()).toEqual([]);
     expect(db.select().from(profiles).where(eq(profiles.user_id, U)).get()).toMatchObject({
-      year: null, field: null, location_pref: [], skills: [], onboarded: false, xp: 0, level: 1, streak_days: 0, last_active_date: null,
+      year: null, field: null, course: null, university: null, location_pref: [], skills: [], onboarded: false, xp: 0, level: 1, streak_days: 0, last_active_date: null,
     });
     expect(db.select().from(jobs).where(eq(jobs.id, job.id)).get()).toBeDefined();
     expect(getSetting("ai.provider")).toBe("ollama");
