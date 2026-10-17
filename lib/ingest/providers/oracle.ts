@@ -63,6 +63,7 @@ export async function fetchOracle(
   const page = async (offset: number) => {
     const w = ((await getJson(oracleListUrl(slug, host, offset), fetchImpl, { method: "GET" }, sleep)) as OrList).items?.[0];
     if (typeof w?.TotalJobsCount !== "number") throw new Error("listing has no TotalJobsCount");
+    if (w.TotalJobsCount === 0) throw new Error("empty listing (TotalJobsCount 0); refusing to close the board");
     return { total: w.TotalJobsCount, rows: w.requisitionList ?? [] };
   };
   const listAll = async () => {

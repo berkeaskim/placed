@@ -57,8 +57,10 @@ export async function fetchAmazon(
     const json = (await getJson(amazonSearchUrl(slug, offset), fetchImpl, { method: "GET" }, sleep)) as AmList;
     if (typeof json?.hits !== "number" || !Array.isArray(json.jobs)) throw new Error("listing has no hits/jobs");
     if (hits >= 0 && json.hits !== hits) throw new Error(`hits changed mid-run (${hits} to ${json.hits}); partial list refused`);
+    if (json.hits === 0) throw new Error("empty listing (hits 0); refusing to close the board");
     hits = json.hits;
     rows.push(...json.jobs);
+    // The jobs.length === 0 break relies on the ids-vs-hits check below to reject a short list.
     if (offset + AMAZON_PAGE >= hits || json.jobs.length === 0) break;
   }
   const ids = new Set(rows.map((r) => (r.id_icims === undefined ? "" : String(r.id_icims))).filter(Boolean));

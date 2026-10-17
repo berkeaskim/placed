@@ -68,6 +68,10 @@ describe("amazon", () => {
     await expect(fetchAmazon("uk", () => true, fakeAmazon(30, { dup: true }).impl, async () => {})).rejects.toThrow(/partial/);
   });
 
+  it("refuses an empty listing", async () => {
+    await expect(fetchAmazon("uk", () => true, fakeAmazon(0).impl, async () => {})).rejects.toThrow(/empty listing/);
+  });
+
   it("fails when hits changes between pages", async () => {
     await expect(fetchAmazon("uk", () => true, fakeAmazon(AMAZON_PAGE + 5, { shrinkAfterFirst: true }).impl, async () => {})).rejects.toThrow(/changed|partial/);
   });

@@ -98,6 +98,10 @@ describe("oracle", () => {
     await expect(fetchOracle(SLUG, HOST, () => true, dup.impl, async () => {})).rejects.toThrow(/partial/);
   });
 
+  it("refuses an empty listing", async () => {
+    await expect(fetchOracle(SLUG, HOST, () => true, fakeOracle(0).impl, async () => {})).rejects.toThrow(/empty listing/);
+  });
+
   it("tolerates the live one-row TotalJobsCount overshoot only when every earlier page is full", async () => {
     const ok = fakeOracle(45, { hiddenOne: true });
     expect((await fetchOracle(SLUG, HOST, () => false, ok.impl, async () => {})).listed).toBe(44);
