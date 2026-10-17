@@ -9,7 +9,7 @@ import { renderCvPdf } from "@/lib/pdf/cv-document";
 import { toTailored } from "@/lib/verify/tailoring";
 import { renderView } from "@/lib/tailor/run";
 import { extractPdf } from "@/lib/cv/pdf-text";
-import { cvLines, DEFAULT_LINE_BUDGET, selectForJob, type Selection, type SelectOpts } from "./select";
+import { byNewest, cvLines, DEFAULT_LINE_BUDGET, selectForJob, type Selection, type SelectOpts } from "./select";
 import type { Bank } from "./types";
 
 /** Re-selecting with a bigger budget only when page 1 is less than this full. */
@@ -18,6 +18,8 @@ export const MIN_FILL = 0.85;
 export const GROW_LINES = 4;
 /** Most drops before giving up. */
 export const MAX_DROPS = 5;
+/** Most pinned items dropped (oldest first) when pins alone overflow the page. */
+export const MAX_PIN_DROPS = 10;
 
 const render = (cv: TailoredCV, contact: ParsedCV) => renderCvPdf(renderView(cv, contact), contact);
 
@@ -80,6 +82,25 @@ function nextDrop(bank: Bank, sel: Selection, opts: SelectOpts): Drop | null {
   return entry ? { id: entry.id, lines: entry.lines } : null;
 }
 
+/** Pins alone overflow: oldest entry first, its pinned bullets (keeping one) before the whole entry. */
+function nextPinDrop(bank: Bank, sel: Selection, opts: SelectOpts): Drop | null {
+  const pinnedJob = new Set(opts.pinnedForJob);
+  const byId = new Map(bank.entries.map((e) => [e.id, e]));
+  const rows = [sel.base.experience, sel.base.projects, sel.base.leadership].flat()
+    .flatMap((e) => (byId.has(e.id) ? [{ cv: e, src: byId.get(e.id)! }] : []))
+    .sort((a, b) => byNewest(b.src, a.src)); // oldest first
+  const lines = (text: string) => Math.max(1, Math.ceil(text.length / 95));
+  for (const { cv, src } of rows) {
+    if (cv.bullets.length < 2) continue;
+    const pick = [...cv.bullets].sort((a, b) => (sel.scores[a.id] ?? 0) - (sel.scores[b.id] ?? 0))[0];
+    return { id: pick.id, lines: lines(pick.text) };
+  }
+  for (const { cv, src } of rows) {
+    if (src.pinned || pinnedJob.has(src.id) || cv.bullets.length > 0) return { id: src.id, lines: 1 + cv.bullets.reduce((n, b) => n + lines(b.text), 0) };
+  }
+  return null;
+}
+
 export async function fitSelection(bank: Bank, activeCv: ParsedCV, job: JobListItem, opts: SelectOpts): Promise<Selection & { pages: number }> {
   // A student whose one-page CV is all they have must never lose a bullet to an estimate error: if the active CV
   // itself renders to one page, its own estimated size is a floor for the budget.
@@ -92,9 +113,20 @@ export async function fitSelection(bank: Bank, activeCv: ParsedCV, job: JobListI
 
   let sel = run(lineBudget, []);
   let pages = await pagesOf(sel);
-  for (let drops = 0; pages > 1 && drops < MAX_DROPS; drops++) {
-    const drop = nextDrop(bank, sel, opts);
-    if (!drop) break;
+  let drops = 0, pinDrops = 0, pinnedOverflow = false;
+  while (pages > 1) {
+    let drop = nextDrop(bank, sel, opts);
+    if (drop) {
+      if (drops >= MAX_DROPS) break;
+      drops++;
+    } else {
+      // Only pinned content is left and it still overflows: drop pins, oldest first (spec: pinnedOverflow).
+      if (pinDrops >= MAX_PIN_DROPS) break;
+      drop = nextPinDrop(bank, sel, opts);
+      if (!drop) break;
+      pinDrops++;
+      pinnedOverflow = true;
+    }
     fitExcluded.push(drop.id);
     // Lower the budget too, or the greedy fill would spend the freed lines on the next-best bullet.
     lineBudget = Math.min(lineBudget, cvLines(sel.base)) - drop.lines;
@@ -102,6 +134,7 @@ export async function fitSelection(bank: Bank, activeCv: ParsedCV, job: JobListI
     pages = await pagesOf(sel);
   }
   if (pages !== 1) throw new Error("Could not fit your CV on one page");
+  if (pinnedOverflow) sel = { ...sel, report: { ...sel.report, pinnedOverflow: true } };
 
   // Under-filled page and unused bullets: offer a few more lines once.
   const used = new Set([sel.base.experience, sel.base.projects, sel.base.leadership].flat().flatMap((e) => e.bullets.map((b) => b.id)));

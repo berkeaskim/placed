@@ -67,7 +67,7 @@ export type Selection = { base: ParsedCV; report: SelectionReport; scores: Recor
 
 const SECTIONS: BankSection[] = ["experience", "projects", "leadership"];
 const LEFT_OUT_REASON = "lower match for this role than the items kept";
-const PINNED_NO_ROOM_REASON = "pinned, but there was no room on one page";
+export const PINNED_NO_ROOM_REASON = "pinned, but there was no room on one page";
 export const FIT_DROPPED_REASON = "dropped to fit one page";
 
 // ---------- line estimates ----------
@@ -154,7 +154,7 @@ function dateKey(e: BankEntry): number {
   if (!e.endYm) return Infinity;
   return ymToMonths(e.endYm) * 100_000 + (e.startYm ? ymToMonths(e.startYm) : 0);
 }
-const byNewest = (a: BankEntry, b: BankEntry) => {
+export const byNewest = (a: BankEntry, b: BankEntry) => {
   const ka = dateKey(a), kb = dateKey(b);
   return ka === kb ? 0 : kb > ka ? 1 : -1;
 };
@@ -308,10 +308,11 @@ export function selectForJob(bank: Bank, activeCv: ParsedCV, job: JobListItem, o
   }
   otherLeftOut.sort((a, b) => b.score - a.score);
   // Items dropped by the render-and-count loop: always reported (an entry drop covers its bullets).
+  // A dropped pin is reported with the pinned reason, not the generic fit one.
   const fitDropped: SelItem[] = [];
   for (const e of bank.entries) {
-    if (fitExcluded.has(e.id)) fitDropped.push({ kind: "entry", id: e.id, entryId: e.id, label: entryLabel(e), reason: FIT_DROPPED_REASON });
-    else for (const b of e.bullets) if (fitExcluded.has(b.id)) fitDropped.push({ kind: "bullet", id: b.id, entryId: e.id, label: bulletLabel(b), reason: FIT_DROPPED_REASON });
+    if (fitExcluded.has(e.id)) fitDropped.push({ kind: "entry", id: e.id, entryId: e.id, label: entryLabel(e), reason: e.pinned || pinnedForJob.has(e.id) ? PINNED_NO_ROOM_REASON : FIT_DROPPED_REASON });
+    else for (const b of e.bullets) if (fitExcluded.has(b.id)) fitDropped.push({ kind: "bullet", id: b.id, entryId: e.id, label: bulletLabel(b), reason: b.pinned || pinnedForJob.has(b.id) ? PINNED_NO_ROOM_REASON : FIT_DROPPED_REASON });
   }
   const leftOut = [...fitDropped, ...cvLeftOut, ...otherLeftOut.slice(0, LEFT_OUT_EXTRA).map((x) => x.item)];
 

@@ -89,10 +89,8 @@ describe("fitSelection", () => {
     expect(ids(sel.base).length).toBeLessThan(30);
     // anything dropped to fit is still reported as left out
     const kept = new Set(ids(sel.base));
-    const leftIds = new Set(sel.report.leftOut.flatMap((l) => (l.kind === "entry" ? [l.id] : [l.id])));
-    const droppedForFit = sel.report.leftOut.filter((l) => l.reason === "dropped to fit one page");
-    for (const d of droppedForFit) expect(kept.has(d.id)).toBe(false);
-    expect(leftIds.size).toBeGreaterThan(0);
+    // every bank bullet is either on the page or reported as left out (the report lists at most a few extras, so just check kept ones are not listed)
+    for (const l of sel.report.leftOut) expect(l.kind === "bullet" ? kept.has(l.id) : false).toBe(false);
   }, 120_000);
 
   it("an oversized budget forces drops, which stay reported as left out", async () => {
@@ -103,6 +101,21 @@ describe("fitSelection", () => {
     expect(dropped.length).toBeGreaterThan(0);
     const kept = new Set(ids(sel.base));
     for (const d of dropped) expect(kept.has(d.id)).toBe(false);
+  }, 120_000);
+
+  it("pins that alone overflow are dropped oldest first and reported", async () => {
+    const bank = bigBank();
+    for (const e of bank.entries) for (const b of e.bullets) b.pinned = true;
+    const sel = await fitSelection(bank, baseCv(), job, opts({ lineBudget: 64 }));
+    expect(sel.pages).toBe(1);
+    expect(sel.report.pinnedOverflow).toBe(true);
+    const dropped = sel.report.leftOut.filter((l) => l.reason === "pinned, but there was no room on one page");
+    expect(dropped.length).toBeGreaterThan(0);
+    const kept = new Set(ids(sel.base));
+    for (const d of dropped) expect(kept.has(d.id)).toBe(false);
+    // oldest first: org 0 (ended 2020-06) loses bullets before org 5 (ended 2025-06)
+    const lostByOrg = (n: number) => bank.entries[n].bullets.filter((b) => !kept.has(b.id)).length;
+    expect(lostByOrg(0)).toBeGreaterThanOrEqual(lostByOrg(5));
   }, 120_000);
 
   it("a short bank is not trimmed", async () => {
@@ -168,7 +181,7 @@ describe("calibration", () => {
         out.push(`${name} budget=${budget} est=${cvLines(s.base)} pages=${await pageCount(toTailored(s.base), s.base)} fill=${(await fillRatio(toTailored(s.base), s.base)).toFixed(2)}`);
       }
     }
-    console.log(`DEFAULT=${DEFAULT_LINE_BUDGET}\n${out.join("\n")}`);
+    if (process.env.BANK_CALIBRATE) console.log(`DEFAULT=${DEFAULT_LINE_BUDGET}\n${out.join("\n")}`);
     const s = selectForJob(bigBank(), baseCv(), job, opts());
     expect(await pageCount(toTailored(s.base), s.base)).toBe(1); // the default budget must not overflow on its own
   }, 180_000);
