@@ -99,12 +99,12 @@
 
 # Workday (public cxs JSON). slug = "{tenant}/{site}", apiHost = "{tenant}.wdN.myworkdayjobs.com".
 # Validated live 2026-10-13; counts = UK/Europe early-career postings kept / with exact endDate.
-- { slug: barclays/External_Career_Site_Barclays, name: Barclays, ats: workday, apiHost: barclays.wd3.myworkdayjobs.com, enabled: true } # 94 / 44
-- { slug: citi/2, name: Citi, ats: workday, apiHost: citi.wd5.myworkdayjobs.com, enabled: true } # 34 / 9; 2000-posting board, ~45s
-- { slug: ms/External, name: Morgan Stanley, ats: workday, apiHost: ms.wd5.myworkdayjobs.com, enabled: true } # 0 today: MS site says no campus roles open yet
-- { slug: db/DBWebSite, name: Deutsche Bank, ats: workday, apiHost: db.wd3.myworkdayjobs.com, enabled: true } # 15 / 0
+- { slug: barclays/External_Career_Site_Barclays, name: Barclays, ats: workday, apiHost: barclays.wd3.myworkdayjobs.com, employer: barclays, enabled: true } # 94 / 44
+- { slug: citi/2, name: Citi, ats: workday, apiHost: citi.wd5.myworkdayjobs.com, employer: citi, enabled: true } # 34 / 9; 2000-posting board, ~45s
+- { slug: ms/External, name: Morgan Stanley, ats: workday, apiHost: ms.wd5.myworkdayjobs.com, employer: morganstanley, enabled: true } # 0 today: MS site says no campus roles open yet
+- { slug: db/DBWebSite, name: Deutsche Bank, ats: workday, apiHost: db.wd3.myworkdayjobs.com, employer: deutschebank, enabled: true } # 15 / 0
 - { slug: blackrock/BlackRock_Professional, name: BlackRock, ats: workday, apiHost: blackrock.wd1.myworkdayjobs.com, enabled: true } # 2 / 2
-- { slug: pwc/Global_Experienced_Careers, name: PwC, ats: workday, apiHost: pwc.wd3.myworkdayjobs.com, enabled: true } # 12 / 1; global board truncated at 3000; UK student site not found yet
+- { slug: pwc/Global_Experienced_Careers, name: PwC, ats: workday, apiHost: pwc.wd3.myworkdayjobs.com, employer: pwc, enabled: true } # 12 / 1; global board truncated at 3000; UK student site not found yet
 - { slug: lbg/LBG_Careers, name: Lloyds Banking Group, ats: workday, apiHost: lbg.wd3.myworkdayjobs.com, enabled: false } # 0 early-career; grad schemes live elsewhere
 - { slug: hl/Campus, name: Houlihan Lokey, ats: workday, apiHost: hl.wd1.myworkdayjobs.com, enabled: true } # 10 / 1
 - { slug: guggenheim/Guggenheim_Careers_Campus, name: Guggenheim Securities, ats: workday, apiHost: guggenheim.wd1.myworkdayjobs.com, enabled: true } # 1 / 0
@@ -130,7 +130,7 @@
 - { slug: jll/jllcareers, name: JLL, ats: workday, apiHost: jll.wd1.myworkdayjobs.com, enabled: true } # 8 / 8; 2000-posting board, ~65s
 - { slug: fca/FCA_earlycareers, name: Financial Conduct Authority, ats: workday, apiHost: fca.wd3.myworkdayjobs.com, enabled: true } # 3 / 3
 # Added 2026-10-14 (coverage audit, docs/research/ingest-coverage-benchmark.md). Counts = UK/Europe early-career postings kept on 2026-10-14.
-- { slug: pwc/Global_Campus_Careers, name: PwC, ats: workday, apiHost: pwc.wd3.myworkdayjobs.com, enabled: true } # 83; no overlap with Global_Experienced_Careers
+- { slug: pwc/Global_Campus_Careers, name: PwC, ats: workday, apiHost: pwc.wd3.myworkdayjobs.com, employer: pwc, enabled: true } # 83; no overlap with Global_Experienced_Careers
 - { slug: lbg/undergraduate_careers, name: Lloyds Banking Group, ats: workday, apiHost: lbg.wd3.myworkdayjobs.com, enabled: true } # 24
 - { slug: lbg/graduate_careers, name: Lloyds Banking Group, ats: workday, apiHost: lbg.wd3.myworkdayjobs.com, enabled: true } # 33
 - { slug: rbs/Rbs, name: NatWest Group, ats: workday, apiHost: rbs.wd3.myworkdayjobs.com, enabled: true } # 10

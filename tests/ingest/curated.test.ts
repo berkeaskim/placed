@@ -59,6 +59,35 @@ describe("curated programmes", () => {
     const j = programmeToRawJob(prog({ description: `<script>alert("x")</script> & 'y'` }));
     expect(j.html).toBe("<p>&lt;script&gt;alert(&quot;x&quot;)&lt;/script&gt; &amp; &#39;y&#39;</p>");
   });
+  it("keeps unquoted YAML dates as strings", () => {
+    const yml = `- employer: deloitte
+  name: Deloitte
+  title: Graduate Programme
+  url: https://example.com/p
+  location: London, UK
+  opens: 2026-09
+  closes: 2026-11-30
+  season: 2027
+  kind: graduate
+  description: A scheme.`;
+    const warn = vi.fn();
+    const [p] = loadProgrammes(yml, warn);
+    expect(warn).not.toHaveBeenCalled();
+    expect(p.closes).toBe("2026-11-30");
+    expect(p.opens).toBe("2026-09");
+  });
+  it("seed/programmes.yml loads without warnings, one card per employer and kind", async () => {
+    const { readFileSync } = await import("node:fs");
+    const warn = vi.fn();
+    const ps = loadProgrammes(readFileSync("seed/programmes.yml", "utf8"), warn);
+    expect(warn).not.toHaveBeenCalled();
+    expect(ps.length).toBeGreaterThan(0);
+    const keys = ps.map((p) => `${p.employer}:${p.season}:${p.kind}`);
+    expect(new Set(keys).size).toBe(keys.length);
+    const { passesTitleFilter, passesLocationFilter } = await import("@/lib/ingest/filter");
+    expect(ps.filter((p) => !passesTitleFilter(p.title)).map((p) => p.title)).toEqual([]);
+    expect(ps.filter((p) => !passesLocationFilter(p.location, false, p.description).pass).map((p) => p.location)).toEqual([]);
+  });
   it("curatedEmployers is unique in first-seen order", () => {
     const yml = [row(), row({ kind: "internship" }), row({ employer: "kpmg", name: "KPMG" })].join("\n");
     expect(curatedEmployers(loadProgrammes(yml))).toEqual([{ slug: "deloitte", name: "Deloitte" }, { slug: "kpmg", name: "KPMG" }]);

@@ -378,6 +378,7 @@ describe("fix 2: employers in any case or position", () => {
     const { readFileSync } = await import("node:fs");
     const { KNOWN_EMPLOYERS } = await import("@/lib/verify/tailoring");
     const names = [...readFileSync("seed/companies.yml", "utf8").matchAll(/name: ("[^"]+"|[^,}]+)/g)].map((m) => m[1].replace(/"/g, "").trim());
+    names.push(...[...readFileSync("seed/programmes.yml", "utf8").matchAll(/^ {2}name: (.+)$/gm)].map((m) => m[1].trim()));
     const known = new Set(KNOWN_EMPLOYERS.map((k) => k.name.toLowerCase()));
     expect(names.filter((n) => !known.has(n.toLowerCase()))).toEqual([]);
   });
