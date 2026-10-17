@@ -1,0 +1,26 @@
+# Curated programme cards for employers whose live postings we cannot read.
+# One row per employer per kind. UK only. Loaded by lib/ingest/curated.ts;
+# invalid rows are skipped with a warning.
+#
+# Row format:
+#   employer:    lowercase key, matches the employer key on seed/companies.yml
+#   name:        display name
+#   title:       programme title
+#   url:         http(s) link to the programme page
+#   location:    e.g. "London, UK"
+#   opens:       YYYY-MM (month applications open)
+#   closes:      optional YYYY-MM-DD; without it the card hides from ${season}-06-01
+#   season:      year the programme starts
+#   kind:        spring-week | internship | graduate
+#   description: one or two sentences
+#
+# - employer: deloitte
+#   name: Deloitte
+#   title: Graduate Programme
+#   url: https://www.deloitte.co.uk/careers/graduates
+#   location: London, UK
+#   opens: 2026-09
+#   season: 2027
+#   kind: graduate
+#   description: Rotational graduate scheme across audit, tax and consulting.
+[]
