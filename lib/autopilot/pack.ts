@@ -5,7 +5,9 @@ import type { FormField, NormalizedForm } from "./forms/types";
 import type { DraftResult } from "./drafts";
 
 export type PackGroup = "vault" | "ask" | "confirm" | "draft" | "cover" | "yours";
-export type PackItem = { field: FormField; group: PackGroup; value: string | string[] | null; sourceLabel: string | null; draft?: DraftResult };
+export type PackItem = { field: FormField; group: PackGroup; value: string | string[] | null; sourceLabel: string | null; draft?: DraftResult;
+  /** An approved long answer to a matching question on another job, offered as "Use my answer from {company}". */
+  previous?: { text: string; company: string; words: number } };
 export type Answer = { value: string | string[]; approved?: boolean };
 export type Answers = Record<string, Answer>;
 export type FillMode = "fill" | "yours" | "select-yourself";

@@ -277,6 +277,19 @@ export const autopilotPacks = sqliteTable("autopilot_packs", {
   check("autopilot_packs_status_check", inList("status", PACK_STATUS_VALUES)),
 ]);
 
+/** Approved long free-text answers, one per job and question, offered again on later forms. `text` is sealed (sealLongAnswer). */
+export const autopilotLongAnswers = sqliteTable("autopilot_long_answers", {
+  id: uuid("id").primaryKey(),
+  user_id: text("user_id").notNull(),
+  job_id: text("job_id").notNull().references(() => jobs.id, { onDelete: "cascade" }),
+  field_label: text("field_label").notNull(),
+  company: text("company").notNull(),
+  text: text("text").notNull(),
+  updated_at: now("updated_at").notNull(),
+}, (t) => [
+  unique("autopilot_long_answers_user_job_label_key").on(t.user_id, t.job_id, t.field_label),
+]);
+
 export const outreach = sqliteTable("outreach", {
   id: uuid("id").primaryKey(),
   user_id: text("user_id").notNull(),

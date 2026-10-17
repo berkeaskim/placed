@@ -2,7 +2,7 @@
 import { and, eq } from "drizzle-orm";
 import { requireUser } from "@/lib/auth/local-user";
 import { db } from "@/lib/db/client";
-import { autopilotPacks, autopilotVault, coverLetterOutputs, coverLetters, jobs } from "@/lib/db/schema";
+import { autopilotLongAnswers, autopilotPacks, autopilotVault, companies, coverLetterOutputs, coverLetters, jobs } from "@/lib/db/schema";
 import { buildPack, draftInputFor, generateDraft, getVault } from "@/lib/autopilot/server";
 import { suggestIdeas, type Idea } from "@/lib/autopilot/ideas";
 import { reviseAnswer, type ReviseHow } from "@/lib/autopilot/revise";
@@ -10,7 +10,7 @@ import type { DraftResult } from "@/lib/autopilot/drafts";
 import { canOpen, type Answers, type PackItem } from "@/lib/autopilot/pack";
 import { mintToken } from "@/lib/autopilot/handoff";
 import { normLabel } from "@/lib/autopilot/vault";
-import { sealVault } from "@/lib/autopilot/vault-crypto";
+import { sealLongAnswer, sealVault } from "@/lib/autopilot/vault-crypto";
 import { FormUnavailableError } from "@/lib/autopilot/forms/types";
 import { isUuid } from "@/lib/feed/save-result";
 import { env } from "@/lib/env";
@@ -63,7 +63,8 @@ export async function preparePack(jobId: string): Promise<Prepared> {
  * Merges one answer into the pack. The field must exist in the stored form. A draft is only approved when the caller
  * says so, so editing text after approval (no `approved`) resets it. Unless `remember: false`, a short (non-free-text)
  * answer is also stored in the vault for every later form; the label and option text come from the stored form,
- * never from the client. Diversity (EEO) answers are remembered like any other; consent is never stored.
+ * never from the client. Diversity (EEO) answers are remembered like any other; consent is never stored. An approved,
+ * non-empty long answer is kept (encrypted) for this job so later forms can offer it again.
  */
 export async function setAnswer(
   jobId: string, fieldKey: string, value: string | string[],
@@ -84,6 +85,16 @@ export async function setAnswer(
     db.update(autopilotPacks).set({ answers, status: "draft" }).where(ownPack(user.id, jobId)).run();
   } catch {
     return { ok: false };
+  }
+  if (kind === "freeText" && opts.approved === true && typeof value === "string" && value.trim()) {
+    const company = db.select({ name: companies.name }).from(jobs).innerJoin(companies, eq(companies.id, jobs.company_id)).where(eq(jobs.id, jobId)).get()?.name ?? "";
+    const set = { company, text: sealLongAnswer(user.id, jobId, field.label, value), updated_at: new Date().toISOString() };
+    try {
+      db.insert(autopilotLongAnswers).values({ user_id: user.id, job_id: jobId, field_label: field.label, ...set })
+        .onConflictDoUpdate({ target: [autopilotLongAnswers.user_id, autopilotLongAnswers.job_id, autopilotLongAnswers.field_label], set }).run();
+    } catch {
+      return { ok: false };
+    }
   }
   if (opts.remember !== false && (kind === "extra" || kind === "vault" || kind === "eeo")) {
     const text = rememberable(field, value);

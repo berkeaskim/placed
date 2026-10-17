@@ -1,7 +1,7 @@
 import "server-only";
-import { and, eq, gt, isNull } from "drizzle-orm";
+import { and, desc, eq, gt, isNull, ne } from "drizzle-orm";
 import { db } from "@/lib/db/client";
-import { applications, autopilotPacks, autopilotVault, companies, confirmedFacts, coverLetterOutputs, coverLetters, cvs, jobs } from "@/lib/db/schema";
+import { applications, autopilotLongAnswers, autopilotPacks, autopilotVault, companies, confirmedFacts, coverLetterOutputs, coverLetters, cvs, jobs } from "@/lib/db/schema";
 import { letterFilename } from "@/lib/cover-letter/filename";
 import { fileUrl } from "@/lib/files";
 import { fetchForm } from "./forms";
@@ -11,8 +11,8 @@ import { draftAnswer, type DraftInput, type DraftResult } from "./drafts";
 import { suggestAnswers } from "./suggest";
 import { assemblePack, toFillPlan, type Answers, type Covers, type FillInstruction, type PackItem } from "./pack";
 import { hashToken, safeNamePart } from "./handoff";
-import { isComplete, type Core, type Extra } from "./vault";
-import { openVault } from "./vault-crypto";
+import { findRemembered, isComplete, normLabel, type Core, type Extra } from "./vault";
+import { openLongAnswer, openVault } from "./vault-crypto";
 import type { ParsedCV } from "@/lib/types";
 
 export type JobForPack = { id: string; extId: string; url: string; ats: Ats; company: string; textLines: string[] };
@@ -32,6 +32,48 @@ export async function getVault(userId: string): Promise<{ core: Partial<Core>; e
   const core = openVault("core", userId, data?.core) as Partial<Core>;
   return { core, extra: openVault("extra", userId, data?.extra) as Extra, completed: Boolean(data?.completed_at) && isComplete(core) };
 }
+
+/**
+ * Looks up kept long answers from the student's OTHER jobs with the remembered-answer matching (exact normalised label,
+ * else a near-identical one). The most recent answer wins per label; a row that no longer decrypts is skipped.
+ */
+function previousAnswers(userId: string, jobId: string): (label: string) => { text: string; company: string } | null {
+  const rows = db.select().from(autopilotLongAnswers)
+    .where(and(eq(autopilotLongAnswers.user_id, userId), ne(autopilotLongAnswers.job_id, jobId))).orderBy(desc(autopilotLongAnswers.updated_at)).all();
+  const byLabel: Extra = {};
+  const byId = new Map(rows.map((r) => [r.id, r]));
+  for (const r of rows) byLabel[normLabel(r.field_label)] ??= r.id;
+  return (label) => {
+    const hit = findRemembered(byLabel, label);
+    const r = hit && typeof hit.value === "string" ? byId.get(hit.value) : undefined;
+    if (!r) return null;
+    try {
+      return { text: openLongAnswer(userId, r.job_id, r.field_label, r.text), company: r.company };
+    } catch {
+      return null;
+    }
+  };
+}
+
+export function findPreviousAnswer(userId: string, jobId: string, label: string): { text: string; company: string } | null {
+  return previousAnswers(userId, jobId)(label);
+}
+
+export type LongAnswerRow = { id: string; label: string; company: string; preview: string };
+
+/** The student's kept long answers, newest first, with only the first 140 characters for the setup page. */
+export function listLongAnswers(userId: string): LongAnswerRow[] {
+  return db.select().from(autopilotLongAnswers).where(eq(autopilotLongAnswers.user_id, userId)).orderBy(desc(autopilotLongAnswers.updated_at)).all()
+    .flatMap((r) => {
+      try {
+        return [{ id: r.id, label: r.field_label, company: r.company, preview: openLongAnswer(userId, r.job_id, r.field_label, r.text).slice(0, 140) }];
+      } catch {
+        return [{ id: r.id, label: r.field_label, company: r.company, preview: "" }];
+      }
+    });
+}
+
+const words = (s: string) => (s.trim() ? s.trim().split(/\s+/).length : 0);
 
 /** Fetches the form, caches CV-backed suggestions once (a computed `{}` counts), upserts autopilot_packs. Never drafts: see generateDraft. */
 export async function buildPack(userId: string, jobId: string): Promise<{ items: PackItem[]; answers: Answers }> {
@@ -55,8 +97,12 @@ export async function buildPack(userId: string, jobId: string): Promise<{ items:
   } catch (e) {
     throw new Error(`buildPack: ${e instanceof Error ? e.message : String(e)}`);
   }
-  const items = assemblePack(form, core, extra, drafts).map((i) =>
-    i.group === "ask" && suggested[i.field.key] !== undefined ? { ...i, group: "confirm" as const, value: suggested[i.field.key], sourceLabel: "suggested from your CV" } : i);
+  const previous = previousAnswers(userId, jobId);
+  const items = assemblePack(form, core, extra, drafts).map((i): PackItem => {
+    if (i.group === "ask" && suggested[i.field.key] !== undefined) return { ...i, group: "confirm", value: suggested[i.field.key], sourceLabel: "suggested from your CV" };
+    const p = i.group === "draft" ? previous(i.field.label) : null;
+    return p ? { ...i, previous: { ...p, words: words(p.text) } } : i;
+  });
   return { items, answers };
 }
 

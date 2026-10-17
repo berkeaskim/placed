@@ -1,5 +1,6 @@
 import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
 import { localSecretKey } from "../settings/secret-key";
+import { normLabel } from "./vault";
 
 /**
  * At-rest encryption for autopilot_vault.core / .extra (email, phone, right-to-work, remembered answers).
@@ -53,4 +54,15 @@ export function openVault(column: VaultColumn, userId: string, stored: unknown, 
   if (stored == null) return {};
   if (!isSealed(stored)) return stored as Record<string, unknown>;
   return JSON.parse(openText(stored.$enc, aad(column, userId), keyB64));
+}
+
+/** A kept long answer is bound to its user, job and question, so a row moved onto another job or label fails to open. */
+const longAad = (userId: string, jobId: string, label: string) => `long-answer:${userId}:${jobId}:${normLabel(label)}`;
+
+export function sealLongAnswer(userId: string, jobId: string, label: string, plain: string, keyB64?: string): string {
+  return sealText(plain, longAad(userId, jobId, label), keyB64);
+}
+
+export function openLongAnswer(userId: string, jobId: string, label: string, sealed: string, keyB64?: string): string {
+  return openText(sealed, longAad(userId, jobId, label), keyB64);
 }

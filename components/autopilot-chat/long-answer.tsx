@@ -123,11 +123,20 @@ export function LongAnswer({ jobId, item, answer, onSave }: {
     if (ok) setUnapproved(!approved && !!value.trim());
     return ok;
   });
+  const prev = item.previous;
+  const prevLabel = `Use my answer from ${prev?.company || "an earlier application"}`;
+  // The earlier answer is the student's own approved text: it gets the same Use this / Shorter / Warmer / Edit as a draft.
+  const usePrevious = () => {
+    if (!prev) return;
+    choose(prevLabel, "draft");
+    setDraft({ text: prev.text, sentences: [], caught: [], words: prev.words, limit: longLimit(item), thin: false, source: "ai" });
+  };
   const own = (label: string) => { setText(""); choose(label, "own"); };
   const edit = () => { setText(draft?.text ?? text); setUnapproved(false); choose("Edit", "edit"); };
 
   const menuChips = (withWrite: boolean) => (
     <div className="actchips">
+      {prev && <button type="button" className={CHIP} disabled={busy} onClick={usePrevious}>{prevLabel}</button>}
       {withWrite && <button type="button" className={CHIP} disabled={busy} onClick={write}>Write it for me</button>}
       <button type="button" className={CHIP} disabled={busy} onClick={getIdeas}>Give me ideas</button>
       <button type="button" className={CHIP} disabled={busy} onClick={() => own("I'll write it")}>I&apos;ll write it</button>
