@@ -43,6 +43,13 @@
       "when": 1792232008163,
       "tag": "0005_melodic_deathstrike",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1792236764058,
+      "tag": "0006_awesome_nitro",
+      "breakpoints": true
     }
   ]
 }

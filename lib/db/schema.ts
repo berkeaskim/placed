@@ -16,7 +16,7 @@ const inList = (col: string, values: readonly string[]) => sql.raw(`${col} in ($
 
 export const YEAR_VALUES = ["1st", "2nd", "penultimate", "final", "masters"] as const;
 export const APP_STATUS_VALUES = ["saved", "applied", "interview", "offer", "rejected"] as const;
-export const ATS_VALUES = ["greenhouse", "lever", "ashby", "workday", "smartrecruiters", "oracle", "amazon", "curated"] as const;
+export const ATS_VALUES = ["greenhouse", "lever", "ashby", "workday", "smartrecruiters", "oracle", "amazon", "goldmansachs", "morganstanley", "bankofamerica", "deutschebank", "eightfold", "phenom", "apple", "mckinsey", "curated"] as const;
 /** Fetch transports other than plain fetch; null = plain. "stealth" routes through the opt-in recon sidecar. */
 export const TRANSPORT_VALUES = ["stealth"] as const;
 export const SPONSORS_VISA_VALUES = ["yes", "no", "unknown"] as const;

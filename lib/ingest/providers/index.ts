@@ -52,6 +52,15 @@ export function endpointFor(c: CompanySeed): string {
       return oracleListUrl(c.slug, c.apiHost, 0);
     case "curated":
       return PROGRAMMES_PATH_LABEL;
+    case "goldmansachs":
+    case "morganstanley":
+    case "bankofamerica":
+    case "deutschebank":
+    case "eightfold":
+    case "phenom":
+    case "apple":
+    case "mckinsey":
+      throw new ProviderError(`${c.ats}/${c.slug}: provider not implemented yet`);
     case "amazon":
       try {
         return amazonSearchUrl(c.slug, 0);
