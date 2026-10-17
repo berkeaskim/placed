@@ -57,3 +57,7 @@ next-env.d.ts
 
 # recon tooling venv (scripts/recon/README.md)
 /.venv-recon/
+
+# Python bytecode
+__pycache__/
+*.pyc

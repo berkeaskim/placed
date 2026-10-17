@@ -42,7 +42,7 @@ The script exits 2 with an install hint if `scrapling` is not importable.
   "Access Denied", PerimeterX press-and-hold), record the site as `blocked` and stop. Don't retry with
   more evasion. The script flags likely challenge markers, but check by hand: the word "captcha" also
   appears in harmless reCAPTCHA script tags.
-- One search page per employer, sequential, a few seconds apart.
+- One search page per employer, sequential, a few seconds apart. The script does not enforce delays: space page loads yourself (e.g. `sleep 4` between runs).
 - Don't commit captured response bodies: they can hold personal data (recruiter names, emails).
   Record keys and URL templates only.
 
