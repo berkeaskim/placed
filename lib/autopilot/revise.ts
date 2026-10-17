@@ -1,6 +1,6 @@
 import "server-only";
 import { z } from "zod";
-import { generateStructured, runAi } from "@/lib/ai/provider";
+import { generateStructured, isAiNotSetUp, runAi } from "@/lib/ai/provider";
 import { gateDraft, promptParts, SYSTEM, type DraftInput, type DraftResult } from "@/lib/autopilot/drafts";
 
 export type ReviseHow = "shorter" | "warmer" | "tidy";
@@ -29,7 +29,8 @@ export async function reviseAnswer(i: DraftInput, text: string, how: ReviseHow):
     });
     if (!raw.sentences.length) return empty;
     return { ...gateDraft(raw.sentences, withOwn), source };
-  } catch {
+  } catch (e) {
+    if (isAiNotSetUp(e)) throw e; // the chat says "AI isn't set up" instead of a thin result
     return empty;
   }
 }

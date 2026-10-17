@@ -1,6 +1,6 @@
 import "server-only";
 import { z } from "zod";
-import { generateStructured, runAi } from "@/lib/ai/provider";
+import { generateStructured, isAiNotSetUp, runAi } from "@/lib/ai/provider";
 import { cvBulletIndex, lexiconBlock, promptParts, SYSTEM, type DraftInput } from "@/lib/autopilot/drafts";
 
 export type Idea = { text: string; refs: string[] };
@@ -28,7 +28,8 @@ export async function suggestIdeas(i: DraftInput): Promise<Idea[]> {
       fallback: () => ({ ideas: [] }),
     });
     return gateIdeas(raw.ideas, i);
-  } catch {
+  } catch (e) {
+    if (isAiNotSetUp(e)) throw e; // the chat says "AI isn't set up" instead of a thin result
     return [];
   }
 }

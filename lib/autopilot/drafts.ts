@@ -1,6 +1,6 @@
 import "server-only";
 import { z } from "zod";
-import { generateStructured, runAi } from "@/lib/ai/provider";
+import { generateStructured, isAiNotSetUp, runAi } from "@/lib/ai/provider";
 import { authorshipEscalation, qualifierDrop, scopedMetrics, siblingContamination, type Issue, type SourceBullet, type TailoredBullet } from "@/lib/verify/checks-extra";
 import { toTailored, verifyTailoring } from "@/lib/verify/tailoring";
 import type { ParsedCV } from "@/lib/types";
@@ -152,7 +152,8 @@ export async function draftAnswer(i: DraftInput): Promise<DraftResult> {
     });
     if (!raw.sentences.length) return empty;
     return { ...gateDraft(raw.sentences, i), source };
-  } catch {
+  } catch (e) {
+    if (isAiNotSetUp(e)) throw e; // the chat says "AI isn't set up" instead of a thin result
     return empty;
   }
 }

@@ -2,11 +2,17 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { ParsedCV } from "@/lib/types";
 import type { DraftInput } from "@/lib/autopilot/drafts";
 
-const ai = vi.hoisted(() => ({ raw: null as unknown, fail: false }));
-vi.mock("@/lib/ai/provider", () => ({
-  runAi: async () => { if (ai.fail) throw new Error("boom"); return ai.raw; },
-  generateStructured: vi.fn(),
-}));
+const ai = vi.hoisted(() => ({ raw: null as unknown, fail: false as false | "boom" | "off" }));
+vi.mock("@/lib/ai/provider", async (o) => {
+  const real = await o<typeof import("@/lib/ai/provider")>();
+  return {
+    ...real,
+    runAi: async () => { if (ai.fail === "off") throw new real.AiError(real.AI_NOT_SET_UP); if (ai.fail) throw new Error("boom"); return ai.raw; },
+    generateStructured: vi.fn(),
+  };
+});
+import { AI_NOT_SET_UP } from "@/lib/ai/provider";
+import { draftAnswer } from "@/lib/autopilot/drafts";
 import { gateIdeas, suggestIdeas } from "@/lib/autopilot/ideas";
 import { ownFacts, reviseAnswer } from "@/lib/autopilot/revise";
 
@@ -21,6 +27,15 @@ const base: DraftInput = { question: "Tell us about yourself", wordLimit: 100, c
 
 beforeEach(() => { ai.raw = null; ai.fail = false; });
 
+describe("AI not set up", () => {
+  it("ideas, revise and draft let the not-set-up error through so the chat can say so", async () => {
+    ai.fail = "off";
+    await expect(suggestIdeas(base)).rejects.toThrow(AI_NOT_SET_UP);
+    await expect(reviseAnswer(base, "I led X.", "tidy")).rejects.toThrow(AI_NOT_SET_UP);
+    await expect(draftAnswer(base)).rejects.toThrow(AI_NOT_SET_UP);
+  });
+});
+
 describe("ideas", () => {
   it("gateIdeas drops ideas with unknown refs and caps at 3", () => {
     const ok = (n: number) => ({ text: `Angle ${n} on weekly events`, refs: ["x1b1"] });
@@ -31,7 +46,7 @@ describe("ideas", () => {
     expect(r.map((x) => x.text)).toEqual(["Angle 1 on weekly events", "Fact and job", "Angle 3 on weekly events"]);
   });
   it("suggestIdeas returns [] when the model throws", async () => {
-    ai.fail = true;
+    ai.fail = "boom";
     expect(await suggestIdeas(base)).toEqual([]);
   });
   it("suggestIdeas gates what the model returns", async () => {
@@ -60,7 +75,7 @@ describe("revise", () => {
     expect(r.caught.map((c) => c.text)).toContain("I managed a £2m budget.");
   });
   it("returns an empty result when the model throws", async () => {
-    ai.fail = true;
+    ai.fail = "boom";
     expect(await reviseAnswer(base, "I led X.", "shorter")).toMatchObject({ text: "", source: "none" });
   });
 });

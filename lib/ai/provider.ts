@@ -22,6 +22,7 @@ export const AI_REFUSAL = "The AI declined to process this request.";
 export const AI_BAD_FORMAT = "The AI returned an answer we couldn't read. Please try again.";
 export const AI_UNAVAILABLE = "The AI service is unavailable right now. Please try again shortly.";
 export const AI_NOT_SET_UP = "AI isn't set up yet. Choose Claude, Gemini or a local model in Settings → AI.";
+export const isAiNotSetUp = (e: unknown): boolean => e instanceof AiError && e.message === AI_NOT_SET_UP;
 
 // One shared import promise per adapter: parallel first calls (judgeLinkedIn batches) must not race the module's
 // evaluation ("Cannot access 'ai' before initialization" under jiti).

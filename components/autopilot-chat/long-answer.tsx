@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import Link from "next/link";
 import type { Answer, PackItem } from "@/lib/autopilot/pack";
 import type { DraftCaught, DraftResult } from "@/lib/autopilot/drafts";
 import { draftFor, ideasFor, reviseFor } from "@/app/(app)/jobs/[id]/autopilot-actions";
@@ -8,7 +9,7 @@ import { CHIP, SaveError, useSaver } from "./answer-controls";
 type Mode = "menu" | "writing" | "draft" | "ideas" | "own" | "edit";
 type Idea = { text: string; refs: string[] };
 /** What this flow has said so far, oldest first: past bot replies are kept here so the order never shuffles. */
-type Entry = { k: "me" | "bot" | "err"; text: string; caught?: DraftCaught[] } | { k: "draft"; d: DraftResult };
+type Entry = { k: "me" | "bot" | "err" | "warn"; text: string; caught?: DraftCaught[] } | { k: "draft"; d: DraftResult } | { k: "ai-off" };
 
 const GENERIC = "Something went wrong. Please try again.";
 const THIN = "Not enough on your CV for this one. Add your own words.";
@@ -16,7 +17,7 @@ const NO_IDEAS = "I couldn't find a strong angle on your CV. Try writing a few l
 const IDEAS_LEAD = "A few angles from your CV. Pick any, then write a few lines.";
 const KEPT = "I couldn't rewrite this without changing what you said, so I left your words as they are.";
 const wordCount = (s: string) => (s.trim() ? s.trim().split(/\s+/).length : 0);
-const sourceChip = (ref: string) => (ref.startsWith("fact:") ? "your confirmed fact" : ref.startsWith("jd:") ? "the job post" : "your CV");
+const sourceChip = (ref: string) => (ref.startsWith("fact:own-") ? "your words" : ref.startsWith("fact:") ? "your confirmed fact" : ref.startsWith("jd:") ? "the job post" : "your CV");
 const hasText = (d: DraftResult) => d.source !== "none" && !!d.text.trim();
 const usable = (d: DraftResult | null): d is DraftResult => !!d && hasText(d);
 
@@ -57,6 +58,15 @@ function Caught({ list }: { list: DraftCaught[] }) {
 
 function LogEntry({ e }: { e: Entry }) {
   if (e.k === "draft") return <>{<DraftBubble d={e.d} />}{e.d.thin && <div className="msg bot">{THIN}</div>}</>;
+  if (e.k === "ai-off") {
+    return (
+      <div className="msg bot err" role="alert">
+        {/* AI_NOT_SET_UP (lib/ai/provider is server-side), with the Settings link the ai-off banner uses. */}
+        <span>AI isn&apos;t set up yet. Choose Claude, Gemini or a local model in <Link href="/settings/ai" className="underline">Settings → AI</Link>.</span>
+      </div>
+    );
+  }
+  if (e.k === "warn") return <div className="msg bot bg-[#FFF1DC]! font-semibold text-[#7A4100]!" role="status">{e.text}</div>;
   if (e.k === "me") return <div className="msg me self-end">{e.text}</div>;
   if (e.k === "err") return <div className="msg bot err" role="alert">{e.text}</div>;
   return <div className="msg bot flex flex-col gap-2">{e.text}{e.caught && <Caught list={e.caught} />}</div>;
@@ -96,7 +106,7 @@ export function LongAnswer({ jobId, item, answer, onSave }: {
     choose("Write it for me", "writing");
     try {
       const r = await draftFor(jobId, key);
-      if (r.ok) { setDraft(r.draft); setMode("draft"); } else settle({ k: "err", text: GENERIC }, "menu");
+      if (r.ok) { setDraft(r.draft); setMode("draft"); } else settle(r.reason === "ai-off" ? { k: "ai-off" } : { k: "err", text: GENERIC }, "menu");
     } catch { settle({ k: "err", text: GENERIC }, "menu"); }
   };
   const getIdeas = async () => {
@@ -104,7 +114,8 @@ export function LongAnswer({ jobId, item, answer, onSave }: {
     setIdeas(null); setPicked(new Set());
     try {
       const r = await ideasFor(jobId, key);
-      setIdeas(r.ok ? r.ideas : []);
+      if (!r.ok && r.reason === "ai-off") settle({ k: "ai-off" }, "menu");
+      else setIdeas(r.ok ? r.ideas : []);
     } catch { setIdeas([]); }
   };
   const revise = async (how: "shorter" | "warmer" | "tidy", label: string, source: string) => {
@@ -112,7 +123,7 @@ export function LongAnswer({ jobId, item, answer, onSave }: {
     choose(label, "writing");
     try {
       const r = await reviseFor(jobId, key, source, how);
-      if (!r.ok) settle({ k: "err", text: GENERIC }, back);
+      if (!r.ok) settle(r.reason === "ai-off" ? { k: "ai-off" } : { k: "err", text: GENERIC }, back);
       else if (hasText(r.draft)) { setDraft(r.draft); setMode("draft"); }
       // The gate refused every rewritten sentence: nothing failed, the student's words simply stay as they were.
       else settle({ k: "bot", text: KEPT, caught: r.draft.caught }, back);
@@ -125,9 +136,17 @@ export function LongAnswer({ jobId, item, answer, onSave }: {
   });
   const prev = item.previous;
   const prevLabel = `Use my answer from ${prev?.company || "an earlier application"}`;
+  // An earlier answer that names its old company opens in Edit, so it is never reused unchanged.
+  const namesOld = !!prev?.company.trim() && prev.text.toLowerCase().includes(prev.company.trim().toLowerCase());
   // The earlier answer is the student's own approved text: it gets the same Use this / Shorter / Warmer / Edit as a draft.
   const usePrevious = () => {
     if (!prev) return;
+    if (namesOld) {
+      setText(prev.text); setUnapproved(false);
+      setLog((l) => [...l, ...shown(), { k: "me", text: prevLabel }, { k: "warn", text: `This mentions ${prev.company.trim()}. Edit it before you use it.` }]);
+      setResumed(false); setMode("edit");
+      return;
+    }
     choose(prevLabel, "draft");
     setDraft({ text: prev.text, sentences: [], caught: [], words: prev.words, limit: longLimit(item), thin: false, source: "ai" });
   };

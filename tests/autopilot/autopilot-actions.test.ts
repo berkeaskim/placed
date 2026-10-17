@@ -3,17 +3,22 @@ import { eq } from "drizzle-orm";
 type F = { key: string; target: string; label: string; type: string; required: boolean; options: { label: string; value: string }[] };
 const h = vi.hoisted(() => ({
   items: [] as unknown[], answers: {} as Record<string, unknown>, extra: {} as Record<string, string | string[]>,
-  completed: true, on: true, fields: [] as unknown[] | null, input: {} as unknown, draft: { text: "d" } as unknown,
+  completed: true, on: true, fields: [] as unknown[] | null, input: {} as unknown, draft: { text: "d" } as unknown, aiOff: false,
 }));
+const offOr = async <T,>(v: T): Promise<T> => {
+  if (!h.aiOff) return v;
+  const { AiError, AI_NOT_SET_UP } = await import("@/lib/ai/provider");
+  throw new AiError(AI_NOT_SET_UP);
+};
 vi.mock("@/lib/env", () => ({ env: { get autopilot() { return h.on; } } }));
 vi.mock("@/lib/autopilot/server", () => ({
   getVault: async () => ({ core: {}, extra: h.extra, completed: h.completed }),
   buildPack: async () => ({ items: h.items, answers: h.answers }),
   draftInputFor: async () => h.input,
-  generateDraft: async () => h.draft,
+  generateDraft: async () => offOr(h.draft),
 }));
-vi.mock("@/lib/autopilot/ideas", () => ({ suggestIdeas: async () => [{ text: "an angle", refs: ["x"] }] }));
-vi.mock("@/lib/autopilot/revise", () => ({ reviseAnswer: async () => h.draft }));
+vi.mock("@/lib/autopilot/ideas", () => ({ suggestIdeas: async () => offOr([{ text: "an angle", refs: ["x"] }]) }));
+vi.mock("@/lib/autopilot/revise", () => ({ reviseAnswer: async () => offOr(h.draft) }));
 import { openAndFill, setAnswer, preparePack, draftFor, ideasFor, reviseFor, coverReadyKeys } from "@/app/(app)/jobs/[id]/autopilot-actions";
 import { openAnswers, openVault, sealVault } from "@/lib/autopilot/vault-crypto";
 import { db } from "@/lib/db/client";
@@ -43,7 +48,7 @@ const snapshot = () => JSON.stringify([db.select().from(autopilotPacks).all(), s
 describe("autopilot actions", () => {
   beforeEach(() => {
     JOB ||= seedJob().id;
-    h.answers = {}; h.extra = {}; h.completed = true; h.on = true; h.input = {}; h.draft = { text: "d" };
+    h.answers = {}; h.extra = {}; h.completed = true; h.on = true; h.input = {}; h.draft = { text: "d" }; h.aiOff = false;
     h.fields = [field("q1", "Level of German?"), field("g", "What is your gender?"), field("d1", "Describe a project you are proud of", { type: "textarea", options: [] })];
     db.delete(autopilotVault).run();
     db.insert(autopilotVault).values({ user_id: UID, core: {}, extra: SEALED_EMPTY() }).run();
@@ -196,6 +201,12 @@ describe("autopilot actions", () => {
       expect(await reviseFor(JOB, "d1", "text", "tidy")).toEqual({ ok: false });
     }
     expect(await draftFor("nope", "d1")).toEqual({ ok: false });
+  });
+  it("draftFor/ideasFor/reviseFor say when AI isn't set up", async () => {
+    h.aiOff = true;
+    expect(await draftFor(JOB, "d1")).toEqual({ ok: false, reason: "ai-off" });
+    expect(await ideasFor(JOB, "d1")).toEqual({ ok: false, reason: "ai-off" });
+    expect(await reviseFor(JOB, "d1", "text", "tidy")).toEqual({ ok: false, reason: "ai-off" });
   });
   it("draftFor/ideasFor/reviseFor return results when allowed, and { ok: false } without a draft input", async () => {
     expect(await draftFor(JOB, "d1")).toEqual({ ok: true, draft: { text: "d" } });

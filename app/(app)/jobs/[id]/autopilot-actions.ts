@@ -4,6 +4,7 @@ import { requireUser } from "@/lib/auth/local-user";
 import { db } from "@/lib/db/client";
 import { autopilotLongAnswers, autopilotPacks, autopilotVault, companies, coverLetterOutputs, coverLetters, jobs } from "@/lib/db/schema";
 import { buildPack, draftInputFor, generateDraft, getVault } from "@/lib/autopilot/server";
+import { isAiNotSetUp } from "@/lib/ai/provider";
 import { suggestIdeas, type Idea } from "@/lib/autopilot/ideas";
 import { reviseAnswer, type ReviseHow } from "@/lib/autopilot/revise";
 import type { DraftResult } from "@/lib/autopilot/drafts";
@@ -147,27 +148,45 @@ async function chatUser(jobId: string, fieldKey: string): Promise<string | null>
   return (await getVault(user.id)).completed ? user.id : null;
 }
 
-export async function draftFor(jobId: string, fieldKey: string): Promise<{ ok: true; draft: DraftResult } | { ok: false }> {
+/** `reason: "ai-off"`: no AI provider is set up, so the chat points to Settings instead of saying the CV is thin. */
+type ChatFail = { ok: false; reason?: "ai-off" };
+const aiOff = (e: unknown): ChatFail => { if (isAiNotSetUp(e)) return { ok: false, reason: "ai-off" }; throw e; };
+
+export async function draftFor(jobId: string, fieldKey: string): Promise<{ ok: true; draft: DraftResult } | ChatFail> {
   const uid = await chatUser(jobId, fieldKey);
   if (!uid) return { ok: false };
-  const draft = await generateDraft(uid, jobId, fieldKey);
-  return draft ? { ok: true, draft } : { ok: false };
+  try {
+    const draft = await generateDraft(uid, jobId, fieldKey);
+    return draft ? { ok: true, draft } : { ok: false };
+  } catch (e) {
+    return aiOff(e);
+  }
 }
 
-export async function ideasFor(jobId: string, fieldKey: string): Promise<{ ok: true; ideas: Idea[] } | { ok: false }> {
+export async function ideasFor(jobId: string, fieldKey: string): Promise<{ ok: true; ideas: Idea[] } | ChatFail> {
   const uid = await chatUser(jobId, fieldKey);
   if (!uid) return { ok: false };
   const input = await draftInputFor(uid, jobId, fieldKey);
-  return input ? { ok: true, ideas: await suggestIdeas(input) } : { ok: false };
+  if (!input) return { ok: false };
+  try {
+    return { ok: true, ideas: await suggestIdeas(input) };
+  } catch (e) {
+    return aiOff(e);
+  }
 }
 
 /** Revised text is returned, not stored: the chat saves whichever version the student picks via setAnswer. */
-export async function reviseFor(jobId: string, fieldKey: string, text: string, how: ReviseHow): Promise<{ ok: true; draft: DraftResult } | { ok: false }> {
+export async function reviseFor(jobId: string, fieldKey: string, text: string, how: ReviseHow): Promise<{ ok: true; draft: DraftResult } | ChatFail> {
   if (typeof text !== "string" || !text.trim() || text.length > MAX_TEXT || !["shorter", "warmer", "tidy"].includes(how)) return { ok: false };
   const uid = await chatUser(jobId, fieldKey);
   if (!uid) return { ok: false };
   const input = await draftInputFor(uid, jobId, fieldKey);
-  return input ? { ok: true, draft: await reviseAnswer(input, text, how) } : { ok: false };
+  if (!input) return { ok: false };
+  try {
+    return { ok: true, draft: await reviseAnswer(input, text, how) };
+  } catch (e) {
+    return aiOff(e);
+  }
 }
 
 /** Keys (`"upload"` or the field key, as `coverKey` names them) of this job's cover letter outputs that are marked ready. */
