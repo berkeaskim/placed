@@ -10,6 +10,8 @@ import { requireUser } from "@/lib/auth/local-user";
 import { resetUserData } from "@/lib/db/reset";
 import { isDeleteConfirmed } from "@/lib/settings/confirm";
 import { fieldForCourse } from "@/lib/profile/courses";
+import { setSecret } from "@/lib/settings/store";
+import { SERPER_SECRET } from "@/lib/inside-track/find";
 
 export type DeleteState = { error: string } | null;
 
@@ -59,4 +61,15 @@ export async function saveCourse(_prev: CourseState, formData: FormData): Promis
   });
   revalidatePath("/", "layout");
   return { ok: true, value: raw || null };
+}
+
+export type SearchKeyState = { ok: true; message: string } | { ok: false; error: string } | null;
+
+/** Saves (or, with an empty field, removes) the Serper key Inside Track uses to find people. Stored sealed like AI keys. */
+export async function saveSearchKey(_prev: SearchKeyState, formData: FormData): Promise<SearchKeyState> {
+  const k = String(formData.get("key") ?? "").trim();
+  if (k && (k.length < 10 || k.length > 400 || /\s/.test(k))) return { ok: false, error: "That doesn't look like an API key." };
+  setSecret(SERPER_SECRET, k || null);
+  revalidatePath("/", "layout");
+  return { ok: true, message: k ? "Key saved. Applied roles now show real people." : "Key removed." };
 }

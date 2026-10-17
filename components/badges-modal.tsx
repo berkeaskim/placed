@@ -13,8 +13,9 @@ function Mark({ earned }: { earned: boolean }) {
 export function BadgesModal({ earned }: { earned: BadgeKey[] }) {
   return (
     <Dialog>
-      <DialogTrigger className="min-h-11 shrink-0 whitespace-nowrap rounded-[10px] px-3.5 py-2 text-sm font-medium text-[#4A4A57] hover:bg-[#EFEBFF]">
-        Badges {earned.length}/5
+      <DialogTrigger aria-label={`Badges, ${earned.length} of 5 earned`} className="flex h-8 shrink-0 items-center gap-1 whitespace-nowrap rounded-full bg-[#767680]/[0.12] px-2.5 text-[13px] font-semibold tracking-[-0.006em] text-[#1C1C1E] transition-transform duration-100 ease-out hover:bg-[#767680]/[0.18] active:scale-[0.96]">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="#5B3DF5" aria-hidden="true"><path d="M12 2l2.4 2.1 3.2-.3.7 3.1 2.8 1.6-1.3 2.9 1.3 2.9-2.8 1.6-.7 3.1-3.2-.3L12 20.8l-2.4-2.1-3.2.3-.7-3.1-2.8-1.6L4.2 11.4 2.9 8.5l2.8-1.6.7-3.1 3.2.3z" /></svg>
+        <span className="tabular-nums">{earned.length}/5</span>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader><DialogTitle>Your badges</DialogTitle></DialogHeader>

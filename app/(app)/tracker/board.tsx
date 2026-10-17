@@ -169,6 +169,9 @@ function TrackerCard({ card: c, today, now, onHover, onMove }: {
           {c.nudge.text} →
         </Link>
       )}
+      {!c.nudge && c.status !== "saved" && c.status !== "rejected" && (
+        <Link href={`/jobs/${c.jobId}#inside-track`} draggable={false} className="text-xs font-semibold text-[#5B3DF5]">Inside Track: people to message →</Link>
+      )}
       {c.status === "interview" && (
         <Link href={`/jobs/${c.jobId}#prep`} draggable={false} className="text-xs font-semibold text-[#5B3DF5]">Prep for this interview →</Link>
       )}
