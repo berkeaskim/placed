@@ -101,6 +101,39 @@ describe("ollamaStream", () => {
   });
 });
 
+describe("ollamaStream slot release", () => {
+  // Default OLLAMA_PARALLEL=1: a leaked slot would make the follow-up call wait forever, so it is raced against a timer.
+  async function followUpCompletes() {
+    const next = collect(ollamaStream(req, ollamaFetch(ndjson("ok"))));
+    const timer = new Promise<string>((r) => setTimeout(() => r("LEAKED"), 1000));
+    expect(await Promise.race([next, timer])).toEqual(["ok"]);
+  }
+  it("frees the slot when the consumer breaks early", async () => {
+    vi.stubEnv("OLLAMA_MODEL", "test-model");
+    for await (const _ of ollamaStream(req, ollamaFetch(ndjson(...CHUNKS)))) break;
+    await followUpCompletes();
+  });
+  it("frees the slot when aborted mid-stream", async () => {
+    vi.stubEnv("OLLAMA_MODEL", "test-model");
+    const ac = new AbortController();
+    for await (const _ of ollamaStream({ ...req, signal: ac.signal }, ollamaFetch(ndjson(...CHUNKS)))) ac.abort();
+    await followUpCompletes();
+  });
+  it("frees the slot when the fetch throws", async () => {
+    vi.stubEnv("OLLAMA_MODEL", "test-model");
+    const f = vi.fn(async () => { throw new Error("down"); });
+    await expect(collect(ollamaStream(req, f))).rejects.toThrow(AI_UNAVAILABLE);
+    await followUpCompletes();
+  });
+  it("does not send a request when already aborted", async () => {
+    vi.stubEnv("OLLAMA_MODEL", "test-model");
+    const f = ollamaFetch(ndjson("x"));
+    expect(await collect(ollamaStream({ ...req, signal: AbortSignal.abort() }, f))).toEqual([]);
+    expect(f).not.toHaveBeenCalled();
+    await followUpCompletes();
+  });
+});
+
 describe("streamText fixture mode", () => {
   function withFixture(fn: string, key: string, text: string) {
     const root = mkdtempSync(path.join(os.tmpdir(), "stream-fixture-"));

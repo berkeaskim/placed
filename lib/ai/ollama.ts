@@ -161,6 +161,10 @@ export async function* ollamaStream(req: StreamRequest, f: FetchLike = httpFetch
   const model = ollamaModel(req.tier);
   if (!model) throw new AiError(AI_UNAVAILABLE);
   const release = await acquireSlot(false);
+  if (req.signal?.aborted) {
+    release(); // aborted while queued: don't send the request
+    return;
+  }
   const timeout = AbortSignal.timeout(OLLAMA_TIMEOUT_MS);
   const signal = req.signal ? AbortSignal.any([req.signal, timeout]) : timeout;
   try {
