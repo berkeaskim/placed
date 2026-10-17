@@ -88,13 +88,14 @@ export async function ensureBank(userId: string): Promise<{ bootstrapped: boolea
   const cv = await getActiveCv(userId);
   if (!cv) return { bootstrapped: false, newCvSuggestions: 0 };
   const source: Source = { kind: "cv", ref: cv.id, rawText: cv.rawText };
-  if (getBank(userId).entries.length === 0) {
+  const cvSource = (ref?: string) => db.select({ id: bankSources.id }).from(bankSources)
+    .where(and(eq(bankSources.user_id, userId), eq(bankSources.kind, "cv"), ...(ref ? [eq(bankSources.ref, ref)] : []))).get();
+  // Bootstrap only the first time: an empty bank with a prior cv source means the user cleared it on purpose.
+  if (getBank(userId).entries.length === 0 && !cvSource()) {
     importCandidates(userId, source, fromParsedCv(cv.parsed), { autoAccept: true });
     return { bootstrapped: true, newCvSuggestions: 0 };
   }
-  const known = db.select({ id: bankSources.id }).from(bankSources)
-    .where(and(eq(bankSources.user_id, userId), eq(bankSources.kind, "cv"), eq(bankSources.ref, cv.id))).get();
-  if (known) return { bootstrapped: false, newCvSuggestions: 0 };
+  if (cvSource(cv.id)) return { bootstrapped: false, newCvSuggestions: 0 };
   const r = importCandidates(userId, source, fromParsedCv(cv.parsed), { autoAccept: false });
   return { bootstrapped: false, newCvSuggestions: r.suggestions };
 }

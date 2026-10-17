@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { eq } from "drizzle-orm";
 import { LOCAL_USER_ID as U } from "@/lib/auth/local-user";
 import { db } from "@/lib/db/client";
-import { cvs, linkedinScores } from "@/lib/db/schema";
+import { bankBullets, bankEntries, bankSources, bankSuggestions, cvs, linkedinScores } from "@/lib/db/schema";
 import { getBank, insertEntry, listSuggestions, setSuggestionStatus } from "@/lib/bank/store";
 import { ensureBank, importCandidates, importCvPdf, importLinkedInFromLatestCapture } from "@/lib/bank/import";
 import type { CandidateEntry } from "@/lib/bank/types";
@@ -29,10 +29,15 @@ let n = 0;
 const src = () => ({ kind: "manual" as const, ref: `r${n++}`, rawText: "x" });
 
 describe("experience bank import", () => {
-  beforeEach(() => { db.delete(cvs).run(); });
+  beforeEach(() => {
+    db.delete(cvs).run();
+    db.delete(bankSuggestions).run();
+    db.delete(bankBullets).run();
+    db.delete(bankEntries).run();
+    db.delete(bankSources).run();
+  });
 
   it("ensureBank bootstraps from the active CV with no suggestions", async () => {
-    // fresh user bank state: use a clean slate via distinct CV content
     seedCv({ is_active: true, parsed_json: cvJson(false) as never, raw_text: "cv-one" });
     const r = await ensureBank(U);
     expect(r.bootstrapped).toBe(true);
@@ -42,13 +47,28 @@ describe("experience bank import", () => {
   });
 
   it("re-running ensureBank is a no-op", async () => {
-    const before = getBank(U).entries.length;
-    const r = await ensureBank(U);
-    expect(r).toEqual({ bootstrapped: false, newCvSuggestions: 0 });
-    expect(getBank(U).entries.length).toBe(before);
+    seedCv({ is_active: true, parsed_json: cvJson(false) as never, raw_text: "cv-one" });
+    expect((await ensureBank(U)).bootstrapped).toBe(true);
+    const entries = getBank(U).entries.length;
+    const sugg = listSuggestions(U).length;
+    expect(entries).toBeGreaterThan(0);
+    expect(await ensureBank(U)).toEqual({ bootstrapped: false, newCvSuggestions: 0 });
+    expect(getBank(U).entries.length).toBe(entries);
+    expect(listSuggestions(U)).toHaveLength(sugg);
+  });
+
+  it("does not re-seed after the user deleted everything", async () => {
+    seedCv({ is_active: true, parsed_json: cvJson(false) as never, raw_text: "cv-one" });
+    await ensureBank(U);
+    db.delete(bankBullets).run();
+    db.delete(bankEntries).run();
+    expect(await ensureBank(U)).toEqual({ bootstrapped: false, newCvSuggestions: 0 });
+    expect(getBank(U).entries).toHaveLength(0);
   });
 
   it("new active CV yields suggestions not rows", async () => {
+    seedCv({ is_active: true, parsed_json: cvJson(false) as never, raw_text: "cv-one" });
+    await ensureBank(U);
     const before = getBank(U).entries.length;
     db.update(cvs).set({ is_active: false }).run();
     seedCv({ is_active: true, parsed_json: cvJson(true) as never, raw_text: "cv-two" });
@@ -70,6 +90,7 @@ describe("experience bank import", () => {
   });
 
   it("autoAccept on a matched entry adds non-duplicate bullets directly", () => {
+    importCandidates(U, src(), [cand()], { autoAccept: true });
     importCandidates(U, src(), [cand({ bullets: [{ text: "Negotiated supplier contracts across three regions", sourceText: "x" }] })], { autoAccept: true });
     const e = getBank(U).entries.find((x) => x.org === "Foo Partners")!;
     expect(e.bullets).toHaveLength(2);
@@ -126,6 +147,7 @@ describe("experience bank import", () => {
       const r = await importCvPdf(U, bytes);
       expect(typeof r.suggestions).toBe("number");
       expect(count()).toBe(before);
+      expect(db.select().from(bankSources).where(eq(bankSources.kind, "cv")).all()).toHaveLength(1);
     });
   });
 });
