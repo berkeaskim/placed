@@ -3,7 +3,7 @@ import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "rea
 import type { CardView, OutputView } from "@/lib/cover-letter/service";
 import type { EditKind } from "@/lib/cover-letter/edit";
 import type { Answer } from "@/lib/cover-letter/types";
-import { readyToDraft, type CardState } from "./card-state";
+import { readyToDraft, showsTyping, type CardState } from "./card-state";
 import { EditChips } from "./edit-chips";
 import { FactChips } from "./fact-chips";
 import { ResearchCard } from "./research-card";
@@ -16,7 +16,9 @@ export type ChatHandlers = {
   onEdit: (kind: EditKind, say: string, instruction?: string) => void;
   onDraft: () => void;
   onRetry: () => void;
-  onUndo: (localId: string, outputId: string) => void;
+  onUndo: (localId: string, outputId: string, paragraph: number | null) => void;
+  /** Research outlasted its wait: skip the facts question and go on. */
+  onSkipResearch: () => void;
 };
 
 /** A typed request in plain words, mapped to the edit it most likely means (the words go along as the instruction). */
@@ -35,6 +37,7 @@ const staticProps = (on: boolean) => (on ? { "data-static": "" } : {});
  */
 export function ChatPane({ s, view, output, initial, h }: { s: CardState; view: CardView; output: OutputView | null; initial: Set<string>; h: ChatHandlers }) {
   const chatRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const [draft, setDraft] = useState("");
   const q = view.next && view.next.id !== "wait_research" ? view.next : null;
   const busy = s.pending;
@@ -42,7 +45,7 @@ export function ChatPane({ s, view, output, initial, h }: { s: CardState; view: 
   const hasText = !!output?.text.trim();
   const interviewDone = view.next === null && !view.confirmPerson;
   const canEdit = hasText && interviewDone && !view.feedbackOnly && output?.mode !== "skip";
-  const typing = s.pending || s.state === "thinking" || (s.gen?.kind === "edit" && s.editing === null);
+  const typing = showsTyping(s);
 
   const count = view.chat.length + s.local.length;
   useEffect(() => {
@@ -50,8 +53,19 @@ export function ChatPane({ s, view, output, initial, h }: { s: CardState; view: 
     if (el) el.scrollTop = el.scrollHeight;
   }, [count, typing, s.state, view.next?.id, view.researchState]);
 
+  // A new question takes the focus (the composer, or the first fact), so answering never needs a click first.
+  const nextId = view.next?.id ?? null;
+  const prevNext = useRef(nextId);
+  useEffect(() => {
+    if (prevNext.current === nextId) return;
+    prevNext.current = nextId;
+    if (!nextId || nextId === "wait_research") return;
+    const el = nextId === "facts" ? chatRef.current?.querySelector<HTMLElement>(".fact") : inputRef.current;
+    el?.focus({ preventScroll: true });
+  }, [nextId]);
+
   const research = view.researchState === "running" || view.researchState === "done"
-    ? <ResearchCard key="research" company={view.company} running={view.researchState === "running"} facts={view.facts} isStatic={initial.has("research") && view.researchState !== "running"} />
+    ? <ResearchCard key="research" company={view.company} running={view.researchState === "running" && !s.stalled} stopped={s.stalled} facts={view.facts} isStatic={initial.has("research") && view.researchState !== "running"} />
     : null;
   const anchor = view.chat.findIndex((m) => m.from === "me" && m.questionId === "why_firm");
   // The echoed answer already popped in; its saved copy replaces it without animating again.
@@ -69,12 +83,14 @@ export function ChatPane({ s, view, output, initial, h }: { s: CardState; view: 
       : q ? "Type your answer…"
         : view.next?.id === "wait_research" ? `Reading about ${view.company}…`
           : canEdit ? "Ask for a change, e.g. \"make it shorter\"" : "Type here…";
-  const composerOn = !view.feedbackOnly && !busy && ((q && q.id !== "facts") || canEdit);
+  // While a reply is pending the input stays focusable (read-only), so focus is never lost between questions.
+  const composerOn = !view.feedbackOnly && ((q && q.id !== "facts") || canEdit);
+  const canSend = composerOn && !busy;
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
     const t = draft.trim();
-    if (!composerOn || !t) return;
+    if (!canSend || !t) return;
     setDraft("");
     if (q) h.onAnswer(q.id, t);
     else h.onEdit(editFor(t), t, t);
@@ -89,7 +105,7 @@ export function ChatPane({ s, view, output, initial, h }: { s: CardState; view: 
           <div key={m.id} className={`msg ${m.from}`}>
             {m.text}
             {m.undo && (
-              <button type="button" className="act" disabled={m.undo.used || busy || streaming} onClick={() => h.onUndo(m.id, m.undo!.outputId)}>Undo</button>
+              <button type="button" className="act" disabled={m.undo.used || busy || streaming} onClick={() => h.onUndo(m.id, m.undo!.outputId, m.undo!.paragraph)}>Undo</button>
             )}
           </div>
         ))}
@@ -97,6 +113,7 @@ export function ChatPane({ s, view, output, initial, h }: { s: CardState; view: 
           <div className="msg bot err" role="alert">
             <span>{s.error}</span>
             {s.retry && <button type="button" className="act" onClick={h.onRetry}>Retry</button>}
+            {s.stalled && view.next?.id === "wait_research" && <button type="button" className="act" onClick={h.onSkipResearch}>Carry on without research</button>}
           </div>
         )}
         {typing && <div className="msg bot typing" aria-label="Writing"><span /><span /><span /></div>}
@@ -124,8 +141,9 @@ export function ChatPane({ s, view, output, initial, h }: { s: CardState; view: 
         {!busy && canEdit && <EditChips flagged={!!output?.spans.some((x) => x.kind === "ai" && x.flag)} disabled={busy} onEdit={(k, label) => h.onEdit(k, label)} />}
       </div>
       <form className="composer" onSubmit={submit}>
-        <input value={draft} onChange={(e) => setDraft(e.target.value)} placeholder={placeholder} aria-label={q ? q.text : "Message"} autoComplete="off" disabled={!composerOn} maxLength={1500} />
-        <button type="submit" className="send" disabled={!composerOn || !draft.trim()} aria-label="Send">↑</button>
+        <input ref={inputRef} value={draft} onChange={(e) => setDraft(e.target.value)} placeholder={placeholder} aria-label={q ? q.text : "Message"} autoComplete="off"
+          disabled={!composerOn} readOnly={busy} aria-disabled={busy || undefined} maxLength={1500} />
+        <button type="submit" className="send" disabled={!canSend || !draft.trim()} aria-label="Send">↑</button>
       </form>
     </div>
   );

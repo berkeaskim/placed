@@ -59,7 +59,10 @@ function chipsFor(o: OutputView, feedbackOnly: boolean): Chip[] {
 export function LintChips({ output, status, dim, feedbackOnly }: {
   output: OutputView | null; status: { text: string; error?: boolean } | null; dim: boolean; feedbackOnly: boolean;
 }) {
-  const words = useTick(output?.words ?? 0);
+  const lim = output?.limit ?? null;
+  const chars = lim?.unit === "chars";
+  const count = (chars ? output?.text.length : output?.words) ?? 0;
+  const shown = useTick(count);
   if (status || !output || !output.text.trim()) {
     return (
       <div className="lint" aria-live="polite">
@@ -68,14 +71,12 @@ export function LintChips({ output, status, dim, feedbackOnly }: {
     );
   }
   const length = output.lint.filter((h) => LENGTH.test(h.ruleId));
-  const lim = output.limit;
   const chips = chipsFor(output, feedbackOnly);
   return (
     <div className={`lint${dim ? " dim" : ""}`} aria-live="polite">
       <span className={`chip ${length.length ? "warn" : "ok"}`} title={length.map((h) => h.label).join("\n") || undefined}>
-        {lim?.unit === "chars"
-          ? <>{output.text.length}/{lim.max} characters</>
-          : <><span className="count" data-cl-words={output.words}>{words}</span>{lim ? `/${lim.max}` : ""} words</>}
+        <span className="count" data-cl-words={count} {...(chars ? { "data-cl-unit": "chars" } : {})}>{shown}</span>
+        {lim ? `/${lim.max}` : ""} {chars ? "characters" : "words"}
       </span>
       {chips.map((c, i) => (
         <span key={c.label} className={`chip ${c.tone}`} title={c.title} style={{ animationDelay: `${(i + 1) * 80}ms` }}>{c.label}</span>

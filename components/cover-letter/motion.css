@@ -56,6 +56,7 @@
 .cl .research { align-self: stretch; background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 12px 14px; animation: cl-pop .42s var(--spring) both; transform-origin: 0% 0%; }
 .cl .research .t { font-size: 12.5px; font-weight: 650; color: var(--muted); display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
 .cl .orb { display: inline-block; width: 14px; height: 14px; border-radius: 50%; flex: none; background: conic-gradient(from 0deg, var(--primary), #A895FF, #5B3DF5); animation: cl-spin 1.2s linear infinite; -webkit-mask: radial-gradient(circle 4px, transparent 98%, #000 100%); mask: radial-gradient(circle 4px, transparent 98%, #000 100%); }
+.cl .research.stopped .orb { animation: none; background: var(--muted); -webkit-mask: none; mask: none; }
 .cl .research.done .orb { animation: none; background: var(--green); -webkit-mask: none; mask: none; }
 @keyframes cl-spin { to { transform: rotate(1turn); } }
 .cl .src { display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 5px 0; color: #35353F; animation: cl-pop .38s var(--spring) both; }
@@ -133,6 +134,7 @@
 .cl .paper p.settled { background: transparent; transition: background 1.6s var(--settle); }
 .cl .out { display: inline; animation: cl-out .28s var(--settle) forwards; }
 @keyframes cl-out { to { opacity: 0; filter: blur(5px); } }
+.cl .paper p.leaving { animation: cl-out .32s var(--settle) forwards; }
 .cl .gone { display: inline-block; overflow: hidden; vertical-align: bottom; white-space: nowrap; transition: max-width .45s var(--spring), opacity .3s, filter .3s; }
 .cl .lint.dim .chip { opacity: .45; transition: opacity .25s; }
 .cl .count { font-variant-numeric: tabular-nums; }
@@ -146,11 +148,13 @@
 @media (prefers-reduced-motion: reduce) {
   .cl *, .cl *::before, .cl *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .15s !important; }
   .cl .w, .cl .out { filter: none; } .cl .typing span, .cl .orb, .cl .shimmer, .cl .skel p, .cl .paper p.editing { animation: none !important; }
-  .cl .msg, .cl .research, .cl .src, .cl .fact, .cl .chip, .cl .act, .cl .pop { animation-name: cl-fade !important; animation-duration: .2s !important; }
+  .cl .msg, .cl .research, .cl .src, .cl .fact, .cl .chip, .cl .act, .cl .pop, .cl .w { animation-name: cl-fade !important; animation-duration: .2s !important; }
+  .cl .out, .cl .paper p.leaving { animation-name: cl-fade-out !important; animation-duration: .2s !important; }
   .cl .gone { filter: none !important; }
   .cl .scan { display: none; }
   .cl .chat { scroll-behavior: auto; }
   @keyframes cl-fade { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes cl-fade-out { to { opacity: 0; } }
 }
 @media (prefers-reduced-transparency: reduce) {
   .cl .paper p.editing, .cl .paper p.changed { background: #F3F0FF; }

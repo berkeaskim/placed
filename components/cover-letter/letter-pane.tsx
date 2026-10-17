@@ -2,35 +2,37 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import type { CardView, OutputView } from "@/lib/cover-letter/service";
 import type { Span } from "@/lib/cover-letter/types";
-import type { CardState } from "./card-state";
+import { paragraphs, type CardState } from "./card-state";
 import { LintChips } from "./lint-chips";
-import { useReducedMotion, useWordStream } from "./use-word-stream";
+import { tokenize, useReducedMotion, useWordStream } from "./use-word-stream";
 
 type Range = { start: number; end: number };
+type Tok = { t: string; mine: boolean };
 
-/** Paragraph ranges, split on blank lines like the server's edit planner (so `editing` indexes line up). */
-function paragraphs(text: string): Range[] {
-  const out: Range[] = [];
-  let start = 0;
-  for (const m of text.matchAll(/\n[ \t]*\n/g)) {
-    out.push({ start, end: m.index });
-    start = m.index + m[0].length;
-  }
-  out.push({ start, end: text.length });
-  return text.trim() ? out : [];
-}
+const firstFlag = (spans: Span[]) => [...spans].sort((a, b) => a.start - b.start).find((x) => x.kind === "ai" && x.flag) ?? null;
+const inRanges = (at: number, rs: Range[]) => rs.some((r) => at >= r.start && at < r.end);
 
-const firstFlag = (spans: Span[]) => [...spans].sort((a, b) => a.start - b.start).find((s) => s.kind === "ai" && s.flag) ?? null;
-
-/** The student's own words: green, sweeping in once when the letter has just been written. */
-function Yours({ sweep, children }: { sweep: boolean; children: ReactNode }) {
-  const [lit, setLit] = useState(!sweep);
+/** Two-phase green: the class lands one frame after mount, so the background sweep transitions in. */
+function useLit(on: boolean, startLit: boolean): boolean {
+  const [lit, setLit] = useState(startLit);
   useEffect(() => {
-    if (lit) return;
+    if (!on || lit) return;
     const id = requestAnimationFrame(() => setLit(true));
     return () => cancelAnimationFrame(id);
-  }, [lit]);
+  }, [on, lit]);
+  return on && lit;
+}
+
+/** The student's own words: green, sweeping in once when the letter has just been written (unless lit mid-stream). */
+function Yours({ sweep, children }: { sweep: boolean; children: ReactNode }) {
+  const lit = useLit(true, !sweep);
   return <span data-span="theirs" className={`yours${lit ? " lit" : ""}`}>{children}</span>;
+}
+
+/** A streamed word. Inside the student's own sentence it turns green as soon as that sentence closes. */
+function Word({ t, mine, i }: { t: string; mine: boolean; i: number }) {
+  const lit = useLit(mine, false);
+  return <span className={`w${mine ? " yours" : ""}${lit ? " lit" : ""}`} style={mine ? { transitionDelay: `${(i % 40) * 12}ms` } : undefined}>{t}</span>;
 }
 
 /** A flagged span being removed: its width collapses to 0 (the one layout animation allowed). */
@@ -48,26 +50,33 @@ function Collapsing({ children }: { children: ReactNode }) {
   return <span ref={ref} className="flag gone" data-span="ai">{children}</span>;
 }
 
-/** One paragraph's text with its spans: theirs green, flagged AI sentences amber. */
-function Segments({ text, range, spans, sweep, removing }: { text: string; range: Range; spans: Span[]; sweep: boolean; removing: Span | null }) {
-  const inside = spans.filter((s) => s.end > range.start && s.start < range.end).sort((a, b) => a.start - b.start);
+/** One paragraph's text with its spans: theirs green, flagged AI sentences amber (focusable; Enter opens the check). */
+function Segments({ text, range, spans, sweep, litTexts, removing, onFlag }: {
+  text: string; range: Range; spans: Span[]; sweep: boolean; litTexts: string[]; removing: Span | null; onFlag: (el: HTMLElement) => void;
+}) {
+  const inside = spans.filter((x) => x.end > range.start && x.start < range.end).sort((a, b) => a.start - b.start);
   const out: ReactNode[] = [];
   let at = range.start;
-  for (const s of inside) {
-    const a = Math.max(s.start, at), b = Math.min(s.end, range.end);
+  for (const x of inside) {
+    const a = Math.max(x.start, at), b = Math.min(x.end, range.end);
     if (a > at) out.push(text.slice(at, a));
     if (b <= a) continue;
     const t = text.slice(a, b);
-    if (s === removing) out.push(<Collapsing key={a}>{t}</Collapsing>);
-    else if (s.kind === "theirs") out.push(<Yours key={a} sweep={sweep}>{t}</Yours>);
-    else out.push(<span key={a} data-span="ai" data-flag={s.flag ?? ""} data-start={s.start} className={s.flag ? "flag" : undefined}>{t}</span>);
+    if (x === removing) out.push(<Collapsing key={a}>{t}</Collapsing>);
+    else if (x.kind === "theirs") out.push(<Yours key={a} sweep={sweep && !litTexts.includes(t.trim())}>{t}</Yours>);
+    else if (x.flag) {
+      out.push(
+        <span key={a} data-span="ai" data-flag={x.flag} data-start={x.start} className="flag" tabIndex={0} aria-label={`Check: ${x.flag}`}
+          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onFlag(e.currentTarget); } }}>{t}</span>,
+      );
+    } else out.push(<span key={a} data-span="ai" data-start={x.start}>{t}</span>);
     at = b;
   }
   if (at < range.end) out.push(text.slice(at, range.end));
   return <>{out}</>;
 }
 
-/** After an edit, the changed paragraph glows and the glow fades over 1.6s. */
+/** After an edit or undo, the changed paragraph glows and the glow fades over 1.6s. */
 function GlowP({ glow, className = "", children }: { glow: boolean; className?: string; children: ReactNode }) {
   const [phase, setPhase] = useState(glow ? "changed" : "");
   useEffect(() => {
@@ -78,29 +87,45 @@ function GlowP({ glow, className = "", children }: { glow: boolean; className?: 
   return <p className={`${className} ${phase}`.trim() || undefined}>{children}</p>;
 }
 
-/** The paragraph being rewritten: old words dissolve (staggered, ≤260ms), then the new words stream in. */
-function EditingParagraph({ old, tokens, live }: { old: string; tokens: string[]; live: boolean }) {
+/**
+ * The paragraph being rewritten (or restored by Undo): it breathes, its old words dissolve at once (staggered,
+ * ≤260ms), then the new words come in one by one, catching up when the model is ahead. `onFinished` fires once
+ * every word is in and the stream is over (Undo uses it to hand back to the plain paragraph and its glow).
+ */
+function EditingParagraph({ old, tokens, live, onFinished }: { old: string; tokens: Tok[]; live: boolean; onFinished?: () => void }) {
   const reduced = useReducedMotion();
   const words = useMemo(() => old.split(/(?<=\s)/), [old]);
-  const streaming = tokens.length > 0;
   const [gone, setGone] = useState(false);
+  const [shown, setShown] = useState(0);
   useEffect(() => {
-    if (!streaming || gone) return;
     const t = setTimeout(() => setGone(true), reduced ? 0 : Math.min(words.length * 6, 260) + 300);
     return () => clearTimeout(t);
-  }, [streaming, gone, reduced, words.length]);
+  }, [reduced, words.length]);
+  useEffect(() => {
+    if (!gone || shown >= tokens.length) return;
+    const t = setTimeout(() => setShown((n) => (reduced ? tokens.length : Math.min(tokens.length, n + Math.max(1, Math.ceil((tokens.length - n) / 8))))), reduced ? 0 : 30);
+    return () => clearTimeout(t);
+  }, [gone, shown, tokens.length, reduced]);
+  const finished = gone && !live && shown >= tokens.length;
+  const done = useRef(onFinished);
+  useEffect(() => { done.current = onFinished; });
+  useEffect(() => {
+    if (!finished) return;
+    const t = setTimeout(() => done.current?.(), reduced ? 0 : 350);
+    return () => clearTimeout(t);
+  }, [finished, reduced]);
   return (
     <p className="editing">
       {gone
-        ? tokens.map((t, i) => <span key={i} className="w">{t}</span>)
-        : words.map((w, i) => <span key={i} className={streaming ? "out" : undefined} style={streaming ? { animationDelay: `${Math.min(i * 6, 260)}ms` } : undefined}>{w}</span>)}
+        ? tokens.slice(0, shown).map((x, i) => <Word key={i} t={x.t} mine={x.mine} i={i} />)
+        : words.map((w, i) => <span key={i} className="out" style={{ animationDelay: `${Math.min(i * 6, 260)}ms` }}>{w}</span>)}
       {gone && live && <span className="caret" aria-hidden="true" />}
     </p>
   );
 }
 
-function StreamP({ tokens, caret }: { tokens: string[]; caret: boolean }) {
-  return <p>{tokens.map((t, i) => <span key={i} className="w">{t}</span>)}{caret && <span className="caret" aria-hidden="true" />}</p>;
+function StreamP({ tokens, lit, caret }: { tokens: { t: string; at: number }[]; lit: Range[]; caret: boolean }) {
+  return <p>{tokens.map((x, i) => <Word key={i} t={x.t} mine={inRanges(x.at, lit)} i={i} />)}{caret && <span className="caret" aria-hidden="true" />}</p>;
 }
 
 /** Plain text of the edited paper: one block per paragraph, blank-line separated. */
@@ -121,11 +146,13 @@ export type LetterHandlers = {
   onConfirmTrue: (spanStart: number) => void;
   onReady: () => void;
   onWhyUs: () => void;
+  /** The undo animation has played. */
+  onRestored: () => void;
 };
 
 export function LetterPane({ s, view, output, autopilot, h }: { s: CardState; view: CardView; output: OutputView | null; autopilot: boolean; h: LetterHandlers }) {
   const gen = s.gen;
-  const live = s.state === "drafting" || s.state === "editing";
+  const live = gen !== null && (s.state === "drafting" || s.state === "editing");
   const tokens = useWordStream(gen ? s.visible : "", live);
   const paperRef = useRef<HTMLDivElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -133,6 +160,7 @@ export function LetterPane({ s, view, output, autopilot, h }: { s: CardState; vi
   const [typed, setTyped] = useState(false);
   const [copied, setCopied] = useState(false);
   const [scanStyle, setScanStyle] = useState<{ top: number; h: number } | null>(null);
+  const popRef = useRef<HTMLButtonElement>(null);
 
   const text = output?.text ?? "";
   const spans = output?.spans ?? [];
@@ -149,23 +177,27 @@ export function LetterPane({ s, view, output, autopilot, h }: { s: CardState; vi
     setScanStyle(p ? { top: p.offsetTop, h: p.offsetHeight } : { top: 0, h: paper.offsetHeight });
   }, [s.scan.n, s.scan.paragraph]);
 
+  // The check opens with the focus inside it, so Edit / "This is true" are one key away.
+  useEffect(() => { if (pop) popRef.current?.focus(); }, [pop]);
   useEffect(() => {
     if (!pop) return;
     const close = (e: KeyboardEvent | PointerEvent) => {
-      if (e instanceof KeyboardEvent ? e.key === "Escape" : !(e.target as HTMLElement).closest?.(".pop, [data-flag]")) setPop(null);
+      if (e instanceof KeyboardEvent ? e.key !== "Escape" : (e.target as HTMLElement).closest?.(".pop, [data-flag]")) return;
+      setPop(null);
+      if (e instanceof KeyboardEvent) paperRef.current?.querySelector<HTMLElement>(`[data-start="${pop.start}"]`)?.focus();
     };
     window.addEventListener("keydown", close);
     window.addEventListener("pointerdown", close);
     return () => { window.removeEventListener("keydown", close); window.removeEventListener("pointerdown", close); };
   }, [pop]);
 
-  const openFlag = (target: HTMLElement) => {
+  function openFlag(target: HTMLElement) {
     const el = target.closest<HTMLElement>("[data-flag]");
     const flag = el?.dataset.flag;
     if (!el || !flag || !wrapRef.current) return;
     const top = el.getBoundingClientRect().bottom - wrapRef.current.getBoundingClientRect().top + 6;
     setPop({ start: Number(el.dataset.start), flag, top });
-  };
+  }
   const editFlag = () => {
     const el = paperRef.current?.querySelector<HTMLElement>(`[data-start="${pop?.start}"]`);
     setPop(null);
@@ -188,28 +220,43 @@ export function LetterPane({ s, view, output, autopilot, h }: { s: CardState; vi
   };
 
   // ------------------------------------------------------------ the paper's content
+  const ownAt = (at: number) => spans.some((x) => x.kind === "theirs" && at >= x.start && at < x.end);
   let body: ReactNode;
   if (gen?.kind === "draft") {
     body = !tokens.length
       ? <div className="skel" aria-hidden="true"><p style={{ width: "42%" }} /><p /><p style={{ width: "92%" }} /><p style={{ width: "70%" }} /></div>
-      : tokens.map((t, i) => <StreamP key={i} tokens={t} caret={live && i === tokens.length - 1} />);
+      : tokens.map((t, i) => <StreamP key={i} tokens={t} lit={s.lit} caret={live && i === tokens.length - 1} />);
   } else {
     const removing = gen?.kind === "edit" && gen.edit === "remove_flag" && s.editing !== null ? firstFlag(spans) : null;
-    const flat = tokens.flat();
+    const streamed: Tok[] = tokens.flat().map((x) => ({ t: x.t, mine: inRanges(x.at, s.lit) }));
+    const undoing = s.pending && s.last?.kind === "undo";
+    const restore = !gen ? s.restore : null;
     const rows: ReactNode[] = paras.map((r, i) => {
       if (gen?.kind === "edit" && s.editing === i && gen.edit !== "add_close" && gen.edit !== "remove_flag") {
-        return <EditingParagraph key={`e${s.seq}`} old={text.slice(r.start, r.end)} tokens={flat} live={live} />;
+        return <EditingParagraph key={`e${s.seq}`} old={text.slice(r.start, r.end)} tokens={streamed} live={live} />;
       }
-      const glow = !gen && s.scan.n > 0 && s.scan.paragraph === i;
+      if (restore && !restore.removed && restore.paragraph === i) {
+        // Undo, in reverse: the current words dissolve and the restored ones fade back in.
+        const back = (tokenize(text.slice(r.start, r.end), false)[0] ?? []).map((x) => ({ t: x.t, mine: ownAt(r.start + x.at) }));
+        return <EditingParagraph key={`r${restore.n}`} old={restore.from} tokens={back} live={false} onFinished={h.onRestored} />;
+      }
+      const glow = !gen && !restore && s.scan.n > 0 && s.scan.paragraph === i;
+      const breathing = (gen?.kind === "edit" || undoing) && s.editing === i;
       return (
-        <GlowP key={glow ? `g${s.scan.n}` : `p${i}`} glow={glow} className={gen?.kind === "edit" && s.editing === i ? "editing" : ""}>
-          <Segments text={text} range={r} spans={spans} sweep={s.sweep} removing={removing} />
+        <GlowP key={glow ? `g${s.scan.n}` : `p${i}`} glow={glow} className={breathing ? "editing" : ""}>
+          <Segments text={text} range={r} spans={spans} sweep={s.sweep} litTexts={s.litTexts} removing={removing} onFlag={openFlag} />
         </GlowP>
       );
     });
     if (gen?.kind === "edit" && gen.edit === "add_close" && s.editing !== null) {
       rows.splice(Math.min(s.editing, rows.length), 0, (
-        <p key="new" className="editing">{flat.map((t, i) => <span key={i} className="w">{t}</span>)}{live && <span className="caret" aria-hidden="true" />}</p>
+        <p key="new" className="editing">{streamed.map((x, i) => <Word key={i} t={x.t} mine={x.mine} i={i} />)}{live && <span className="caret" aria-hidden="true" />}</p>
+      ));
+    }
+    if (restore?.removed) {
+      // Undoing an added paragraph: it fades and blurs out, then the letter closes up.
+      rows.splice(Math.min(restore.paragraph, rows.length), 0, (
+        <p key={`x${restore.n}`} className="leaving" aria-hidden="true" onAnimationEnd={h.onRestored}>{restore.from}</p>
       ));
     }
     body = rows;
@@ -269,7 +316,7 @@ export function LetterPane({ s, view, output, autopilot, h }: { s: CardState; vi
           <div className="pop" role="dialog" aria-label="Something to check" style={{ top: pop.top }}>
             <p>{pop.flag}</p>
             <div className="row">
-              <button type="button" className="act" onClick={editFlag}>Edit</button>
+              <button ref={popRef} type="button" className="act" onClick={editFlag}>Edit</button>
               <button type="button" className="act" disabled={busy} onClick={() => { setPop(null); h.onConfirmTrue(pop.start); }}>This is true</button>
             </div>
           </div>

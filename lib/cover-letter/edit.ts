@@ -6,10 +6,13 @@ import { MarkerParser, type Marked } from "./stream-parse";
 import type { LintHit, Span } from "./types";
 import { judgeSentences, verifyOutput, type JudgedSentence } from "./verify";
 
+/** A sentence that just finished streaming, and whose words it is ("you" = the student's own, shown green at once). */
+export type ClosedSentence = { text: string; about: Marked["about"] };
+
 export type EditKind = "shorter" | "remove_flag" | "add_close" | "more_formal" | "free";
 export type EditEvent =
   | { phase: "target"; paragraph: number }
-  | { phase: "delta"; visible: string }
+  | { phase: "delta"; visible: string; closed?: ClosedSentence[] }
   | { phase: "done"; text: string; spans: Span[]; lint: LintHit[] };
 
 type Range = { start: number; end: number };
@@ -219,9 +222,9 @@ export async function* applyEdit(i: {
   for await (const delta of streamText({ tier: "smart", system, prompt, signal: i.signal, maxTokens: 1000 }, { fn: "coverLetterEdit", fixtureKey: kind })) {
     const r = parser.push(delta);
     sentences.push(...r.closed);
-    if (r.visible) {
+    if (r.visible || r.closed.length) {
       visible += r.visible;
-      yield { phase: "delta", visible: r.visible };
+      yield { phase: "delta", visible: r.visible, ...(r.closed.length ? { closed: r.closed.map((c) => ({ text: c.text, about: c.about })) } : {}) };
     }
   }
   sentences.push(...parser.end());

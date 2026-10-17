@@ -14,16 +14,16 @@ const initials = (s: string) => s.replace(/^www\./, "").replace(/[^\p{L}\p{N} ]/
  * The research block: a spinning ring and shimmer rows while it runs, then each row replaced by a source as it
  * resolves and the ring turning green. Under reduced motion the ring and shimmer stand still (motion.css).
  */
-export function ResearchCard({ company, running, facts, isStatic }: { company: string; running: boolean; facts: Fact[]; isStatic: boolean }) {
+export function ResearchCard({ company, running, stopped = false, facts, isStatic }: { company: string; running: boolean; stopped?: boolean; facts: Fact[]; isStatic: boolean }) {
   const sources = [...new Map(facts.map((f) => [f.publisher, f])).values()].slice(0, 3);
-  const title = running
-    ? `Researching ${company}…`
+  const title = stopped ? `Still researching ${company}: carrying on without it`
+    : running ? `Researching ${company}…`
     : sources.length ? `${sources.length} source${sources.length === 1 ? "" : "s"} read · ${facts.length} fact${facts.length === 1 ? "" : "s"} found` : `Nothing recent found about ${company}`;
   return (
-    <div className={`research${running ? "" : " done"}`} {...(isStatic ? { "data-static": "" } : {})} role="status" aria-live="polite">
+    <div className={`research${stopped ? " stopped" : running ? "" : " done"}`} {...(isStatic ? { "data-static": "" } : {})} role="status" aria-live="polite">
       <div className="t"><span className="orb" aria-hidden="true" /><span>{title}</span></div>
       <div>
-        {running
+        {stopped ? null : running
           ? [0, 1, 2].map((i) => <div key={i} className="src" aria-hidden="true"><span className="fav">·</span><span className="shimmer" /></div>)
           : sources.map((f) => (
             <div key={f.publisher} className="src">

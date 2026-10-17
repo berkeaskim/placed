@@ -3,7 +3,7 @@ import { escapeUntrusted } from "@/lib/ai/prompts";
 import { AiError, streamText } from "@/lib/ai/provider";
 import type { LetterRow, OutputRow } from "@/lib/db/schema";
 import { buildDraftPrompt, HONESTY_RULES, MARKER_RULES, STYLE_BANS, streamDraft, type DraftInput } from "./draft";
-import { applyEdit, type EditKind } from "./edit";
+import { applyEdit, type ClosedSentence, type EditKind } from "./edit";
 import {
   CardError, cardView, claimStreaming, draftInput, ensureEvidence, generationTarget, touchStreaming, type CardView, type Ctx,
 } from "./service";
@@ -17,7 +17,8 @@ export type GenerateBody =
 
 export type SseEvent =
   | { event: "phase"; data: { phase: "thinking" | "target" | "checking"; paragraph?: number } }
-  | { event: "delta"; data: { visible: string } }
+  /** `closed`: sentences finished in this chunk, so the card can light the student's own ones green as they close. */
+  | { event: "delta"; data: { visible: string; closed?: ClosedSentence[] } }
   | { event: "done"; data: CardView }
   | { event: "error"; data: { message: string } };
 
@@ -90,9 +91,9 @@ async function* draftFlow(ctx: Ctx, letter: LetterRow, o: OutputRow, signal: Abo
   let visible = "";
   for await (const r of streamDraft(input, { signal, fixtureKey })) {
     sentences.push(...r.closed);
-    if (r.visible) {
+    if (r.visible || r.closed.length) {
       visible += r.visible;
-      yield { event: "delta", data: { visible: r.visible } };
+      yield { event: "delta", data: { visible: r.visible, ...(r.closed.length ? { closed: r.closed.map((c) => ({ text: c.text, about: c.about })) } : {}) } };
     }
   }
   if (signal.aborted) return;
@@ -118,7 +119,7 @@ async function* editFlow(ctx: Ctx, letter: LetterRow, o: OutputRow, body: Extrac
       judge: (a) => judgeSentences({ ...a, fixtureKey }),
     })) {
       if (ev.phase === "target") yield { event: "phase", data: { phase: "target", paragraph: ev.paragraph } };
-      else if (ev.phase === "delta") yield { event: "delta", data: { visible: ev.visible } };
+      else if (ev.phase === "delta") yield { event: "delta", data: { visible: ev.visible, ...(ev.closed ? { closed: ev.closed } : {}) } };
       else result = ev;
     }
   } catch (e) {

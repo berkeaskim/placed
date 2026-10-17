@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cardReducer, initialCardState, settle, type CardState, type UserAction } from "@/components/cover-letter/card-state";
+import { cardReducer, changedParagraph, initialCardState, settle, showsTyping, type CardState, type UserAction } from "@/components/cover-letter/card-state";
 import type { CardView, OutputView } from "@/lib/cover-letter/service";
 
 const output = (o: Partial<OutputView> = {}): OutputView => ({
@@ -82,7 +82,7 @@ describe("cardReducer", () => {
     expect(done.scan).toEqual({ paragraph: 1, n: 1 });
     expect(done.local.map((m) => m.from)).toEqual(["me", "bot"]);
     expect(done.local[1].text).toBe("Done: 7 → 5 words.");
-    expect(done.local[1].undo).toEqual({ outputId: "o1", used: false });
+    expect(done.local[1].undo).toEqual({ outputId: "o1", used: false, paragraph: 1 });
   });
 
   it("a new user action during drafting interrupts it and asks for the abort", () => {
@@ -121,12 +121,70 @@ describe("cardReducer", () => {
     const s = cardReducer(opened(view({ outputs: [output({ text: "Dear team,", words: 2 })] })), { type: "start", action: { kind: "mode", outputId: "o1", mode: "short_note" } });
     const after = cardReducer(s, { type: "view", view: view({ outputs: [output({ mode: "short_note" })] }) });
     expect(after.state).toBe("idle");
-    expect(after.local.at(-1)).toMatchObject({ from: "bot", text: "Switched to a startup note. Your previous letter is saved.", undo: { outputId: "o1", used: false } });
+    expect(after.local.at(-1)).toMatchObject({ from: "bot", text: "Switched to a startup note. Your previous letter is saved.", undo: { outputId: "o1", used: false, paragraph: null } });
   });
 
   it("echoes a chat answer at once instead of adding it to the session-only messages", () => {
     const s = cardReducer(opened(view({ next: QUESTION })), { type: "start", action: { kind: "answer", questionId: "why_firm", text: "Insight day" }, say: "Insight day" });
     expect(s.echo).toBe("Insight day");
     expect(s.local).toEqual([]);
+  });
+
+  it("lights the student's own sentence green as soon as it closes", () => {
+    let s = drafting();
+    s = cardReducer(s, { type: "delta", visible: "team,\n\nI ran the desk. ", closed: [{ text: "Dear team,", about: null }] });
+    s = cardReducer(s, { type: "delta", visible: "", closed: [{ text: "I ran the desk.", about: "you" }] });
+    expect(s.lit).toEqual([{ start: s.visible.indexOf("I ran"), end: s.visible.indexOf("I ran") + "I ran the desk.".length }]);
+    expect(s.litTexts).toEqual(["I ran the desk."]);
+    const done = cardReducer(s, { type: "done", view: view({ outputs: [output({ text: "Dear team,\n\nI ran the desk.", words: 6 })] }) });
+    expect(done.sweep).toBe(true);
+    expect(done.litTexts).toEqual(["I ran the desk."]);
+    expect(cardReducer(done, { type: "swept" }).sweep).toBe(false);
+  });
+
+  it("research that outlasts the polling cap becomes an error with retry, cleared by reopening", () => {
+    const running = opened(view({ researchState: "running", next: { id: "wait_research" } }));
+    const stalled = cardReducer(running, { type: "stalled" });
+    expect(stalled.state).toBe("error");
+    expect(stalled.stalled).toBe(true);
+    expect(stalled.retry).toEqual({ kind: "open" });
+    // Carry on without research: the facts question is skipped and the next one asked; the block stays still.
+    const goOn = cardReducer(cardReducer(stalled, { type: "start", action: { kind: "pick", factIds: [] }, say: "Carry on without research" }), { type: "view", view: view({ researchState: "running", next: QUESTION }) });
+    expect(goOn.state).toBe("asking");
+    expect(goOn.stalled).toBe(true);
+    const reopened = cardReducer(cardReducer(stalled, { type: "start", action: { kind: "open" } }), { type: "view", view: view({ researchState: "running", next: { id: "wait_research" } }) });
+    expect(reopened.stalled).toBe(false);
+    expect(reopened.state).toBe("researching");
+    expect(cardReducer(opened(), { type: "stalled" }).state).toBe("idle");
+  });
+
+  it("undo breathes the edited paragraph, then restores it in reverse and glows", () => {
+    const after = output({ text: "Dear team,\n\nShort.\n\nYours sincerely,", words: 4 });
+    let s = opened(view({ outputs: [after] }));
+    s = cardReducer(s, { type: "start", action: { kind: "undo", outputId: "o1", paragraph: 1 } });
+    expect(s.state).toBe("editing");
+    expect(s.editing).toBe(1);
+    expect(showsTyping(s)).toBe(false);
+    s = cardReducer(s, { type: "view", view: view({ outputs: [output({ text: "Dear team,\n\nA much longer opening.\n\nYours sincerely,", words: 7 })] }) });
+    expect(s.state).toBe("done");
+    expect(s.editing).toBeNull();
+    expect(s.restore).toMatchObject({ paragraph: 1, from: "Short.", removed: false });
+    const r = cardReducer(s, { type: "restored" });
+    expect(r.restore).toBeNull();
+    expect(r.scan).toEqual({ paragraph: 1, n: s.scan.n + 1 });
+  });
+
+  it("finds the changed or removed paragraph for an undo", () => {
+    expect(changedParagraph("A\n\nB\n\nC", "A\n\nX\n\nC")).toEqual({ paragraph: 1, removed: false });
+    expect(changedParagraph("A\n\nB\n\nNew close\n\nSign", "A\n\nB\n\nSign")).toEqual({ paragraph: 2, removed: true });
+    expect(changedParagraph("A\n\nB", "X\n\nY")).toBeNull();
+    expect(changedParagraph("", "A")).toBeNull();
+  });
+
+  it("shows typing dots only for chat replies", () => {
+    const save = cardReducer(opened(view({ outputs: [output({ text: "x" })] })), { type: "start", action: { kind: "save", outputId: "o1", text: "y" } });
+    expect(showsTyping(save)).toBe(false);
+    const answer = cardReducer(opened(view({ next: QUESTION })), { type: "start", action: { kind: "answer", questionId: "why_firm", text: "x" } });
+    expect(showsTyping(answer)).toBe(true);
   });
 });

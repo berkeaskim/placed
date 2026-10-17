@@ -56,6 +56,11 @@ describe("POST /api/cover-letter/[jobId]/draft", () => {
     const deltas = events.filter((e) => e.event === "delta");
     expect(deltas.length).toBeGreaterThanOrEqual(5);
     expect(deltas.every((d) => typeof (d.data as { visible: string }).visible === "string")).toBe(true);
+    // The student's own sentences are reported as they close, so the card can light them green mid-stream.
+    const closed = deltas.flatMap((d) => (d.data as { closed?: { text: string; about: string | null }[] }).closed ?? []);
+    const visible = deltas.map((d) => (d.data as { visible: string }).visible).join("");
+    expect(closed.some((c) => c.about === "you")).toBe(true);
+    for (const c of closed) expect(visible).toContain(c.text);
     expect(events.some((e) => e.event === "phase" && (e.data as { phase: string }).phase === "checking")).toBe(true);
     const done = events.at(-1)!;
     expect(done.event).toBe("done");

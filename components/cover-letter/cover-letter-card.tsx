@@ -65,6 +65,7 @@ export function CoverLetterCard({ jobId, target, autopilot = false, onClose }: {
   const seq = useRef(0);
   const ac = useRef<AbortController | null>(null);
   const polls = useRef(0);
+  const saving = useRef<Promise<unknown> | null>(null);
 
   const stream = useCallback(async (a: Extract<UserAction, { kind: "draft" } | { kind: "edit" }>, my: number, interrupted: boolean) => {
     const ctl = new AbortController();
@@ -97,9 +98,10 @@ export function CoverLetterCard({ jobId, target, autopilot = false, onClose }: {
         const f = frames(buf + value);
         buf = f.rest;
         for (const ev of f.events) {
-          const data = JSON.parse(ev.data || "null");
+          let data;
+          try { data = JSON.parse(ev.data || "null"); } catch { continue; } // a malformed frame is skipped, not fatal
           if (ev.event === "phase") send({ type: "phase", phase: data.phase, paragraph: data.paragraph });
-          else if (ev.event === "delta") send({ type: "delta", visible: data.visible });
+          else if (ev.event === "delta") send({ type: "delta", visible: data.visible ?? "", closed: Array.isArray(data.closed) ? data.closed : undefined });
           else if (ev.event === "done") { finished = true; send({ type: "done", view: data as CardView }); }
           else if (ev.event === "error") { finished = true; send({ type: "error", message: data?.message ?? GENERIC }); }
         }
@@ -118,10 +120,18 @@ export function CoverLetterCard({ jobId, target, autopilot = false, onClose }: {
     ac.current = null;
     const my = ++seq.current;
     dispatch({ type: "start", action: a, say });
-    if (a.kind === "draft" || a.kind === "edit") return stream(a, my, interrupted);
+    if (a.kind === "draft" || a.kind === "edit") {
+      // A blur-save of the student's typing lands before the AI reads the letter.
+      await saving.current?.catch(() => null);
+      if (my !== seq.current) return;
+      return stream(a, my, interrupted);
+    }
+    if (a.kind === "open") polls.current = 0;
     const t0 = performance.now();
     let r: CardResult;
-    try { r = await call(jobId, target, a); } catch { r = { error: GENERIC }; }
+    const p = call(jobId, target, a);
+    if (a.kind === "save") saving.current = p;
+    try { r = await p; } catch { r = { error: GENERIC }; } finally { if (saving.current === p) saving.current = null; }
     if (CHAT_ACTIONS.has(a.kind)) await sleep(Math.max(0, MIN_TYPING_MS - (performance.now() - t0)));
     if (my !== seq.current) return;
     if ("error" in r) { dispatch({ type: "error", message: r.error }); return; }
@@ -136,18 +146,31 @@ export function CoverLetterCard({ jobId, target, autopilot = false, onClose }: {
     return () => { seqRef.current++; acRef.current?.abort(); };
   }, [run]);
 
-  // Research runs in the background: re-read the card every 1.5s while it does, so its block animates.
-  const researching = s.view?.researchState === "running" && !s.gen && !s.pending;
+  // Research runs in the background: re-read the card every 1.5s while it does, so its block animates. A failed
+  // poll just waits for the next tick; at the cap the student gets Retry or "Carry on without research".
+  const researching = s.view?.researchState === "running" && !s.gen && !s.pending && !s.stalled;
   useEffect(() => {
-    if (!researching || polls.current >= MAX_POLLS) return;
-    const t = setTimeout(async () => {
+    if (!researching) return;
+    let inflight = false;
+    const t = setInterval(async () => {
+      if (inflight) return;
+      if (polls.current >= MAX_POLLS) { clearInterval(t); dispatch({ type: "stalled" }); return; }
       polls.current++;
+      inflight = true;
       const my = seq.current;
       const r = await openCoverLetter(jobId, target).catch(() => null);
+      inflight = false;
       if (r && !("error" in r) && my === seq.current) dispatch({ type: "view", view: r });
     }, POLL_MS);
+    return () => clearInterval(t);
+  }, [researching, jobId, target]);
+
+  // The green sweep plays once; after it, a remount (tab switch, save) shows the spans already lit.
+  useEffect(() => {
+    if (!s.sweep) return;
+    const t = setTimeout(() => dispatch({ type: "swept" }), 900);
     return () => clearTimeout(t);
-  }, [researching, s.view, jobId, target]);
+  }, [s.sweep]);
 
   // Once the student's last answer completes the interview, the letter starts writing by itself.
   const output = outputOf(s.view, s.outputId);
@@ -184,13 +207,15 @@ export function CoverLetterCard({ jobId, target, autopilot = false, onClose }: {
     onEdit: (edit, say, instruction) => output && void run({ kind: "edit", outputId: output.id, edit, instruction }, say),
     onDraft: () => output && void run({ kind: "draft", outputId: output.id }),
     onRetry: () => s.retry && void run(s.retry),
-    onUndo: (id, outputId) => { dispatch({ type: "undoUsed", id }); void run({ kind: "undo", outputId }); },
+    onUndo: (id, outputId, paragraph) => { dispatch({ type: "undoUsed", id }); void run({ kind: "undo", outputId, paragraph }); },
+    onSkipResearch: () => void run({ kind: "pick", factIds: [] }),
   };
   const letter: LetterHandlers = {
     onSelect: (outputId) => dispatch({ type: "select", outputId }),
     onSave: (text) => output && void run({ kind: "save", outputId: output.id, text }),
     onConfirmTrue: (spanStart) => output && void run({ kind: "confirmTrue", outputId: output.id, spanStart }),
     onReady: () => output && void run({ kind: "ready", outputId: output.id }),
+    onRestored: () => dispatch({ type: "restored" }),
     onWhyUs: () => void run({ kind: "addField", label: `Why ${view.company}?`, limit: { unit: "words", max: 150 } }),
   };
 
