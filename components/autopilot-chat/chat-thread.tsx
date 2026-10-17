@@ -1,7 +1,7 @@
 "use client";
 import { useId, useState } from "react";
 import type { Answer, PackItem } from "@/lib/autopilot/pack";
-import { asArray, displayValue, type Turn } from "@/lib/autopilot/chat-flow";
+import { asArray, canSkip, displayValue, type Turn } from "@/lib/autopilot/chat-flow";
 import { openCoverLetterCard } from "@/components/cover-letter/cover-letter-host";
 import { AnswerControls, CHIP, SaveError, useSaver } from "./answer-controls";
 import { LongAnswer, longLimit } from "./long-answer";
@@ -62,15 +62,16 @@ function MeBubble({ text, isStatic }: { text: string; isStatic: boolean }) {
 }
 
 /** The question being asked now, with its answer control. */
-export function LiveQuestion({ jobId, item, answer, reasked, pendingConfirms, save, onKeep, onSkipCover, onConfirmAll }: {
+export function LiveQuestion({ jobId, item, answer, reasked, pendingConfirms, save, onKeep, onSkipCover, onSkipAsk, onConfirmAll }: {
   jobId: string; item: PackItem; answer: Answer | undefined; reasked: boolean; pendingConfirms: PackItem[];
-  save: SaveAnswer; onKeep: () => void; onSkipCover: (item: PackItem) => void; onConfirmAll: (items: PackItem[]) => void;
+  save: SaveAnswer; onKeep: () => void; onSkipCover: (item: PackItem) => void; onSkipAsk: (item: PackItem) => void; onConfirmAll: (items: PackItem[]) => void;
 }) {
   const labelId = useId();
   const [changing, setChanging] = useState(false);
   const { field } = item;
   const key = field.key;
   const keep = reasked ? <button type="button" className={`${CHIP} quiet`} onClick={onKeep}>Keep my answer</button> : null;
+  const skip = canSkip(item) && answer === undefined ? <button type="button" className={`${CHIP} quiet`} onClick={() => onSkipAsk(item)}>Skip</button> : null;
 
   if (item.group === "draft") {
     return (
@@ -131,7 +132,8 @@ export function LiveQuestion({ jobId, item, answer, reasked, pendingConfirms, sa
   return (
     <>
       <div id={labelId} className="msg bot">{field.label}{required(item)}</div>
-      <AnswerControls key={`${key}:${changing}`} field={field} labelId={labelId} initial={asArray(answer?.value ?? item.value)} onSave={(v) => save(key, v)} extra={keep} />
+      <AnswerControls key={`${key}:${changing}`} field={field} labelId={labelId} initial={asArray(answer?.value ?? item.value)} onSave={(v) => save(key, v)}
+        extra={skip || keep ? <>{skip}{keep}</> : null} />
     </>
   );
 }

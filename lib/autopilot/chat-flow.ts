@@ -36,8 +36,13 @@ export function isDone(item: PackItem, answers: Answers, coverReady: ReadonlySet
   return (item.group === "confirm" || item.group === "ask") && a !== undefined;
 }
 
-export function nextToAsk(items: PackItem[], answers: Answers, coverReady: ReadonlySet<string>, coverSkipped: ReadonlySet<string>): PackItem | null {
-  return items.find((i) => isAskable(i) && !isDone(i, answers, coverReady) && !isSkipped(i, answers) && !(i.group === "cover" && coverSkipped.has(coverKey(i)))) ?? null;
+/** An optional question still to ask (an optional diversity question, say) can be skipped in the chat and left blank on the form. */
+export const canSkip = (item: PackItem): boolean => item.group === "ask" && !item.field.required;
+
+/** `askSkipped`: field keys of optional questions the student skipped in this chat (client-only, like `coverSkipped`). */
+export function nextToAsk(items: PackItem[], answers: Answers, coverReady: ReadonlySet<string>, coverSkipped: ReadonlySet<string>, askSkipped: ReadonlySet<string> = new Set()): PackItem | null {
+  return items.find((i) => isAskable(i) && !isDone(i, answers, coverReady) && !isSkipped(i, answers)
+    && !(i.group === "cover" && coverSkipped.has(coverKey(i))) && !(canSkip(i) && askSkipped.has(i.field.key))) ?? null;
 }
 
 export function progressRows(items: PackItem[], answers: Answers, coverReady: ReadonlySet<string>, current: string | null): ProgressRow[] {

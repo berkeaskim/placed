@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Answers, PackGroup, PackItem } from "@/lib/autopilot/pack";
 import type { FieldType, FormField } from "@/lib/autopilot/forms/types";
-import { controlKind, displayValue, isSkipped, nextToAsk, progressRows, transcript } from "@/lib/autopilot/chat-flow";
+import { canSkip, controlKind, displayValue, isSkipped, nextToAsk, progressRows, transcript } from "@/lib/autopilot/chat-flow";
 
 const field = (key: string, type: FieldType = "text", options: FormField["options"] = []): FormField => ({ key, label: key.toUpperCase(), type, required: true, options, target: key });
 const item = (key: string, group: PackGroup, type: FieldType = "text", options: FormField["options"] = [], sourceLabel: string | null = null): PackItem => ({ field: field(key, type, options), group, value: null, sourceLabel });
@@ -44,6 +44,16 @@ describe("chat flow", () => {
     expect(nextToAsk(items, {}, new Set(["letter"]), none)?.field.key).toBe("f");
     expect(nextToAsk(items, {}, new Set(["letter"]), new Set(["upload"]))).toBeNull();
     expect(nextToAsk(items, {}, new Set(["letter", "upload"]), none)).toBeNull();
+  });
+
+  it("an optional ask can be skipped; a required one cannot", () => {
+    const items = [item("eeo", "ask"), item("req", "ask")];
+    items[0].field.required = false;
+    expect(canSkip(items[0])).toBe(true);
+    expect(canSkip(items[1])).toBe(false);
+    expect(nextToAsk(items, {}, none, none, new Set(["eeo"]))?.field.key).toBe("req");
+    expect(nextToAsk(items, {}, none, none, new Set(["eeo", "req"]))?.field.key).toBe("req");
+    expect(nextToAsk(items, { req: { value: "x" } }, none, none, new Set(["eeo"]))).toBeNull();
   });
 
   it("transcript rebuilds answered turns in form order", () => {

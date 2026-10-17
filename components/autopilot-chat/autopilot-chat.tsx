@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "reac
 import Link from "next/link";
 import { Lock } from "lucide-react";
 import { canOpen, type Answers, type PackItem } from "@/lib/autopilot/pack";
-import { coverKey, isAskable, isDone, isSkipped, nextToAsk, progressRows, transcript, type Turn } from "@/lib/autopilot/chat-flow";
+import { canSkip, coverKey, isAskable, isDone, isSkipped, nextToAsk, progressRows, transcript, type Turn } from "@/lib/autopilot/chat-flow";
 import { coverReadyKeys, preparePack, setAnswer } from "@/app/(app)/jobs/[id]/autopilot-actions";
 import { onCoverReady } from "@/components/cover-letter/cover-letter-host";
 import { announceAutopilotProgress } from "./autopilot-host";
@@ -57,15 +57,17 @@ export function AutopilotChat({ jobId }: { jobId: string }) {
   return <ReadyChat jobId={jobId} items={phase.items} saved={phase.answers} />;
 }
 
-/** Skipped cover items are client-only, so the transcript has no turn for them: place one at the item's form position. */
-function withSkippedCovers(turns: Turn[], items: PackItem[], skipped: ReadonlySet<string>, ready: ReadonlySet<string>): Turn[] {
+/** Skipped cover items and optional questions are client-only, so the transcript has no turn for them: place one at the item's form position. */
+function withSkipped(turns: Turn[], items: PackItem[], coverSkipped: ReadonlySet<string>, ready: ReadonlySet<string>, askSkipped: ReadonlySet<string>, answers: Answers): Turn[] {
   const order = new Map(items.map((i, n) => [i.field.key, n]));
   const out = [...turns];
   for (const i of items) {
-    if (i.group !== "cover" || !skipped.has(coverKey(i)) || ready.has(coverKey(i))) continue;
+    const cover = i.group === "cover" && coverSkipped.has(coverKey(i)) && !ready.has(coverKey(i));
+    const ask = canSkip(i) && askSkipped.has(i.field.key) && answers[i.field.key] === undefined;
+    if (!cover && !ask) continue;
     const n = order.get(i.field.key)!;
     const at = out.findIndex((t) => t.kind === "yours" || ("key" in t && order.get(t.key)! > n));
-    out.splice(at < 0 ? out.length : at, 0, { kind: "ask", key: i.field.key }, { kind: "answer", key: i.field.key, text: "Skip for now" });
+    out.splice(at < 0 ? out.length : at, 0, { kind: "ask", key: i.field.key }, { kind: "answer", key: i.field.key, text: cover ? "Skip for now" : "Skip" });
   }
   return out;
 }
@@ -74,6 +76,7 @@ function ReadyChat({ jobId, items, saved }: { jobId: string; items: PackItem[]; 
   const [answers, setAnswers] = useState<Answers>(saved);
   const [coverReady, setCoverReady] = useState<Set<string>>(() => new Set());
   const [coverSkipped, setCoverSkipped] = useState<Set<string>>(() => new Set());
+  const [askSkipped, setAskSkipped] = useState<Set<string>>(() => new Set());
   const [reask, setReask] = useState<string | null>(null);
   const [highlight, setHighlight] = useState(false);
   const [expanded, setExpanded] = useState(false);
@@ -98,20 +101,21 @@ function ReadyChat({ jobId, items, saved }: { jobId: string; items: PackItem[]; 
     return () => { live = false; window.removeEventListener("focus", load); off(); };
   }, [jobId, byKey]);
 
-  const current = reask ? byKey.get(reask) ?? null : nextToAsk(items, answers, coverReady, coverSkipped);
+  const current = reask ? byKey.get(reask) ?? null : nextToAsk(items, answers, coverReady, coverSkipped, askSkipped);
   const rows = progressRows(items, answers, coverReady, current?.field.key ?? null).map((r) => {
     const item = byKey.get(r.key)!;
     if (r.key === reask) return { ...r, state: "current" as const };
     if (item.group === "cover" && r.state !== "done" && coverSkipped.has(coverKey(item))) return { ...r, state: "skipped" as const };
+    if (canSkip(item) && r.state !== "done" && askSkipped.has(item.field.key)) return { ...r, state: "skipped" as const };
     return r;
   });
   const pickable = useMemo(() => new Set(items.filter((i) => isAskable(i) || (i.group === "vault" && i.field.type !== "file")).map((i) => i.field.key)), [items]);
   const { left } = progressCounts(rows);
   const ready = canOpen(items, answers);
-  const turns = withSkippedCovers(transcript(items, answers, coverReady), items, coverSkipped, coverReady).filter((t) => !current || t.kind !== "yours");
+  const turns = withSkipped(transcript(items, answers, coverReady), items, coverSkipped, coverReady, askSkipped, answers).filter((t) => !current || t.kind !== "yours");
   // A re-asked question that already had an answer (or was skipped) can be left as it was.
   const revisiting = !!current && reask === current.field.key && (current.group === "vault" || isDone(current, answers, coverReady)
-    || isSkipped(current, answers) || (current.group === "cover" && coverSkipped.has(coverKey(current))));
+    || isSkipped(current, answers) || (current.group === "cover" && coverSkipped.has(coverKey(current))) || (canSkip(current) && askSkipped.has(current.field.key)));
   const pendingConfirms = items.filter((i) => i.group === "confirm" && i.value != null && answers[i.field.key] === undefined);
 
   useEffect(() => { announceAutopilotProgress(left); }, [left]);
@@ -169,6 +173,10 @@ function ReadyChat({ jobId, items, saved }: { jobId: string; items: PackItem[]; 
     setCoverSkipped((s) => new Set(s).add(coverKey(item)));
     setReask((k) => (k === item.field.key ? null : k));
   };
+  const skipAsk = (item: PackItem) => {
+    setAskSkipped((s) => new Set(s).add(item.field.key));
+    setReask((k) => (k === item.field.key ? null : k));
+  };
 
   return (
     <div className="grid lg:grid-cols-[minmax(0,1fr)_280px]">
@@ -180,7 +188,7 @@ function ReadyChat({ jobId, items, saved }: { jobId: string; items: PackItem[]; 
           {bulk === "failed" && <div className="msg bot err" role="alert">Some didn&apos;t save. Try again.</div>}
           {bulk !== "saving" && current && showLive && (
             <LiveQuestion key={liveKey} jobId={jobId} item={current} answer={answers[current.field.key]} reasked={revisiting}
-              pendingConfirms={pendingConfirms} save={save} onKeep={() => setReask(null)} onSkipCover={skipCover} onConfirmAll={(list) => void confirmAll(list)} />
+              pendingConfirms={pendingConfirms} save={save} onKeep={() => setReask(null)} onSkipCover={skipCover} onSkipAsk={skipAsk} onConfirmAll={(list) => void confirmAll(list)} />
           )}
           {!current && <div className="msg bot">All answered. You&apos;re ready to fill the form.</div>}
         </div>
