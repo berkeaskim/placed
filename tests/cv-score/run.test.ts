@@ -70,6 +70,20 @@ describe("scoreCv", () => {
     else process.env.AI_MODE = saved;
   });
 
+  it("keeps one row per track: scoring on the spring track never overwrites the standard score", async () => {
+    const id = seed();
+    const standard = await run(id);
+    const spring = await scoreCv({ userId: U, cvId: id, sector: "consulting", year: "1st", track: "spring" });
+    const all = rows();
+    expect(all.map((r) => r.track).sort()).toEqual(["spring", "standard"]);
+    expect(all.find((r) => r.track === "standard")?.total).toBe(standard.total);
+    expect(all.find((r) => r.track === "spring")?.total).toBe(spring.total);
+    // The spring judge call gets the spring rule set (SPR rules in, FIN-04/G-33 out).
+    const springRules = vi.mocked(judgeCvRules).mock.calls.at(-1)![0].rules.map((r) => r.id);
+    expect(springRules).toContain("SPR-04");
+    expect(springRules).not.toContain("G-33");
+  });
+
   it("fixture mode: scores from code rules, passes safety into checks, never stores a cache key for all-not_applicable verdicts", async () => {
     const id = seed();
     const score = await run(id);

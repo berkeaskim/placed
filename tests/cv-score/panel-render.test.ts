@@ -10,7 +10,7 @@ vi.mock("next/link", () => ({ default: (p: { href: string; children: unknown; cl
 const { CvScorePanel } = await import("@/components/cv-score-panel");
 
 const data: CvScorePanelData = {
-  cvId: "00000000-0000-4000-8000-000000000001", sector: "consulting", total: 68,
+  cvId: "00000000-0000-4000-8000-000000000001", sector: "consulting", track: "standard", total: 68,
   dimensions: { ats: 82, impact: 54, clarity: 71, relevance: 66, uk: null },
   capsApplied: [IMAGE_ONLY_CAP],
   fixes: [

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ARCHETYPE_LABELS } from "@/lib/types";
 import type { Dimension } from "@/lib/cv-rules/types";
-import { SECTOR_CAVEATS } from "@/lib/cv-rules/profiles";
+import { caveatFor } from "@/lib/cv-rules/profiles";
 import type { Fix } from "@/lib/cv-score/aggregate";
 import type { CvScorePanelData } from "@/lib/cv-score/panel-data";
 import {
@@ -172,10 +172,10 @@ function Sparkline({ history }: { history: number[] }) {
 
 export function CvScorePanel({ data }: { data: CvScorePanelData }) {
   const { total, dimensions, sector, cvId } = data;
-  const label = ARCHETYPE_LABELS[sector];
+  const label = data.track === "spring" ? `${ARCHETYPE_LABELS[sector]} spring weeks` : ARCHETYPE_LABELS[sector];
   const band = scoreBand(total);
   const { next, rest } = splitFixes(data.fixes, 4);
-  const caveat = SECTOR_CAVEATS[sector];
+  const caveat = caveatFor(sector, data.track);
   const cna = couldntAssessLabel(data.couldNotAssess);
 
   return (

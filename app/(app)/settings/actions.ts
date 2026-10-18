@@ -10,6 +10,11 @@ import { requireUser } from "@/lib/auth/local-user";
 import { resetUserData } from "@/lib/db/reset";
 import { isDeleteConfirmed } from "@/lib/settings/confirm";
 import { fieldForCourse } from "@/lib/profile/courses";
+import { z } from "zod";
+import { YEARS } from "@/lib/types";
+import { GradYear } from "@/lib/validation/onboarding";
+
+const YearInput = z.enum(YEARS);
 import { setSecret } from "@/lib/settings/store";
 import { SERPER_SECRET } from "@/lib/inside-track/find";
 
@@ -61,6 +66,21 @@ export async function saveCourse(_prev: CourseState, formData: FormData): Promis
   });
   revalidatePath("/", "layout");
   return { ok: true, value: raw || null };
+}
+
+export type StudyState = { ok: true; message: string } | { ok: false; error: string } | null;
+
+/** Saves year of study and expected graduation year; the feed decides spring weeks vs internships from them. */
+export async function saveStudy(_prev: StudyState, formData: FormData): Promise<StudyState> {
+  const { user } = await requireUser();
+  const year = YearInput.safeParse(formData.get("year"));
+  const rawGrad = String(formData.get("grad_year") ?? "");
+  const grad = rawGrad ? GradYear.safeParse(Number(rawGrad)) : null;
+  if (!year.success) return { ok: false, error: "Pick your year of study." };
+  if (grad && !grad.success) return { ok: false, error: "Pick a graduation year." };
+  db.update(profiles).set({ year: year.data, grad_year: grad?.data ?? null }).where(eq(profiles.user_id, user.id)).run();
+  revalidatePath("/", "layout");
+  return { ok: true, message: grad ? `Saved. Graduating in ${grad.data}.` : "Saved." };
 }
 
 export type SearchKeyState = { ok: true; message: string } | { ok: false; error: string } | null;

@@ -1,6 +1,7 @@
 import type { Archetype, Year } from "@/lib/types";
-import type { Citation, CvRule, Dimension, Evidence, Severity } from "@/lib/cv-rules/types";
-import { DIMENSION_WEIGHTS } from "@/lib/cv-rules/profiles";
+import type { Citation, CvRule, Dimension, Evidence, Severity, Track } from "@/lib/cv-rules/types";
+import { weightsFor } from "@/lib/cv-rules/profiles";
+import { adjustFor } from "@/lib/cv-rules/adjust";
 import type { ScoredRuleResult } from "./context";
 
 export const SEV: Record<Severity, number> = { critical: 3, major: 2, minor: 1 };
@@ -30,25 +31,25 @@ export const IMAGE_ONLY_CAP = "Image-only PDF: capped at 50";
 
 export type ScoreFacts = { imageOnly: boolean; spellingErrors: number; hasPhone: boolean; hasEmail: boolean };
 
-/** Severity for this sector and year: base, then sectorAdjust, then yearAdjust (most specific to the student wins). */
-export function effectiveSeverity(rule: CvRule, sector: Archetype, year: Year): Severity {
-  return rule.yearAdjust?.[year]?.severity ?? rule.sectorAdjust?.[sector]?.severity ?? rule.severity;
+/** Severity: base, then sectorAdjust, then the track's or year's adjustment (most specific to the application wins). */
+export function effectiveSeverity(rule: CvRule, sector: Archetype, year: Year, track: Track = "standard"): Severity {
+  return adjustFor(rule, year, track)?.severity ?? rule.sectorAdjust?.[sector]?.severity ?? rule.severity;
 }
 
 /** Spec §6.3: pure aggregation of rule results into the 0–100 CV Score. */
-export function aggregateCvScore(i: { rules: CvRule[]; results: ScoredRuleResult[]; sector: Archetype; year: Year; facts: ScoreFacts }): CvScore {
+export function aggregateCvScore(i: { rules: CvRule[]; results: ScoredRuleResult[]; sector: Archetype; year: Year; track?: Track; facts: ScoreFacts }): CvScore {
   const byId = new Map(i.rules.map((r) => [r.id, r]));
   let couldNotAssess = 0;
   const scored: { x: ScoredRuleResult; rule: CvRule; w: number; credit: number }[] = [];
   for (const x of i.results) {
     const rule = byId.get(x.ruleId);
-    if (!rule || rule.yearAdjust?.[i.year]?.skip) continue;
+    if (!rule || adjustFor(rule, i.year, i.track)?.skip) continue;
     if (x.status === "could_not_assess") { couldNotAssess++; continue; }
     if (x.status === "not_applicable") continue;
-    scored.push({ x, rule, w: SEV[effectiveSeverity(rule, i.sector, i.year)] * EVID[rule.evidence], credit: CREDIT[x.status] });
+    scored.push({ x, rule, w: SEV[effectiveSeverity(rule, i.sector, i.year, i.track)] * EVID[rule.evidence], credit: CREDIT[x.status] });
   }
 
-  const weights = DIMENSION_WEIGHTS[i.sector];
+  const weights = weightsFor(i.sector, i.track);
   const dimensions = {} as Record<Dimension, number | null>;
   const dimW = {} as Record<Dimension, number>;
   for (const d of DIMS) {

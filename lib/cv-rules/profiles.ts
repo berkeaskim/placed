@@ -1,5 +1,5 @@
 import type { Archetype } from "@/lib/types";
-import type { Dimension } from "./types";
+import type { Dimension, Track } from "./types";
 
 /** Cross-industry rubric: CV amendments 2026-10-13 (market-2026 report 02 §5.1), replacing cv-rules-general.md §4 (20/30/20/20/10). */
 export const BASE_WEIGHTS: Record<Dimension, number> = { ats: 15, impact: 25, clarity: 25, relevance: 25, uk: 10 };
@@ -35,3 +35,24 @@ export const SECTOR_CAVEATS: Partial<Record<Archetype, string>> = {
   finance_banking:
     "Big 4 and many insight or spring-week schemes screen mainly via application forms and online tests — your CV matters less at that stage. Banks still screen on the CV.",
 };
+
+/**
+ * Spring weeks / insight programmes (research/spring-weeks/05 §6a, 07 §2.2): academics (uk) and activities (impact)
+ * carry a first-year CV; no internship is expected. Grade D (synthesis); tune against outcome data.
+ */
+export const SPRING_DEFAULT: Record<Dimension, number> = { ats: 10, impact: 30, clarity: 15, relevance: 20, uk: 25 };
+export const SPRING_WEIGHTS: Partial<Record<Archetype, Record<Dimension, number>>> = {
+  // Competitions and olympiads sit in relevance (QNT-02 is judged on the spring track).
+  quant_trading: { ats: 5, impact: 25, clarity: 15, relevance: 30, uk: 25 },
+};
+
+export const SPRING_CAVEAT =
+  "Spring weeks and insight programmes screen mainly on the application form, online tests and your motivation answers. Most portals ask for your A-levels separately. Your CV is one input, so keep it clean and one page.";
+
+export function weightsFor(sector: Archetype, track: Track = "standard"): Record<Dimension, number> {
+  return track === "spring" ? SPRING_WEIGHTS[sector] ?? SPRING_DEFAULT : DIMENSION_WEIGHTS[sector];
+}
+
+export function caveatFor(sector: Archetype, track: Track = "standard"): string | undefined {
+  return track === "spring" ? SPRING_CAVEAT : SECTOR_CAVEATS[sector];
+}

@@ -75,6 +75,8 @@ export interface ArchetypeScore {
 
 export interface StudentProfile {
   year: Year;
+  /** Expected graduation year; null/absent when the student hasn't said (eligibility then falls back to `year`). */
+  gradYear?: number | null;
   locationPref: Region[];
   needsVisa: boolean;
   archetypes: ArchetypeScore[]; // sorted desc by score

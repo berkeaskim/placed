@@ -9,6 +9,8 @@ import { SuggestInput } from "@/components/onboarding/suggest-input";
 import { fieldForCourse, searchCourses } from "@/lib/profile/courses";
 import { searchUniversities } from "@/lib/profile/uk-universities";
 import { celebrate } from "@/components/reward-toast";
+import { gradYearOptions, guessGradYear } from "@/lib/profile/cycle";
+import { todayLondon } from "@/lib/scoring/dates";
 import { saveOnboarding } from "./actions";
 
 const YEAR_LABEL: Record<Year, string> = { "1st": "1st year", "2nd": "2nd year", penultimate: "Penultimate", final: "Final year", masters: "Master's" };
@@ -31,6 +33,8 @@ export default function Onboarding() {
   const [university, setUniversity] = useState("");
   const [course, setCourse] = useState("");
   const [year, setYear] = useState<Year | null>(null);
+  const [gradYear, setGradYear] = useState<number | null>(null);
+  const today = todayLondon();
   const [loc, setLoc] = useState<string[]>([]);
   const [visa, setVisa] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -42,7 +46,7 @@ export default function Onboarding() {
   function finish() {
     setError(null);
     start(async () => {
-      const r = await saveOnboarding({ university, course, year: year!, locationPref: loc, needsVisa: visa } as OnboardingInputT);
+      const r = await saveOnboarding({ university, course, year: year!, gradYear, locationPref: loc, needsVisa: visa } as OnboardingInputT);
       if ("error" in r) { setError(r.error ?? "Something went wrong"); return; }
       celebrate(r.award);
       router.push("/profile/build");
@@ -60,7 +64,14 @@ export default function Onboarding() {
           placeholder="e.g. Economics and Statistics"
           hint={courseField ? `Placed will read this as ${courseField}.` : "Your course as it's called at your university. The AI works out the rest."} /></section>)}
       {step === 2 && (<section className="flex flex-col gap-3"><h1 className="text-3xl font-extrabold">What year are you in?</h1>
-        <div className="grid grid-cols-2 gap-3">{YEARS.map((y) => <Choice key={y} selected={year === y} onClick={() => setYear(y)}>{YEAR_LABEL[y]}</Choice>)}</div></section>)}
+        <div className="grid grid-cols-2 gap-3">{YEARS.map((y) => (
+          <Choice key={y} selected={year === y} onClick={() => { setYear(y); setGradYear(guessGradYear(y, today)); }}>{YEAR_LABEL[y]}</Choice>))}</div>
+        {year && (<>
+          <h2 className="mt-3 text-xl font-extrabold">When do you graduate?</h2>
+          <p className="-mt-1 text-sm text-muted-foreground">Spring weeks and internships recruit by graduation year. Change it if your degree is 4 years or has a placement year.</p>
+          <div className="grid grid-cols-3 gap-3">{gradYearOptions(today).map((g) => (
+            <Choice key={g} selected={gradYear === g} onClick={() => setGradYear(g)}>{g}</Choice>))}</div>
+        </>)}</section>)}
       {step === LAST && (<section className="flex flex-col gap-3"><h1 className="text-3xl font-extrabold">Where do you want to work?</h1>
         <div className="grid grid-cols-2 gap-3">{LOCATIONS.map(([k, label]) => (
           <Choice key={k} selected={loc.includes(k)} onClick={() => setLoc((l) => l.includes(k) ? l.filter((x) => x !== k) : [...l, k])}>{label}</Choice>))}</div>

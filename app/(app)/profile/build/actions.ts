@@ -1,4 +1,6 @@
 "use server";
+import { scoreTrackFor } from "@/lib/profile/cycle";
+import { todayLondon } from "@/lib/scoring/dates";
 import { randomBytes } from "node:crypto";
 import { after } from "next/server";
 import { eq } from "drizzle-orm";
@@ -87,8 +89,8 @@ export async function uploadCv(formData: FormData): Promise<UploadCvResult> {
 
   const skills = [...new Set([...parsed.skills.flatMap((g) => g.items.map((i) => canonicalize(i) ?? i)), ...extractSkills(cleanText)])];
   const scored = parsed.archetypes.filter((a) => a.score > 0);
-  let prof: { year: Year | null; target_archetype: Archetype | null } | undefined;
-  try { prof = db.select({ year: profiles.year, target_archetype: profiles.target_archetype }).from(profiles).where(eq(profiles.user_id, user.id)).get(); }
+  let prof: { year: Year | null; grad_year: number | null; target_archetype: Archetype | null } | undefined;
+  try { prof = db.select({ year: profiles.year, grad_year: profiles.grad_year, target_archetype: profiles.target_archetype }).from(profiles).where(eq(profiles.user_id, user.id)).get(); }
   catch { prof = undefined; }
   // An unreadable (image-only) or empty parse must not wipe archetypes/skills from e.g. the quiz.
   const hasSignal = !imageOnly && (skills.length > 0 || scored.length > 0);
@@ -113,7 +115,7 @@ export async function uploadCv(formData: FormData): Promise<UploadCvResult> {
     try {
       after(async () => {
         try {
-          await scoreCv({ userId: user.id, cvId, sector: target as Archetype, year: y });
+          await scoreCv({ userId: user.id, cvId, sector: target as Archetype, year: y, track: scoreTrackFor({ year: y, gradYear: prof?.grad_year ?? null }, todayLondon()) });
         } catch (e) {
           console.error("scoreCv failed after CV upload; retried on the profile page", e);
         }
