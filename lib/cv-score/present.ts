@@ -91,6 +91,23 @@ export function judgeLabel(scoredBy: string | null): string | null {
 export const FAIRNESS_NOTE =
   "We remove your name, contact details, visa status and sensitive personal terms before the AI reads your CV. University and school names are kept because rules check your education section; the AI is told not to consider their prestige.";
 
+/** The model card (what the score measures and doesn't, models, known biases). Public repo, so a plain link works offline-first too. */
+export const MODEL_CARD_URL = "https://github.com/berkeaskim/placed/blob/main/docs/validation/MODEL_CARD.md";
+
+/** 04#28: shown when the scored PDF was rendered by Placed's tailor. */
+export const SELF_PREFERENCE_LABEL = "Judged by the same AI family that tailored it";
+export const SELF_PREFERENCE_NOTE =
+  "This CV was made with Placed's tailor, and the score comes from the same AI provider that rewrote it. AI judges tend to rate their own writing more kindly, so a higher score than your original CV isn't proof that this version is better. Your trend only compares CVs made the same way.";
+
+/** 04#30: after an edit, say which verdicts were re-checked, so a change elsewhere isn't read as progress or AI noise. */
+export function deltaLabel(d: { reused: number; rejudged: number } | null): string | null {
+  if (!d || d.reused === 0) return null;
+  return `After your edit the AI re-checked ${d.rejudged} rule${d.rejudged === 1 ? "" : "s"} your changes could affect; the other ${d.reused} kept their earlier verdict.`;
+}
+
+/** 04#25: an "I disagree" is shown on the verdict; it never hides or flips it. */
+export const DISPUTED_TITLE = "You disagreed with this. It still counts in your score; we use disagreements to review our rules.";
+
 export const disclaimer = (sector: Archetype) =>
   `Measures how well your CV follows evidence-based conventions for ${ARCHETYPE_LABELS[sector]}. It does not predict whether you'll get an interview.`;
 

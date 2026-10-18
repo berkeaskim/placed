@@ -19,6 +19,7 @@ const data: CvScorePanelData = {
   ],
   assessed: 31, passed: 23, couldNotAssess: 2, history: [55, 61, 68], aiSaw: "CV\n[NAME]\nEDUCATION",
   aiUnavailable: false, provisional: false, range: { low: 68, high: 68 }, coverage: 1, scoredBy: "anthropic:claude-sonnet-5-5",
+  madeByPlaced: false, disputed: [], delta: null,
 };
 
 describe("CvScorePanel render", () => {
@@ -54,5 +55,46 @@ describe("CvScorePanel when the AI review failed", () => {
   });
   it("shows no such note otherwise", () => {
     expect(renderToStaticMarkup(createElement(CvScorePanel, { data }))).not.toContain("AI review unavailable");
+  });
+});
+
+// Audit 04#22–#25, #28, #30: transparency on the panel itself.
+describe("CvScorePanel transparency", () => {
+  const render = (over: Partial<CvScorePanelData> = {}) => renderToStaticMarkup(createElement(CvScorePanel, { data: { ...data, ...over } }));
+  const outsideDetails = (html: string, needle: string) => {
+    const at = html.indexOf(needle);
+    expect(at).toBeGreaterThan(-1);
+    // Not inside any <details> (collapsed by default): every <details> before it is closed before it.
+    const before = html.slice(0, at);
+    return (before.match(/<details/g) ?? []).length === (before.match(/<\/details>/g) ?? []).length;
+  };
+  it("shows the 'does not predict interviews' disclaimer visibly, not in a collapsed section (04#23)", () => {
+    expect(outsideDetails(render(), "It does not predict whether you&#x27;ll get an interview.")).toBe(true);
+  });
+  it("links the model card from 'How this score works' (04#24)", () => {
+    const html = render();
+    expect(html).toContain('href="https://github.com/berkeaskim/placed/blob/main/docs/validation/MODEL_CARD.md"');
+    expect(html).toContain("Read the model card");
+    expect(html.indexOf("How this score works")).toBeLessThan(html.indexOf("Read the model card"));
+    expect(html).toContain("not yet set from data");
+  });
+  it("labels a CV made by Placed's tailor and warns against reading the rise as proof (04#28)", () => {
+    expect(render()).not.toContain("Judged by the same AI family that tailored it");
+    const html = render({ madeByPlaced: true });
+    expect(html).toContain("Judged by the same AI family that tailored it");
+    expect(html).toContain("isn&#x27;t proof that this version is better");
+    expect(outsideDetails(html, "Judged by the same AI family that tailored it")).toBe(true);
+  });
+  it("marks a disputed verdict without hiding it or changing the score (04#25)", () => {
+    const html = render({ disputed: ["GEN-04"] });
+    expect(html).toContain("Disputed");
+    expect(html).toContain("You disagreed");
+    expect(html).toContain("“Organised weekly society events”");
+    expect(html).toContain("CV score 68 out of 100");
+    expect(render()).not.toContain("You disagreed");
+  });
+  it("says which verdicts were re-checked after an edit (04#30)", () => {
+    expect(render({ delta: { reused: 30, rejudged: 9 } })).toContain("re-checked 9 rules your changes could affect; the other 30 kept their earlier verdict");
+    expect(render({ delta: null })).not.toContain("re-checked");
   });
 });
