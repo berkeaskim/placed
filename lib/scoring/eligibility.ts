@@ -271,3 +271,9 @@ export function studentYearLabels(s: { year: Year; gradYear?: number | null }, t
 export function formatWindow(w: { min: number; max: number }): string {
   return w.min === w.max ? String(w.min) : `${w.min}–${w.max}`;
 }
+
+/** The CV's degree grade for a class-floor check: the first education entry whose grade reads as a UK class. */
+export function cvGradeOf(cv: { education?: { grade: string | null }[] } | null | undefined): string | null {
+  const grades = (cv?.education ?? []).map((e) => e.grade).filter((g): g is string => Boolean(g));
+  return grades.find((g) => cvDegreeClass(g) !== null) ?? null;
+}

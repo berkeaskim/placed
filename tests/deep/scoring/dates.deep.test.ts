@@ -117,7 +117,7 @@ describe("deadline semantics — London day, inclusive", () => {
     const today = "2026-10-13";
     expect(deadlineLabel(today, today)).toBe("Closes today");
     expect(deadlineLabel(addDays(today, 1), today)).toBe("Closes tomorrow");
-    expect(deadlineLabel(addDays(today, 2), today)).toBe("2 days left");
+    expect(deadlineLabel(addDays(today, 2), today)).toBe("Closes in 2 days");
     expect(deadlineLabel(addDays(today, -1), today)).toBe("Closed");
     expect(isOpen(addDays(today, -1), today)).toBe(false);
     expect(deadlineLabel(addDays(today, -400), today)).toBe("Closed");

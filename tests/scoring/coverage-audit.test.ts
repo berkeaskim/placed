@@ -2,8 +2,8 @@ import { describe, it, expect } from "vitest";
 import { computeCoverage, cvSkillSource, jdRequirementSkills } from "@/lib/scoring/coverage";
 import { impliedSkills } from "@/lib/skills/extract";
 
-const cvWith = (over: { skills?: string[]; bullets?: string[]; interests?: string | null; summary?: string | null; modules?: string[] }) => cvSkillSource({
-  skills: over.skills ? [{ group: "Skills", items: over.skills }] : [],
+const cvWith = (over: { skills?: readonly string[]; bullets?: readonly string[]; interests?: string | null; summary?: string | null; modules?: readonly string[] }) => cvSkillSource({
+  skills: over.skills ? [{ group: "Skills", items: [...over.skills] }] : [],
   experience: [{ id: "e", org: "Acme", title: "Intern", dates: "", location: "", bullets: (over.bullets ?? []).map((text, i) => ({ id: `b${i}`, text })) }],
   projects: [],
   interests: over.interests ?? null,
