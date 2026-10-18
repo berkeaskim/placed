@@ -138,7 +138,16 @@ const PASS_ANCHORS: Probe[] = [
   { label: "one bullet dropped with a reason", fabricated: false, cv: "p4", mut: (t) => { t.experience[0].bullets[2] = { ...t.experience[0].bullets[2], changeType: "dropped", dropReason: "Less relevant" }; } },
 ];
 
+// verifyTailoring is pure, so each probe's result is computed once and reused by the tally (CI runners are slow)
+const verdicts = new Map<Probe, ReturnType<typeof verifyTailoring>>();
 function verdict(p: Probe) {
+  const hit = verdicts.get(p);
+  if (hit) return hit;
+  const r = compute(p);
+  verdicts.set(p, r);
+  return r;
+}
+function compute(p: Probe) {
   const cv = p.cv === "p4" ? p4 : p.cv === "summary" ? withSummary : source;
   const text = p.cv === "p4" ? p4Text : p.cv === "summary" ? `${sourceText}\n${withSummary.summary}` : sourceText;
   const t = toTailored(cv);
@@ -166,5 +175,5 @@ describe("05 adversarial probes against verifyTailoring", () => {
     const falseBlocks = honest.filter((p) => verdict(p).verdict === "block").length;
     console.log(`fabrication probes caught: ${caught}/${fab.length}; honest edits blocked: ${falseBlocks}/${honest.length}`);
     expect(PROBES.length).toBe(57);
-  });
+  }, 60_000);
 });
