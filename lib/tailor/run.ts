@@ -129,7 +129,7 @@ function gate(i: GateInput, ctx: Ctx, t: TailoredCV): { report: VerifyReport; af
   const after = computeCoverage(ctx.reqs, cvSkillSource(renderView(t, i.cv)));
   const report = verifyTailoring({
     source: i.cv, sourceText: i.rawText, confirmedFacts: i.confirmedFacts, tailored: gateView(t), jdKeywords: ctx.jdKeywords,
-    coverageBefore: ctx.before.weighted ?? 0, coverageAfter: after.weighted ?? 0,
+    coverageBefore: ctx.before.weighted ?? 0, coverageAfter: after.weighted ?? 0, claimChecks: true,
   });
   report.keywordCoverage ??= { before: ctx.before.weighted ?? 0, after: after.weighted ?? 0, missing: [] };
   report.gapsStillOpen ??= gapsStillOpen({ source: i.cv, sourceText: i.rawText, confirmedFacts: i.confirmedFacts, jdKeywords: ctx.jdKeywords });

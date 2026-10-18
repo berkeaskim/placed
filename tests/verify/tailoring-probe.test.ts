@@ -8,7 +8,7 @@ import { verifyTailoring, toTailored } from "@/lib/verify/tailoring";
 import type { ParsedCV, TailoredCV } from "@/lib/types";
 
 const cv: ParsedCV = {
-  name: "D", email: null, phone: null, location: "London", links: [], summary: null,
+  name: "D", email: null, phone: null, location: "London", links: [], summary: "Economics student at UCL",
   education: [{ id: "e0", institution: "UCL", degree: "BSc Economics", dates: "2024–2027", grade: "Predicted 2:1", details: [] }],
   experience: [
     { id: "x0", org: "Economics Society", title: "Events Officer", dates: "Sep 2025 – Jun 2026", location: "London", bullets: [
@@ -39,7 +39,7 @@ const run = (where: Where, text: string, jd: string[] = ["Excel", "stakeholder",
   else if (where === "retail") set(t.experience[1].bullets[0]);
   else if (where === "project") set(t.projects[0].bullets[0]);
   else set(t.leadership[0].bullets[0]);
-  return verifyTailoring({ source: cv, sourceText: cvText, confirmedFacts: [], tailored: t, jdKeywords: jd, coverageBefore: 0.3, coverageAfter: 0.5 });
+  return verifyTailoring({ source: cv, sourceText: cvText, confirmedFacts: [], tailored: t, jdKeywords: jd, coverageBefore: 0.3, coverageAfter: 0.5, claimChecks: true });
 };
 
 export const LEGIT: [Where, string][] = [
@@ -181,7 +181,7 @@ const runCv = (edit: (c: ParsedCV) => void, where: Where, text: string, jd: stri
   else if (where === "project") set(t.projects[0].bullets[0]);
   else set(t.leadership[0].bullets[0]);
   const srcText = [cvText, ...[...c.experience, ...c.projects, ...c.leadership].flatMap((e) => [e.dates, ...e.bullets.map((b) => b.text)])].join("\n");
-  return verifyTailoring({ source: c, sourceText: srcText, confirmedFacts: [], tailored: t, jdKeywords: jd, coverageBefore: 0.3, coverageAfter: 0.5 });
+  return verifyTailoring({ source: c, sourceText: srcText, confirmedFacts: [], tailored: t, jdKeywords: jd, coverageBefore: 0.3, coverageAfter: 0.5, claimChecks: true });
 };
 const same = () => undefined;
 

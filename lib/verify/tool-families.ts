@@ -6,12 +6,23 @@
  * `terms` are matched as whole tokens. `caseSensitive` members match only as written, which keeps
  * common English words out ("react to", "excel at", "a rough sketch").
  */
-export type FamilyMember = { name: string; terms: string[]; caseSensitive?: boolean; exactTerms?: string[] };
+export type FamilyMember = { name: string; terms: string[]; caseSensitive?: boolean; exactTerms?: string[]; pattern?: RegExp };
 export type ToolFamily = { family: string; members: FamilyMember[] };
 
 /** `exactTerms` always match case-sensitively, for generic words that are tools only when capitalised ("Node"). */
 const m = (name: string, terms: string[] = [], caseSensitive = false, exactTerms: string[] = []): FamilyMember =>
   ({ name, terms: [name, ...terms], caseSensitive, exactTerms });
+
+/** A bare "R" is a language only after a tool word or in a list ("used R", "in R", "R and Python", "R Studio"). */
+function r(): FamilyMember {
+  return { name: "R", terms: ["RStudio", "R Studio"], caseSensitive: true, exactTerms: [],
+    pattern: /(?:\b(?:[Uu]sed|[Uu]sing|[Uu]se|[Ii]n|[Ww]ith|and|or|via)\s+|[,/(]\s*)R(?![A-Za-z0-9&+#'’.-])|(?<![A-Za-z0-9])R(?=\s*(?:,|\/|\band\b|\bor\b)\s*(?:Python|SQL|MATLAB|Stata|Excel|SPSS|Julia))|\bR\s+(?:programming|language|script|scripts|package|packages|Studio|Markdown)\b/ };
+}
+/** A bare "C" is a language only in the same kind of tool context ("in C", "C and Python"). */
+function cLang(): FamilyMember {
+  return { name: "C", terms: [], caseSensitive: true, exactTerms: [],
+    pattern: /(?:\b(?:[Uu]sed|[Uu]sing|[Ii]n|[Ww]ith|and|or)\s+|[,/(]\s*)C(?![A-Za-z0-9&+#'’.-])(?!\s*(?:grade|level|class))|\bC\s+(?:programming|language)\b/ };
+}
 
 export const TOOL_FAMILIES: ToolFamily[] = [
   { family: "cloud", members: [m("AWS", ["Amazon Web Services"]), m("GCP", ["Google Cloud", "Google Cloud Platform"]), m("Azure", ["Microsoft Azure"])] },
@@ -36,4 +47,14 @@ export const TOOL_FAMILIES: ToolFamily[] = [
   { family: "market-data", members: [m("Bloomberg", [], true), m("Refinitiv", ["Eikon", "LSEG Workspace"]), m("FactSet"), m("Capital IQ", ["CapIQ"])] },
   { family: "project-tracker", members: [m("Jira"), m("Trello"), m("Asana", [], true)] },
   { family: "mobile-cross-platform", members: [m("Flutter", [], true), m("React Native", [], true)] },
+  // audit 05 #18: programming-language and adjacent swaps ("Used Python" → "Used R") were invisible
+  // Python stays out: pandas/NumPy lines that gain the word "Python" are honest, and skillInjection already guards it
+  { family: "general-language", members: [r(), m("MATLAB", [], true), m("Julia", [], true), m("Stata", [], true), m("SAS", [], true)] },
+  { family: "systems-language", members: [m("C++", ["CPP"]), m("C#", ["CSharp"]), m("Rust", [], true), m("Go", ["Golang"], true), cLang()] },
+  { family: "js-language", members: [m("JavaScript"), m("TypeScript")] },
+  { family: "notebook", members: [m("Jupyter", ["Jupyter Notebook", "JupyterLab"]), m("Google Colab", ["Colab"])] },
+  { family: "analytics", members: [m("Google Analytics", ["GA4"]), m("Adobe Analytics"), m("Mixpanel"), m("Amplitude", [], true)] },
+  { family: "email-marketing", members: [m("Mailchimp"), m("Klaviyo"), m("HubSpot")] },
+  { family: "accounting-standard", members: [m("IFRS"), m("US GAAP", ["GAAP"])] },
+  { family: "valuation-method", members: [m("DCF", ["discounted cash flow"]), m("LBO", ["leveraged buyout"]), m("comps", ["comparable company analysis", "comparable companies", "trading comps"]), m("precedent transactions")] },
 ];
