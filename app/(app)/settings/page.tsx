@@ -3,6 +3,9 @@ import { DeleteDataForm } from "./delete-data-form";
 import { JobSearchSettings } from "@/components/settings/job-search";
 import { UniversityForm } from "@/components/settings/university-form";
 import { CourseForm } from "@/components/settings/course-form";
+import { StudyForm } from "@/components/settings/study-form";
+import { gradYearOptions } from "@/lib/profile/cycle";
+import { todayLondon } from "@/lib/scoring/dates";
 import { SearchKeyForm } from "@/components/settings/search-key-form";
 import { SERPER_SECRET } from "@/lib/inside-track/find";
 import { getSecret } from "@/lib/settings/store";
@@ -18,7 +21,7 @@ const PROVIDER_LABEL = { anthropic: "Claude", gemini: "Gemini", ollama: "Ollama 
 export default async function Settings() {
   const provider = aiProvider();
   const { user } = await requireUser();
-  const row = db.select({ u: profiles.university, course: profiles.course }).from(profiles).where(eq(profiles.user_id, user.id)).get();
+  const row = db.select({ u: profiles.university, course: profiles.course, year: profiles.year, grad: profiles.grad_year }).from(profiles).where(eq(profiles.user_id, user.id)).get();
   const saved = row?.u ?? null;
   const detected = universityFor(user.id);
   const envKey = process.env.SERPER_API_KEY?.trim();
@@ -39,6 +42,7 @@ export default async function Settings() {
         <h2 className="font-bold">You</h2>
         <UniversityForm saved={saved} fromCv={saved ? null : detected} />
         <CourseForm saved={row?.course ?? null} />
+        <StudyForm year={row?.year ?? null} gradYear={row?.grad ?? null} options={gradYearOptions(todayLondon())} />
       </section>
       <section className="card-quest flex flex-col gap-3 p-5" id="people-search">
         <h2 className="font-bold">People search</h2>

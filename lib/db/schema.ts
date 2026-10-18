@@ -22,6 +22,7 @@ export const ATS_VALUES = ["greenhouse", "lever", "ashby", "workday", "smartrecr
 /** Fetch transports other than plain fetch; null = plain. "stealth" routes through the opt-in recon sidecar. */
 export const TRANSPORT_VALUES = ["stealth"] as const;
 export const SPONSORS_VISA_VALUES = ["yes", "no", "unknown"] as const;
+export const TRACK_VALUES = ["standard", "spring"] as const;
 export const TAG_STATUS_VALUES = ["ok", "failed", "pending"] as const;
 export const DEADLINE_SOURCE_VALUES = ["ats", "text"] as const;
 export const PLAYBOOK_STATUS_VALUES = ["planned", "done"] as const;
@@ -46,6 +47,8 @@ export const profiles = sqliteTable("profiles", {
   user_id: text("user_id").primaryKey(),
   display_name: text("display_name"),
   year: text("year", { enum: YEAR_VALUES }).$type<Year>(),
+  /** Expected graduation year (e.g. 2029). Spring weeks recruit by it; `year` alone is ambiguous on 4-year degrees. */
+  grad_year: integer("grad_year"),
   /** Broad field (one of FIELDS), derived from `course`; drives grouping and anywhere a category is enough. */
   field: text("field"),
   /** The course as the student named it ("BSc Economics and Statistics"); what AI prompts get. */
@@ -86,6 +89,8 @@ export const cvScores = sqliteTable("cv_scores", {
   cv_id: text("cv_id").notNull().references(() => cvs.id, { onDelete: "cascade" }),
   user_id: text("user_id").notNull(),
   sector: text("sector").notNull(),
+  /** Scoring track (lib/cv-rules TRACKS): a CV has one score per sector per track. */
+  track: text("track", { enum: TRACK_VALUES }).notNull().default("standard"),
   total: integer("total").notNull(),
   dimensions: json<unknown>("dimensions").notNull(),
   caps_applied: json<string[]>("caps_applied").notNull().default(sql`'[]'`),
@@ -97,10 +102,10 @@ export const cvScores = sqliteTable("cv_scores", {
   rules_version: text("rules_version"),
   created_at: now("created_at").notNull(),
 }, (t) => [
-  unique("cv_scores_cv_id_sector_key").on(t.cv_id, t.sector),
+  unique("cv_scores_cv_id_sector_track_key").on(t.cv_id, t.sector, t.track),
   index("cv_scores_user_idx").on(t.user_id),
   index("cv_scores_cv_idx").on(t.cv_id),
-  index("cv_scores_cache_idx").on(t.user_id, t.sector, t.text_hash, t.model_id, t.prompt_version, t.rules_version),
+  index("cv_scores_cache_idx").on(t.user_id, t.sector, t.track, t.text_hash, t.model_id, t.prompt_version, t.rules_version),
 ]);
 
 export const cvFeedback = sqliteTable("cv_feedback", {

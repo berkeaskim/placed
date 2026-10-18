@@ -8,6 +8,8 @@ import { FitBadge } from "./fit-badge";
 import { SaveButton } from "./save-button";
 import { MarkAppliedButton } from "./mark-applied";
 
+const PROGRAMME_LABEL: Partial<Record<Ranked["job"]["employmentType"], string>> = { spring_week: "Spring week", insight: "Insight event" };
+
 /** "0/0 must-haves" read like a bug: with no must-haves listed, count the nice-to-haves instead. */
 function mustLabel(c: Ranked["coverage"]): string {
   if (c.must.total > 0) return `${c.must.matched}/${c.must.total} must-haves`;
@@ -24,6 +26,9 @@ export function JobCard({ r, today, saved, applied }: { r: Ranked; today: string
         <div className="flex flex-wrap items-center gap-2">
           <CompanyMark company={r.job.company} url={r.job.url} />
           {r.job.curated && <CuratedChip />}
+          {PROGRAMME_LABEL[r.job.employmentType] && (
+            <span className="rounded-full bg-[#E8F6EE] px-2 py-0.5 text-[11px] font-bold text-[#1F7A47]">{PROGRAMME_LABEL[r.job.employmentType]}</span>
+          )}
         </div>
         <Link href={`/jobs/${r.job.id}`} className="text-base font-bold leading-snug text-foreground no-underline hover:underline">{r.job.title}</Link>
         <div className="text-[13px] text-muted-foreground">{r.job.location || "Location not stated"} · {sub}</div>

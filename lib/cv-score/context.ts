@@ -1,6 +1,6 @@
 import type { ParsedCV, Year } from "@/lib/types";
 import type { SafetyReport } from "@/lib/cv/safety";
-import type { RuleStatus } from "@/lib/cv-rules/types";
+import type { RuleStatus, Track } from "@/lib/cv-rules/types";
 
 export type { RuleStatus };
 export type CvContext = {
@@ -10,6 +10,8 @@ export type CvContext = {
   fileSize: number;
   cv: ParsedCV;
   year: Year;
+  /** Scoring track (absent = "standard"). */
+  track?: Track;
   spellingErrors: string[] | null;
   /** Upload-time scanCvSafety() report (stored in cvs.parsed_json.safety). Absent = not scanned. */
   safety?: SafetyReport;

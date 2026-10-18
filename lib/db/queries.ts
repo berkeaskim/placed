@@ -4,7 +4,7 @@ import { db } from "@/lib/db/client";
 import { companies, cvs, jobs, profiles } from "@/lib/db/schema";
 
 export type ProfileRow = {
-  user_id: string; display_name: string | null; year: Year | null; field: string | null; location_pref: Region[];
+  user_id: string; display_name: string | null; year: Year | null; grad_year: number | null; field: string | null; location_pref: Region[];
   needs_visa: boolean; target_archetype: Archetype | null; archetypes: ArchetypeScore[]; skills: string[];
   onboarded: boolean; xp: number; level: number; streak_days: number; last_active_date: string | null;
 };
@@ -18,6 +18,7 @@ export async function getProfile(userId: string): Promise<ProfileRow> {
 export function toStudent(p: ProfileRow): StudentProfile {
   return {
     year: p.year ?? "2nd",
+    gradYear: p.grad_year ?? null,
     locationPref: p.location_pref ?? [],
     needsVisa: p.needs_visa,
     archetypes: [...(p.archetypes ?? [])].sort((a, b) => b.score - a.score),

@@ -7,17 +7,24 @@ import { db } from "@/lib/db/client";
 import { cvs, profiles } from "@/lib/db/schema";
 import { scoreCv } from "@/lib/cv-score/run";
 import { ARCHETYPES, YEARS, type Archetype, type Year } from "@/lib/types";
+import type { Track } from "@/lib/cv-rules/types";
+import { scoreTrackFor } from "@/lib/profile/cycle";
+import { todayLondon } from "@/lib/scoring/dates";
 
 const isArchetype = (s: unknown): s is Archetype => typeof s === "string" && (ARCHETYPES as readonly string[]).includes(s);
 const toYear = (y: unknown): Year => ((YEARS as readonly string[]).includes(y as string) ? (y as Year) : "2nd");
 
-/** Score the active CV for `sector` (cached per CV × sector inside scoreCv). Returns false when there is no active CV. */
-async function scoreActiveCv(sector: Archetype): Promise<boolean> {
+/**
+ * Score the active CV for `sector` (cached per CV × sector × track inside scoreCv). The track defaults to the
+ * student's (spring for spring-week-eligible students). Returns false when there is no active CV.
+ */
+async function scoreActiveCv(sector: Archetype, track?: Track): Promise<boolean> {
   const { user } = await requireUser();
   const cv = db.select({ id: cvs.id }).from(cvs).where(and(eq(cvs.user_id, user.id), eq(cvs.is_active, true))).get();
-  const p = db.select({ year: profiles.year }).from(profiles).where(eq(profiles.user_id, user.id)).get();
+  const p = db.select({ year: profiles.year, grad: profiles.grad_year }).from(profiles).where(eq(profiles.user_id, user.id)).get();
   if (!cv) return false;
-  await scoreCv({ userId: user.id, cvId: cv.id, sector, year: toYear(p?.year) });
+  const year = toYear(p?.year);
+  await scoreCv({ userId: user.id, cvId: cv.id, sector, year, track: track ?? scoreTrackFor({ year, gradYear: p?.grad ?? null }, todayLondon()) });
   return true;
 }
 
@@ -44,11 +51,16 @@ export async function setTargetSector(sector: Archetype): Promise<{ error: strin
 export async function scoreMyCv(formData: FormData): Promise<void> {
   const sector = formData.get("sector");
   if (!isArchetype(sector)) redirect("/profile");
+  const t = formData.get("track");
+  const track: Track | undefined = t === "spring" || t === "standard" ? t : undefined;
   let failed = false;
-  try { await scoreActiveCv(sector); } catch (e) {
+  try { await scoreActiveCv(sector, track); } catch (e) {
     console.error("scoreMyCv: scoreCv failed", e);
     failed = true;
   }
   revalidatePath("/profile");
-  redirect(failed ? "/profile?score=failed" : "/profile");
+  const q = new URLSearchParams();
+  if (track) q.set("track", track);
+  if (failed) q.set("score", "failed");
+  redirect(q.size ? `/profile?${q}` : "/profile");
 }
