@@ -48,6 +48,8 @@ export const PLACEHOLDER = {
   workAuth: "[WORK_AUTHORISATION_STATEMENT]",
   society: "[SOCIETY]",
   award: "[AWARD]",
+  /** A stated language level such as "native" or "mother tongue": kept as a level so FIN-09 can pass (audit 02#10). */
+  level: "[LEVEL]",
 } as const;
 
 type Rec = Replacement[];
@@ -335,21 +337,25 @@ function redactSegment(seg: string, rec: Rec, inHeader: boolean): string {
 const LANG_LINE = /\blanguages?\b|mother[\s-]tongue|first language|\bfluent\b|\bbilingual\b|\b[ABC][12]\b|\bIELTS\b|\bspoken\b/i;
 const LABEL = "(?:native|mother[\\s-]tongue|first language)(?:\\s+(?:speaker|language|proficiency|level))?";
 
+/**
+ * "native", "mother tongue" and "first language" hint at origin, so the judge never sees them, but they are a language
+ * level: they become [LEVEL] rather than disappearing, so a native speaker isn't marked down for an unlabelled language.
+ */
 function stripLanguageLabels(text: string, rec: Rec): string {
-  const log = (m: string) => rec.push({ placeholder: "", kind: "language_label", original: m.trim() });
+  const log = (m: string) => rec.push({ placeholder: PLACEHOLDER.level, kind: "language_label", original: m.trim() });
   return text
     .split("\n")
     .map((line) => {
       // "(native)" is unambiguous anywhere; bare labels only on language lines.
-      let l = line.replace(new RegExp(`\\s*[(\\[]\\s*${LABEL}\\s*[)\\]]`, "gi"), (m) => (log(m), ""));
+      let l = line.replace(new RegExp(`\\s*[(\\[]\\s*${LABEL}\\s*[)\\]]`, "gi"), (m) => (log(m), ` (${PLACEHOLDER.level})`));
       if (!LANG_LINE.test(l)) return l;
       const notReact = (m: string, off: number, whole: string) => /\bReact\s*$/.test(whole.slice(0, off) + m.slice(0, m.search(/native/i)));
-      l = l.replace(/\b[Nn]ative\s+([A-Z][a-z]+)\s+speaker\b/g, (m, lang: string) => (log(m), lang));
+      l = l.replace(/\b[Nn]ative\s+([A-Z][a-z]+)\s+speaker\b/g, (m, lang: string) => (log(m), `${lang} (${PLACEHOLDER.level})`));
       l = l.replace(new RegExp(`\\b${LABEL}\\s*[:\\-–—]\\s*`, "gi"), (m, off: number, whole: string) =>
-        notReact(m, off, whole) ? m : (log(m), ""),
+        notReact(m, off, whole) ? m : (log(m), `${PLACEHOLDER.level}: `),
       );
       l = l.replace(new RegExp(`\\s*[,\\-–—:]\\s*${LABEL}\\b(?=\\s*(?:[,;)]|$))`, "gi"), (m, off: number, whole: string) =>
-        notReact(m, off, whole) ? m : (log(m), ""),
+        notReact(m, off, whole) ? m : (log(m), ` (${PLACEHOLDER.level})`),
       );
       return l;
     })

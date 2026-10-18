@@ -2,7 +2,7 @@ import type { CvRule } from "../types";
 import {
   M_NHB_SALIENCE, M_BAERT_INTERNSHIPS, M_BAERT_VUJIC_VOLUNTEERING, M_BRAUN_AUDIT, M_NACE_2025, M_STEPHANY_AI_SKILLS,
   M_AI_PERCEPTION, M_TILBURG_LLM_SIGNALS, M_CUI_SIGNALING, M_GALDIN_CHEAP_TALK, M_INTERVIEWING_IO,
-  M_FRONTIERS_EYETRACKING, M_GLOBE_HIDDEN_TEXT, M_INJECTION_COLLAPSE,
+  M_GLOBE_HIDDEN_TEXT, M_INJECTION_COLLAPSE,
 } from "./sources";
 
 /**
@@ -16,7 +16,7 @@ export const AMENDMENT_RULES: CvRule[] = [
   {
     id: "EV-01", sectors: "all", dimension: "relevance", check: "code", checker: "experience_present", severity: "major", evidence: "A",
     statement: "Include at least one real experience entry — an internship, part-time job, volunteering or a society role all count — with its duration visible, and put it near the top when it's your strongest asset.",
-    llmGuidance: "Code: at least one internship, part-time, volunteering or society-role entry with dates. Judge salience: the entry's duration is visible and, when it is the strongest asset, it sits in the top half of page 1. Quest for students with none: \"Add your part-time job: it counts\". Never score employer or university brand.",
+    llmGuidance: "Code: at least one experience entry, or a society/volunteering role or project with dates. Judge salience: the entry's duration is visible and, when it is the strongest asset, it sits in the top half of page 1. Quest for students with none: \"Add your part-time job: it counts\". Never score employer or university brand.",
     citations: [M_NHB_SALIENCE, M_BAERT_INTERNSHIPS, M_BAERT_VUJIC_VOLUNTEERING, M_BRAUN_AUDIT],
   },
   {
@@ -38,7 +38,7 @@ export const AMENDMENT_RULES: CvRule[] = [
   // ---------- AU: authenticity and readability (02 §5.2) ----------
   {
     id: "AU-01", sectors: "all", dimension: "clarity", check: "code", checker: "cliche_density", params: { threshold: 1, majorThreshold: 3 }, severity: "minor", evidence: "B",
-    statement: "Cut generic AI-style phrasing — \"leveraged\", \"spearheaded\", \"passionate about\", \"results-driven\", \"fast-paced environment\". Recruiters mark down text they suspect is AI-written.",
+    statement: "Cut generic stock phrases — \"leveraged\", \"spearheaded\", \"passionate about\", \"results-driven\", \"fast-paced environment\". Recruiters mark down vague wording; say what you did and what changed.",
     llmGuidance: "Code: count AI-cliché tokens per 100 words. At or above params.threshold (1 per 100 words) = minor; at or above params.majorThreshold (3 per 100 words) = major. Both cut-offs are tunable product defaults, not evidence-derived.",
     citations: [M_AI_PERCEPTION, M_TILBURG_LLM_SIGNALS],
   },
@@ -52,9 +52,10 @@ export const AMENDMENT_RULES: CvRule[] = [
   },
   {
     id: "AU-03", sectors: "all", dimension: "clarity", check: "code", checker: "read_time", severity: "minor", evidence: "C",
-    statement: "Recruiters spend roughly 30 seconds on a first screen, looking at titles, organisations, dates and education. Make sure your name, latest role, dates and education all sit in the top third of page 1.",
-    llmGuidance: "Code: name, latest role or organisation, dates and education are all extractable from the top third of page 1. Copy says \"roughly a 30-second first screen\", never \"6 seconds\".",
-    citations: [M_INTERVIEWING_IO, M_FRONTIERS_EYETRACKING, M_NHB_SALIENCE],
+    statement: "A recruiter's first look is short and focuses on titles, organisations, dates and education. Make sure your name, the first entry of your first section (education or experience) and its dates sit in the top third of page 1.",
+    llmGuidance: "Code: the name, the first section's first entry (institution or role) and at least one date are extractable from the top third of page 1. Never claim a specific number of seconds.",
+    yearAdjust: { "1st": { skip: true }, "2nd": { severity: "minor" } },
+    citations: [M_INTERVIEWING_IO, M_NHB_SALIENCE],
   },
 
   // ---------- ATS: adversarial content (03 §4.2) ----------

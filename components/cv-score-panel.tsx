@@ -5,8 +5,8 @@ import { caveatFor } from "@/lib/cv-rules/profiles";
 import type { Fix } from "@/lib/cv-score/aggregate";
 import type { CvScorePanelData } from "@/lib/cv-score/panel-data";
 import {
-  DIM_LABEL, IMAGE_ONLY_CAP_COPY, barColor, capBanners, couldntAssessLabel, disclaimer, isConvention, rulesPassedLabel,
-  scoreBand, sourceChip, sparklineLabel, sparklinePoints, splitFixes,
+  DIM_LABEL, FAIRNESS_NOTE, IMAGE_ONLY_CAP_COPY, barColor, capBanners, couldntAssessLabel, coverageLabel, disclaimer, fixWorthLabel,
+  isConvention, judgeLabel, provisionalLabel, rulesPassedLabel, scoreBand, sourceChip, sparklineLabel, sparklinePoints, splitFixes,
 } from "@/lib/cv-score/present";
 import { DisagreeButton } from "@/components/cv-score/disagree-button";
 import { CountUp, DrawCircle, GrowBar } from "@/components/agent/reveal";
@@ -73,7 +73,16 @@ function SourceChip({ fix }: { fix: Fix }) {
   );
 }
 
-function Tags({ fix, lead }: { fix: Fix; lead?: string }) {
+/** Neutral "worth ~N pts" chip (04#23): information, not an XP reward. */
+function Worth({ fix, capped, small }: { fix: Fix; capped: boolean; small?: boolean }) {
+  return (
+    <span className={`shrink-0 rounded-full bg-[#F2F2F7] px-2 py-0.5 font-semibold text-[#3F3F4C] ${small ? "text-[11px]" : "ml-auto text-xs"}`}>
+      {fixWorthLabel(fix, capped)}
+    </span>
+  );
+}
+
+function Tags({ fix, lead, capped }: { fix: Fix; lead?: string; capped: boolean }) {
   return (
     <div className="flex flex-wrap items-center gap-2">
       {lead && <span className="text-xs font-bold uppercase tracking-wide text-[#3A20C4]">{lead}</span>}
@@ -83,7 +92,7 @@ function Tags({ fix, lead }: { fix: Fix; lead?: string }) {
           Convention
         </span>
       )}
-      <span className="chip-xp ml-auto">+{fix.lostPoints} pts</span>
+      <Worth fix={fix} capped={capped} />
     </div>
   );
 }
@@ -97,7 +106,7 @@ function OffendingLine({ line }: { line: string | null }) {
   );
 }
 
-function NextBestFix({ fix, cvId, sector }: { fix: Fix; cvId: string; sector: string }) {
+function NextBestFix({ fix, cvId, sector, capped }: { fix: Fix; cvId: string; sector: string; capped: boolean }) {
   return (
     <section aria-labelledby="next-fix-h" className="card-quest flex h-full flex-col gap-3 p-5">
       <div className="flex items-center gap-2">
@@ -105,7 +114,7 @@ function NextBestFix({ fix, cvId, sector }: { fix: Fix; cvId: string; sector: st
           <span className="text-[#5B3DF5]">{Icon.target}</span>Next best fix
         </h3>
       </div>
-      <Tags fix={fix} />
+      <Tags fix={fix} capped={capped} />
       <p className="text-sm font-semibold leading-snug text-[#16161D]">{fix.statement}</p>
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="flex min-w-0 flex-col gap-1">
@@ -127,14 +136,14 @@ function NextBestFix({ fix, cvId, sector }: { fix: Fix; cvId: string; sector: st
   );
 }
 
-function CompactFix({ fix, cvId, sector }: { fix: Fix; cvId: string; sector: string }) {
+function CompactFix({ fix, cvId, sector, capped }: { fix: Fix; cvId: string; sector: string; capped: boolean }) {
   return (
     <li className="border-t border-[#ECECF3] first:border-t-0">
       <details className="group">
         <summary className="flex min-h-11 cursor-pointer list-none items-center gap-3 py-2.5 [&::-webkit-details-marker]:hidden">
           <span className="w-20 shrink-0 text-[11px] font-bold uppercase tracking-wide text-[#5B5B6B]">{DIM_LABEL[fix.dimension]}</span>
           <span className="min-w-0 flex-1 truncate text-sm font-medium group-open:whitespace-normal">{fix.statement}</span>
-          <span className="chip-xp shrink-0 !text-xs">+{fix.lostPoints}</span>
+          <Worth fix={fix} capped={capped} small />
           {Icon.chevron}
         </summary>
         <div className="flex flex-col gap-1.5 pb-3 pl-0 sm:pl-23">
@@ -173,10 +182,14 @@ function Sparkline({ history }: { history: number[] }) {
 export function CvScorePanel({ data }: { data: CvScorePanelData }) {
   const { total, dimensions, sector, cvId } = data;
   const label = data.track === "spring" ? `${ARCHETYPE_LABELS[sector]} spring weeks` : ARCHETYPE_LABELS[sector];
-  const band = scoreBand(total);
+  const provisional = data.provisional;
+  const band = provisional ? null : scoreBand(total);
   const { next, rest } = splitFixes(data.fixes, 4);
   const caveat = caveatFor(sector, data.track);
   const cna = couldntAssessLabel(data.couldNotAssess);
+  const capped = data.capsApplied.length > 0;
+  const judge = judgeLabel(data.scoredBy);
+  const range = data.range ?? { low: total, high: total };
 
   return (
     <div className="grid w-full grid-cols-1 gap-4 lg:grid-cols-2 [&>*]:min-w-0">
@@ -194,24 +207,33 @@ export function CvScorePanel({ data }: { data: CvScorePanelData }) {
         </div>
       ))}
 
-      {next && <NextBestFix fix={next} cvId={cvId} sector={sector} />}
+      {next && <NextBestFix fix={next} cvId={cvId} sector={sector} capped={capped} />}
 
       <section aria-labelledby="cv-score-h" className={`flex flex-col gap-4 rounded-[20px] border border-[#E6E6EF] bg-white p-5 ${next ? "" : "lg:col-span-2"}`}>
         <div className="flex items-center justify-between gap-2">
           <h2 id="cv-score-h" className="text-base font-bold">Your CV Score</h2>
-          <span className="rounded-full px-2.5 py-1 text-xs font-bold" style={{ background: band.bg, color: band.fg }}>{band.label}</span>
+          {band
+            ? <span className="rounded-full px-2.5 py-1 text-xs font-bold" style={{ background: band.bg, color: band.fg }}>{band.label}</span>
+            : <span className="rounded-full bg-[#F2F2F7] px-2.5 py-1 text-xs font-bold text-[#3F3F4C]">Provisional</span>}
         </div>
 
         <div className="flex flex-col items-center gap-5 sm:flex-row sm:items-center">
           <div className="flex shrink-0 flex-col items-center gap-1">
+            {provisional ? (
+              <div role="img" aria-label={`Provisional CV score between ${range.low} and ${range.high} out of 100 for ${label}`} className="flex h-[120px] w-[120px] flex-col items-center justify-center rounded-full border-[12px] border-[#ECECF3] text-center">
+                <span className="text-2xl font-bold text-[#16161D]" style={{ fontFamily: "var(--font-quest)" }}>{provisionalLabel(range)}</span>
+                <span className="text-xs font-semibold text-[#5B5B6B]">/100</span>
+              </div>
+            ) : (
             <svg width="120" height="120" viewBox="0 0 120 120" role="img" aria-label={`CV score ${total} out of 100 for ${label}`}>
               <circle cx="60" cy="60" r="52" fill="none" stroke="#ECECF3" strokeWidth="12" />
               <g transform="rotate(-90 60 60)"><DrawCircle cx={60} cy={60} r={52} value={total / 100} stroke="#5B3DF5" strokeWidth={12} /></g>
               <text x="60" y="66" textAnchor="middle" fontSize="34" fontWeight="700" fill="#16161D" style={{ fontFamily: "var(--font-quest)" }}><CountUp to={total} duration={1.1} /></text>
               <text x="60" y="84" textAnchor="middle" fontSize="12" fontWeight="600" fill="#5B5B6B">/100</text>
             </svg>
+            )}
             <p className="text-center text-xs font-semibold text-[#5B5B6B]">
-              <span className="sr-only">{total}/100 </span>for {label}
+              <span className="sr-only">{provisional ? `${provisionalLabel(range)}` : total}/100 </span>for {label}
             </p>
           </div>
           <div className="flex w-full flex-1 flex-col gap-2 text-xs">
@@ -234,10 +256,19 @@ export function CvScorePanel({ data }: { data: CvScorePanelData }) {
             {Icon.info}<span><b>AI review unavailable — showing the automatic checks only.</b> Rules that need the AI to read your bullets aren&apos;t counted yet; score again in a moment for the full review.</span>
           </p>
         )}
+        {provisional && !data.aiUnavailable && (
+          <p role="status" className="flex gap-2 rounded-xl bg-[#F6F6FA] px-3 py-2 text-sm text-[#3F3F4C]">
+            {Icon.info}<span><b>Provisional.</b> We couldn&apos;t check enough of the rules to give one number, so this shows the range your score falls in. Score again for a full review.</span>
+          </p>
+        )}
+
+        <p className="text-xs leading-snug text-[#5B5B6B]">{disclaimer(sector)}</p>
 
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[#5B5B6B]">
           <span className="font-semibold text-[#16161D]">{rulesPassedLabel(data.passed, data.assessed)}</span>
-          {cna && <span title="The AI's answer didn't match a line in your CV, so these rules aren't counted.">{cna}</span>}
+          {cna && <span title="The AI couldn't give a usable answer for these rules, so they're shown as a range, not counted as passes.">{cna}</span>}
+          {data.coverage !== null && data.coverage < 1 && <span>{coverageLabel(data.coverage)}</span>}
+          {judge && <span>{judge}</span>}
           <Sparkline history={data.history} />
         </div>
 
@@ -247,7 +278,9 @@ export function CvScorePanel({ data }: { data: CvScorePanelData }) {
           </summary>
           <div className="flex flex-col gap-2 pt-1">
             {caveat && <p className="rounded-xl bg-[#F6F6FA] px-3 py-2 text-sm text-[#3F3F4C]">{caveat}</p>}
-            <p className="leading-snug">{disclaimer(sector)}</p>
+            <p className="leading-snug">Each rule counts by how much it matters (critical, major or minor), and the sector shifts that a little. A fix shows how many points it would really add.</p>
+            <p className="leading-snug">{FAIRNESS_NOTE}</p>
+            <p className="leading-snug">Scores from different AI models aren&apos;t comparable, so your trend only shows scores from the same model.</p>
           </div>
         </details>
       </section>
@@ -256,7 +289,7 @@ export function CvScorePanel({ data }: { data: CvScorePanelData }) {
         <section aria-labelledby="more-fixes-h" className={`flex flex-col gap-1 rounded-[20px] border border-[#E6E6EF] bg-white px-5 pt-4 pb-2 ${data.aiSaw ? "" : "lg:col-span-2"}`}>
           <h3 id="more-fixes-h" className="text-sm font-bold">More fixes <span className="font-semibold text-[#5B5B6B]">· {rest.length}</span></h3>
           <ol className="flex flex-col">
-            {rest.map((f) => <CompactFix key={f.ruleId} fix={f} cvId={cvId} sector={sector} />)}
+            {rest.map((f) => <CompactFix key={f.ruleId} fix={f} cvId={cvId} sector={sector} capped={capped} />)}
           </ol>
         </section>
       )}

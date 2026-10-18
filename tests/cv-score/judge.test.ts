@@ -92,10 +92,10 @@ describe("judgeCvRules", () => {
     }
   });
 
-  it("fixture mode without an exact fixture: llm rules are not_applicable and no AI call is made", async () => {
+  it("fixture mode without an exact fixture: llm rules are could_not_assess and no AI call is made", async () => {
     process.env.AI_MODE = "fixture";
     const out = await judgeCvRules({ redactedText: text, structuredText: "", rules: [llm("L1"), code], fixtureKey: "nope-consulting" });
-    expect(out.results).toEqual([{ ruleId: "L1", status: "not_applicable", evidenceLine: null, fix: null }]);
+    expect(out.results).toEqual([{ ruleId: "L1", status: "could_not_assess", evidenceLine: null, fix: null, detail: "no AI verdict (fixture mode)" }]);
     expect(out.spellingErrors).toBeNull();
     expect(generateStructured).not.toHaveBeenCalled();
   });
@@ -124,12 +124,12 @@ describe("judgeCvRules", () => {
     expect(vi.mocked(generateStructured).mock.calls[0][0].maxTokens).toBeGreaterThanOrEqual(16000);
   });
 
-  it("live AiError: code-rules-only verdicts (llm not_applicable), flagged aiUnavailable and never cacheable", async () => {
+  it("live AiError: code-rules-only verdicts (llm could_not_assess), flagged aiUnavailable and never cacheable", async () => {
     delete process.env.AI_MODE;
     process.env.ANTHROPIC_API_KEY = "test-key-not-used";
     vi.mocked(generateStructured).mockRejectedValue(new AiError("down"));
     const out = await judgeCvRules({ redactedText: text, structuredText: "", rules: [llm("L1"), llm("L2"), code] });
-    expect(out.results.map((r) => r.status)).toEqual(["not_applicable", "not_applicable"]);
+    expect(out.results.map((r) => r.status)).toEqual(["could_not_assess", "could_not_assess"]);
     expect(out.spellingErrors).toBeNull();
     expect(out.cacheable).toBe(false);
     expect(out.aiUnavailable).toBe(true);

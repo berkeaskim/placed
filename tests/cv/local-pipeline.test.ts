@@ -54,7 +54,8 @@ describe("local CV pipeline (fixture AI)", () => {
     const score = await scoreCv({ userId: U, cvId, sector: "software_eng", year: "1st" });
     expect(score.total).toBeGreaterThan(0);
     expect(db.select().from(cvScores).where(eq(cvScores.cv_id, cvId)).all()).toHaveLength(1);
-    expect(await loadCvScorePanel({ userId: U, cvId, sector: "software_eng", year: "1st" })).toMatchObject({ cvId, total: score.total, history: [score.total] });
+    // Fixture mode has no judge verdicts, so the score is provisional and stays out of the trend line (audit 04#11).
+    expect(await loadCvScorePanel({ userId: U, cvId, sector: "software_eng", year: "1st" })).toMatchObject({ cvId, total: score.total, provisional: true, history: [] });
 
     const job = seedJob({
       title: "Software Engineering Intern", archetype: "software_eng", is_live: true,

@@ -15,6 +15,8 @@ export const CHECKER_IDS = [
   "experience_present", "skills_evidenced", "cliche_density", "read_time", "hidden_text", "prompt_injection",
   // Spring-week track (research/spring-weeks/07-cv-rules-design.md).
   "pre_uni_grades", "gcse_summarised",
+  // Audit 2026-10-18: photo detection from the upload scan; a "Curriculum Vitae" title line.
+  "photo_present", "cv_title",
 ] as const;
 export type CheckerId = (typeof CHECKER_IDS)[number];
 
@@ -28,6 +30,28 @@ export const TRACKS = ["standard", "spring"] as const;
 export type Track = (typeof TRACKS)[number];
 
 export type RuleAdjust = { severity?: Severity; threshold?: number; skip?: boolean; maxPages?: number };
+
+/**
+ * Per-sector override for a rule shared across sectors (audit 2026-10-18, 04#2): one detector is one rule,
+ * and sectors change its severity, thresholds or wording here instead of adding a duplicate rule id.
+ * `yearAdjust` here replaces the rule's own yearAdjust for that sector.
+ */
+export type SectorAdjust = {
+  severity?: Severity;
+  maxPages?: number;
+  threshold?: number;
+  statement?: string;
+  /** Sources for this sector's version (shown first on the fix card); the rule's own citations still apply. */
+  citations?: Citation[];
+  yearAdjust?: Partial<Record<Year, RuleAdjust>>;
+};
+
+/**
+ * Context an llm rule needs that the CV alone doesn't give. Without it the rule is not_applicable and is never
+ * sent to the judge (audit 03#5: the judge must not guess). "jd": a job advert. "variant": the target division
+ * (IBD / S&T / AM, quant research vs trading), which Placed doesn't collect yet.
+ */
+export type RuleNeed = "jd" | "variant";
 
 type CvRuleBase = {
   id: string;
@@ -44,8 +68,15 @@ type CvRuleBase = {
   trackAdjust?: Partial<Record<Track, RuleAdjust>>;
   /** The rule only exists on these tracks (absent = every track). */
   tracks?: Track[];
-  /** Per-sector severity override for rules shared across sectors (e.g. FCQ rules milder for quant). */
-  sectorAdjust?: Partial<Record<Archetype, { severity?: Severity }>>;
+  /** Per-sector overrides for rules shared across sectors (e.g. one page and critical for finance). */
+  sectorAdjust?: Partial<Record<Archetype, SectorAdjust>>;
+  /**
+   * llm rules only: the judge may answer not_applicable (the guidance says when). Any other not_applicable from
+   * the judge is treated as could_not_assess, so a judge that dodges a rule can't raise the score (04#1).
+   */
+  naAllowed?: true;
+  /** llm rules only: context the rule can't be judged without (see RuleNeed). */
+  needs?: RuleNeed[];
   /** For llm rules: one yes/no question. For code rules: optional notes for the checker or UI. */
   llmGuidance?: string;
   passExample?: string;

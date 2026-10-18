@@ -1,11 +1,16 @@
 import { describe, it, expect } from "vitest";
-import { RULES, RULES_BY_ID, rulesFor, DIMENSION_WEIGHTS, BASE_WEIGHTS, MYTHS } from "@/lib/cv-rules";
+import { RULES, RULES_BY_ID, rulesFor, DIMENSION_WEIGHTS, BASE_WEIGHTS, MYTHS, TRACKS } from "@/lib/cv-rules";
+import { resolvedMaxPages, resolvedSeverity } from "@/lib/cv-rules/adjust";
 import { CHECKER_IDS } from "@/lib/cv-rules/types";
 import { ARCHETYPES } from "@/lib/types";
 
-/** Rule counts per id prefix: 161 from the three research docs (spec §6.1) + 8 from the approved CV amendments. */
+/**
+ * Rule counts per id prefix after the 2026-10-18 audit (one detector, one rule; unobservable rules removed):
+ * G 37→32 (−G-03/09/10/28/35/37, +G-39 photo), GEN 12→0 (merged into G-), FCQ 12→7, FIN 14→12, QNT 12→10, CON 13→11,
+ * SWE 17→11, PRD 9→8, MKT 12→9, RES 11→10.
+ */
 const EXPECTED_PER_PREFIX: Record<string, number> = {
-  G: 37, GEN: 12, FCQ: 12, FIN: 14, QNT: 12, CON: 13, SWE: 17, DAT: 12, PRD: 9, MKT: 12, RES: 11,
+  G: 32, FCQ: 7, FIN: 12, QNT: 10, CON: 11, SWE: 11, DAT: 12, PRD: 8, MKT: 9, RES: 10,
   EV: 3, AU: 3, ATS: 2, SPR: 7,
 };
 
@@ -15,8 +20,34 @@ describe("CV rule library", () => {
   it("has the transcribed research rules with unique ids", () => {
     expect(new Set(RULES.map((r) => r.id)).size).toBe(RULES.length);
   });
-  it("has exactly the 176 rules (161 research + 8 amendments + 7 spring-week)", () => {
-    expect(RULES.length).toBe(176);
+  it("has exactly the 137 rules left after the audit merge", () => {
+    expect(RULES.length).toBe(137);
+  });
+  it("one detector, one rule: no two scored code rules share a checker in any sector or track (audit 04#2)", () => {
+    for (const a of ARCHETYPES) for (const t of TRACKS) {
+      const code = rulesFor(a, t).filter((r) => r.check === "code" && !r.trackAdjust?.[t]?.skip);
+      const seen = new Map<string, string>();
+      for (const r of code) {
+        const k = r.checker ?? r.id;
+        expect(seen.get(k), `${a}/${t}: ${r.id} and ${seen.get(k)} share ${k}`).toBeUndefined();
+        seen.set(k, r.id);
+      }
+    }
+  });
+  it("page length: one page for finance, consulting and quant; one or two full pages elsewhere, incl. software (03#1)", () => {
+    const g11 = RULES_BY_ID.get("G-11")!;
+    for (const a of ["finance_banking", "consulting", "quant_trading"] as const) expect(resolvedMaxPages(g11, a, "2nd"), a).toBe(1);
+    for (const a of ["software_eng", "data_analytics", "product", "marketing_growth", "research"] as const) expect(resolvedMaxPages(g11, a, "2nd"), a).toBe(2);
+    expect(resolvedMaxPages(g11, "software_eng", "1st", "spring")).toBe(1);
+  });
+  it("first-years get the relaxed quantification threshold in every sector (01#3, 03#7)", () => {
+    expect(RULES_BY_ID.get("G-22")?.yearAdjust?.["1st"]?.threshold).toBe(0.2);
+  });
+  it("naAllowed rules say when; needs only on llm rules", () => {
+    for (const r of RULES) {
+      if (r.naAllowed) expect(r.check === "llm" && /not[ _]applicable/i.test(r.llmGuidance), r.id).toBe(true);
+      if (r.needs) expect(r.check, r.id).toBe("llm");
+    }
   });
   for (const [prefix, n] of Object.entries(EXPECTED_PER_PREFIX)) {
     it(`has ${n} ${prefix} rules`, () => {
@@ -47,9 +78,11 @@ describe("CV rule library", () => {
   it("sectorAdjust only uses valid archetype keys", () => {
     for (const r of RULES) for (const k of Object.keys(r.sectorAdjust ?? {})) expect(ARCHETYPES, r.id).toContain(k);
   });
-  it("FCQ length and grade rules are major (not critical) for quant", () => {
-    expect(RULES_BY_ID.get("FCQ-01")?.sectorAdjust?.quant_trading?.severity).toBe("major");
-    expect(RULES_BY_ID.get("FCQ-04")?.sectorAdjust?.quant_trading?.severity).toBe("major");
+  it("length and grade rules are critical for finance, major for quant", () => {
+    for (const id of ["G-11", "G-32"]) {
+      expect(resolvedSeverity(RULES_BY_ID.get(id)!, "finance_banking", "2nd"), id).toBe("critical");
+      expect(resolvedSeverity(RULES_BY_ID.get(id)!, "quant_trading", "2nd"), id).toBe("major");
+    }
   });
   it("keeps the 11 debunked myths plus the 2 from the amendments", () => {
     expect(MYTHS).toHaveLength(13);
@@ -94,7 +127,6 @@ describe("CV rule library", () => {
   });
   it("applies the amended evidence grades", () => {
     expect(RULES_BY_ID.get("G-22")?.evidence).toBe("D");
-    expect(RULES_BY_ID.get("GEN-04")?.evidence).toBe("C");
     expect(RULES_BY_ID.get("SWE-07")?.evidence).toBe("B");
     expect(RULES_BY_ID.get("SWE-12")?.evidence).toBe("B");
   });
