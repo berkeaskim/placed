@@ -13,6 +13,9 @@ import { db } from "@/lib/db/client";
 import { cvScores, cvs } from "@/lib/db/schema";
 import { LOCAL_USER_ID } from "@/lib/auth/local-user";
 import { seedCv, withTempDb } from "../cv/temp-db";
+import { rulesFor } from "@/lib/cv-rules";
+import { prepareJudgeInput } from "@/lib/cv-score/pii";
+import { putFile } from "@/lib/files";
 
 describe("cache key (R2)", () => {
   const k = { textHash: textHash("abc"), sector: "consulting" as const, rulesVersion: RULES_VERSION, modelId: "anthropic:claude-sonnet-5-5", promptVersion: PROMPT_VERSION };
@@ -165,5 +168,96 @@ describe("scoreCv", () => {
     const id = seed({ user_id: "someone-else" });
     await expect(run(id)).rejects.toThrow(/CV not found/);
     expect(rows()).toEqual([]);
+  });
+});
+
+// Audit 04#9 / #30: a one-character typo fix must not re-roll unrelated verdicts.
+describe("scoreCv delta re-judging", () => {
+  const saved = process.env.AI_MODE;
+  beforeEach(() => { process.env.AI_MODE = "fixture"; vi.mocked(judgeCvRules).mockClear(); });
+  afterEach(() => { if (saved === undefined) delete process.env.AI_MODE; else process.env.AI_MODE = saved; });
+
+  const TYPO = "Manged a £2,000 budget for 12 events";
+  const withBullet = (b: string) => ({
+    parsed: { ...parsed, experience: [{ ...parsed.experience[0], bullets: [{ id: "b0", text: b }] }] },
+    raw: raw.replace("Managed a £2,000 budget for 12 events", b),
+  });
+  const consultingLlm = () => rulesFor("consulting").filter((r) => r.check === "llm").map((r) => r.id);
+
+  /** An earlier CV (with the typo) scored by the "fixture" model: every judged rule passed, quoting an untouched line. */
+  function seedEarlier(over: { model_id?: string; judgeYear?: string } = {}) {
+    db.delete(cvScores).run();
+    db.delete(cvs).run();
+    const e = withBullet(TYPO);
+    const old = seedCv({ raw_text: e.raw, page_texts: [e.raw], page_count: 1, file_size: 100_000, parsed_json: e.parsed as never, is_active: false }).id;
+    const hash = textHash(prepareJudgeInput(e.parsed as ParsedCV, e.raw).redactedText);
+    const llm = consultingLlm().map((ruleId) => ({ ruleId, status: "pass", evidenceLine: ruleId === "CON-03" ? TYPO : "Treasurer, Finance Society", fix: null }));
+    db.insert(cvScores).values({
+      user_id: U, cv_id: old, sector: "consulting", total: 80, dimensions: {},
+      rule_results: { code: [], llm, spellingErrors: ["Manged"], judgeYear: over.judgeYear ?? "2nd", scoredBy: "fixture" },
+      text_hash: hash, model_id: over.model_id ?? "fixture", prompt_version: PROMPT_VERSION, rules_version: RULES_VERSION,
+    } as typeof cvScores.$inferInsert).run();
+    const now = withBullet("Managed a £2,000 budget for 12 events");
+    return seedCv({ raw_text: now.raw, page_texts: [now.raw], page_count: 1, file_size: 100_000, parsed_json: now.parsed as never }).id;
+  }
+
+  it("re-judges only the rules the fix could affect and keeps every other verdict", async () => {
+    const id = seedEarlier();
+    await run(id);
+    expect(judgeCvRules).toHaveBeenCalledTimes(1);
+    const call = vi.mocked(judgeCvRules).mock.calls[0][0];
+    const reused = new Set((call.reuse ?? []).map((r) => r.ruleId));
+    // Kept: passes whose quoted line is untouched, on rules that aren't about wording.
+    expect(reused.has("G-21")).toBe(true);
+    expect(reused.has("G-12")).toBe(true);
+    expect(reused.has("CON-11")).toBe(true);
+    // Re-judged: the rule that quoted the fixed line, and rules about wording.
+    expect(reused.has("CON-03")).toBe(false);
+    expect(reused.has("G-20")).toBe(false);
+    expect(reused.has("G-26")).toBe(false);
+    expect(reused.size).toBeGreaterThan(consultingLlm().length / 2);
+    const row = rows().find((r) => r.cv_id === id)!;
+    const rr = row.rule_results as { delta?: { reused: number; rejudged: number; cosmetic: boolean }; llm: { ruleId: string; status: string }[] };
+    // Offered verdicts for rules preset by context (a job advert is needed) don't count: the preset wins.
+    expect(rr.delta).toMatchObject({ cosmetic: true });
+    expect(rr.delta!.reused).toBeGreaterThan(consultingLlm().length / 2);
+    expect(rr.delta!.reused).toBeLessThanOrEqual(reused.size);
+    expect(rr.delta!.rejudged).toBeGreaterThan(0);
+    expect(rr.llm.find((r) => r.ruleId === "G-21")?.status).toBe("pass");
+  });
+
+  it("a different model or year of study re-judges everything (cache invalidation still wins)", async () => {
+    await run(seedEarlier({ model_id: "anthropic:claude-sonnet-5-5" }));
+    expect(vi.mocked(judgeCvRules).mock.calls[0][0].reuse).toBeUndefined();
+    vi.mocked(judgeCvRules).mockClear();
+    await run(seedEarlier({ judgeYear: "final" }));
+    expect(vi.mocked(judgeCvRules).mock.calls[0][0].reuse).toBeUndefined();
+  });
+
+  it("never reuses another user's verdicts", async () => {
+    const id = seedEarlier();
+    db.update(cvScores).set({ user_id: "someone-else" }).run();
+    await run(id);
+    expect(vi.mocked(judgeCvRules).mock.calls[0][0].reuse).toBeUndefined();
+  });
+});
+
+// Audit 04#28: a CV rendered by Placed's tailor is flagged when it's scored.
+describe("scoreCv provenance", () => {
+  const saved = process.env.AI_MODE;
+  beforeEach(() => { process.env.AI_MODE = "fixture"; });
+  afterEach(() => { if (saved === undefined) delete process.env.AI_MODE; else process.env.AI_MODE = saved; });
+
+  it("records madeByPlaced when the stored PDF carries Placed's tailor stamp, and not otherwise", async () => {
+    await putFile("cvs", `${U}/placed.pdf`, new TextEncoder().encode("%PDF-1.4\n<< /Creator (Placed) /Producer (Placed) >>\n"), "application/pdf");
+    await putFile("cvs", `${U}/word.pdf`, new TextEncoder().encode("%PDF-1.7\n<< /Creator (Microsoft Word) /Producer (macOS) >>\n"), "application/pdf");
+    const tailored = await run(seed({ storage_path: `${U}/placed.pdf` }));
+    expect(tailored.madeByPlaced).toBe(true);
+    expect((only().rule_results as { madeByPlaced?: boolean }).madeByPlaced).toBe(true);
+    const own = await run(seed({ storage_path: `${U}/word.pdf` }));
+    expect(own.madeByPlaced).toBe(false);
+    expect((only().rule_results as { madeByPlaced?: boolean }).madeByPlaced).toBeUndefined();
+    // A missing file is just "not known to be tailored".
+    expect((await run(seed({ storage_path: `${U}/missing.pdf` }))).madeByPlaced).toBe(false);
   });
 });

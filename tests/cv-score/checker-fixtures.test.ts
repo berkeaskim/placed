@@ -208,10 +208,13 @@ describe("skill_rating_glyphs: bars, stars, /5, /10 and % next to a skill (G-05)
   it.each([
     "Python ●●●●○", "SQL ● ● ● ○ ○", "Excel ★★★☆☆", "Python 8/10", "Java – 4/5", "Python (90%)", "SQL: 85%",
     "Excel ■■■□□", "Java (3/5)", "Python ◼◼◼◻◻",
+    // Block-character bars, found by the gold-set harness (docs/validation, synthetic syn-05).
+    "Python ████████░░ 80%", "Java ██████░░░░", "SQL ▰▰▰▱▱", "Excel ▓▓▓▒▒",
   ])("fail: %s", (t) => expect(sk(t)).toBe("fail"));
   it.each([
     "Python (proficient)", "SQL (familiar)", "Raised 40% more funds", "Scored 8/10 in a quiz night", "Excel: pivot tables, XLOOKUP",
     "Java, SQL, Python", "GPA 3.8/4.0", "Grade 5/5 in GCSE Maths", "Cut costs 15%", "Python — advanced",
+    "Section break ────────", "█",
   ])("pass: %s", (t) => expect(sk(t)).toBe("pass"));
 });
 

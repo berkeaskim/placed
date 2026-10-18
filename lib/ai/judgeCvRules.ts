@@ -30,6 +30,13 @@ export type JudgeInput = {
   context?: JudgeContext;
   /** Fixture mode only: an EXACT fixture under fixtures/ai/judgeCvRules/<key>.json (no default fallback). */
   fixtureKey?: string;
+  /**
+   * Delta re-judging (audit 04#9): earlier verdicts still valid for this text (lib/cv-score/delta.ts planDelta). These
+   * rules are not sent; their verdicts are returned as they are. Context presets (year skips, missing JD) still win.
+   */
+  reuse?: ScoredRuleResult[];
+  /** The earlier run's spelling list, used (re-checked against this text) only when every judged rule is reused. */
+  reuseSpelling?: string[] | null;
 };
 /** Sent to the judge in a <target> block, and used to resolve each rule's sector wording and year skips. */
 export type JudgeContext = { year: Year; sector: Archetype; track: Track; jdPresent: boolean };
@@ -37,7 +44,11 @@ export type JudgeContext = { year: Year; sector: Archetype; track: Track; jdPres
  * `cacheable: false` when no verdicts were obtained (fixture mode without an exact fixture, or a live AI failure): never
  * cache those. `aiUnavailable`: the live judge failed, so the score is the automatic (code) checks only.
  */
-export type JudgeResult = { results: ScoredRuleResult[]; spellingErrors: string[] | null; modelId: string; cacheable: boolean; aiUnavailable?: boolean };
+export type JudgeResult = {
+  results: ScoredRuleResult[]; spellingErrors: string[] | null; modelId: string; cacheable: boolean; aiUnavailable?: boolean;
+  /** How many verdicts came from `reuse` rather than this call. */
+  reused?: number;
+};
 
 const escapeData = (s: string) => s.replace(/</g, "&lt;").replace(/>/g, "&gt;");
 const unescapeData = (s: string) => s.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
@@ -217,8 +228,10 @@ export async function judgeCvRules(i: JudgeInput): Promise<JudgeResult> {
     ...allLlm.filter((r) => !skipped.includes(r) && unmet(r).length).map((r): ScoredRuleResult => ({ ruleId: r.id, status: "not_applicable", evidenceLine: null, fix: null, detail: `needs: ${unmet(r).join(", ")}` })),
   ];
   const presetIds = new Set(preset.map((p) => p.ruleId));
-  const llmRules = allLlm.filter((r) => !presetIds.has(r.id));
-  const inOrder = (rs: ScoredRuleResult[]) => { const m = new Map([...preset, ...rs].map((x) => [x.ruleId, x])); return allLlm.map((r) => m.get(r.id)!); };
+  const reusable = new Map((i.reuse ?? []).filter((x) => !presetIds.has(x.ruleId) && x.status !== "could_not_assess").map((x) => [x.ruleId, x]));
+  const reused = allLlm.filter((r) => !presetIds.has(r.id) && reusable.has(r.id)).map((r) => reusable.get(r.id)!);
+  const llmRules = allLlm.filter((r) => !presetIds.has(r.id) && !reusable.has(r.id));
+  const inOrder = (rs: ScoredRuleResult[]) => { const m = new Map([...preset, ...reused, ...rs].map((x) => [x.ruleId, x])); return allLlm.map((r) => m.get(r.id)!); };
   const modelId = currentModelId("smart");
   // No verdicts at all: every judged rule is could_not_assess, so the score is provisional rather than inflated (04#1).
   const none = (detail: string): JudgeResult => ({
@@ -226,8 +239,13 @@ export async function judgeCvRules(i: JudgeInput): Promise<JudgeResult> {
     spellingErrors: null,
     modelId,
     cacheable: false,
+    reused: reused.length,
   });
-  if (llmRules.length === 0) return { ...none("no rules to judge"), cacheable: true };
+  if (llmRules.length === 0) {
+    // Everything still valid from the earlier run: no call, and the earlier spelling list minus words no longer in the text.
+    const spellingErrors = reused.length && i.reuseSpelling ? cleanSpelling(i.reuseSpelling, i.redactedText) : null;
+    return { ...none("no rules to judge"), spellingErrors, cacheable: true };
+  }
   if (aiMode() === "fixture" && !hasExactFixture(i.fixtureKey)) return none("no AI verdict (fixture mode)");
 
   let raw: JudgeOutputT | null;
@@ -272,6 +290,6 @@ export async function judgeCvRules(i: JudgeInput): Promise<JudgeResult> {
   // A failed batch leaves its rules could_not_assess: show what was judged, labelled as incomplete, and never cache it.
   return {
     results: inOrder(mapCvVerdicts(raw, llmRules, i.redactedText, i.structuredText)),
-    spellingErrors: cleanSpelling(raw.spelling_errors, i.redactedText), modelId, cacheable: !partial, aiUnavailable: partial,
+    spellingErrors: cleanSpelling(raw.spelling_errors, i.redactedText), modelId, cacheable: !partial, aiUnavailable: partial, reused: reused.length,
   };
 }

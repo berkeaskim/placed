@@ -2,16 +2,19 @@
 import { useState, useTransition } from "react";
 import { disagreeWithFix } from "./actions";
 
-/** Per-fix "I disagree": records feedback only. Nothing else on the panel changes. */
-export function DisagreeButton({ cvId, ruleId, sector }: { cvId: string; ruleId: string; sector: string }) {
-  const [state, setState] = useState<"idle" | "done" | "error">("idle");
+/**
+ * Per-fix "I disagree" (04#25): records one disagreement for this verdict. The verdict is then shown as disputed; it is
+ * never hidden or flipped, and the score doesn't change.
+ */
+export function DisagreeButton({ cvId, ruleId, sector, disputed = false }: { cvId: string; ruleId: string; sector: string; disputed?: boolean }) {
+  const [state, setState] = useState<"idle" | "done" | "error">(disputed ? "done" : "idle");
   const [pending, start] = useTransition();
 
   if (state === "done") {
     return (
       <span role="status" className="inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-[#0B6B49]">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>
-        Thanks — noted
+        {disputed ? "You disagreed" : "Thanks — marked as disputed"}
       </span>
     );
   }
