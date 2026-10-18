@@ -1154,7 +1154,29 @@
       "final": "Graduate applications; lead with internship or strongest project, add final-year project, keep GitHub current.",
       "masters": "Same as final year; make the dissertation/project a headline item with results."
     },
-    "yearGuidanceBasis": "Synthesis (grade D), aligned with cv-rules-tech-product.md section 7; first-year insight targeting cites R6."
+    "yearGuidanceBasis": "Synthesis (grade D), aligned with cv-rules-tech-product.md section 7; first-year insight targeting cites R6.",
+    "yearGuidanceDated": [
+      {
+        "year": "penultimate",
+        "text": "Google London SWE/SRE 2027 internships close 23 Oct 2026 and are reviewed on a rolling basis; they offer no visa sponsorship.",
+        "expiresOn": "2026-10-23"
+      },
+      {
+        "year": "penultimate",
+        "text": "Monzo's 2027 software engineering internship (London, graduating 2028) closes 1 Nov 2026 with rolling offers, and needs unrestricted UK right to work for the full 12 weeks.",
+        "expiresOn": "2026-11-01"
+      },
+      {
+        "year": "2nd",
+        "text": "On a three-year degree you are penultimate: Google London SWE/SRE 2027 internships close 23 Oct 2026, reviewed on a rolling basis.",
+        "expiresOn": "2026-10-23"
+      },
+      {
+        "year": "2nd",
+        "text": "On a three-year degree you are penultimate: Monzo's 2027 software engineering internship (graduating 2028) closes 1 Nov 2026 with rolling offers.",
+        "expiresOn": "2026-11-01"
+      }
+    ]
   },
   "data_analytics": {
     "signals": [
@@ -1694,7 +1716,14 @@
       "final": "Graduate applications; foreground any internship and the dissertation if it is quantitative.",
       "masters": "Lead with the MSc project (data, method, result); show statistics explicitly for DS roles."
     },
-    "yearGuidanceBasis": "Synthesis (grade D), aligned with cv-rules-tech-product.md sections 3 and 7."
+    "yearGuidanceBasis": "Synthesis (grade D), aligned with cv-rules-tech-product.md sections 3 and 7.",
+    "yearGuidanceDated": [
+      {
+        "year": "penultimate",
+        "text": "Monzo's 2027 Associate Data Scientist internship (London, graduating 2028) closes 1 Nov 2026 and makes offers on a rolling basis; it needs unrestricted UK right to work for the full 12 weeks.",
+        "expiresOn": "2026-11-01"
+      }
+    ]
   },
   "product": {
     "caveat": {

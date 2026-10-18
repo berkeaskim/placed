@@ -541,7 +541,8 @@
             "quote": "Participants may be considered for next steps linked to summer internship opportunities, depending on the pathway and programme process.",
             "accessed": "2026-10-13"
           }
-        ]
+        ],
+        "maxYear": 2
       },
       {
         "id": "PB-FIN-E02",
@@ -661,7 +662,8 @@
             "accessed": "2026-10-13"
           }
         ],
-        "expiresOn": "2027-01-03"
+        "expiresOn": "2027-01-03",
+        "maxYear": 2
       },
       {
         "id": "PB-FIN-E05",
@@ -703,6 +705,48 @@
           }
         ],
         "reviewBy": "2026-12-31"
+      },
+      {
+        "id": "PB-FIN-E06",
+        "type": "experience",
+        "title": "BlackRock 2027 Spring Insight Event (EMEA)",
+        "description": "A week-long asset-management insight event in BlackRock's London and Edinburgh offices in April 2027, open to students of any degree who graduate in 2029. You can apply to one programme only (up to two functions), and a withdrawn application can't be resubmitted this year. After applying you get a pre-interview assessment with five days to complete it.",
+        "skills": [
+          "Commercial Awareness",
+          "Communication",
+          "Teamwork"
+        ],
+        "signals": [
+          "PB-FIN-S01",
+          "PB-FIN-S04"
+        ],
+        "effort": "weekend",
+        "minYear": 1,
+        "maxYear": 2,
+        "evidence": "Insight programme line on the CV; early contact with an asset manager.",
+        "url": "https://careers.blackrock.com/job/london/2027-spring-insight-event-emea/45831/97150826752",
+        "verified": true,
+        "howToFind": "BlackRock careers site, search \"Spring Insight\". A separate Client and Product Spring Insight Event (London only) has the same deadline.",
+        "timing": "Apply by Friday 4 December 2026 (BlackRock careers, accessed 2026-10-18).",
+        "sources": [
+          {
+            "title": "2027 Spring Insight Event - EMEA",
+            "publisher": "BlackRock",
+            "url": "https://careers.blackrock.com/job/london/2027-spring-insight-event-emea/45831/97150826752",
+            "primary": true,
+            "quote": "for students of all academic backgrounds who will graduate with an undergraduate or master's degree in 2029",
+            "accessed": "2026-10-18"
+          },
+          {
+            "title": "2027 Spring Insight Event - EMEA",
+            "publisher": "BlackRock",
+            "url": "https://careers.blackrock.com/job/london/2027-spring-insight-event-emea/45831/97150826752",
+            "primary": true,
+            "quote": "If you withdraw your application, you cannot submit another application for this programme this year.",
+            "accessed": "2026-10-18"
+          }
+        ],
+        "expiresOn": "2026-12-04"
       }
     ],
     "yearGuidance": {
@@ -718,6 +762,12 @@
         "text": "Jane Street Bridge London (1-3 April 2027) closes 3 Jan 2027, 23:59 GMT; open to students graduating in 2029.",
         "expiresOn": "2027-01-03",
         "ref": "PB-FIN-E04"
+      },
+      {
+        "year": "year1",
+        "text": "BlackRock Spring Insight EMEA (April 2027, London and Edinburgh, for 2029 graduates) closes Fri 4 Dec 2026. One application per programme; a withdrawn application can't be resubmitted.",
+        "expiresOn": "2026-12-04",
+        "ref": "PB-FIN-E06"
       }
     ]
   },
@@ -1318,7 +1368,8 @@
             "accessed": "2026-10-13"
           }
         ],
-        "expiresOn": "2027-01-03"
+        "expiresOn": "2027-01-03",
+        "maxYear": 1
       },
       {
         "id": "PB-QNT-E02",
@@ -1482,6 +1533,56 @@
             "accessed": "2026-10-13"
           }
         ]
+      },
+      {
+        "id": "PB-QNT-E06",
+        "type": "experience",
+        "title": "Jane Street FOCUS (London)",
+        "description": "A four-day programme for first-year students who have faced barriers to opportunities in STEM. Travel, meals and housing are covered. The application asks for a 150-word statement about you and why you want to attend.",
+        "skills": [
+          "Probability",
+          "Problem Solving",
+          "Teamwork"
+        ],
+        "signals": [
+          "PB-QNT-S01",
+          "PB-QNT-S04"
+        ],
+        "effort": "weekend",
+        "minYear": 1,
+        "maxYear": 1,
+        "evidence": "Insight programme line on the CV; early contact with the firm.",
+        "url": "https://www.janestreet.com/join-jane-street/programs-and-events/focus/",
+        "verified": true,
+        "howToFind": "Jane Street Programs and Events page, FOCUS. Apply only to the location nearest you.",
+        "timing": "London session 13-16 January 2027; apply by 8 November 2026, 23:59 GMT (Jane Street programmes data, accessed 2026-10-18).",
+        "sources": [
+          {
+            "title": "FOCUS programme page",
+            "publisher": "Jane Street",
+            "url": "https://www.janestreet.com/join-jane-street/programs-and-events/focus/",
+            "primary": true,
+            "quote": "This multi-day program was created for first-year students currently enrolled in university.",
+            "accessed": "2026-10-18"
+          },
+          {
+            "title": "FOCUS programme page",
+            "publisher": "Jane Street",
+            "url": "https://www.janestreet.com/join-jane-street/programs-and-events/focus/",
+            "primary": true,
+            "quote": "Jane Street will cover travel to and from the program, meals, housing, and a variety of social events",
+            "accessed": "2026-10-18"
+          },
+          {
+            "title": "Programs data feed (FOCUS, London session: formatted_deadline field)",
+            "publisher": "Jane Street",
+            "url": "https://www.janestreet.com/jobs/programs-endpoint.json",
+            "primary": true,
+            "quote": "Sunday, November 8th, 2026 at 11:59pm GMT",
+            "accessed": "2026-10-18"
+          }
+        ],
+        "expiresOn": "2026-11-08"
       }
     ],
     "yearGuidance": {
@@ -1492,6 +1593,12 @@
       "note": "For 4-year courses, shift each line by one year."
     },
     "yearGuidanceDated": [
+      {
+        "year": "year1",
+        "text": "Jane Street FOCUS London (13-16 January 2027, for first-years who have faced barriers to STEM opportunities) closes 8 Nov 2026, 23:59 GMT.",
+        "expiresOn": "2026-11-08",
+        "ref": "PB-QNT-E06"
+      },
       {
         "year": "year1",
         "text": "Jane Street FTTP London (21-25 March 2027) closes 3 Jan 2027, 23:59 GMT.",

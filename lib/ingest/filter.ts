@@ -104,7 +104,8 @@ export function passesLocationFilter(rawLocation: string, remote: boolean, jdTex
   return { pass: false, reason: `Location not in UK/Europe/remote: ${location}` };
 }
 
-const NO_SPONSOR = /(we (do not|don'?t|cannot|can'?t) (offer |provide )?(visa )?sponsor|unable to (provide |offer )?(visa )?sponsor|no (visa )?sponsorship|not able to sponsor)/i;
+// "no sponsorship required/needed" means the opposite of a refusal, so it must not match
+const NO_SPONSOR = /(we (do not|don'?t|cannot|can'?t) (offer |provide )?(visa )?sponsor|unable to (provide |offer )?(visa )?sponsor|no (visa )?sponsorship(?!\s+(is\s+)?(required|needed))|not able to sponsor)/i;
 const YES_SPONSOR = /(visa sponsorship (is )?available|we (can |will |do )?sponsor|sponsorship (is )?(available|provided|offered))/i;
 
 export function detectSponsorship(jdText: string): "yes" | "no" | "unknown" {

@@ -15,16 +15,35 @@ export function isActive(x: { expiresOn?: string; reviewBy?: string }, today: st
   return { show: !x.expiresOn || x.expiresOn >= today, stale: !!x.reviewBy && x.reviewBy < today };
 }
 
+/** Days a dated guidance line stays visible (flagged) after its reviewBy date. */
+const REVIEW_GRACE_DAYS = 30;
+const STALE_NOTE = " (Dates may have changed: check the official page.)";
+
+/**
+ * Shown to every final-year and masters student: the rule affects 2027 graduate-scheme plans.
+ * GOV.UK, Graduate visa (accessed 2026-10-18): "2 years if you apply on or before 31 December 2026";
+ * "18 months if you apply on or after 1 January 2027"; doctoral qualifications get 3 years.
+ */
+export const GRADUATE_VISA_NOTE =
+  "International students: the Graduate visa lasts 2 years if you apply on or before 31 December 2026, and 18 months from 1 January 2027 (3 years after a PhD). Ask each employer whether they sponsor a Skilled Worker visa after that.";
+
+/** True when the action's year window (minYear..maxYear) includes the student's year. */
+export function openToYear(a: { minYear: Year; maxYear?: Year }, year: Year) {
+  const yi = YEARS.indexOf(year);
+  return YEARS.indexOf(a.minYear) <= yi && (!a.maxYear || yi <= YEARS.indexOf(a.maxYear));
+}
+
+const addDays = (day: string, n: number) => new Date(Date.parse(`${day}T00:00:00Z`) + n * 86_400_000).toISOString().slice(0, 10);
+
 const rank = (a: PickedAction, b: PickedAction) =>
   b.covers.length - a.covers.length || EFFORT[a.effort] - EFFORT[b.effort] || TYPE[a.type] - TYPE[b.type] || a.id.localeCompare(b.id);
 
 /** Playbook actions that close the student's gaps, for their year, never expired or already done. */
 export function pickActions(pb: Playbook, gaps: Gap[], year: Year, today: string, done: Set<string>) {
-  const yi = YEARS.indexOf(year);
   const wanted = gaps.map((g) => (typeof g === "string" ? { skill: g, alts: [g] } : { skill: g.skill, alts: g.anyOf?.length ? g.anyOf : [g.skill] }))
     .map((g) => ({ skill: g.skill, alts: new Set(g.alts.map((s) => s.toLowerCase())) }));
   const pool: PickedAction[] = pb.actions
-    .filter((a) => YEARS.indexOf(a.minYear) <= yi && !done.has(a.id) && isActive(a, today).show)
+    .filter((a) => openToYear(a, year) && !done.has(a.id) && isActive(a, today).show)
     .map((a) => {
       const have = new Set(a.skills.map((s) => s.toLowerCase()));
       return { ...a, covers: wanted.filter((g) => [...g.alts].some((s) => have.has(s))).map((g) => g.skill), stale: isActive(a, today).stale };
@@ -57,8 +76,9 @@ export function visibleHints(c: CoverageResult) {
 }
 
 export function activeGuidance(pb: Playbook, year: Year, today: string) {
-  return {
-    line: pb.yearGuidance[year] ?? null,
-    dated: pb.yearGuidanceDated.filter((d) => d.year === year && isActive(d, today).show).map((d) => d.text),
-  };
+  const dated = pb.yearGuidanceDated
+    .filter((d) => d.year === year && isActive(d, today).show && !(d.reviewBy && addDays(d.reviewBy, REVIEW_GRACE_DAYS) < today))
+    .map((d) => (isActive(d, today).stale ? d.text + STALE_NOTE : d.text));
+  if (year === "final" || year === "masters") dated.push(GRADUATE_VISA_NOTE);
+  return { line: pb.yearGuidance[year] ?? null, dated };
 }

@@ -17,7 +17,7 @@ ${UNTRUSTED_JD_RULE}
 Rules:
 - archetype: the single best fit from the allowed list.
 - year_eligibility: which years of study may apply, only if the posting says or clearly implies it (e.g. "penultimate year" -> ["penultimate","2nd"], spring weeks -> ["1st","2nd"] unless stated). Empty list if not stated.
-- sponsors_visa: "no" only if the posting explicitly says no sponsorship / must already have right to work; "yes" only if it says sponsorship is available; otherwise "unknown". Silence is not a refusal.
+- sponsors_visa: "no" only if the posting explicitly says it will not sponsor a visa; "yes" only if it says sponsorship is available; otherwise "unknown". "Must have the right to work in the UK" alone is "unknown" (a Student visa gives that right in vacations), and "no sponsorship required" is "unknown". Silence is not a refusal.
 - deadline: YYYY-MM-DD only if a closing date is stated, else null.
 - requirements: rate importance from the posting ALONE. evidence_tier "stated" needs explicit wording (must, required, essential); "structural" means it sits under a requirements/preferred heading; "inferred" means market knowledge. An inferred requirement can never be "critical" or "high".
 - skills: EVERY skill the requirement names, each as a short canonical name (e.g. "Strong Excel and financial modelling" -> ["Excel","Financial Modelling"]). Empty list for non-skill requirements. Never collapse named skills into a generic one like "Programming".

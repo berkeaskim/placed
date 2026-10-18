@@ -118,6 +118,7 @@ export default async function JobPage({ params, searchParams }: { params: Promis
               <p key={g.key} className="rounded-xl bg-[#FFF1DC] px-3 py-2 text-sm font-semibold text-[#7A4100]">{g.reason}</p>
             ))}
             {fit.softFlags.map((f) => <p key={f} className="text-sm text-[#7A4100]">{f}</p>)}
+            {fit.notes.map((n) => <p key={n} className="text-sm text-[#5B5B6B]">{n}</p>)}
             <ExplainPanel jobId={job.id}>
               <div className="flex flex-col gap-1 rounded-xl border p-3">
                 <div className="flex items-center justify-between gap-2">

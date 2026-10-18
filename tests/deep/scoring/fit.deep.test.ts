@@ -91,17 +91,20 @@ describe("gates (spec §5 stage 0)", () => {
     expect(res.capped).toBe(true);
     expect(res.global).toBeLessThanOrEqual(2.5);
   });
-  it("visa: unknown is neutral (identical score to yes); only explicit 'no' + needsVisa gates", () => {
+  it("visa: unknown is neutral (identical score to yes); only explicit 'no' + needsVisa gates a graduate role", () => {
     const s = student({ needsVisa: true });
-    const yes = scoreFit(s, job({ sponsorsVisa: "yes" }), cov(0.7), today);
-    const unknown = scoreFit(s, job({ sponsorsVisa: "unknown" }), cov(0.7), today);
-    const no = scoreFit(s, job({ sponsorsVisa: "no" }), cov(0.7), today);
+    const grad = { employmentType: "graduate" as const };
+    const yes = scoreFit(s, job({ ...grad, sponsorsVisa: "yes" }), cov(0.7), today);
+    const unknown = scoreFit(s, job({ ...grad, sponsorsVisa: "unknown" }), cov(0.7), today);
+    const no = scoreFit(s, job({ ...grad, sponsorsVisa: "no" }), cov(0.7), today);
+    // a vacation internship never needs sponsorship on a Student visa
+    expect(scoreFit(s, job({ sponsorsVisa: "no" }), cov(0.7), today).capped).toBe(false);
     expect(unknown.global).toBe(yes.global);
     expect(unknown.capped).toBe(false);
     expect(no.capped).toBe(true);
     expect(gate(no, "visa").reason).toBe("No visa sponsorship");
     // student who doesn't need a visa is never gated by sponsorship
-    expect(scoreFit(student({ needsVisa: false }), job({ sponsorsVisa: "no" }), cov(0.7), today).capped).toBe(false);
+    expect(scoreFit(student({ needsVisa: false }), job({ ...grad, sponsorsVisa: "no" }), cov(0.7), today).capped).toBe(false);
   });
   it("permanent roles gate every year of study; other employment types do not", () => {
     for (const t of ["internship", "placement", "spring_week", "insight", "graduate", "other"] as const) {

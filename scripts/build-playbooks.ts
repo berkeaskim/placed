@@ -60,6 +60,7 @@ export function normalise(raw: Raw, techSources: TechSource[]): Record<string, P
           ...clean,
           description: a.timing ? `${a.description} ${a.timing}` : a.description,
           minYear: toYear(a.minYear, `${arch}/${a.id}`),
+          ...(a.maxYear === undefined ? {} : { maxYear: toYear(a.maxYear, `${arch}/${a.id} maxYear`) }),
           sources: inlineSources(a.sources, techSources, `${arch}/${a.id}`),
         };
       }),
@@ -92,10 +93,12 @@ export function crossCheck(pbs: Record<string, PlaybookT>, opts: { requireAll: b
       if (!RULES_BY_ID.has(r) && !(base && RULES_BY_ID.has(base))) errs.push(`${arch}/${s.id}: unknown rule ${r}`);
     }
     for (const a of pb.actions) {
+      if (a.maxYear && YEARS.indexOf(a.maxYear) < YEARS.indexOf(a.minYear)) errs.push(`${arch}/${a.id}: maxYear before minYear`);
       if (a.url && a.verified !== true) errs.push(`${arch}/${a.id}: link not verified`);
       for (const sk of a.skills) if (!canon.has(sk)) errs.push(`${arch}/${a.id}: non-canonical skill ${sk}`);
       for (const sig of a.signals) if (!signalIds.has(sig)) errs.push(`${arch}/${a.id}: dangling signal ${sig}`);
     }
+    for (const d of pb.yearGuidanceDated) if (!d.expiresOn && !d.reviewBy) errs.push(`${arch}: dated guidance needs expiresOn or reviewBy: ${d.text.slice(0, 50)}`);
   }
   return errs;
 }

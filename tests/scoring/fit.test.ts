@@ -32,9 +32,31 @@ describe("scoreFit", () => {
     expect(r.gates.find((g) => g.key === "year")!.reason).toBe("Open to final year / masters only");
     expect(r.label).toBe("Not recommended");
   });
-  it("visa gate only fires on explicit no-sponsorship plus needs_visa", () => {
-    expect(scoreFit({ ...student, needsVisa: true }, job({ sponsorsVisa: "unknown" }), cov(0.8), today).capped).toBe(false);
-    expect(scoreFit({ ...student, needsVisa: true }, job({ sponsorsVisa: "no" }), cov(0.8), today).capped).toBe(true);
+  it("visa gate only fires on explicit no-sponsorship plus needs_visa, for graduate or permanent roles", () => {
+    const visa = { ...student, needsVisa: true };
+    expect(scoreFit(visa, job({ sponsorsVisa: "unknown", employmentType: "graduate" }), cov(0.8), today).capped).toBe(false);
+    const grad = scoreFit(visa, job({ sponsorsVisa: "no", employmentType: "graduate" }), cov(0.8), today);
+    expect(grad.capped).toBe(true);
+    expect(grad.gates.find((g) => g.key === "visa")!.reason).toBe("No visa sponsorship");
+    expect(scoreFit(student, job({ sponsorsVisa: "no", employmentType: "graduate" }), cov(0.8), today).capped).toBe(false);
+  });
+  it("Student-visa holders are not gated off internships, spring weeks or placements (UKCISA: full-time work allowed in vacations and on course placements)", () => {
+    const visa = { ...student, needsVisa: true };
+    for (const employmentType of ["internship", "placement", "spring_week", "insight", "other"] as const) {
+      const r = scoreFit(visa, job({ sponsorsVisa: "no", employmentType }), cov(0.8), today);
+      expect(r.capped, employmentType).toBe(false);
+      expect(r.gates.find((g) => g.key === "visa")!.passed).toBe(true);
+      expect(r.notes.join(" "), employmentType).toMatch(/Student visa/);
+      expect(r.global).toBe(scoreFit(student, job({ sponsorsVisa: "no", employmentType }), cov(0.8), today).global);
+    }
+  });
+  it("notes the Graduate visa length on graduate roles with unknown sponsorship, without changing the score", () => {
+    const visa = { ...student, needsVisa: true };
+    const r = scoreFit(visa, job({ sponsorsVisa: "unknown", employmentType: "graduate" }), cov(0.8), today);
+    expect(r.notes.join(" ")).toMatch(/18 months/);
+    expect(r.global).toBe(scoreFit(student, job({ sponsorsVisa: "unknown", employmentType: "graduate" }), cov(0.8), today).global);
+    expect(scoreFit(student, job({ employmentType: "graduate" }), cov(0.8), today).notes).toEqual([]);
+    expect(scoreFit(visa, job({ sponsorsVisa: "yes", employmentType: "graduate" }), cov(0.8), today).notes).toEqual([]);
   });
   it("permanent roles are gated", () => {
     expect(scoreFit(student, job({ employmentType: "permanent" }), cov(0.8), today).capped).toBe(true);
