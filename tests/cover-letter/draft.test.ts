@@ -17,14 +17,14 @@ describe("buildDraftPrompt", () => {
 
   it("carries the length band, UK conventions and the short cliché ban", () => {
     const { system } = buildDraftPrompt(fixtureDraftInput());
-    expect(system).toContain("250–400 words");
+    expect(system).toContain("220–380 words"); // 09 #22: one page
     expect(system).toMatch(/Dear Ms Patel/);
     expect(system).toMatch(/Graduate Recruitment Team/);
     expect(system).toMatch(/Yours sincerely/);
     expect(system).toMatch(/Yours faithfully/);
     for (const c of ["I am writing to", "I am thrilled/excited to apply", "My name is", "I hope this finds you well"]) expect(system).toContain(c);
     expect(system).toContain("no exclamation marks, no bullets");
-    expect(buildDraftPrompt(fixtureDraftInput({ mode: "field_answer", limit: { unit: "chars", max: 1500 } })).system).toMatch(/1275–1500 characters/);
+    expect(buildDraftPrompt(fixtureDraftInput({ mode: "field_answer", limit: { unit: "chars", max: 1500 } })).system).toMatch(/900–1500 characters/);
     expect(buildDraftPrompt(fixtureDraftInput({ mode: "short_note" })).system).toContain("50–150 words");
   });
 
@@ -92,4 +92,22 @@ describe("streamDraft (fixture mode)", () => {
     expect(v.lint.filter((h) => h.severity === "block")).toEqual([]);
     expect(v.lint.some((h) => h.ruleId === "CL-12" && h.label === "Add your own reason")).toBe(true);
   }, 20_000);
+});
+
+// audit 09 #8 / #9 / #19
+describe("draft prompt and rule bookkeeping", () => {
+  it("uses the cover-letter sector notes, not the CV tailoring playbook", async () => {
+    const { buildDraftPrompt, sectorNotesPrompt } = await import("@/lib/cover-letter/draft");
+    expect(sectorNotesPrompt("consulting")).toMatch(/stepping stone/);
+    expect(sectorNotesPrompt("finance_banking")).toMatch(/desk family/);
+    const { fixtureDraftInput } = await import("./fixtures");
+    const { prompt, system } = buildDraftPrompt(fixtureDraftInput());
+    expect(prompt).not.toContain("ROLE PLAYBOOK");
+    expect(system).toMatch(/Never guess a title from a name/);
+  });
+  it("marks the rules that have no code as implemented: false", async () => {
+    const rules = (await import("@/lib/cover-letter/rules.json")).default as { rules: { id: string; implemented?: boolean }[] };
+    const off = rules.rules.filter((r) => r.implemented === false).map((r) => r.id);
+    expect(off).toEqual(expect.arrayContaining(["CL-22", "CL-27", "CL-32", "CL-57", "CL-60"]));
+  });
 });

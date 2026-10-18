@@ -2,7 +2,8 @@
   "_meta": {
     "compiled": "2026-10-17",
     "companion": "00-playbook.md",
-    "notes": "Consolidated, de-duplicated rule set for the Placed Cover Letter Writer. Each rule cites the research rule ids it came from (file:rule-id). Severities: block = must not ship; high = fix before ship; med = warn; low = style. check: regex|count|length (deterministic), llm (judge pass), flow (pipeline/UX), policy (product decision). Lexicon regexes are case-insensitive, multiline. Thresholds are uncalibrated (05 §6): calibrate on real student letters and aim for < 10% false positives on human letters."
+    "notes": "Consolidated, de-duplicated rule set for the Placed Cover Letter Writer. Each rule cites the research rule ids it came from (file:rule-id). Severities: block = must not ship; high = fix before ship; med = warn; low = style. check: regex|count|length (deterministic), llm (judge pass), flow (pipeline/UX), policy (product decision). Lexicon regexes are case-insensitive, multiline. Thresholds are uncalibrated (05 §6): calibrate on real student letters and aim for < 10% false positives on human letters.",
+    "auditFixes": "2026-10-18 audit 09: Overall/Ultimately soft (#5); negative parallelism needs a reframe (#5); Yahoo! exempt (#5); money only with intent words, med (#5); 'before deciding' dropped (#5); US-spelling soft pattern removed ('program' is British for software) (#5); realm/beacon/symphony/indelible soft (#6); Dear Sir/Madam low (#18); iStart 0.5 (#20); field fill 60% low (#21); full letter 220-380, hard 420 (#22); phrase-level triplet (#24); en/em/-- dashes counted together, high not block (#25); AI-policy regex moved to lib/employer-policy (#1). Rules with no code are marked implemented:false (#9)."
   },
   "modes": {
     "skip": {
@@ -11,10 +12,10 @@
     },
     "full_letter": {
       "words": [
-        250,
-        400
+        220,
+        380
       ],
-      "hardMax": 450,
+      "hardMax": 420,
       "pages": 1,
       "salutation": true,
       "signOff": true
@@ -32,7 +33,7 @@
       "limitFromForm": true,
       "defaultWords": 300,
       "fillRatio": [
-        0.85,
+        0.6,
         1
       ],
       "salutation": false,
@@ -119,7 +120,8 @@
       "sources": [
         "04:CL-TP-23",
         "01:CL-EV-15"
-      ]
+      ],
+      "implemented": false
     },
     {
       "id": "CL-06",
@@ -252,7 +254,8 @@
       "check": "llm",
       "sources": [
         "02:CL-ST-02"
-      ]
+      ],
+      "implemented": false
     },
     {
       "id": "CL-23",
@@ -273,7 +276,8 @@
       "sources": [
         "02:CL-ST-07",
         "03:recipe-5"
-      ]
+      ],
+      "implemented": false
     },
     {
       "id": "CL-25",
@@ -283,7 +287,8 @@
       "sources": [
         "03:CL-FC-10",
         "01:CL-EV-18"
-      ]
+      ],
+      "implemented": false
     },
     {
       "id": "CL-26",
@@ -293,7 +298,8 @@
       "sources": [
         "03:CL-FC-11",
         "04:CL-TP-15"
-      ]
+      ],
+      "implemented": false
     },
     {
       "id": "CL-27",
@@ -302,7 +308,8 @@
       "check": "count",
       "sources": [
         "03:CL-FC-12"
-      ]
+      ],
+      "implemented": false
     },
     {
       "id": "CL-28",
@@ -311,7 +318,8 @@
       "check": "regex",
       "sources": [
         "03:CL-FC-08"
-      ]
+      ],
+      "implemented": false
     },
     {
       "id": "CL-30",
@@ -321,7 +329,8 @@
       "sources": [
         "02:CL-ST-03",
         "04:CL-TP-04"
-      ]
+      ],
+      "implemented": false
     },
     {
       "id": "CL-31",
@@ -331,7 +340,8 @@
       "sources": [
         "05:CL-AI-15",
         "01:CL-EV-05"
-      ]
+      ],
+      "implemented": false
     },
     {
       "id": "CL-32",
@@ -343,7 +353,8 @@
         "01:CL-EV-07",
         "04:CL-TP-10",
         "03:CL-FC-14"
-      ]
+      ],
+      "implemented": false
     },
     {
       "id": "CL-33",
@@ -530,7 +541,8 @@
       "check": "count",
       "sources": [
         "05:CL-AI-17"
-      ]
+      ],
+      "implemented": false
     },
     {
       "id": "CL-57",
@@ -539,7 +551,8 @@
       "check": "count",
       "sources": [
         "04:CL-TP-20"
-      ]
+      ],
+      "implemented": false
     },
     {
       "id": "CL-58",
@@ -549,7 +562,8 @@
       "sources": [
         "01:CL-EV-09",
         "03:CL-FC-26"
-      ]
+      ],
+      "implemented": false
     },
     {
       "id": "CL-60",
@@ -561,7 +575,8 @@
         "03:CL-FC-30",
         "04:CL-TP-21",
         "06:CL-FM-14"
-      ]
+      ],
+      "implemented": false
     },
     {
       "id": "CL-61",
@@ -570,7 +585,8 @@
       "check": "regex",
       "sources": [
         "06:CL-FM-13"
-      ]
+      ],
+      "implemented": false
     },
     {
       "id": "CL-62",
@@ -601,7 +617,8 @@
       "sources": [
         "06:CL-FM-19",
         "01:CL-EV-17"
-      ]
+      ],
+      "implemented": false
     },
     {
       "id": "CL-70",
@@ -628,7 +645,8 @@
       "check": "llm",
       "sources": [
         "03:CL-FC-22"
-      ]
+      ],
+      "implemented": false
     },
     {
       "id": "CL-73",
@@ -637,7 +655,8 @@
       "check": "llm",
       "sources": [
         "03:CL-FC-23"
-      ]
+      ],
+      "implemented": false
     },
     {
       "id": "CL-74",
@@ -730,7 +749,7 @@
         "label": "AI vocabulary"
       },
       {
-        "pattern": "\\b(realm|beacon|symphony|unwavering|indelible)\\b",
+        "pattern": "\\bunwavering\\b",
         "scope": "any",
         "label": "AI vocabulary"
       },
@@ -780,7 +799,7 @@
         "label": "Cliché"
       },
       {
-        "pattern": "\\bit'?s not\\b[^.]{1,60}\\bit'?s\\b",
+        "pattern": "\\bit'?s not (?:just |merely |only )?(?:about )?(?!easy\\b|hard\\b|worth\\b)\\w+[^.]{0,40}[,;—–-]\\s*(?:but )?it'?s (?:about )?(?!worth\\b|easy\\b|hard\\b)\\w+",
         "scope": "any",
         "label": "Negative parallelism"
       },
@@ -795,7 +814,7 @@
         "label": "Trailing participle"
       },
       {
-        "pattern": "(^|[.!?]\\s+)(In conclusion|In summary|Ultimately|Overall),",
+        "pattern": "(^|[.!?]\\s+)(In conclusion|In summary|To sum up),",
         "scope": "any",
         "label": "Formulaic transition"
       },
@@ -805,7 +824,7 @@
         "label": "Formulaic close"
       },
       {
-        "pattern": "!",
+        "pattern": "(?<!Yahoo)!",
         "scope": "any",
         "label": "Exclamation mark"
       },
@@ -830,17 +849,22 @@
         "label": "Chatbot leakage"
       },
       {
-        "pattern": "\\b(to whom it may concern|dear sir(\\s*(/|or)\\s*madam)?)\\b",
+        "pattern": "\\bto whom it may concern\\b",
         "scope": "any",
         "label": "Salutation"
       },
       {
-        "pattern": "\\b(a few years (in|at) consulting|before deciding|exit opportunit(y|ies)|keep(ing)? my options open|stepping[- ]stone)\\b",
+        "pattern": "\\bdear sir(\\s*(/|or)\\s*madam)?\\b",
+        "scope": "any",
+        "label": "Generic salutation"
+      },
+      {
+        "pattern": "\\b(a few years (in|at) consulting|exit opportunit(y|ies)|keep(ing)? my options open|stepping[- ]stone)\\b",
         "scope": "any",
         "label": "Consulting stepping-stone"
       },
       {
-        "pattern": "\\b(salary|bonus|compensation|perks|benefits package)\\b",
+        "pattern": "\\b(attract|appeal|motivat|reason|why|drawn|excit)\\w*\\b[^.]{0,60}\\b(salary|bonus|compensation|pay|perks|benefits)\\b|\\b(salary|bonus|compensation|pay|perks|benefits)\\b[^.]{0,40}\\b(attracts?|appeals?|motivates?|draws?|excites?)\\b",
         "scope": "any",
         "label": "Money as motivation"
       },
@@ -920,7 +944,11 @@
         "weight": 1
       },
       {
-        "pattern": "\\b(organiz|optimiz|analyz|favor|center\\b|program(?!me))",
+        "pattern": "\\b(realm|beacon|symphony|indelible)\\b",
+        "weight": 1
+      },
+      {
+        "pattern": "(^|[.!?]\\s+)(Ultimately|Overall),",
         "weight": 1
       }
     ],
@@ -930,7 +958,7 @@
       "notOnlyButMax": 1,
       "notOnlyBut": "\\bnot (only|just|merely)\\b[^.]{1,80}\\bbut( also)?\\b",
       "tripletMax": 1,
-      "triplet": "\\b\\w+, \\w+,? and \\w+\\b",
+      "triplet": "[^,.;]{3,40}, [^,.;]{3,40}?,? (?:and|or) [^,.;]{3,40}",
       "softDistinctPer300": 3,
       "sentenceStdDevMin": 4,
       "shortSentenceMaxWords": 8,
@@ -938,7 +966,7 @@
       "sentenceMax": 40,
       "paragraphCvMin": 0.15,
       "paragraphMaxWords": 110,
-      "iStartRatioMax": 0.35,
+      "iStartRatioMax": 0.5,
       "jdCopyNgram": 8,
       "cvParaphraseRatioMax": 0.6,
       "crossLetterOverlapMax": 0.4

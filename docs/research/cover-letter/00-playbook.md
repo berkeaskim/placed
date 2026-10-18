@@ -87,7 +87,7 @@ Inputs: job description, company, division, office, and the candidate's touchpoi
 - **Data:** each story runs question → method → decision, with tool names secondary. Evidence for this sector is weak, so these are soft rules.
 - **Product:** one observation about *their* product from the user's own notes, plus a hypothesis. Never invent product usage.
 - **Startups:** a short note. Qualify yourself in the first two lines, make most of it about them, end with one small ask.
-- **AI labs / mission-driven:** a "Why X?" essay of 200–400 words that names specific work. Several of these firms (Anthropic among them) ask candidates not to use AI or to draft first themselves. Detect this and switch to feedback-only mode (§7).
+- **AI labs / mission-driven:** a "Why X?" essay of 200–400 words that names specific work. Some firms limit AI use: Anthropic asks candidates to write their own first draft and then refine it with Claude (anthropic.com/candidate-ai-guidance, read 2026-10-18); Bain London allows AI only for spelling and grammar. Placed checks a curated table and the advert's wording (lib/employer-policy) and switches to feedback-only mode (§7). (Corrected 2026-10-18, audit 09 #1: Anthropic does not forbid AI.)
 
 ---
 
