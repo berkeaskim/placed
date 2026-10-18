@@ -38,10 +38,36 @@ describe("tailoring playbooks", () => {
     expect(p.indexOf("ROLE PLAYBOOK")).toBeGreaterThan(p.lastIndexOf("</job_posting>"));
   });
 
-  it("system prompt asks for a substantial rewrite with the agreed target", () => {
-    expect(SYSTEM_TAILOR).toContain(`${TAILOR_TARGET.min}-${TAILOR_TARGET.max} changes`);
-    expect(SYSTEM_TAILOR).toMatch(/never the safe default/);
+  it("system prompt asks for select/reorder and minimal edits (audit 05 #11)", () => {
+    // audit 05 #11: select/reorder + minimal edits, not "a substantial rewrite" where "unchanged is never the safe default"
+    expect(SYSTEM_TAILOR).toContain(`At most ${TAILOR_TARGET.max} changes`);
+    expect(TAILOR_TARGET.max).toBeLessThanOrEqual(8);
+    expect(SYSTEM_TAILOR).not.toMatch(/never the safe default|substantial/);
+    expect(SYSTEM_TAILOR).toMatch(/Prefer, in this order: \(1\) reorder/);
+    // 05 #1: never create a profile; 05 #17: no keyword placement across summary + first bullets + skills
+    expect(SYSTEM_TAILOR).toMatch(/if the CV has no summary, return summary: null/i);
+    expect(SYSTEM_TAILOR).not.toMatch(/write one, 1-2 lines/);
+    expect(SYSTEM_TAILOR).not.toMatch(/Distribute the top posting keywords/);
     expect(SYSTEM_TAILOR).toMatch(/never a source of facts|only from facts already in the CV/);
+  });
+
+  // audit 05 #10: the formulas contradicted SYSTEM_TAILOR ("No numbers", "never write the target role")
+  it("no summary formula asks for numbers, metrics, a target role or a quantified fact", () => {
+    for (const a of ARCHETYPES) expect(tailorPlaybook(a)!.summaryFormula, a).not.toMatch(/\bnumbers?\b|\bmetrics?\b|\btarget\b|quantified/i);
+    for (const a of ARCHETYPES) expect(tailorPlaybook(a)!.summaryFormula, a).toMatch(/never write one/);
+  });
+
+  // audit 05 #9: reframes whose target is a skill label the gate always blocks were dead letters
+  it("drops the dead-letter reframes and the Bain policy line", () => {
+    const all = ARCHETYPES.flatMap((a) => tailorPlaybook(a)!.reframes.map((r) => r.to.toLowerCase()));
+    expect(all.some((t) => t.startsWith("client-facing"))).toBe(false);
+    expect(all).not.toContain("stakeholder management");
+    expect(JSON.stringify(ARCHETYPES.map((a) => tailorPlaybook(a)!.pitfalls))).not.toMatch(/Bain/);
+  });
+
+  it("grammar-only mode leaves the playbook out", () => {
+    const p = buildTailorPrompt({ cv, job: jobFor("consulting"), allowed: [], supported: [], feedback: null, mode: "grammar_only" });
+    expect(p).not.toContain("ROLE PLAYBOOK");
   });
 });
 

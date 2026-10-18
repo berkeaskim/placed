@@ -120,3 +120,22 @@ describe("fix round 1: live AiError falls back loudly", () => {
     expect(t.usedFallback).toBe(true);
   });
 });
+
+describe("audit 05 #12/#13: smart tier and grammar-only mode", () => {
+  it.each([["full", /GOAL: make the strongest honest evidence/], ["grammar_only", /GRAMMAR-ONLY MODE/]] as const)("live %s call uses the smart tier and its prompt", async (mode, re) => {
+    const { vi } = await import("vitest");
+    vi.resetModules();
+    const provider = await import("@/lib/ai/provider");
+    const calls: { tier: string; system: string }[] = [];
+    vi.doMock("@/lib/ai/provider", () => ({
+      ...provider,
+      generateStructured: async (o: { tier: string; system: string }) => { calls.push(o); return { ...rawFixture }; },
+      runAi: async (o: { live: () => Promise<unknown> }) => o.live(),
+    }));
+    const mod = await import("@/lib/ai/tailorCV");
+    await mod.tailorCV({ cv, job, allowed: ["Excel"], supported: [], feedback: null, mode });
+    expect(calls[0].tier).toBe("smart");
+    expect(calls[0].system).toMatch(re);
+    vi.doUnmock("@/lib/ai/provider"); vi.resetModules();
+  });
+});
