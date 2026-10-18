@@ -31,6 +31,8 @@ export const Action = z.object({
   signals: z.array(z.string()),
   effort: z.enum(["weekend", "2-4 weeks", "term"]),
   minYear: z.enum(YEARS),
+  /** Last year of study the programme is open to (e.g. first-year-only insight weeks). */
+  maxYear: z.enum(YEARS).optional(),
   evidence: z.string(),
   url: z.string().url().optional(),
   howToFind: z.string().optional(),
@@ -44,6 +46,8 @@ export const DatedGuidance = z.object({
   year: z.enum(YEARS),
   text: z.string(),
   expiresOn: Day.optional(),
+  /** "Expected" dates: shown with a check-the-page note after this day, hidden 30 days later. */
+  reviewBy: Day.optional(),
   ref: z.string().optional(),
 });
 

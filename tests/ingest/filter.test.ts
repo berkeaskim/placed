@@ -82,6 +82,9 @@ describe("detectSponsorship", () => {
     ["We are unable to offer feedback to unsuccessful applicants.", "unknown"],
     ["We are unable to provide visa sponsorship.", "no"],
     ["We are unable to offer sponsorship.", "no"],
+    ["No sponsorship required: this is a paid summer internship.", "unknown"],
+    ["No visa sponsorship is needed for Student visa holders during the summer.", "unknown"],
+    ["No sponsorship is available for this role.", "no"],
   ] as const)("%s → %s", (text, expected) => {
     expect(detectSponsorship(text)).toBe(expected);
   });

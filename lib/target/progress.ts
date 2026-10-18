@@ -5,8 +5,9 @@ import { confirmedFacts, playbookProgress, profiles } from "@/lib/db/schema";
 import { awardXP } from "@/lib/gamify/award";
 import type { AwardResult } from "@/lib/gamify/core";
 import { PLAYBOOKS, type Action } from "@/lib/playbooks";
-import { ARCHETYPES, YEARS, type Archetype, type Year } from "@/lib/types";
+import { ARCHETYPES, type Archetype, type Year } from "@/lib/types";
 import { canonicalize } from "@/lib/skills/extract";
+import { openToYear } from "./actions";
 import { targetFor } from "./view";
 
 const MIN_NOTE = 10;
@@ -25,7 +26,7 @@ export function findAction(id: string): Action | null {
 /** An action the student can actually see: in their target role's playbook and open to their year. */
 export function actionFor(id: string, sector: Archetype, year: Year): Action | null {
   const a = PLAYBOOKS[sector].actions.find((x) => x.id === id);
-  return a && YEARS.indexOf(a.minYear) <= YEARS.indexOf(year) ? a : null;
+  return a && openToYear(a, year) ? a : null;
 }
 
 function studentTarget(userId: string) {

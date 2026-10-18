@@ -21,7 +21,20 @@ export type Gate = { key: "year" | "permanent" | "location" | "visa"; passed: bo
 export type FitResult = {
   global: number; label: FitLabel; gates: Gate[]; capped: boolean;
   sub: { archetype: number; coverage: number; location: number; accessibility: number }; softFlags: string[];
+  /** Information only: never changes the score. */
+  notes: string[];
 };
+
+/**
+ * Roles that need a work visa after the course ends. Student-visa holders can work "Full time outside term time
+ * ... which includes in vacations", and "can usually do a work placement as part of your course" (UKCISA, Student
+ * work, accessed 2026-10-18), so internships, spring weeks and placements are never visa-gated.
+ */
+const SPONSOR_NEEDED: JobForScoring["employmentType"][] = ["graduate", "permanent"];
+const STUDENT_VISA_NOTE =
+  "Says no visa sponsorship. On a Student visa you can usually still work full-time in vacations and on a placement that is part of your course: check the dates fall outside term.";
+const GRADUATE_VISA_NOTE =
+  "Sponsorship isn't stated. The Graduate visa lasts 18 months if you apply from 1 January 2027 (2 years before), so ask whether they sponsor a Skilled Worker visa after that.";
 
 export function labelFor(g: number): FitLabel {
   if (g >= 4.5) return "Strong fit";
@@ -84,13 +97,16 @@ export function scoreFit(student: StudentProfile, job: JobForScoring, coverage: 
       ? { key: "permanent", passed: false, reason: "Permanent full-time role" }
       : { key: "permanent", passed: true },
     loc <= 2 ? { key: "location", passed: false, reason: `Outside your locations (${job.location || "unknown"})` } : { key: "location", passed: true },
-    student.needsVisa && job.sponsorsVisa === "no"
+    student.needsVisa && job.sponsorsVisa === "no" && SPONSOR_NEEDED.includes(job.employmentType)
       ? { key: "visa", passed: false, reason: "No visa sponsorship" }
       : { key: "visa", passed: true },
   ];
   const softFlags: string[] = [];
   if (job.postedAt && daysUntil(today, job.postedAt.slice(0, 10)) > 90) softFlags.push("Posted over 90 days ago");
   if (job.cohortClash) softFlags.push("Term-time cohort (e.g. Winter)");
+  const notes: string[] = [];
+  if (student.needsVisa && job.sponsorsVisa === "no" && !SPONSOR_NEEDED.includes(job.employmentType)) notes.push(STUDENT_VISA_NOTE);
+  if (student.needsVisa && job.sponsorsVisa === "unknown" && job.employmentType === "graduate") notes.push(GRADUATE_VISA_NOTE);
 
   const sub = {
     archetype: archetypeSub(student, job),
@@ -104,5 +120,5 @@ export function scoreFit(student: StudentProfile, job: JobForScoring, coverage: 
   const capped = gates.some((x) => !x.passed);
   if (capped) g = Math.min(g, GATE_CAP);
   const global = Math.round((g + 1e-9) * 10) / 10; // epsilon: 4.655 must round to 4.7, not 4.6
-  return { global, label: labelFor(global), gates, capped, sub, softFlags };
+  return { global, label: labelFor(global), gates, capped, sub, softFlags, notes };
 }
