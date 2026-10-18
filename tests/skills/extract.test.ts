@@ -185,4 +185,17 @@ describe("SKILLS vocabulary", () => {
     for (const t of ["Qualified CPA", "CPA candidate, passed all four exams", "Studying for the CPA exam", "Interned at a CPA firm"])
       expect(extractSkills(t), t).not.toContain("CPA");
   });
+  // Audit 05 #9 / PR #54 handoff: reframe targets the gate must see. Bare "comps" is left out: students also say it for competitions.
+  it("recognises A/B tests, stock pitches and comps in their common forms", () => {
+    for (const t of ["Ran an A/B test on the sign-up page", "Ran A/B tests", "Designed an a/b test", "A/B testing of two subject lines", "Ran an AB test"])
+      expect(extractSkills(t), t).toContain("A/B Testing");
+    for (const t of ["Presented a stock pitch on Tesco", "Wrote two stock pitches for the investment society"])
+      expect(extractSkills(t), t).toContain("Stock Pitch");
+    for (const t of ["Built a comps table for 5 UK retailers", "Comparable company analysis of three grocers", "Comparable companies analysis", "Ran trading comps on Ocado"])
+      expect(extractSkills(t), t).toContain("Valuation");
+    for (const t of ["Competed in maths comps", "Ran an ab workout"]) {
+      expect(extractSkills(t), t).not.toContain("Valuation");
+      expect(extractSkills(t), t).not.toContain("A/B Testing");
+    }
+  });
 });
