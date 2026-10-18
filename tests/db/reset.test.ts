@@ -43,12 +43,15 @@ function seed() {
 
 describe("resetUserData", () => {
   it("covers every user table except the shared ones, and no removed Gmail tables", () => {
-    for (const t of ["cv_scores", "cvs", "confirmed_facts", "matches", "applications", "xp_events", "badges", "cv_feedback", "playbook_progress", "outreach", "autopilot_vault", "autopilot_packs", "linkedin_scores"]) {
+    for (const t of ["cv_scores", "cvs", "confirmed_facts", "matches", "applications", "xp_events", "badges", "cv_feedback", "playbook_progress", "outreach", "autopilot_vault", "autopilot_packs", "linkedin_scores",
+      "bank_entries", "bank_bullets", "bank_sources", "bank_suggestions", "eligibility_overrides"]) {
       expect(USER_TABLES).toContain(t);
     }
     expect(USER_TABLES).not.toContain("inbox_events");
     expect(USER_TABLES.indexOf("cv_scores")).toBeLessThan(USER_TABLES.indexOf("cvs"));
     expect(USER_TABLES.indexOf("outreach")).toBeLessThan(USER_TABLES.indexOf("applications"));
+    expect(USER_TABLES.indexOf("bank_bullets")).toBeLessThan(USER_TABLES.indexOf("bank_entries"));
+    expect(USER_TABLES.indexOf("bank_suggestions")).toBeLessThan(USER_TABLES.indexOf("bank_sources"));
     expect([...USER_BUCKETS]).toEqual(["cvs", "tailored"]);
   });
 

@@ -7,7 +7,7 @@ import { profiles } from "@/lib/db/schema";
 import { getProfile, toStudent, type ProfileRow } from "@/lib/db/queries";
 
 const row: ProfileRow = {
-  user_id: "u1", display_name: "Sam", year: null, grad_year: null, field: null, location_pref: null as never, needs_visa: true,
+  user_id: "u1", display_name: "Sam", year: null, grad_year: null, field: null, course: null, location_pref: null as never, needs_visa: true,
   target_archetype: null, archetypes: null as never, skills: null as never, onboarded: false, xp: 0, level: 1, streak_days: 0, last_active_date: null,
 };
 
