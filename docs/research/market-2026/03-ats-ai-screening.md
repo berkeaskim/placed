@@ -1,6 +1,6 @@
 # 03 — How ATS and AI screening actually work (2025–2026)
 
-Researcher 3 of 6 · written 2026-10-13 · for the Placed CV Score (§6) and Tailoring (§7–§8) of `docs/superpowers/specs/2026-10-13-placed-design.md`.
+Researcher 3 of 6 · written 2026-10-13 · last re-verified 2026-10-18 against `docs/research/audit-2026-10-18/10-fit-ats-market.md` · for the Placed CV Score (§6) and Tailoring (§7–§8) of `docs/superpowers/specs/2026-10-13-placed-design.md`.
 
 This file **adds** the 2025–2026 state of screening technology to the ATS section of `docs/research/cv-rules-general.md`. It does not repeat what is there: knockout questions, PDF support and the Preptel origin of the "75%" myth are already covered as M1/M3/M5 and G-01…G-10.
 
@@ -36,13 +36,13 @@ This file **adds** the 2025–2026 state of screening technology to the ATS sect
 - The docs describe no auto-reject.
 - Sources: Ashby docs, https://docs.ashbyhq.com/ai-assisted-application-review (viewed 2026-10); Ashby bias audit Aug 2024, https://www.ashbyhq.com/downloadables/ashby-bias-audit-08-2024.pdf — **A**
 
-**F4. Oleeo (widely used in UK graduate recruitment) does the same, and says no one is filtered out automatically.**
+**F4. Oleeo (widely used in UK graduate recruitment) does the same, and now auto-generates a ranked shortlist.**
 - Oleeo's AI checks each candidate against the vacancy's selection criteria. For every criterion it recommends met / not met and summarises the evidence.
 - Candidates are then ranked. If a reviewer disagrees with a recommendation, the ranking updates.
-- Oleeo's product page states: "View a prioritised list of those who meet the most criteria, without anyone being automatically filtered out."
+- Oleeo's product page (viewed 2026-10-18) says the tool "Scores and ranks candidates to automatically generate a ready-to-review, prioritised shortlist". An earlier version of the page said no one was "automatically filtered out"; that line is gone.
 - It explicitly contrasts itself with "rigid, binary keyword filters" and "exact-match phrasing".
 - Inputs can include the CV, application-form answers, cover letters and video-interview transcripts.
-- Sources: https://www.oleeo.com/products/ai-candidate-screening and https://www.oleeo.com/products/selection-intelligence/ (viewed 2026-10) — **A (vendor marketing)**
+- Sources: https://www.oleeo.com/products/ai-candidate-screening (viewed 2026-10-18) and https://www.oleeo.com/products/selection-intelligence/ (viewed 2026-10) — **A (vendor marketing)**
 
 **F5. iCIMS, Eightfold and SmartRecruiters produce a per-job match score; none documents auto-rejection.**
 - **iCIMS:**
@@ -76,10 +76,10 @@ This file **adds** the 2025–2026 state of screening technology to the ATS sect
   - HireVue has scored structured answers with language models since dropping facial analysis in 2020–21 (B, SHRM: https://www.shrm.org/topics-tools/news/talent-acquisition/hirevue-discontinues-facial-analysis-screening).
 
 **F8. The UK regulator thinks many employers are already making decisions with no meaningful human involvement. This conflicts with the vendors' "a human always decides" message.**
-- The ICO's *Recruitment rewired* report (March 2026) draws on more than 30 employers (March 2025–January 2026).
-- It found many are "likely relying on solely automated decisions" with "legal or similarly significant effects".
-- The ICO wrote to 16 organisations. It requires transparency to candidates, consistent and meaningful human review, and bias monitoring.
-- Sources: https://ico.org.uk/about-the-ico/what-we-do/recruitment-rewired/ (Mar 2026); ICO jobseeker guidance https://ico.org.uk/about-the-ico/media-centre/news-and-blogs/2026/03/here-s-what-jobseekers-need-to-know-about-automated-recruitment-decisions/ — **A**
+- The ICO's *Recruitment rewired* report (dated March 2026 ⚠: date not shown on the ICO page as of 2026-10-18) draws on more than 30 employers (evidence March 2025–January 2026).
+- It found "many employers engaging in automated recruitment are likely relying on solely automated decisions" with "legal or similarly significant effects".
+- The ICO wrote to 16 organisations ⚠ (not shown on the ICO page as of 2026-10-18; cite the report PDF before quoting). It requires transparency to candidates, consistent and meaningful human review, and bias monitoring.
+- Sources: https://ico.org.uk/about-the-ico/what-we-do/recruitment-rewired/ (viewed 2026-10-18); ICO jobseeker guidance https://ico.org.uk/about-the-ico/media-centre/news-and-blogs/2026/03/here-s-what-jobseekers-need-to-know-about-automated-recruitment-decisions/ — **A**
 - Context:
   - The ICO's Nov 2024 audit of AI recruitment vendors made about 300 recommendations, including a "lack of accuracy testing". https://ico.org.uk/about-the-ico/media-centre/news-and-blogs/2024/11/ico-intervention-into-ai-recruitment-tools-leads-to-better-data-protection-for-job-seekers — **A**
   - The Data (Use and Access) Act 2025 (Royal Assent 19 June 2025) rewrote the UK GDPR rules on automated decisions (new Art. 22A–D). Draft ICO guidance on automated decision-making followed on 31 Mar 2026 (C, law-firm summaries, e.g. https://www.freeths.co.uk/insights-events/legal-articles/2026/ico-consults-on-updated-automated-decision-making-and-profiling-guidance/).
@@ -94,10 +94,11 @@ This file **adds** the 2025–2026 state of screening technology to the ATS sect
 - Both cases are allegations only. Neither has been decided.
 
 **F10. Adoption in UK graduate recruitment is real but well short of universal.**
-- The ISE Student Recruitment Survey 2025 found 28% of employers use some AI in early-careers hiring (up from 9% in 2022). The most common uses are psychometric tests, pre-screening and video interviews.
-- About half of employers worry that students who use AI misrepresent their abilities: 48% for graduates.
-- Reported cheating rose from 7% to 15%. The most common form was undisclosed AI use in interviews.
-- The average vacancy now receives about 140 applications.
+- The ISE Student Recruitment Report 2026 (14 Oct 2026) found **16%** of employers currently use AI in recruitment, 29% plan to within a year and 52% don't plan to. Volume tactics now include "automated eligibility screening", shorter windows and limiting roles or programmes per candidate. https://ise.org.uk/knowledge/insights/615/graduate_jobs_stabilise_but_ai_use_disrupts_recruitment (accessed 2026-10-18) — **B**
+- Earlier figure: ISE SRS **2023** (published Nov 2023) found 28% of employers used some AI (up from 9% in 2022). The most common uses were psychometric tests, pre-screening and video interviews. ISE insight 180, https://ise.org.uk/knowledge/insights/180/employers_using_ai_to_recruit_graduates_and_apprentices_triples/ — **B**. The 2023 and 2026 figures may use different question wording, so do not read the fall as a trend without checking.
+- About half of employers worry that students who use AI misrepresent their abilities: 48% for graduates (ISE 2025).
+- Reported "frequent" cheating rose from 7% to 15% (ISE 2025). The most common form was undisclosed AI use in interviews. In 2026, 92% of employers suspected or confirmed misconduct (ISE 2026).
+- The average graduate vacancy now receives about 141 applications (ISE 2026; 140 in 2025).
 - Sources: ISE, https://ise.org.uk/_userfiles/pages/files/reports/student_recruitment_survey_2025.pdf; https://ise.org.uk/knowledge/insights/513/ise_top_10_stats_of_2025_you_need_to_know/ — **A** (industry-body survey; self-reported)
 
 ### C. Parsing: what still breaks in 2026
@@ -216,7 +217,7 @@ This file **adds** the 2025–2026 state of screening technology to the ATS sect
 | **Ashby** (startups, AI labs) | — | LLM checks each recruiter-written criterion: Meets / Does not meet / Undecided; sort by % of criteria met | No; candidate opt-out and notice | docs.ashbyhq.com (A); 2024 bias audit (A) |
 | **iCIMS** | Parser + Copilot (GPT-4 via Azure) | Candidate Ranking and Role Fit score per job | Not documented | iCIMS release notes and product page (A) |
 | **Eightfold** (large enterprises, some banks) | Uses CV plus external public data (alleged) | ML match score 0–5 per candidate-job pair; sub-scores for skills, titles, experience | Not documented; FCRA suit filed Jan 2026 | eightfold.ai LL144 page (A); Fortune Jan 2026 (B) |
-| **Oleeo** (UK grad schemes, Civil Service–style volume hiring) | Reads CV + forms + cover letters + interview transcripts | AI recommendation per criterion with evidence → ranking; reviewer override changes the rank | **No** ("without anyone being automatically filtered out") | oleeo.com product pages (A, marketing) |
+| **Oleeo** (UK grad schemes, Civil Service–style volume hiring) | Reads CV + forms + cover letters + interview transcripts | AI recommendation per criterion with evidence → ranking; reviewer override changes the rank | Not documented; auto-generates shortlists | oleeo.com product pages, viewed 2026-10-18 (A, marketing) |
 | **Cappfinity** (EY, Deloitte, HSBC, Barclays…) | Not a CV parser | Strengths/situational/numerical assessments; the CV often matters less than the test | Test score cut-offs (employer-set) | graduatesfirst.com (C) |
 | **HireVue** (video interviews) | n/a | Language model scores transcribed answers against an employer rubric; no facial analysis since 2020–21 | Employer-set | SHRM 2021 (B) |
 | **Textkernel** (parser inside several ATSs) | 70+ formats; OCR add-on for images; ≥15% of CVs use columns; column handling raised clean renders from 62% to 90% | n/a (parser) | n/a | textkernel.com blog (A) |
@@ -227,7 +228,7 @@ This file **adds** the 2025–2026 state of screening technology to the ATS sect
 
 | # | Myth | Verdict | Evidence |
 |---|---|---|---|
-| N1 | "The ATS robot auto-rejects you if you lack keywords." | **Mostly false (2026).** Major vendors document ranking and grading, not rejection. Auto-rejection comes from knockout form questions and test cut-offs. **But** ICO (2026) says many UK employers likely use solely automated decisions in practice, so a low rank can work like a rejection. | F1–F4, F7, F8 |
+| N1 | "The ATS robot auto-rejects you if you lack keywords." | **Mostly false (2026).** Major vendors document ranking and grading, not rejection. Auto-rejection comes from knockout form questions and test cut-offs. **But** ranking can work as rejection: ICO (2026) says many UK employers likely use solely automated decisions in practice, and Oleeo now auto-generates a prioritised shortlist, so a low rank can work like a rejection. | F1–F4, F7, F8 |
 | N2 | "Modern ATS just counts keyword matches." | **Outdated.** Workday, Greenhouse, Ashby, Oleeo and iCIMS now use LLMs to judge each requirement against evidence in the CV. Exact-word search still exists for recruiters' manual searches. | F1–F6 |
 | N3 | "Aim for a 75–80% match score." | **No evidence base.** It is a commercial heuristic from Jobscan. Vendors use per-job bands or grades, not universal percentages. | F17 |
 | N4 | "Hide the job description or 'ignore previous instructions' in white text to beat the AI." | **Harmful.** About 1% of CVs try it. Vendors and staffing firms now detect it and may reject. Any advantage disappears as more people do it, and fenced pipelines neutralise it. In the UK, it can also be treated as dishonesty at the integrity checks that ISE members increasingly run. | F15, F16, F10 |
@@ -293,5 +294,6 @@ Copy for the hidden-text warning (keep it plain and non-judgemental):
 10. **Myth cards to add** from N1–N7. N1 (the "robot reject"), N3 (75–80% target) and N4 (white text) are the strongest demo moments.
 
 ### 4.5 Open gaps (not verified in this pass)
-- No official Lever documentation on AI ranking was found. Oleeo's model type (LLM or not) is unclear from the public page. Cappfinity and HireVue grades rest on secondary sources.
+- No official Lever documentation on AI ranking was found. Oleeo's model type (LLM or not) is unclear from the public page, and whether candidates outside the auto-generated shortlist are ever reviewed is not documented.
+- ICO *Recruitment rewired*: "16 organisations" and the March 2026 date are ⚠ until the report PDF is cited. Cappfinity and HireVue grades rest on secondary sources.
 - The "7× growth" figure for prompt injection comes from press coverage of the Duke study. The abstract itself says only "increased noticeably".

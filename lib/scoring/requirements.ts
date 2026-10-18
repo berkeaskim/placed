@@ -20,8 +20,33 @@ export type RequirementRow = {
 
 export type ExplanationGap = { requirement: string; blocking: boolean; adjacentExperience: string | null; howToClose: string };
 
-/** C5: the Explanation type lives here (client-safe); lib/ai/explainMatch re-exports it. */
-export type Explanation = { rows: RequirementRow[]; whyFit: string[]; gaps: ExplanationGap[] };
+/**
+ * C5: the Explanation type lives here (client-safe); lib/ai/explainMatch re-exports it. `checks`: requirements a CV
+ * can't show (right to work, degree, language, years of experience); the student checks them, they are not gaps (10#13).
+ */
+export type Explanation = { rows: RequirementRow[]; whyFit: string[]; gaps: ExplanationGap[]; checks?: string[] };
+
+// ---------- requirement kinds (10#13) ----------
+
+export type RequirementKind = "skill" | "eligibility" | "degree" | "experience" | "language" | "behaviour";
+const SOFT = new Set(["communication", "teamwork", "leadership", "problem solving", "stakeholder management"]);
+const KIND_RULES: [RequirementKind, RegExp][] = [
+  ["eligibility", /\b(right to work|work permit|visa|sponsorship|eligible to work|security clearance|nationality|citizen(ship)?|driving licen[cs]e)\b/i],
+  ["experience", /\b\d+\s*\+?\s*(?:-\s*\d+\s*)?(years?|yrs?)['’]?\s+(of\s+)?(\w+\s+)?experience\b/i],
+  ["language", /\b(fluent|fluency|native|business[- ]level)\b[^.]{0,30}\b(english|french|german|spanish|italian|mandarin|chinese|japanese|arabic|portuguese|dutch|russian|cantonese|korean)\b|\b(french|german|spanish|italian|mandarin|japanese|arabic|portuguese|dutch|russian|cantonese|korean)\b[^.]{0,20}\b(fluent|fluency|native|speaker|level)\b/i],
+  ["degree", /\b(degree|2[:.]1|2[:.]2|first[- ]class|upper second|lower second|graduat\w*|penultimate|final[- ]year|undergraduate|bachelor'?s?|master'?s|phd|ucas|a[- ]levels?|predicted grades?|grade requirements?)\b/i],
+  ["behaviour", /\b(team ?work|team player|communicat\w*|leadership|problem[- ]solving|stakeholder|interpersonal|attention to detail|motivat\w*|curio\w*|resilien\w*|organi[sz](ed|ational)|proactive|self[- ]starter|enthusias\w*|passion\w*|work ethic|initiative)\b/i],
+];
+
+/** What kind of requirement this is. A named, non-soft skill is always "skill"; otherwise the wording decides. */
+export function requirementKind(r: { text: string; skill: string | null }): RequirementKind {
+  if (r.skill && !SOFT.has(r.skill.toLowerCase())) return "skill";
+  for (const [kind, re] of KIND_RULES) if (re.test(r.text)) return kind;
+  return r.skill ? "behaviour" : "skill";
+}
+
+/** Kinds a CV can't evidence: listed for the student to check, never scored as a gap. */
+export const CHECK_KINDS: ReadonlySet<RequirementKind> = new Set(["eligibility", "degree", "experience", "language"]);
 
 export const IMPORTANCE_RANK: Record<Importance, number> = { critical: 0, high: 1, meaningful: 2, preferred: 3, low_signal: 4 };
 const MATCH_RANK: Record<RequirementMatch, number> = { missing: 0, partial: 1, strong: 2 };
@@ -82,6 +107,9 @@ export function findabilityBand(c: { readable: boolean; weighted: number | null 
   return "Limited";
 }
 
+/** Shown with every band (10#27): the bands are hand-set, and no ATS vendor publishes a threshold. */
+export const FINDABILITY_NOTE = "No ATS publishes a pass mark, so treat this as a rough guide.";
+
 export const FINDABILITY_HINT: Record<FindabilityBand, string> = {
   Strong: "Your CV already uses most of the words this posting uses.",
   Good: "Your CV uses many of this posting's words.",
@@ -91,10 +119,13 @@ export const FINDABILITY_HINT: Record<FindabilityBand, string> = {
 
 // ---------- Stuffing warning ----------
 
-/** Coverage must be strictly above this before a stuffing warning can show. */
+/** A stock-phrase-heavy CV only gets the warning when coverage is above this (it reads as keyword-chasing). */
 export const STUFFING_COVERAGE_MIN = 0.85;
-/** A single JD skill written this many times or more (whole word) in the CV text counts as obvious stuffing. Hand-set default. */
-export const STUFFING_REPEAT_MIN = 8;
+/**
+ * A single JD skill written this many times or more (whole word) in the CV text counts as stuffing. 8 was extreme for a
+ * one-page student CV; real stuffing shows at 4–5 (competitor teardown, about 5×) (10#27). Hand-set default.
+ */
+export const STUFFING_REPEAT_MIN = 5;
 
 export function keywordStuffing(cvText: string, skills: string[]): boolean {
   if (!cvText) return false;
@@ -105,6 +136,7 @@ export function keywordStuffing(cvText: string, skills: string[]): boolean {
   return false;
 }
 
+/** Repetition is stuffing at any coverage; heavy stock phrasing only matters when the CV also chases every keyword. */
 export function shouldWarnStuffing(i: { weighted: number | null; clicheSeverity: "ok" | "minor" | "major"; stuffed: boolean }): boolean {
-  return i.weighted !== null && i.weighted > STUFFING_COVERAGE_MIN && (i.clicheSeverity === "major" || i.stuffed);
+  return i.stuffed || (i.weighted !== null && i.weighted > STUFFING_COVERAGE_MIN && i.clicheSeverity === "major");
 }

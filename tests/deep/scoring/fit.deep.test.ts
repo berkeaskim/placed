@@ -29,32 +29,32 @@ const cov = (weighted: number | null): CoverageResult => ({
 });
 const gate = (r: ReturnType<typeof scoreFit>, k: string) => r.gates.find((g) => g.key === k)!;
 
-describe("spec §5 formula conformance", () => {
-  it("weights are exactly 0.35 / 0.25 / 0.15 / 0.25 and sum to 1", () => {
-    expect(FIT_WEIGHTS).toEqual({ archetype: 0.35, coverage: 0.25, location: 0.15, accessibility: 0.25 });
+// Formula as revised by audit 10#4/#5: 0.40 archetype + 0.40 requirement fit + 0.20 location; the deadline is urgency, not fit.
+describe("fit formula conformance (audit 10#4)", () => {
+  it("weights are exactly 0.40 / 0.40 / 0.20 and sum to 1", () => {
+    expect(FIT_WEIGHTS).toEqual({ archetype: 0.4, requirements: 0.4, location: 0.2 });
     expect(Object.values(FIT_WEIGHTS).reduce((a, b) => a + b, 0)).toBeCloseTo(1, 12);
   });
   it("global = round1(clamp(Σ w·sub − 0.5·softFlags, 1, 5)) for random ungated inputs", () => {
     const r = rng(17);
     for (let i = 0; i < 500; i++) {
       const res = scoreFit(student(), job({ archetype: ARCHETYPES[Math.floor(r() * 8)], cohortClash: r() < 0.3 }), cov(r()), today);
-      const raw = FIT_WEIGHTS.archetype * res.sub.archetype + FIT_WEIGHTS.coverage * res.sub.coverage +
-        FIT_WEIGHTS.location * res.sub.location + FIT_WEIGHTS.accessibility * res.sub.accessibility - 0.5 * res.softFlags.length;
+      const raw = FIT_WEIGHTS.archetype * res.sub.archetype + FIT_WEIGHTS.requirements * res.sub.requirements +
+        FIT_WEIGHTS.location * res.sub.location - 0.5 * res.softFlags.length;
       expect(res.global).toBeCloseTo(Math.round((Math.min(5, Math.max(1, raw)) + 1e-9) * 10) / 10, 9);
     }
   });
-  it("keywordCoverage sub = 1 + 4·weighted (0 → 1, 1 → 5, 0.5 → 3)", () => {
-    expect(scoreFit(student(), job(), cov(0), today).sub.coverage).toBe(1);
-    expect(scoreFit(student(), job(), cov(1), today).sub.coverage).toBe(5);
-    expect(scoreFit(student(), job(), cov(0.5), today).sub.coverage).toBe(3);
+  it("requirement sub with no must-haves listed = 1 + 4·weighted (0 → 1, 1 → 5, 0.5 → 3)", () => {
+    expect(scoreFit(student(), job(), cov(0), today).sub.requirements).toBe(1);
+    expect(scoreFit(student(), job(), cov(1), today).sub.requirements).toBe(5);
+    expect(scoreFit(student(), job(), cov(0.5), today).sub.requirements).toBe(3);
   });
-  it("archetypeFit: top → 5, top-2 → 4, adjacent → 3, otherwise in [1,2]", () => {
+  it("archetypeFit: top → 5, top-2 → 4, adjacent → 3, otherwise 2.5 (10#28)", () => {
     expect(scoreFit(student(), job({ archetype: "data_analytics" }), cov(0.5), today).sub.archetype).toBe(5);
     expect(scoreFit(student(), job({ archetype: "finance_banking" }), cov(0.5), today).sub.archetype).toBe(4);
     expect(scoreFit(student(), job({ archetype: "software_eng" }), cov(0.5), today).sub.archetype).toBe(3); // adjacent to data_analytics
     const unrelated = scoreFit(student(), job({ archetype: "marketing_growth" }), cov(0.5), today).sub.archetype;
-    expect(unrelated).toBeGreaterThanOrEqual(1);
-    expect(unrelated).toBeLessThanOrEqual(2);
+    expect(unrelated).toBe(2.5);
   });
   it("archetypeFit is neutral (3) when the job or student has no archetype", () => {
     expect(scoreFit(student(), job({ archetype: null }), cov(0.5), today).sub.archetype).toBe(3);
@@ -70,8 +70,8 @@ describe("spec §5 formula conformance", () => {
 });
 
 describe("gates (spec §5 stage 0)", () => {
-  it("gates are reported in spec order: year, permanent, location, visa", () => {
-    expect(scoreFit(student(), job(), cov(0.5), today).gates.map((g) => g.key)).toEqual(["year", "permanent", "location", "visa"]);
+  it("gates are reported in order: year, permanent, location, visa, experience", () => {
+    expect(scoreFit(student(), job(), cov(0.5), today).gates.map((g) => g.key)).toEqual(["year", "permanent", "location", "visa", "experience"]);
   });
   it("year gate: empty eligibility admits every year; a listed year admits only listed years", () => {
     for (const y of YEARS) {
@@ -92,7 +92,8 @@ describe("gates (spec §5 stage 0)", () => {
     expect(res.global).toBeLessThanOrEqual(2.5);
   });
   it("visa: unknown is neutral (identical score to yes); only explicit 'no' + needsVisa gates a graduate role", () => {
-    const s = student({ needsVisa: true });
+    // a finalist, so a graduate role starting next year passes the year gate
+    const s = student({ year: "final", needsVisa: true });
     const grad = { employmentType: "graduate" as const };
     const yes = scoreFit(s, job({ ...grad, sponsorsVisa: "yes" }), cov(0.7), today);
     const unknown = scoreFit(s, job({ ...grad, sponsorsVisa: "unknown" }), cov(0.7), today);
@@ -104,13 +105,14 @@ describe("gates (spec §5 stage 0)", () => {
     expect(no.capped).toBe(true);
     expect(gate(no, "visa").reason).toBe("No visa sponsorship");
     // student who doesn't need a visa is never gated by sponsorship
-    expect(scoreFit(student({ needsVisa: false }), job({ ...grad, sponsorsVisa: "no" }), cov(0.7), today).capped).toBe(false);
+    expect(scoreFit(student({ year: "final", needsVisa: false }), job({ ...grad, sponsorsVisa: "no" }), cov(0.7), today).capped).toBe(false);
   });
-  it("permanent roles gate every year of study; other employment types do not", () => {
+  it("permanent roles gate students still enrolled when they start, not finalists or masters (10#8); other types never", () => {
     for (const t of ["internship", "placement", "spring_week", "insight", "graduate", "other"] as const) {
       expect(gate(scoreFit(student(), job({ employmentType: t }), cov(1), today), "permanent").passed).toBe(true);
     }
-    expect(gate(scoreFit(student({ year: "final" }), job({ employmentType: "permanent" }), cov(1), today), "permanent").passed).toBe(false);
+    for (const y of ["1st", "2nd", "penultimate"] as Year[]) expect(gate(scoreFit(student({ year: y }), job({ employmentType: "permanent" }), cov(1), today), "permanent").passed).toBe(false);
+    for (const y of ["final", "masters"] as Year[]) expect(gate(scoreFit(student({ year: y }), job({ employmentType: "permanent" }), cov(1), today), "permanent").passed).toBe(true);
   });
   it("location: hybrid elsewhere = 3 and passes; non-hybrid elsewhere fails; remote passes", () => {
     expect(scoreFit(student(), job({ location: "Hybrid, Berlin" }), cov(1), today).sub.location).toBe(3);
@@ -156,47 +158,34 @@ describe("gates (spec §5 stage 0)", () => {
   });
 });
 
-describe("accessibility sub-score", () => {
-  const acc = (over: Partial<JobForScoring>, s: Partial<StudentProfile> = {}) => scoreFit(student(s), job(over), cov(0.5), today).sub.accessibility;
-  it("deadline proximity buckets", () => {
-    expect(acc({ deadline: null })).toBe(3.5);
-    expect(acc({ deadline: addDays(today, -1) })).toBe(1);
-    expect(acc({ deadline: today })).toBe(3);
-    expect(acc({ deadline: addDays(today, 3) })).toBe(3);
-    expect(acc({ deadline: addDays(today, 4) })).toBe(4.5);
-    expect(acc({ deadline: addDays(today, 30) })).toBe(4.5);
-    expect(acc({ deadline: addDays(today, 31) })).toBe(4);
+describe("urgency is not a fit input (10#4, #9)", () => {
+  const g = (over: Partial<JobForScoring>, st: Partial<StudentProfile> = {}) => scoreFit(student(st), job(over), cov(0.5), today).global;
+  it("deadline proximity never changes the score", () => {
+    const base = g({ deadline: null });
+    for (const d of [-1, 0, 3, 4, 30, 31]) expect(g({ deadline: addDays(today, d) })).toBe(base);
   });
-  it("posting age > 60 days costs 0.5; ≤ 60 does not", () => {
-    expect(acc({ postedAt: `${addDays(today, -60)}T09:00:00Z` })).toBe(4.5);
-    expect(acc({ postedAt: `${addDays(today, -61)}T09:00:00Z` })).toBe(4);
+  it("posting age never changes an early-careers score", () => {
+    expect(g({ postedAt: `${addDays(today, -200)}T09:00:00Z` })).toBe(g({ postedAt: `${addDays(today, -1)}T09:00:00Z` }));
+    expect(scoreFit(student(), job({ postedAt: `${addDays(today, -91)}T00:00:00Z` }), cov(0.6), today).softFlags).toEqual([]);
   });
-  it("first-year-friendly boosts 1st and 2nd years only", () => {
-    const j = { deadline: addDays(today, 31), firstYearFriendly: true };
-    expect(acc(j, { year: "1st" })).toBe(4.5);
-    expect(acc(j, { year: "2nd" })).toBe(4.5);
-    for (const y of ["penultimate", "final", "masters"] as Year[]) expect(acc(j, { year: y })).toBe(4);
+  it("first-year-friendly is a chip, not a score bump", () => {
+    for (const y of YEARS) expect(g({ firstYearFriendly: true }, { year: y })).toBe(g({ firstYearFriendly: false }, { year: y }));
   });
-  it("is clamped to [1,5]", () => {
-    expect(acc({ deadline: addDays(today, -5), postedAt: "2020-01-01T00:00:00Z" })).toBe(1);
-    expect(acc({ deadline: addDays(today, 10), firstYearFriendly: true }, { year: "1st" })).toBe(5);
-  });
-  it("posted > 90 days is a soft flag costing 0.5 on the global score", () => {
-    const fresh = scoreFit(student(), job({ postedAt: `${addDays(today, -61)}T00:00:00Z` }), cov(0.6), today);
-    const stale = scoreFit(student(), job({ postedAt: `${addDays(today, -91)}T00:00:00Z` }), cov(0.6), today);
-    expect(stale.softFlags).toEqual(["Posted over 90 days ago"]);
-    expect(fresh.softFlags).toEqual([]);
-    expect(stale.global).toBeCloseTo(fresh.global - 0.5, 9);
+  it("urgency buckets: ≤7 days rank 0, ≤14 days or rolling rank 1, otherwise 2", () => {
+    const u = (over: Partial<JobForScoring> & { rolling?: boolean }) => scoreFit(student(), { ...job(over), rolling: over.rolling }, cov(0.5), today).urgency;
+    expect(u({ deadline: today })).toMatchObject({ rank: 0, chip: "Closes today" });
+    expect(u({ deadline: addDays(today, 1) })).toMatchObject({ rank: 0, chip: "Closes tomorrow" });
+    expect(u({ deadline: addDays(today, 7) })).toMatchObject({ rank: 0, chip: "Closes in 7 days" });
+    expect(u({ deadline: addDays(today, 14) })).toMatchObject({ rank: 1 });
+    expect(u({ deadline: addDays(today, 31) })).toMatchObject({ rank: 2, chip: null });
+    expect(u({ deadline: null, rolling: true })).toMatchObject({ rank: 1, chip: "Rolling: apply early" });
   });
   it("malformed postedAt does not produce NaN", () => {
-    const res = scoreFit(student(), job({ postedAt: "yesterday" }), cov(0.6), today);
+    const res = scoreFit(student(), job({ postedAt: "yesterday", employmentType: "other" }), cov(0.6), today);
     expect(Number.isFinite(res.global)).toBe(true);
   });
-
-  // FIXED (was BUG): lib/scoring/fit.ts:57 — a malformed deadline gives daysUntil = NaN, which falls through every
-  // comparison into the "> 30 days" bucket (4), i.e. it scores BETTER than an honest rolling deadline (3.5).
-  it("a malformed deadline is treated like an unknown (rolling) deadline, not a far-future one", () => {
-    expect(acc({ deadline: "TBC" })).toBe(acc({ deadline: null }));
+  it("a malformed deadline is treated like no deadline", () => {
+    expect(scoreFit(student(), job({ deadline: "TBC" }), cov(0.5), today).urgency).toEqual(scoreFit(student(), job({ deadline: null }), cov(0.5), today).urgency);
   });
 });
 

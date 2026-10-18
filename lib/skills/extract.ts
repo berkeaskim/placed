@@ -42,6 +42,34 @@ for (const s of SKILLS) {
   }
 }
 
+const IMPLIES = new Map(SKILLS.filter((s) => s.implies?.length).map((s) => [s.canonical.toLowerCase(), s.implies!]));
+
+/**
+ * Broader skills the given ones show, transitively (Next.js ⇒ React ⇒ JavaScript), minus the ones already given.
+ * CV side only: a JD asking for pandas is not satisfied by a CV that says Python (10#11).
+ */
+export function impliedSkills(skills: Iterable<string>): string[] {
+  const have = new Set([...skills].map((s) => s.toLowerCase()));
+  const out = new Map<string, string>();
+  const queue = [...have];
+  while (queue.length) {
+    for (const parent of IMPLIES.get(queue.pop()!) ?? []) {
+      const k = parent.toLowerCase();
+      if (have.has(k) || out.has(k)) continue;
+      out.set(k, parent);
+      queue.push(k);
+    }
+  }
+  return [...out.values()];
+}
+
+/**
+ * Behavioural requirements ("excellent teamwork and communication"). Keyword matching can't judge them: "worked in a
+ * team of 4" is not the word "teamwork", and a Skills-list "Communication" is a self-description, not evidence. They stay
+ * out of keyword coverage and are judged by explainMatch with a quoted CV line, or left for the student to judge (10#10).
+ */
+export const SOFT_SKILLS = new Set(["Communication", "Teamwork", "Leadership", "Problem Solving", "Stakeholder Management"]);
+
 export function canonicalize(name: string): string | null {
   return ALIAS.get(name.trim().toLowerCase()) ?? null;
 }

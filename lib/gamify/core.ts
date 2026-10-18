@@ -43,7 +43,8 @@ export function levelFromXp(xp: number) {
 /** Programme phrases only, on word boundaries: "Data Insights Analyst" and "Springer Nature" don't count. */
 const SPRING_PROGRAMME = /\b(spring\s+(week|insights?|internship|programme|program|scheme)|insights?\s+(day|days|week|weeks|programme|program|event|scheme))\b/i;
 
-export const APPLY_XP: Record<FitLabel, number> = { "Strong fit": 50, "Good fit": 50, Stretch: 25, "Not recommended": 10 };
+/** Flat (audit 10#3): scaling by fit label rewarded the scorer's guesses and paid less for roles a gate wrongly flagged. */
+export const APPLY_XP = 50;
 
 export const PLAYBOOK_DONE_DAILY_CAP = 3;
 
@@ -53,7 +54,7 @@ export function xpFor(e: GamifyEvent, s: GamifyState): number {
     case "cv_uploaded": case "quiz_done": return 100;
     case "job_saved": return s.savesToday < 10 ? 5 : 0;
     case "cv_tailored": return 30;
-    case "applied": return e.fitLabel ? APPLY_XP[e.fitLabel] : 25;
+    case "applied": return APPLY_XP;
     case "interview": return 100;
     case "rejected": return 20;
     case "offer": return 300;

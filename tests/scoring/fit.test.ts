@@ -18,10 +18,10 @@ const cov = (weighted: number | null): CoverageResult => ({
 const today = "2026-10-13";
 
 describe("scoreFit", () => {
-  it("computes the weighted global for a strong match", () => {
+  it("computes the weighted global for a strong match (10#4: 0.40 archetype + 0.40 requirements + 0.20 location, no deadline)", () => {
     const r = scoreFit(student, job(), cov(0.78), today);
-    // 0.35*5 + 0.25*(1+4*0.78) + 0.15*5 + 0.25*4.5 = 4.655 → 4.7
-    expect(r.global).toBe(4.7);
+    // no must-haves listed, so requirement fit = 1 + 4*0.78 = 4.12; 0.4*5 + 0.4*4.12 + 0.2*5 = 4.648 → 4.6
+    expect(r.global).toBe(4.6);
     expect(r.label).toBe("Strong fit");
     expect(r.capped).toBe(false);
   });
@@ -31,14 +31,17 @@ describe("scoreFit", () => {
     expect(r.capped).toBe(true);
     expect(r.gates.find((g) => g.key === "year")!.reason).toBe("Open to final year / masters only");
     expect(r.label).toBe("Not recommended");
+    expect(r.eligibility).toBe("check");
   });
   it("visa gate only fires on explicit no-sponsorship plus needs_visa, for graduate or permanent roles", () => {
-    const visa = { ...student, needsVisa: true };
+    // a final-year student: graduate roles starting next year are year-eligible, so only the visa gate is under test
+    const finalist = { ...student, year: "final" as const };
+    const visa = { ...finalist, needsVisa: true };
     expect(scoreFit(visa, job({ sponsorsVisa: "unknown", employmentType: "graduate" }), cov(0.8), today).capped).toBe(false);
     const grad = scoreFit(visa, job({ sponsorsVisa: "no", employmentType: "graduate" }), cov(0.8), today);
     expect(grad.capped).toBe(true);
     expect(grad.gates.find((g) => g.key === "visa")!.reason).toBe("No visa sponsorship");
-    expect(scoreFit(student, job({ sponsorsVisa: "no", employmentType: "graduate" }), cov(0.8), today).capped).toBe(false);
+    expect(scoreFit(finalist, job({ sponsorsVisa: "no", employmentType: "graduate" }), cov(0.8), today).capped).toBe(false);
   });
   it("Student-visa holders are not gated off internships, spring weeks or placements (UKCISA: full-time work allowed in vacations and on course placements)", () => {
     const visa = { ...student, needsVisa: true };
@@ -58,7 +61,7 @@ describe("scoreFit", () => {
     expect(scoreFit(student, job({ employmentType: "graduate" }), cov(0.8), today).notes).toEqual([]);
     expect(scoreFit(visa, job({ sponsorsVisa: "yes", employmentType: "graduate" }), cov(0.8), today).notes).toEqual([]);
   });
-  it("permanent roles are gated", () => {
+  it("permanent roles are gated for students who would still be enrolled", () => {
     expect(scoreFit(student, job({ employmentType: "permanent" }), cov(0.8), today).capped).toBe(true);
   });
   it("location gate: outside preferences and not remote", () => {
@@ -72,14 +75,19 @@ describe("scoreFit", () => {
     expect(r.gates.find((g) => g.key === "location")!.passed).toBe(true);
   });
   it("unreadable coverage is neutral (3), not zero", () => {
-    expect(scoreFit(student, job(), cov(null), today).sub.coverage).toBe(3);
+    expect(scoreFit(student, job(), cov(null), today).sub.requirements).toBe(3);
   });
-  it("adjacent archetype scores 3, unrelated ~1.5", () => {
+  it("adjacent archetype scores 3, unrelated 2.5 (10#28: skill fit can outweigh a keyword label)", () => {
     expect(scoreFit(student, job({ archetype: "quant_trading" }), cov(0.5), today).sub.archetype).toBe(3);
-    expect(scoreFit(student, job({ archetype: "marketing_growth" }), cov(0.5), today).sub.archetype).toBe(1.5);
+    expect(scoreFit(student, job({ archetype: "marketing_growth" }), cov(0.5), today).sub.archetype).toBe(2.5);
   });
-  it("flags stale postings", () => {
-    expect(scoreFit(student, job({ postedAt: "2026-05-01T00:00:00Z" }), cov(0.8), today).softFlags).toContain("Posted over 90 days ago");
+  it("posting age never costs an early-careers role; other roles get a note only (10#9)", () => {
+    const old = scoreFit(student, job({ postedAt: "2026-05-01T00:00:00Z" }), cov(0.8), today);
+    expect(old.softFlags).toEqual([]);
+    expect(old.global).toBe(scoreFit(student, job(), cov(0.8), today).global);
+    const other = scoreFit(student, job({ employmentType: "other", postedAt: "2026-05-01T00:00:00Z" }), cov(0.8), today);
+    expect(other.notes).toContain("Posted 165 days ago");
+    expect(other.global).toBe(scoreFit(student, job({ employmentType: "other" }), cov(0.8), today).global);
   });
   it("flags term-time cohort clash as a soft flag costing 0.5", () => {
     const base = scoreFit(student, job(), cov(0.78), today);

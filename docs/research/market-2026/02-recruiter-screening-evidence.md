@@ -1,6 +1,6 @@
 # 02 — What makes a CV succeed with human recruiters (2020–2026 evidence)
 
-Researcher 2 of 6 · research date 2026-10-13 · scope: empirical evidence on CV content, AI-written applications, recruiter attention/noise, and thin-experience student signals.
+Researcher 2 of 6 · research date 2026-10-13 · last re-verified 2026-10-18 against `docs/research/audit-2026-10-18/10-fit-ats-market.md` · scope: empirical evidence on CV content, AI-written applications, recruiter attention/noise, and thin-experience student signals.
 This file **adds to** `docs/research/cv-rules-general.md`, `cv-rules-tech-product.md`, `cv-rules-finance-consulting.md` and spec §6–§8. It does not repeat their rules. Where it contradicts or re-grades them, it says so in §5.
 
 **Evidence grades:** **A** peer-reviewed / randomised field or lab experiment · **B** large institutional survey or strong working paper (NBER/IZA/SSRN/arXiv with credible design) · **C** practitioner/press, or a real dataset that is not peer-reviewed · **D** weak or commercial (vendor marketing studies, undisclosed methods).
@@ -15,8 +15,8 @@ This file **adds to** `docs/research/cv-rules-general.md`, `cv-rules-tech-produc
 
 **F1. Better-written CVs get hired more, and employers are not worse off.**
 Wiles, Munyikwa & Horton, "Algorithmic Writing Assistance on Jobseekers' Resumes Increases Hires", *Management Science* 71(12):10144–10164 (2025); NBER w30886.
-- Design: field experiment on an online labour market, ~480k jobseekers. The treated group got algorithmic writing help (error correction, readability). This was pre-LLM, Grammarly-style.
-- Result: treated jobseekers were **hired 8% more often, at ~10% higher wages**.
+- Design: field experiment on an online labour market, ≈480k jobseekers ("nearly half a million" in the NBER and published abstracts). The treated group got algorithmic writing help (error correction, readability). This was pre-LLM, Grammarly-style.
+- Result: **+8% hires; +10% wages (published version)**. An earlier draft reported 8.4% wages.
 - Employers were **no less satisfied** with the hires.
 - The authors read this as clearer writing helping employers *see* ability, rather than writing acting as a costly signal.
 - URL: https://pubsonline.informs.org/doi/10.1287/mnsc.2024.04528 · https://www.nber.org/papers/w30886
@@ -44,7 +44,7 @@ Cui, Dias & Ye, "Signaling in the Age of AI: Evidence from Cover Letters", arXiv
 **F4. When writing becomes cheap, hiring becomes less meritocratic.**
 Galdin & Silbert, "Making Talk Cheap: Generative AI and Labor Market Signaling", arXiv 2511.08785 (Nov 2025, Princeton/Dartmouth).
 - Data: Freelancer.com, ~2.7M applications, 61k jobs, 2021–2024.
-- Before LLMs, employers would trade **$25.67** of bid price for +1 SD of customisation. After LLMs, this fell to **$10.82 (−58%)**.
+- Before LLMs, employers would trade **$25.67** of bid price for +1 SD of customisation. After LLMs, this fell to **$10.82 (−58%)**. ⚠ Unverifiable in the 2026-10-18 re-check: these figures are not in the abstract, which says the premium "disappears", and that conflicts with "−58%". Do not quote in product copy.
 - Structural simulation: **top-quintile workers are hired 19% less often** and **bottom-quintile workers 14% more often**.
 - URL: https://arxiv.org/abs/2511.08785
 - **Grade B** (strong working paper; the quintile results come from a model counterfactual).
@@ -71,27 +71,27 @@ arXiv 2412.18647 (Dec 2024), pre-registered experiment, nationally representativ
 
 **F7. LLM screeners prefer LLM-written CVs and are unstable on presentation.**
 - Xu, Li & Jiang, arXiv 2509.00462 (Aug 2025; EAAMO/AIES 2025): LLMs prefer their own CVs over human-written ones **67–82%** of the time. Simulated shortlisting: **+23–60%** for the same-model applicant. URL: https://arxiv.org/abs/2509.00462. **Grade B.**
-- arXiv 2609.16517 (Sep 2026): changes to presentation that keep competence fixed **flip 29.6–41.4% of pairwise LLM screening decisions**. URL: https://arxiv.org/abs/2609.16517. **Grade C** (preprint, small open models).
+- Chen & Xiao, arXiv 2609.16517 (Sep 2026; under review; six small open models such as Llama-3.1-8B and Mistral-7B): changes to presentation that keep competence fixed **flip 29.6–41.4% of pairwise LLM screening decisions**. URL: https://arxiv.org/abs/2609.16517. **Grade C** (preprint, small open models).
 - Prompt-injection study (arXiv 2606.27287, ACL 2026): injected self-promotion helps only while it is rare and **collapses when widespread**. URL: https://arxiv.org/abs/2606.27287. **Grade B/C.**
 - Relevance to UK students: ISE says employer AI use is still limited, but 62% of ISE employers expect to use AI in recruitment within 5 years (F13).
 
 **F8. Unconstrained LLM CV-improvement pipelines fabricate almost always.**
-arXiv 2608.26171 (Aug 2026), 180 runs.
-- The baseline pipeline produced **≥1 unsupported claim in 96.7%** of outputs.
+Takano, arXiv 2608.26171 (v1 22 Jul 2026, v2 16 Sep 2026), single author, 180 runs over 10 *synthetic* CVs × 2 JDs.
+- The baseline pipeline produced **≥1 unsupported claim in 96.7%** of outputs. For UI copy, say "a 2026 preprint found almost every unguarded run added an unsupported claim", not "97%".
 - Prompt guardrails cut fabrication density by 86%, but 50% of outputs still had one.
-- A human checkpoint removed identity fabrications. Subtle qualifier inflation survived review about half the time.
+- A human checkpoint removed identity fabrications. About half of subtle qualifier drops and plausible additions survived human review (54.5% removed; the figure covers both categories combined).
 - URL: https://arxiv.org/abs/2608.26171
-- **Grade C** (small preprint), but it directly validates spec §7.3.
+- **Grade C** (single small preprint), but it directly validates spec §7.3.
 
 ### B. CV content: what causally moves callbacks
 
 **F9. Making experience salient raises callbacks (UK audit).**
-*Nature Human Behaviour* (Dec 2022), pre-registered **UK** audit, n=9,022 applications.
+Kristal, Nicks, Gloor & Hauser, *Nat Hum Behav* 2023, online Dec 2022. Pre-registered **UK** audit, n=9,022 applications.
 - Listing jobs by **number of years worked instead of date ranges** raised callbacks by **~8%** against CVs without gaps and **~15%** against CVs with gaps.
 - Lab follow-ups (n=2,650) show the mechanism is the **salience of experience**, not novelty or ease of reading.
 - URLs: https://ore.exeter.ac.uk/repository/handle/10871/131446 · https://business.columbia.edu/faculty/research/reducing-discrimination-against-job-seekers-and-without-employment-gaps
-- **Grade A.**
-- Lesson: layout choices that bring the strongest evidence to the top have a causal effect. This is the best real evidence behind "front-load what matters".
+- **Grade A.** Caveat: tested on mid-career profiles (5 and 15 years' experience); transfer to student CVs is untested.
+- Lesson: layout choices that bring the strongest evidence to the top have a causal effect. This is the best real evidence behind "front-load what matters", with the caveat above.
 
 **F10. Internships causally raise interview invitations for new graduates.**
 - Baert, Neyt, Siedler, Tobback & Verhaest, *Economics of Education Review* 83 (2021): Belgian correspondence experiment, 1,248 CVs. Internship experience gave **+12.6%** interview invitations. URL: https://www.iza.org/publications/dp/12183. **Grade A.**
@@ -117,8 +117,9 @@ Braun, …, Nunley, Seals & Wang, arXiv 2604.01933 (Jul 2026).
 - **UK counterpoint**: ISE SRS 2024 has 48% of employers still requiring a 2:1. This is a *threshold*, not a "higher is better" gradient (already in the general doc).
 
 **F13. UK employer context 2025–26: record volumes and AI anxiety.**
-- **ISE Student Recruitment Survey 2025** (155 employers, 1.8M applications): **140 applications per vacancy** (historic high; 290 in retail/FMCG). **79%** are redesigning processes because of AI. **61%** saw undisclosed AI use in interviews. **48%** worry AI misrepresents graduates' ability. **49%** are fine with candidates using AI. **45%** have given no AI guidance. URL: https://ise.org.uk/knowledge/insights/498/5_trends_you_need_to_know_from_ises_recruitment_survey_2025/. **Grade B.**
-- **CIPD Resourcing & Talent Planning 2026** (published 22 Sep 2026): **27%** of recruiting organisations report "excessive" generative-AI use by candidates. **35%** try to monitor it, and **75% of those have rejected candidates for AI use**. URL: https://www.cipd.org/uk/knowledge/reports/resourcing-surveys. **Grade B.**
+- **ISE Student Recruitment Report 2026** (14 Oct 2026; 155 employers, more than 1.7M applications, 31,577 hires): **141 applications per graduate vacancy** (London 172; financial and professional services 158). **92%** suspected or confirmed misconduct. **77%** are reviewing or redesigning selection. **82%** give candidates AI guidance, and **up to 64%** accept candidate AI use, usually for CVs and applications, not tests or interviews. URL: https://ise.org.uk/knowledge/insights/615/graduate_jobs_stabilise_but_ai_use_disrupts_recruitment (accessed 2026-10-18). **Grade B.**
+- **ISE Student Recruitment Survey 2025** (trend baseline; 155 employers, 1.8M applications): **140 applications per vacancy** (then a historic high; 290 in retail/FMCG). **79%** were redesigning processes because of AI. Undisclosed AI use in interviews was the most common form of misconduct, cited by **61%**. **48%** worry AI misrepresents graduates' ability. **49%** were fine with candidates using AI. URL: https://ise.org.uk/knowledge/insights/498/5_trends_you_need_to_know_from_ises_recruitment_survey_2025/. **Grade B.**
+- **CIPD Resourcing & Talent Planning 2026** (published 22 Sep 2026): **27%** of recruiting organisations report "excessive" generative-AI use by candidates. **35%** try to monitor it, and **75% of those have rejected candidates for AI use**, so about 26% of all employers. URL: https://www.cipd.org/uk/knowledge/reports/resourcing-surveys. **Grade B.**
 - **Greenhouse AI in Hiring 2025** (n≈4,100 seekers and recruiters in US/UK/IE/DE): **41%** of US seekers admit trying prompt injection; 28% used AI to fake work samples; 32% claimed AI skills they lack. URL: https://www.greenhouse.com/uk/newsroom/an-ai-trust-crisis-70-of-hiring-managers-trust-ai-to-make-faster-and-better-hiring-decisions-only-8-of-job-seekers-call-it-fair. **Grade C** (vendor survey, large n).
 
 **F14. Skills signals: AI skills help a lot in recruiter experiments; "skills-based hiring" barely changes real hiring.**
@@ -129,7 +130,7 @@ Braun, …, Nunley, Seals & Wang, arXiv 2604.01933 (Jul 2026).
 **F15. Volunteering and extracurriculars help, but class-coded hobbies carry bias.**
 - **Baert & Vujić**, *Economics Letters* 203 (2021): Belgian field experiment. Volunteers were **+7.3 pp** more likely to get a positive reaction. URL: https://ideas.repec.org/a/eee/ecolet/v203y2021ics0165176521001312.html. **Grade A.**
 - **Rivera & Tilcsik**, *ASR* 81(6) (2016): audit of 316 US law-firm offices. Upper-class signals (e.g. **sailing vs track**, classical music) boosted **men only**. Higher-class women faced a "commitment penalty". URL: https://www.kellogg.northwestern.edu/faculty/research/detail/2016/class-advantage-commitment-penalty-the-interplay-of-social-class. **Grade A.**
-- arXiv 2603.05189 (2026): 18 LLMs inferred ethnicity and gender from **languages, hobbies and volunteering** on anonymised CVs and scored those groups differently. **Grade B/C.**
+- Tan et al., arXiv 2603.05189 (2026; Singapore context, 4,100 variants): 18 LLMs inferred ethnicity and gender from **languages, hobbies and volunteering** on anonymised CVs and scored those groups differently. **Grade C.**
 
 ### C. Recruiter attention, noise, and junior candidates
 
@@ -195,9 +196,9 @@ Aka, Palikot, Ansari & Yazdani, arXiv 2507.08029 (Jul 2025, rev. Aug 2026). Two 
 | Study abroad | +0.8 pp | Braun et al. 2026 (F11) | **B** |
 | GPA / grade level | ≈0 in large audit; gendered non-linear effects; valued in elite-employer rating and German HR experiment | Braun 2026; Quadlin 2018; Kessler 2019; Piopiunik 2020 (F11–12) | **A/B, mixed** |
 | Prestigious employer/school | ~35% higher recruiter selection; pedigree drives rejections | interviewing.io 2024 (F17); Kessler 2019 | **C / A** |
-| Experience made salient (years vs dates) | +8% / +15% callbacks (UK) | *Nat Hum Behav* 2022 (F9) | **A** |
+| Experience made salient (years vs dates) | +8% / +15% callbacks (UK, mid-career profiles) | *Nat Hum Behav* 2023, online Dec 2022 (F9) | **A** |
 | Upper-class hobbies | Boost for men only; penalty for women | Rivera & Tilcsik 2016 (F15) | **A** |
-| AI-tailored cover letter (generic) | Small callback gain (+6%) but tailoring signal −51% (callbacks) / −79% (offers) | Cui et al. 2025 (F3) | **B** |
+| AI-tailored cover letter (generic) | Small callback gain (+6%) but the link between letter–job match and callbacks fell 51% (offers: −79%) | Cui et al. 2025 (F3) | **B** |
 | Editing the AI draft (vs sending raw) | +1 SD editing time ≈ +0.31 pp offer (~half of mean) | Cui et al. 2025 (F3) | **B** |
 | LLM-polished cover letter | Higher rated quality, **no** interview gain | Tilburg 2025 (F5) | **B** |
 | Being suspected of AI | Lower quality, authenticity and competence ratings | Tilburg 2025; arXiv 2412.18647 (F5–6) | **B** |
@@ -270,8 +271,8 @@ Aka, Palikot, Ansari & Yazdani, arXiv 2507.08029 (Jul 2025, rev. Aug 2026). Two 
 
 1. **Optimise for specificity, not JD-echo.** Keyword coverage (45% → 81%) is still a useful demo metric, but it is no longer evidence of quality. Show a **Specificity before → after** metric next to it (AU-02). In the "what we tailored for" list, prefer rephrasings that surface *existing, verifiable* experience (the 🔁 items) over vocabulary injection. Basis: F3, F4.
 2. **Make the student edit.** Never offer a one-click "send" of the raw AI version. Require the student to accept or edit each changed bullet. Optionally award XP for edits, e.g. a "Made it yours" badge, which fits the gamification. Basis: F3 (editing time predicts offers; 75% of AI letters sent unedited within 1 minute).
-3. **Keep and publicise `verifyTailoring()` blocking.** Unconstrained LLM tailoring fabricates in ~97% of runs. Guardrails alone leave 50%, and a human checkpoint is needed (F8). The spec's deterministic checks plus the "Confirm this number" dialog match this evidence. Add a **qualifier-drop check** ("helped build" → "built", "assisted" → "led"), because reviewers miss this about half the time. It already partly exists as `authorshipEscalation`; extend it to adverbs and qualifiers.
-4. **Write in the student's voice.** Feed 2–3 of the student's own original bullets as style anchors and run AU-01 on the output. Output must not read as stock LLM prose, because suspicion carries a penalty (F5, F6, F13: CIPD 75% of monitoring employers have rejected for AI use).
+3. **Keep and publicise `verifyTailoring()` blocking.** A 2026 preprint found almost every unguarded run added an unsupported claim; guardrails alone left about half, and a human checkpoint is needed (F8, grade C). The spec's deterministic checks plus the "Confirm this number" dialog match this evidence. Add a **qualifier-drop check** ("helped build" → "built", "assisted" → "led"), because reviewers miss this about half the time. It already partly exists as `authorshipEscalation`; extend it to adverbs and qualifiers.
+4. **Write in the student's voice.** Feed 2–3 of the student's own original bullets as style anchors and run AU-01 on the output. Output must not read as stock LLM prose, because suspicion carries a penalty (F5, F6, F13: 75% of the 35% of employers who monitor, ≈26% of all, have rejected for AI use; CIPD 2026).
 5. **No adversarial ATS tricks.** No hidden text and no prompt injection. They fail at scale (F7), are dishonest, and UK employers actively monitor for them (F13). This reinforces general doc M5.
 6. **Don't promise LLM-screener wins.** LLM screeners flip 30–41% of decisions on presentation alone and favour their own model's text (F7). Product copy should not claim "beats AI screening".
 
@@ -288,6 +289,6 @@ Aka, Palikot, Ansari & Yazdani, arXiv 2507.08029 (Jul 2025, rev. Aug 2026). Two 
 1. No randomised study isolates **quantified bullets**, **projects/GitHub** or **hackathons** on student CVs. These remain consensus or qualitative.
 2. Freelancer and Upwork findings (F1, F3, F4) come from freelance gig markets, not graduate schemes. Their mechanisms (signal dilution, reliance on history) plausibly transfer, but the effect sizes may not.
 3. The Tilburg study's sample sizes were not visible in the accessible sources. Re-check CentER DP 2025-003 before quoting numbers.
-4. The authors of the *Nature Human Behaviour* 2022 UK audit are not named here because the PMC page was CAPTCHA-blocked. Cite it by journal and DOI-linked repository.
+4. The *Nature Human Behaviour* UK audit (F9) is Kristal et al., *Nat Hum Behav* 2023, online Dec 2022 (names as in 05 F4). It tested mid-career profiles, not students.
 5. Braun et al. (F11) applications date from 2016–17, before LLMs. They are a pre-AI baseline for credential returns.
 6. UK-specific causal evidence on degree class (2:1 vs first) for callbacks: none found. A 2010 regression-discontinuity study (IZA DP 4836) found degree class had little causal effect on first destinations at a post-92 university. **Grade B, dated.**
