@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { LiEducation, LiExperience, ParsedLinkedIn } from "./parse-export";
+import type { LiEducation, LiExperience, LiProject, ParsedLinkedIn } from "./parse-export";
 import { point, range, renderPublicText, type PublicProfile } from "./parse-public";
 
 /**
@@ -144,12 +144,18 @@ export function parseCapturedProfile(p: CapturePayload, profileUrl: string): Pub
   const skills = [...new Set(p.skills.map(clean).filter(Boolean))];
   const links = [...new Set(p.links.map(externalLink).filter((l): l is string => !!l))];
 
-  // Projects have no slot in the export shape; they read like experience, so they join it as untitled roles.
+  // Projects stay out of `experience`: LinkedIn doesn't require dates on them, and experience rules mustn't read them (08 #7).
+  const projects: LiProject[] = [];
   for (const it of p.projects) {
     const ls = it.map(clean).filter(Boolean);
     if (!ls.length) continue;
     const d = ls.findIndex(isDate);
-    experience.push({ ...role(`Project: ${ls[0]}`, "", d >= 0 ? ls[d] : "", ls.slice(d >= 0 ? d + 1 : 1)), location: null });
+    const r = d >= 0 ? range(ls[d]) : null;
+    projects.push({
+      title: ls[0], dates: r ? `${r[0]} - ${r[1]}` : "",
+      start: r ? point(r[0]) : null, end: r && !/present/i.test(r[1]) ? point(r[1]) : null,
+      description: ls.slice(d >= 0 ? d + 1 : 1).filter((l) => !SKILLS_LINE.test(l)).join("\n").trim(),
+    });
   }
 
   const warnings: string[] = [];
@@ -161,8 +167,9 @@ export function parseCapturedProfile(p: CapturePayload, profileUrl: string): Pub
 
   const li: ParsedLinkedIn = {
     name: clean(p.name) || null, headline, location, profileUrl, links, email: null,
-    topSkills: skills, languages, certifications, honors: firstLines(p.honors), publications: [], about, experience, education,
-    sections: [["Summary", about], ["Experience", experience.length], ["Education", education.length], ["Top Skills", skills.length]].filter(([, v]) => v).map(([h]) => h as string),
+    topSkills: skills, languages, certifications, honors: firstLines(p.honors), publications: [], about, experience, projects, education,
+    skillsScope: !skills.length ? "none" : p.skillsComplete ? "all" : "top",
+    sections: [["Summary", about], ["Experience", experience.length], ["Projects", projects.length], ["Education", education.length], ["Top Skills", skills.length]].filter(([, v]) => v).map(([h]) => h as string),
     warnings,
   };
   return { li, text: renderPublicText(li) };

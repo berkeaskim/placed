@@ -71,10 +71,25 @@ describe("parseCapturedProfile", () => {
   it("scores end to end with the CV comparison", async () => {
     const naJudge = async (i: LiJudgeInput): Promise<LiJudgeResult> => ({ results: i.rules.map((r) => ({ ruleId: r.id, status: "not_applicable", evidenceLine: null, fix: null })), spellingErrors: [], modelId: "stub", cacheable: false });
     const s = await scoreLinkedIn({ li, rawText: text, cv: AYSE_CV, sector: "data_analytics", year: "2nd", today: new Date("2026-10-15"), judge: naJudge });
-    // Skills are read now, so skills rules are judged rather than "not public"; the GitHub link counts.
-    expect(s.results.find((r) => r.ruleId === "LI-DATA_ANALYTICS-03")?.status).not.toBe("not_applicable");
+    // The full skills list is read: SQL is listed, but LinkedIn's order can't show it comes first, so the "top skills"
+    // rule is not assessable from this input (08 #4) rather than a pass the PDF would never give. The GitHub link counts.
+    expect(s.results.find((r) => r.ruleId === "LI-DATA_ANALYTICS-03")).toMatchObject({ status: "not_applicable", detail: "input:top_skills_unknown" });
+    expect(s.results.find((r) => r.ruleId === "LI-DATA_ANALYTICS-04")?.status).toBe("pass");
     expect(s.results.find((r) => r.ruleId === "LI-DATA_ANALYTICS-07")?.status).toBe("pass");
     expect(s.assessed).toBeGreaterThan(0);
+  });
+});
+
+describe("captured projects (08 #7)", () => {
+  const withProjects = CapturePayloadSchema.parse({ ...PAYLOAD, projects: [["Fare-dodging model", "Built a logistic regression on TfL open data."], ["Society booking app", "Jan 2024", "Used by 400 students."]] });
+  const { li, text } = parseCapturedProfile(withProjects, PAYLOAD.profileUrl);
+  it("keeps projects out of experience, so undated projects never fail the date rule", async () => {
+    expect(li.projects.map((p) => p.title)).toEqual(["Fare-dodging model", "Society booking app"]);
+    expect(li.experience.some((e) => /^Project:/.test(e.title))).toBe(false);
+    expect(text).toContain("Projects");
+    const s = await scoreLinkedIn({ li, rawText: text, cv: null, sector: "data_analytics", year: "2nd", today: new Date("2026-10-15"), source: "extension",
+      judge: async (i) => ({ results: i.rules.map((r) => ({ ruleId: r.id, status: "not_applicable", evidenceLine: null, fix: null })), spellingErrors: [], modelId: "stub", cacheable: false }) });
+    expect(s.results.find((r) => r.ruleId === "LI-GEN-15")?.status).not.toBe("fail");
   });
 });
 

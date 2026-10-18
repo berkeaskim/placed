@@ -10,7 +10,10 @@ export type LiDimension = (typeof LI_DIMS)[number];
 /** Where a rule's evidence comes from. Only `pdf_export` (or a rule listing it in altInputs) is checked today. */
 export type LiInput = "pdf_export" | "screenshot" | "self_report";
 
-/** `hybrid` rules are judged by the LLM; their llmGuidance already describes the code pre-filter. */
+/**
+ * `hybrid` rules are judged by the LLM. Their llmGuidance may describe a code pre-filter that is NOT implemented:
+ * liJudgeQuestion() strips those sentences so the model is never told that checks ran which didn't.
+ */
 export type LiCheck = "code" | "llm" | "hybrid";
 
 type YearAdjust = Partial<Record<Year, { severity?: Severity; threshold?: number; skip?: boolean }>>;
@@ -47,6 +50,9 @@ export type LiRule = {
   /** The PDF export may not carry the section this rule reads (unconfirmed until real fixtures exist). */
   pdfContested?: true;
 };
+
+/** Which input produced the parsed profile. Each sees different sections (see ParsedLinkedIn.skillsScope). */
+export type LiInputSource = "pdf" | "archive" | "extension" | "url";
 
 export type LiSource = { id: string; title: string; publisher: string; year: string; url: string };
 

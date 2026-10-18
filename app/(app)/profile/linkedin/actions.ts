@@ -5,7 +5,8 @@ import { db } from "@/lib/db/client";
 import { profiles } from "@/lib/db/schema";
 import { cvSizeError } from "@/lib/cv/upload-limits";
 import { ARCHETYPES, YEARS, type Archetype, type Year } from "@/lib/types";
-import { loadLatestLinkedInScore, NotLinkedInExportError, NotYourProfileError, scoreLinkedInPdf, scoreLinkedInUrl, type LiPanelData } from "@/lib/linkedin-score/run";
+import { loadLatestLinkedInScore, NotLinkedInExportError, NotYourProfileError, scoreLinkedInArchive, scoreLinkedInPdf, scoreLinkedInUrl, type LiPanelData } from "@/lib/linkedin-score/run";
+import { NotLinkedInArchiveError } from "@/lib/linkedin/parse-archive";
 import { mintCaptureToken } from "@/lib/linkedin/capture-token";
 import { LI_SECTOR_IMPORTANCE } from "@/lib/linkedin-rules";
 import { LinkedInFetchError } from "@/lib/linkedin/fetch-public";
@@ -65,6 +66,31 @@ export async function uploadLinkedIn(formData: FormData): Promise<UploadLinkedIn
       return { error: "This doesn't look like a LinkedIn export. On your profile, click More (or Resources) → Save to PDF, then upload that file." };
     }
     console.error("uploadLinkedIn failed", e);
+    return { error: "We couldn't score this profile right now. Try again in a minute." };
+  }
+}
+
+/**
+ * Score LinkedIn's own "Download your data" archive (a .zip). Only the profile CSVs are read, in memory; the zip is
+ * never stored. The 4 MB cap (next.config bodySizeLimit) fits the small archive of just the profile files.
+ */
+export async function uploadLinkedInArchive(formData: FormData): Promise<UploadLinkedInResult> {
+  const { user } = await requireUser();
+  const file = formData.get("archive");
+  if (!(file instanceof File) || file.size === 0) return { error: "Choose your LinkedIn data archive (.zip) first." };
+  if (cvSizeError(file.size)) return { error: "That archive is over 4 MB. Request just Profile, Positions, Education and Skills under \"Want something in particular?\", then upload that smaller file." };
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  // Zip local-file header "PK\x03\x04".
+  if (!(bytes[0] === 0x50 && bytes[1] === 0x4b && bytes[2] === 0x03 && bytes[3] === 0x04)) return { error: "That doesn't look like a .zip file. Upload the archive LinkedIn emailed you, without unzipping it." };
+
+  const sy = await sectorAndYear(formData);
+  if ("error" in sy) return sy;
+  try {
+    return { ok: true, data: await scoreLinkedInArchive({ userId: user.id, bytes, ...sy }) };
+  } catch (e) {
+    if (e instanceof NotLinkedInArchiveError) return { error: "We couldn't find Profile.csv or Positions.csv in that zip. Make sure it's the LinkedIn data archive and that you ticked Profile and Positions." };
+    if (e instanceof NotYourProfileError) return { error: "The name in that archive doesn't match your CV. Upload your own LinkedIn data." };
+    console.error("uploadLinkedInArchive failed", e);
     return { error: "We couldn't score this profile right now. Try again in a minute." };
   }
 }
