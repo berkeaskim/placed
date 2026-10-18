@@ -23,7 +23,7 @@
     "signals": [
       {
         "id": "PB-FIN-S01",
-        "text": "Spring weeks and insight programmes are the main early pipeline into summer internships. Attendance can lead to internship consideration or a fast-track, but firms rarely publish conversion rates.",
+        "text": "Spring weeks and insight programmes can lead to a summer-internship fast-track or offer at some firms, but conversion rates are rarely published.",
         "ruleIds": [
           "FIN-04"
         ],
@@ -65,7 +65,7 @@
       },
       {
         "id": "PB-FIN-S02",
-        "text": "Grades matter: Prospects says banking employers usually look for at least a 2:1, and Barclays says it does not select purely on academic record but also on activities and work experience. Across all graduate employers, ISE reports the share requiring a 2:1 fell from 71% (2015/16) to 47% (2024/25).",
+        "text": "Grades matter: Prospects says banking employers usually look for at least a 2:1, and Barclays says it does not select purely on academic record but also on activities and work experience. Across all graduate employers, ISE reports the share requiring a 2:1 fell from 71% (2015/16) to 47% (2024/25). ISE data suggests that fall may be plateauing. If you're below a 2:1 or had mitigating circumstances, look for firms that use contextual recruitment or set no grade bar, and declare extenuating circumstances where the form allows.",
         "ruleIds": [
           "FCQ-04",
           "FIN-02"
@@ -95,6 +95,14 @@
             "primary": true,
             "quote": "the share demanding a 2:1 degree has fallen from 71% to 47% over the same period.",
             "accessed": "2026-10-13"
+          },
+          {
+            "title": "Early careers recruitment in 2025: integrity, inclusion, entry standards",
+            "publisher": "Prospects Luminate / Institute of Student Employers",
+            "url": "https://luminate.prospects.ac.uk/early-careers-recruitment-in-2025-integrity-inclusion-entry-standards",
+            "primary": false,
+            "quote": "ISE data from the last three years suggests that this trend may be plateauing, with only marginal changes since 2022/2023.",
+            "accessed": "2026-10-18"
           }
         ],
         "note": "The ISE figure covers all graduate employers (not banking specifically) and compares 2015/16 with 2024/25."
@@ -135,7 +143,7 @@
       },
       {
         "id": "PB-FIN-S04",
-        "text": "Early screening relies on online tests (situational judgement, numerical/verbal reasoning, games) and video interviews. This is the process, not the CV, so prepare for it separately.",
+        "text": "Early screening relies on online tests (situational judgement, numerical/verbal reasoning, games) and video interviews. This is the process, not the CV, so prepare for it separately. Treat online tests and live interviews as unaided unless the employer says otherwise: Bain London and Deloitte ban AI in them, and employers report catching it.",
         "ruleIds": [],
         "grade": "A",
         "sources": [
@@ -162,6 +170,30 @@
             "primary": true,
             "quote": "When completing assessments online, read through the instructions carefully and complete all practise and example questions.",
             "accessed": "2026-10-13"
+          },
+          {
+            "title": "Bain London University Hiring (FAQ)",
+            "publisher": "Bain & Company",
+            "url": "https://www.bain.com/careers/recruiting/london-recruiting/",
+            "primary": true,
+            "quote": "For the online assessment or virtual interviews, use of AI is not permitted.",
+            "accessed": "2026-10-18"
+          },
+          {
+            "title": "Integrity Guidance",
+            "publisher": "Deloitte UK",
+            "url": "https://www.deloitte.com/uk/en/careers/early-careers/integrity-guidance.html",
+            "primary": true,
+            "quote": "Completing online assessments, including the Immersive Online Assessment, Onestop and Job Simulation: These assessments must be completed independently and without AI assistance.",
+            "accessed": "2026-10-18"
+          },
+          {
+            "title": "Graduate jobs stabilise but AI use disrupts recruitment (14 Oct 2026)",
+            "publisher": "Institute of Student Employers",
+            "url": "https://ise.org.uk/knowledge/insights/615/graduate_jobs_stabilise_but_ai_use_disrupts_recruitment",
+            "primary": false,
+            "quote": "The most common forms of misconduct were the unauthorised use of AI during interviews and online assessments.",
+            "accessed": "2026-10-18"
           }
         ]
       },
@@ -217,12 +249,12 @@
             "accessed": "2026-10-13"
           },
           {
-            "title": "How we hire",
-            "publisher": "JPMorganChase",
-            "url": "https://www.jpmorganchase.com/careers/how-we-hire",
+            "title": "Hints and tips",
+            "publisher": "Barclays",
+            "url": "https://search.jobs.barclays/hints-and-tips",
             "primary": true,
-            "quote": "Let us know what you're passionate about and what you've accomplished, using measurable data when applicable.",
-            "accessed": "2026-10-13"
+            "quote": "We don't select people purely on academic record, so tell us about your extra-curricular activities, work experience and why you're the kind of person who'll fit well in our team.",
+            "accessed": "2026-10-18"
           }
         ]
       },
@@ -278,7 +310,72 @@
             "accessed": "2026-10-13"
           }
         ],
-        "note": "Convention: only one independent source states it. Modelling is taught on the job; treat it as a differentiator for penultimate-year IBD applicants, not a gate."
+        "note": "Convention: only one independent source states it. Modelling is taught on the job; treat it as a differentiator for penultimate-year IBD applicants, not a gate. CFA Level I is at most a minor bonus for asset-management or research roles and never a substitute for grades (convention, C); its fee is a real cost barrier, so we don't suggest it as a step."
+      },
+      {
+        "id": "PB-FIN-S09",
+        "text": "Asset managers say they look for curiosity about markets and potential, not only academics. A stock pitch or investment view you can defend is one way to show it (our suggestion).",
+        "ruleIds": [],
+        "grade": "B",
+        "sources": [
+          {
+            "title": "Graduates",
+            "publisher": "Schroders",
+            "url": "https://www.schroders.com/en/global/individual/careers/graduates/",
+            "primary": true,
+            "quote": "We value your academic background, but we're just as interested in your potential - your curiosity, motivation and willingness to learn in a fast-moving workplace.",
+            "accessed": "2026-10-18"
+          },
+          {
+            "title": "Students and graduates",
+            "publisher": "BlackRock",
+            "url": "https://careers.blackrock.com/students-and-graduates",
+            "primary": true,
+            "quote": "We are lifelong students – of markets, of technology and of the world.",
+            "accessed": "2026-10-18"
+          },
+          {
+            "title": "Internships and placements",
+            "publisher": "Schroders",
+            "url": "https://www.schroders.com/en/global/individual/careers/internships-and-placements/",
+            "primary": true,
+            "quote": "Our intern programme is for penultimate year university students interested in asset and wealth management",
+            "accessed": "2026-10-18"
+          }
+        ],
+        "note": "Employer pages are general; the stock-pitch link is our synthesis."
+      },
+      {
+        "id": "PB-FIN-S10",
+        "text": "Most banks review applications on a rolling basis (Goldman Sachs says so), so apply early in the window. Consulting differs: BCG London decides after its deadline, so a polished late application there is fine.",
+        "ruleIds": [],
+        "grade": "A",
+        "sources": [
+          {
+            "title": "2027 Summer Analyst Programme (EMEA)",
+            "publisher": "Goldman Sachs",
+            "url": "https://www.goldmansachs.com/careers/students/programs-and-internships/emea/summer-analyst-programme",
+            "primary": true,
+            "quote": "We review applications on a rolling basis and encourage you to apply as soon as you are ready.",
+            "accessed": "2026-10-18"
+          },
+          {
+            "title": "Associate Jobs: United Kingdom (early careers FAQ)",
+            "publisher": "BCG",
+            "url": "https://careers.bcg.com/global/en/locations/united-kingdom/associate-jobs",
+            "primary": true,
+            "quote": "All decisions are made after the deadline, so you are not at a disadvantage if you apply later in the application window.",
+            "accessed": "2026-10-18"
+          },
+          {
+            "title": "Banking & Financial Markets: Short Guide to Recruitment 2025-2026 (PDF)",
+            "publisher": "University of Cambridge Careers Service",
+            "url": "https://www.careers.cam.ac.uk/sites/default/files/Banking%20and%20Financial%20Markets%20Short%20Guide%20to%20Recruitment%202025%20-%202026.pdf",
+            "primary": false,
+            "quote": "Keep applying throughout the year, with Lent being key for off-cycle or experienced roles.",
+            "accessed": "2026-10-18"
+          }
+        ]
       }
     ],
     "actions": [
@@ -297,7 +394,8 @@
         ],
         "signals": [
           "PB-FIN-S03",
-          "PB-FIN-S05"
+          "PB-FIN-S05",
+          "PB-FIN-S09"
         ],
         "effort": "2-4 weeks",
         "minYear": 1,
@@ -320,7 +418,9 @@
             "quote": "by whether you factor in commercial considerations when approaching scenario-based interview questions or exercises.",
             "accessed": "2026-10-13"
           }
-        ]
+        ],
+        "kind": "build",
+        "signalValue": "cv_medium"
       },
       {
         "id": "PB-FIN-P02",
@@ -358,7 +458,9 @@
             "quote": "Financial Modeling DCF Modeling",
             "accessed": "2026-10-13"
           }
-        ]
+        ],
+        "kind": "build",
+        "signalValue": "cv_medium"
       },
       {
         "id": "PB-FIN-P03",
@@ -395,7 +497,9 @@
             "quote": "a range of business magazines, including The Economist and the Financial Times",
             "accessed": "2026-10-13"
           }
-        ]
+        ],
+        "kind": "build",
+        "signalValue": "cv_medium"
       },
       {
         "id": "PB-FIN-P04",
@@ -433,13 +537,15 @@
             "quote": "commercial awareness and an understanding of financial markets, business trends and the wider economy",
             "accessed": "2026-10-13"
           }
-        ]
+        ],
+        "kind": "build",
+        "signalValue": "interview_prep"
       },
       {
         "id": "PB-FIN-C01",
         "type": "course",
         "title": "MIT OpenCourseWare 15.401 Finance Theory I",
-        "description": "Free lecture videos, notes and problem sets (Andrew Lo) covering present value, fixed income, equities, options, portfolio theory and CAPM. Signal value: builds technical-interview knowledge, but not a CV credential by itself.",
+        "description": "Free lecture videos, notes and problem sets (Andrew Lo) covering present value, fixed income, equities, options, portfolio theory and CAPM. Signal value: builds technical-interview knowledge, but not a CV credential by itself. This 2008 edition is the only one on OpenCourseWare (checked 2026-10-18).",
         "skills": [
           "Valuation",
           "Fixed Income",
@@ -455,7 +561,6 @@
         "url": "https://ocw.mit.edu/courses/15-401-finance-theory-i-fall-2008/",
         "verified": true,
         "cost": "free",
-        "signalValue": "low on CV, medium for interviews",
         "sources": [
           {
             "title": "15.401 Finance Theory I (Fall 2008)",
@@ -473,13 +578,17 @@
             "quote": "Freely sharing knowledge with learners and educators around the world.",
             "accessed": "2026-10-13"
           }
-        ]
+        ],
+        "kind": "build",
+        "signalValue": "cv_low",
+        "signalNote": "low on CV, medium for interviews",
+        "reviewBy": "2027-06-30"
       },
       {
         "id": "PB-FIN-C02",
         "type": "course",
         "title": "Corporate Finance Institute: Careers in Finance",
-        "description": "A free 1h30 self-paced course mapping finance careers. Use it to choose a division (IBD vs markets vs asset management) before you tailor applications. Its CV signal is very low, so don't list it as a credential.",
+        "description": "A free 1h30 self-paced course mapping finance careers. Use it to choose a division (IBD vs markets vs asset management) before you tailor applications. Its CV signal is very low, so don't list it as a credential. Orientation only: not a CV line.",
         "skills": [
           "Commercial Awareness"
         ],
@@ -492,7 +601,6 @@
         "url": "https://corporatefinanceinstitute.com/course/careers-in-finance/",
         "verified": true,
         "cost": "free",
-        "signalValue": "very low",
         "sources": [
           {
             "title": "Careers in Finance (free course)",
@@ -502,7 +610,10 @@
             "quote": "Enroll For Free",
             "accessed": "2026-10-13"
           }
-        ]
+        ],
+        "kind": "build",
+        "signalValue": "interview_prep",
+        "signalNote": "very low"
       },
       {
         "id": "PB-FIN-E01",
@@ -518,7 +629,7 @@
           "PB-FIN-S01",
           "PB-FIN-S04"
         ],
-        "effort": "weekend",
+        "effort": "2-4 weeks",
         "minYear": 1,
         "evidence": "Insight programme line on the CV; possible route into internship consideration.",
         "url": "https://www.jpmorganchase.com/careers/explore-opportunities/programs/spring-insights",
@@ -540,9 +651,24 @@
             "primary": true,
             "quote": "Participants may be considered for next steps linked to summer internship opportunities, depending on the pathway and programme process.",
             "accessed": "2026-10-13"
+          },
+          {
+            "title": "2027 Spring Insights: Engineer & Innovate (JPMorganChase), job board mirror",
+            "publisher": "Built In London",
+            "url": "https://builtinlondon.uk/job/2027-spring-insights-engineer-innovate-jpmorganchase-london/11463041",
+            "primary": false,
+            "quote": "Please note that you are only permitted to make an application to one of our Spring Insights programmes",
+            "accessed": "2026-10-18"
           }
         ],
-        "maxYear": 2
+        "maxYear": 2,
+        "kind": "opportunity",
+        "signalValue": "cv_high",
+        "eligibleGradYears": [
+          2029
+        ],
+        "reviewBy": "2027-06-30",
+        "commitment": "Application: form, online tests and a video interview over several weeks. Programme: a few days. You can apply to one Spring Insights programme only."
       },
       {
         "id": "PB-FIN-E02",
@@ -555,17 +681,13 @@
           "Financial Modelling",
           "Communication"
         ],
-        "signals": [
-          "PB-FIN-S01",
-          "PB-FIN-S08"
-        ],
+        "signals": [],
         "effort": "weekend",
         "minYear": 1,
         "evidence": "Forage certificate (list under extracurriculars/courses, not work experience).",
         "url": "https://www.theforage.com/simulations/jpmorgan/investment-banking-hkyd",
         "verified": true,
         "cost": "free",
-        "signalValue": "low",
         "sources": [
           {
             "title": "Investment Banking job simulation",
@@ -583,7 +705,12 @@
             "quote": "No applications, self paced and can participate from anywhere in the world",
             "accessed": "2026-10-13"
           }
-        ]
+        ],
+        "kind": "build",
+        "signalValue": "cv_low",
+        "signalNote": "low",
+        "simulation": true,
+        "evergreen": true
       },
       {
         "id": "PB-FIN-E03",
@@ -622,7 +749,9 @@
             "quote": "See what societies in this space are offering in terms of alumni and recruiter talks.",
             "accessed": "2026-10-13"
           }
-        ]
+        ],
+        "kind": "build",
+        "signalValue": "cv_high"
       },
       {
         "id": "PB-FIN-E04",
@@ -663,13 +792,18 @@
           }
         ],
         "expiresOn": "2027-01-03",
-        "maxYear": 2
+        "maxYear": 2,
+        "kind": "opportunity",
+        "signalValue": "cv_high",
+        "eligibleGradYears": [
+          2029
+        ]
       },
       {
         "id": "PB-FIN-E05",
         "type": "experience",
         "title": "Goldman Sachs 2027 Summer Analyst Programme (EMEA)",
-        "description": "A 9-10 week summer internship for penultimate- or final-year Bachelor's/Master's students. Applications are open and reviewed on a rolling basis.",
+        "description": "A 9-10 week summer internship for penultimate- or final-year Bachelor's/Master's students. Goldman Sachs reviews applications on a rolling basis and publishes no closing date, so apply as soon as you are ready.",
         "skills": [
           "Financial Modelling",
           "Teamwork",
@@ -685,7 +819,7 @@
         "url": "https://www.goldmansachs.com/careers/students/programs-and-internships/emea/summer-analyst-programme",
         "verified": true,
         "howToFind": "Goldman Sachs Students page, 2027 Summer Internships.",
-        "timing": "Applications open now, reviewed on a rolling basis (firm page, accessed 2026-10-13). No closing date published.",
+        "timing": "",
         "sources": [
           {
             "title": "2027 Summer Analyst Programme (EMEA)",
@@ -704,13 +838,16 @@
             "accessed": "2026-10-13"
           }
         ],
-        "reviewBy": "2026-12-31"
+        "reviewBy": "2026-12-31",
+        "kind": "opportunity",
+        "signalValue": "cv_high",
+        "commitment": "Application: form, online assessment and a video interview, then a superday. Programme: 9-10 weeks."
       },
       {
         "id": "PB-FIN-E06",
         "type": "experience",
         "title": "BlackRock 2027 Spring Insight Event (EMEA)",
-        "description": "A week-long asset-management insight event in BlackRock's London and Edinburgh offices in April 2027, open to students of any degree who graduate in 2029. You can apply to one programme only (up to two functions), and a withdrawn application can't be resubmitted this year. After applying you get a pre-interview assessment with five days to complete it.",
+        "description": "A week-long asset-management insight event in BlackRock's London and Edinburgh offices in April 2027, open to students of any degree who graduate in 2029. You can apply to one programme only (up to two functions), and a withdrawn application can't be resubmitted in the same cycle. After applying you get a pre-interview assessment with five days to complete it.",
         "skills": [
           "Commercial Awareness",
           "Communication",
@@ -720,7 +857,7 @@
           "PB-FIN-S01",
           "PB-FIN-S04"
         ],
-        "effort": "weekend",
+        "effort": "2-4 weeks",
         "minYear": 1,
         "maxYear": 2,
         "evidence": "Insight programme line on the CV; early contact with an asset manager.",
@@ -746,13 +883,69 @@
             "accessed": "2026-10-18"
           }
         ],
-        "expiresOn": "2026-12-04"
+        "expiresOn": "2026-12-04",
+        "kind": "opportunity",
+        "signalValue": "cv_high",
+        "eligibleGradYears": [
+          2029
+        ],
+        "commitment": "Application: form plus a pre-interview assessment due within five days. Programme: one week in London or Edinburgh."
+      },
+      {
+        "type": "course",
+        "skills": [
+          "Bloomberg",
+          "Capital Markets",
+          "Fixed Income",
+          "FX"
+        ],
+        "signals": [
+          "PB-FIN-S03"
+        ],
+        "effort": "2-4 weeks",
+        "minYear": "1st",
+        "sources": [
+          {
+            "title": "Bloomberg Market Concepts FAQ",
+            "publisher": "University of Manchester Library",
+            "url": "https://manchester-uk.libanswers.com/teaching-and-learning/faq/254146",
+            "primary": false,
+            "quote": "As a University of Manchester student, you can complete the course and get certification for free.",
+            "accessed": "2026-10-18"
+          },
+          {
+            "title": "Bloomberg Market Concepts FAQ",
+            "publisher": "University of Manchester Library",
+            "url": "https://manchester-uk.libanswers.com/teaching-and-learning/faq/254146",
+            "primary": false,
+            "quote": "You have to access this site via the terminal to make sure that your University credentials are picked up, otherwise you will be charged $149 for BMC.",
+            "accessed": "2026-10-18"
+          },
+          {
+            "title": "How can I access Bloomberg data?",
+            "publisher": "UCL Library",
+            "url": "https://library-help.ucl.ac.uk/faq/242426",
+            "primary": false,
+            "quote": "Bloomberg Data Terminals aren't available in UCL Libraries, but you can request a licence to LSEG Workspace",
+            "accessed": "2026-10-18"
+          }
+        ],
+        "verified": true,
+        "kind": "build",
+        "id": "PB-FIN-C03",
+        "title": "Bloomberg Market Concepts (only with free university terminal access)",
+        "description": "Bloomberg's self-paced markets course. Some universities give it free on their terminals; elsewhere it costs $149, which is not worth paying. Not every university has terminals (UCL's libraries don't).",
+        "howToFind": "Check your library's Bloomberg page; don't pay $149.",
+        "cost": "Free on a university terminal, otherwise $149",
+        "evidence": "Bloomberg certificate under Courses.",
+        "signalValue": "cv_low"
       }
     ],
     "yearGuidance": {
-      "year1": "Apply to spring weeks/insight programmes (JPMorganChase Spring Insights targets students starting full-time work in two years; Jane Street Bridge London, for students graduating in 2029, closes 3 Jan 2027), join the investment society, and start a stock pitch or weekly markets note.",
-      "year2_penultimate": "Apply for summer analyst internships (GS 2027 EMEA is open now, reviewed on a rolling basis). Go in with one finished model or pitch, a committee role, and practice for online tests and video interviews.",
-      "final": "If you have no internship offer, apply to programmes that admit final-year students (GS Summer Analyst eligibility includes final year) and to graduate roles. Lead with quantified experience of any kind.",
+      "year1": "Spring-week applications run from about June to April: banks mostly October-November, trading and consulting January-February. Many review on a rolling basis, so apply in the first fortnight a programme opens, and use a tracker to spot openings (its dates are estimates). Join the investment society and start a stock pitch or weekly markets note. Considering actuarial or insurance work? That is a different route (IFoA exams, actuarial placements): see Prospects 'Actuary'.",
+      "2nd": "Your stage depends on your course. Three-year degree: you're penultimate (see that advice: summer internships, rolling deadlines). Four-year course: spring weeks for students graduating in two years' time are often still open to you. Placement-year degree: apply in the autumn of your second year for 12-month industrial placements.",
+      "penultimate": "Banks open summer internships from about June to September and most review on a rolling basis (Goldman Sachs says so), so apply as early in the window as you can and expect places to fill. Go in with one finished model or pitch, a committee role, and practice for online tests and video interviews. On a placement-year degree, apply for 12-month placements in the same autumn.",
+      "final": "No internship yet? Apply to programmes that admit final-year students (GS Summer Analyst eligibility includes final year), to off-cycle internships (Lent term is key for them), to boutique and mid-market firms (they hire less formally, year-round) and to graduate schemes at retail and corporate banks. Lead with quantified experience of any kind.",
       "postgrad": "Master's students can apply to the GS Summer Analyst Programme if they are in the penultimate or final year of study. Check each firm's eligibility page.",
       "note": "For 4-year courses, shift each line by one year (spring weeks are for the second year of a four-year degree)."
     },
@@ -761,13 +954,19 @@
         "year": "year1",
         "text": "Jane Street Bridge London (1-3 April 2027) closes 3 Jan 2027, 23:59 GMT; open to students graduating in 2029.",
         "expiresOn": "2027-01-03",
-        "ref": "PB-FIN-E04"
+        "ref": "PB-FIN-E04",
+        "gradYears": [
+          2029
+        ]
       },
       {
         "year": "year1",
         "text": "BlackRock Spring Insight EMEA (April 2027, London and Edinburgh, for 2029 graduates) closes Fri 4 Dec 2026. One application per programme; a withdrawn application can't be resubmitted.",
         "expiresOn": "2026-12-04",
-        "ref": "PB-FIN-E06"
+        "ref": "PB-FIN-E06",
+        "gradYears": [
+          2029
+        ]
       }
     ]
   },
@@ -855,7 +1054,7 @@
       },
       {
         "id": "PB-QNT-S03",
-        "text": "Online assessments are an early screen: Optiver sends them to applicants selected for the next round (applicants confirm they can take the assessment within 7 days), and IMC says it always starts with one. Practise before applying.",
+        "text": "Online assessments are an early screen: Optiver sends them to applicants selected for the next round (applicants confirm they can take the assessment within 7 days), and IMC says it always starts with one. Practise before applying. Treat online tests and live interviews as unaided unless the employer says otherwise: Bain London and Deloitte ban AI in them, and employers report catching it.",
         "ruleIds": [
           "QNT-07"
         ],
@@ -884,6 +1083,14 @@
             "primary": true,
             "quote": "We always kick off with an online assessment to ensure that only suitable candidates are invited to interview.",
             "accessed": "2026-10-13"
+          },
+          {
+            "title": "Graduate jobs stabilise but AI use disrupts recruitment (14 Oct 2026)",
+            "publisher": "Institute of Student Employers",
+            "url": "https://ise.org.uk/knowledge/insights/615/graduate_jobs_stabilise_but_ai_use_disrupts_recruitment",
+            "primary": false,
+            "quote": "Some 92% of employers suspected or confirmed student misconduct in assessment and selection processes, compared with 85% in 2025 and 78% in 2024.",
+            "accessed": "2026-10-18"
           }
         ],
         "note": "Grade B because the IMC corroboration is an APAC page."
@@ -905,18 +1112,18 @@
             "accessed": "2026-10-13"
           },
           {
-            "title": "Puzzles",
-            "publisher": "Jane Street",
-            "url": "https://www.janestreet.com/puzzles/",
-            "primary": true,
-            "quote": "Prime among the skills necessary to stay successful, then, is creative problem solving, or puzzling.",
-            "accessed": "2026-10-13"
+            "title": "Banking & Financial Markets: Short Guide to Recruitment 2025-2026 (PDF)",
+            "publisher": "University of Cambridge Careers Service",
+            "url": "https://www.careers.cam.ac.uk/sites/default/files/Banking%20and%20Financial%20Markets%20Short%20Guide%20to%20Recruitment%202025%20-%202026.pdf",
+            "primary": false,
+            "quote": "cognitive interviews use a variety of games, brainteasers and puzzles designed to assess your decision- making",
+            "accessed": "2026-10-18"
           }
         ]
       },
       {
         "id": "PB-QNT-S05",
-        "text": "Programming (usually Python) is a plus for trading roles but not a requirement (Optiver, Jane Street). On Optiver's trading internship, interns implement strategies in Python and run them against historical data.",
+        "text": "For trader roles, programming (usually Python) is a plus but not a requirement (Optiver, Jane Street). On Optiver's trading internship, interns implement strategies in Python and run them against historical data.",
         "ruleIds": [
           "QNT-03",
           "QNT-05"
@@ -1011,6 +1218,23 @@
           }
         ],
         "note": "Convention: one firm (IMC, APAC page) states it. No second independent source fetched."
+      },
+      {
+        "id": "PB-QNT-S08",
+        "text": "Quant research and quant developer roles are different: they test coding (timed coding tests) and statistics directly. If you're aiming there, use the Software Engineering playbook's quant-dev steps too.",
+        "ruleIds": [],
+        "grade": "C",
+        "sources": [
+          {
+            "title": "Banking & Financial Markets: Short Guide to Recruitment 2025-2026 (PDF)",
+            "publisher": "University of Cambridge Careers Service",
+            "url": "https://www.careers.cam.ac.uk/sites/default/files/Banking%20and%20Financial%20Markets%20Short%20Guide%20to%20Recruitment%202025%20-%202026.pdf",
+            "primary": false,
+            "quote": "For technical roles, prepare for timed coding tests in your chosen language.",
+            "accessed": "2026-10-18"
+          }
+        ],
+        "note": "Convention: one careers-service source. Raise the grade once a quant research firm's own page is quoted."
       }
     ],
     "actions": [
@@ -1029,8 +1253,9 @@
           "Git"
         ],
         "signals": [
+          "PB-QNT-S02",
           "PB-QNT-S05",
-          "PB-QNT-S02"
+          "PB-QNT-S08"
         ],
         "effort": "2-4 weeks",
         "minYear": 1,
@@ -1053,7 +1278,9 @@
             "quote": "Learn what holds up out of sample, what breaks and why.",
             "accessed": "2026-10-13"
           }
-        ]
+        ],
+        "kind": "build",
+        "signalValue": "cv_medium"
       },
       {
         "id": "PB-QNT-P02",
@@ -1093,7 +1320,9 @@
             "quote": "Making Markets Adverse Selection",
             "accessed": "2026-10-13"
           }
-        ]
+        ],
+        "kind": "build",
+        "signalValue": "cv_medium"
       },
       {
         "id": "PB-QNT-P03",
@@ -1132,7 +1361,9 @@
             "quote": "Prime among the skills necessary to stay successful, then, is creative problem solving, or puzzling.",
             "accessed": "2026-10-13"
           }
-        ]
+        ],
+        "kind": "build",
+        "signalValue": "interview_prep"
       },
       {
         "id": "PB-QNT-P04",
@@ -1171,7 +1402,9 @@
             "quote": "The purpose of the class is to expose undergraduate and graduate students to the mathematical concepts and techniques used in the financial industry.",
             "accessed": "2026-10-13"
           }
-        ]
+        ],
+        "kind": "build",
+        "signalValue": "cv_medium"
       },
       {
         "id": "PB-QNT-C01",
@@ -1194,7 +1427,6 @@
         "url": "https://ocw.mit.edu/courses/18-05-introduction-to-probability-and-statistics-spring-2022/",
         "verified": true,
         "cost": "free",
-        "signalValue": "medium for interviews, low on CV",
         "sources": [
           {
             "title": "18.05 Introduction to Probability and Statistics (Spring 2022)",
@@ -1212,7 +1444,10 @@
             "quote": "which is free to use.",
             "accessed": "2026-10-13"
           }
-        ]
+        ],
+        "kind": "build",
+        "signalValue": "interview_prep",
+        "signalNote": "medium for interviews, low on CV"
       },
       {
         "id": "PB-QNT-C02",
@@ -1232,7 +1467,6 @@
         "url": "https://www.janestreet.com/static/pdfs/trading-interview.pdf",
         "verified": true,
         "cost": "free",
-        "signalValue": "high for interview prep",
         "sources": [
           {
             "title": "Interviewing",
@@ -1250,7 +1484,10 @@
             "quote": "The goal of this document is to present an introduction to probability and markets in what we hope is a fairly intuitive and accessible way.",
             "accessed": "2026-10-13"
           }
-        ]
+        ],
+        "kind": "build",
+        "signalValue": "interview_prep",
+        "signalNote": "high for interview prep"
       },
       {
         "id": "PB-QNT-C03",
@@ -1272,7 +1509,6 @@
         "url": "https://ocw.mit.edu/courses/18-s096-topics-in-mathematics-with-applications-in-finance-fall-2013/",
         "verified": true,
         "cost": "free",
-        "signalValue": "low on CV, medium for QR interviews",
         "sources": [
           {
             "title": "18.S096 Topics in Mathematics with Applications in Finance (Fall 2013)",
@@ -1290,7 +1526,10 @@
             "quote": "Freely sharing knowledge with learners and educators around the world.",
             "accessed": "2026-10-13"
           }
-        ]
+        ],
+        "kind": "build",
+        "signalValue": "interview_prep",
+        "signalNote": "low on CV, medium for QR interviews"
       },
       {
         "id": "PB-QNT-C04",
@@ -1309,7 +1548,6 @@
         "url": "https://arithmetic.zetamac.com/",
         "verified": true,
         "cost": "free",
-        "signalValue": "none on CV; test practice only",
         "sources": [
           {
             "title": "Arithmetic Game (online speed drill)",
@@ -1319,7 +1557,10 @@
             "quote": "The Arithmetic Game is a fast-paced speed drill where you are given two minutes to solve as many arithmetic problems as you can.",
             "accessed": "2026-10-13"
           }
-        ]
+        ],
+        "kind": "build",
+        "signalValue": "test_prep",
+        "signalNote": "none on CV; test practice only"
       },
       {
         "id": "PB-QNT-E01",
@@ -1369,7 +1610,10 @@
           }
         ],
         "expiresOn": "2027-01-03",
-        "maxYear": 1
+        "maxYear": 1,
+        "kind": "opportunity",
+        "signalValue": "cv_high",
+        "commitment": "Application: online form and interviews. Programme: Sunday to Thursday in London; check the page for travel cover."
       },
       {
         "id": "PB-QNT-E02",
@@ -1412,7 +1656,9 @@
             "accessed": "2026-10-13"
           }
         ],
-        "reviewBy": "2026-12-31"
+        "reviewBy": "2026-12-31",
+        "kind": "build",
+        "signalValue": "cv_medium"
       },
       {
         "id": "PB-QNT-E03",
@@ -1422,8 +1668,7 @@
         "skills": [
           "Probability",
           "Statistics",
-          "Python",
-          "Machine Learning"
+          "Python"
         ],
         "signals": [
           "PB-QNT-S01",
@@ -1452,7 +1697,11 @@
             "quote": "We don't typically have one; our applications are reviewed on a rolling basis.",
             "accessed": "2026-10-13"
           }
-        ]
+        ],
+        "kind": "opportunity",
+        "signalValue": "cv_high",
+        "reviewBy": "2027-03-31",
+        "commitment": "Application: online form, then several problem-solving interviews. Programme: about 10 weeks in London."
       },
       {
         "id": "PB-QNT-E04",
@@ -1493,7 +1742,9 @@
             "accessed": "2026-10-13"
           }
         ],
-        "reviewBy": "2026-12-31"
+        "reviewBy": "2026-12-31",
+        "kind": "opportunity",
+        "signalValue": "cv_high"
       },
       {
         "id": "PB-QNT-E05",
@@ -1532,7 +1783,9 @@
             "quote": "Candidates who stand out are not only passionate about the industry and the role, but also have keen interests outside of their work and studies.",
             "accessed": "2026-10-13"
           }
-        ]
+        ],
+        "kind": "build",
+        "signalValue": "cv_medium"
       },
       {
         "id": "PB-QNT-E06",
@@ -1582,12 +1835,72 @@
             "accessed": "2026-10-18"
           }
         ],
-        "expiresOn": "2026-11-08"
+        "expiresOn": "2026-11-08",
+        "kind": "opportunity",
+        "signalValue": "cv_high",
+        "commitment": "Application: online form. Programme: four days in London (13-16 January 2027); travel and housing covered."
+      },
+      {
+        "id": "PB-QNT-P05",
+        "type": "project",
+        "title": "Rewrite your backtest or pricer's core loop in C++ and benchmark it",
+        "description": "Take your Python backtest or Monte Carlo pricer, rewrite the hot loop in C++ on Linux, check both give the same numbers, and report the speed-up and what limited it. Useful for quant developer and research roles, which test coding directly.",
+        "skills": [
+          "C++",
+          "Linux",
+          "Numerical Methods",
+          "Optimisation",
+          "Algorithms"
+        ],
+        "signals": [
+          "PB-QNT-S08"
+        ],
+        "effort": "2-4 weeks",
+        "minYear": 2,
+        "evidence": "Repo with both versions, a correctness test and benchmark results.",
+        "verified": true,
+        "sources": [
+          {
+            "title": "Banking & Financial Markets: Short Guide to Recruitment 2025-2026 (PDF)",
+            "publisher": "University of Cambridge Careers Service",
+            "url": "https://www.careers.cam.ac.uk/sites/default/files/Banking%20and%20Financial%20Markets%20Short%20Guide%20to%20Recruitment%202025%20-%202026.pdf",
+            "primary": false,
+            "quote": "For technical roles, prepare for timed coding tests in your chosen language.",
+            "accessed": "2026-10-18"
+          }
+        ],
+        "kind": "build",
+        "signalValue": "cv_medium"
+      },
+      {
+        "id": "PB-QNT-P06",
+        "type": "project",
+        "title": "An honest machine-learning forecasting experiment on market data",
+        "description": "Try a simple ML model to forecast returns or volatility, with a strict train/test split by time, transaction costs, and a comparison with a naive baseline. Report it even if it doesn't beat the baseline: showing you avoided look-ahead bias and overfitting is the point.",
+        "skills": [
+          "Machine Learning",
+          "Statistics",
+          "Python",
+          "Pandas",
+          "Backtesting"
+        ],
+        "signals": [
+          "PB-QNT-S08",
+          "PB-QNT-S07"
+        ],
+        "effort": "2-4 weeks",
+        "minYear": 2,
+        "evidence": "Notebook or repo with the split, the baseline and an honest results table.",
+        "verified": true,
+        "sources": [],
+        "kind": "build",
+        "signalValue": "cv_medium"
       }
     ],
     "yearGuidance": {
       "year1": "Work through the Jane Street Probability & Markets guide and MIT 18.05. Apply to Jane Street FTTP London (first-year undergraduates, STEM focus) by 3 Jan 2027. Start one small Python backtest, and enter IMC Prosperity when the next edition opens.",
-      "year2_penultimate": "Apply for penultimate-year trading internships (e.g. the Optiver posting asks for penultimate-year STEM). Practise online assessments before applying, and bring one finished project (market-making sim or honest backtest).",
+      "2nd": "Your stage depends on your course. Three-year degree: you're penultimate (apply for trading internships; practise online assessments first). Four-year course: first-year discovery programmes may be closed to you, but check each one's year rules, and start one finished project.",
+      "penultimate": "Apply for penultimate-year trading internships (e.g. the Optiver posting asks for penultimate-year STEM). Practise online assessments before applying, and bring one finished project (market-making sim or honest backtest).",
       "final": "Apply to graduate trading and research roles. Jane Street reviews applications on a rolling basis and hires students of all tenures. Put competition results and projects ahead of finance jargon.",
       "postgrad": "Master's/PhD students: Jane Street states no degree requirement. Research-leaning roles reward projects with rigorous evaluation (QNT-05).",
       "note": "For 4-year courses, shift each line by one year."
@@ -1641,8 +1954,17 @@
             "primary": true,
             "quote": "Successful candidates bring strong academics, analytical & numerical and communication skills.",
             "accessed": "2026-10-13"
+          },
+          {
+            "title": "Early careers recruitment in 2025: integrity, inclusion, entry standards",
+            "publisher": "Prospects Luminate / Institute of Student Employers",
+            "url": "https://luminate.prospects.ac.uk/early-careers-recruitment-in-2025-integrity-inclusion-entry-standards",
+            "primary": false,
+            "quote": "ISE data from the last three years suggests that this trend may be plateauing, with only marginal changes since 2022/2023.",
+            "accessed": "2026-10-18"
           }
-        ]
+        ],
+        "note": "ISE data suggests fewer employers now demand a 2:1, and that trend may be plateauing. Below a 2:1 or with mitigating circumstances, look for firms using contextual recruitment and declare extenuating circumstances where the form allows."
       },
       {
         "id": "PB-CON-S02",
@@ -1680,7 +2002,7 @@
       },
       {
         "id": "PB-CON-S03",
-        "text": "At BCG London and Bain London, an online numerical/logical assessment follows the application and comes before any interview.",
+        "text": "At BCG London and Bain London, an online numerical/logical assessment follows the application and comes before any interview. AI is not allowed in Bain London's online assessment or interviews, and Deloitte bans it in its assessments, so practise unaided.",
         "ruleIds": [],
         "grade": "A",
         "sources": [
@@ -1699,6 +2021,22 @@
             "primary": true,
             "quote": "The assessment evaluates skills that are core to success in the Associate Consultant role, including numerical aptitude, logical reasoning, and behavioural preferences.",
             "accessed": "2026-10-13"
+          },
+          {
+            "title": "Bain London University Hiring (FAQ)",
+            "publisher": "Bain & Company",
+            "url": "https://www.bain.com/careers/recruiting/london-recruiting/",
+            "primary": true,
+            "quote": "For the online assessment or virtual interviews, use of AI is not permitted.",
+            "accessed": "2026-10-18"
+          },
+          {
+            "title": "Integrity Guidance",
+            "publisher": "Deloitte UK",
+            "url": "https://www.deloitte.com/uk/en/careers/early-careers/integrity-guidance.html",
+            "primary": true,
+            "quote": "Completing online assessments, including the Immersive Online Assessment, Onestop and Job Simulation: These assessments must be completed independently and without AI assistance.",
+            "accessed": "2026-10-18"
           }
         ]
       },
@@ -1798,11 +2136,11 @@
       },
       {
         "id": "PB-CON-S07",
-        "text": "Commercial awareness and firm knowledge, built partly by attending firm events (Cambridge Careers notes that firms will likely keep a record of who attended).",
+        "text": "Commercial awareness and firm knowledge, built partly by attending firm events (most run September-October).",
         "ruleIds": [
           "CON-12"
         ],
-        "grade": "A",
+        "grade": "B",
         "sources": [
           {
             "title": "12 skills that consulting recruiters want in graduates (Olivia Rowland, 21 May 2025)",
@@ -1828,7 +2166,8 @@
             "quote": "BCG hosts a wide range of events in September and October, both virtual and in person, on campus and in our offices.",
             "accessed": "2026-10-13"
           }
-        ]
+        ],
+        "note": "Cambridge Careers (2024) notes that firms will likely keep a record of who attended. Graded B: only that guide states it."
       },
       {
         "id": "PB-CON-S08",
@@ -1857,6 +2196,39 @@
           }
         ],
         "note": "The 27% figure is from a TARGETjobs survey article dated 21 Jun 2023, quoted verbatim. It describes applicants, not what firms require."
+      },
+      {
+        "id": "PB-CON-S09",
+        "text": "Big 4 and professional-services firms screen mainly through online forms, tests and video interviews rather than a CV and case interview. PwC accepts one application per intake year and Deloitte bans AI in its assessments and interviews, so prepare for the tests before you apply.",
+        "ruleIds": [],
+        "grade": "B",
+        "sources": [
+          {
+            "title": "Early careers FAQs (Wayback Machine copy of 14 Jun 2026; live page blocked automated access)",
+            "publisher": "PwC UK",
+            "url": "https://web.archive.org/web/2026/https://www.pwc.co.uk/careers/early-careers/applying/faqs.html",
+            "primary": true,
+            "quote": "We only accept one application per intake year",
+            "accessed": "2026-10-18"
+          },
+          {
+            "title": "Integrity Guidance",
+            "publisher": "Deloitte UK",
+            "url": "https://www.deloitte.com/uk/en/careers/early-careers/integrity-guidance.html",
+            "primary": true,
+            "quote": "Completing online assessments, including the Immersive Online Assessment, Onestop and Job Simulation: These assessments must be completed independently and without AI assistance.",
+            "accessed": "2026-10-18"
+          },
+          {
+            "title": "Integrity Guidance",
+            "publisher": "Deloitte UK",
+            "url": "https://www.deloitte.com/uk/en/careers/early-careers/integrity-guidance.html",
+            "primary": true,
+            "quote": "Interviews must be completed without AI assistance.",
+            "accessed": "2026-10-18"
+          }
+        ],
+        "note": "PwC's live site blocked our fetch; the quote is from an archived copy of PwC's own FAQ (14 Jun 2026)."
       }
     ],
     "actions": [
@@ -1899,7 +2271,9 @@
             "quote": "McKinsey is interested in 'why your work mattered' and the changes you brought about.",
             "accessed": "2026-10-13"
           }
-        ]
+        ],
+        "kind": "build",
+        "signalValue": "cv_high"
       },
       {
         "id": "PB-CON-P02",
@@ -1936,7 +2310,9 @@
             "quote": "You are usually assessed on 5 core elements of a case: structuring, numeracy, judgements and insights, creativity, synthesis and case leadership.",
             "accessed": "2026-10-13"
           }
-        ]
+        ],
+        "kind": "build",
+        "signalValue": "interview_prep"
       },
       {
         "id": "PB-CON-P03",
@@ -1975,7 +2351,9 @@
             "quote": "conduct research and data collection to understand the client's operations and to discover potential problems",
             "accessed": "2026-10-13"
           }
-        ]
+        ],
+        "kind": "build",
+        "signalValue": "cv_low"
       },
       {
         "id": "PB-CON-P04",
@@ -2013,7 +2391,9 @@
             "quote": "The firm is looking for evidence of impact, leadership, entrepreneurship, problem solving and an overall orientation towards achievement.",
             "accessed": "2026-10-13"
           }
-        ]
+        ],
+        "kind": "build",
+        "signalValue": "cv_high"
       },
       {
         "id": "PB-CON-C01",
@@ -2033,7 +2413,6 @@
         "url": "https://www.bain.com/careers/hiring-process/case-interview/",
         "verified": true,
         "cost": "free",
-        "signalValue": "high for interview prep; none on CV",
         "sources": [
           {
             "title": "Case interview preparation",
@@ -2051,7 +2430,10 @@
             "quote": "You'll find Bain-designed materials, sample cases, practical tips, and trusted external resources",
             "accessed": "2026-10-13"
           }
-        ]
+        ],
+        "kind": "build",
+        "signalValue": "interview_prep",
+        "signalNote": "high for interview prep; none on CV"
       },
       {
         "id": "PB-CON-C02",
@@ -2071,7 +2453,6 @@
         "url": "https://www.bain.com/careers/hiring-process/digital-assessment/",
         "verified": true,
         "cost": "free",
-        "signalValue": "test prep only",
         "sources": [
           {
             "title": "Digital assessment hub",
@@ -2089,7 +2470,10 @@
             "quote": "The assessment takes approximately 30-40 minutes.",
             "accessed": "2026-10-13"
           }
-        ]
+        ],
+        "kind": "build",
+        "signalValue": "test_prep",
+        "signalNote": "test prep only"
       },
       {
         "id": "PB-CON-E01",
@@ -2130,7 +2514,10 @@
             "quote": "University College London",
             "accessed": "2026-10-13"
           }
-        ]
+        ],
+        "kind": "build",
+        "signalValue": "cv_high",
+        "evergreen": true
       },
       {
         "id": "PB-CON-E02",
@@ -2142,17 +2529,13 @@
           "Market Research",
           "Data Visualisation"
         ],
-        "signals": [
-          "PB-CON-S02",
-          "PB-CON-S05"
-        ],
+        "signals": [],
         "effort": "weekend",
         "minYear": 1,
-        "evidence": "Certificate; list under courses/extracurriculars only.",
+        "evidence": "List it as 'BCG Strategy Consulting Job Simulation (Forage), [month year]' under Courses, never as experience (BCG's own rule).",
         "url": "https://www.theforage.com/simulations/bcg/strategy-consulting-jk76",
         "verified": true,
         "cost": "free",
-        "signalValue": "low; follow BCG's listing rule",
         "sources": [
           {
             "title": "Strategy Consulting Job Simulation",
@@ -2170,7 +2553,12 @@
             "quote": "It is our policy that you do not list your completion of this program as work or internship experience on your CV",
             "accessed": "2026-10-13"
           }
-        ]
+        ],
+        "kind": "build",
+        "signalValue": "cv_low",
+        "signalNote": "low; follow BCG's listing rule",
+        "simulation": true,
+        "evergreen": true
       },
       {
         "id": "PB-CON-E03",
@@ -2211,7 +2599,10 @@
             "accessed": "2026-10-13"
           }
         ],
-        "expiresOn": "2027-01-24"
+        "expiresOn": "2027-01-24",
+        "kind": "opportunity",
+        "signalValue": "cv_high",
+        "commitment": "Application: form and a short numerical assessment, then case interviews. Programme: 8 weeks, July-August."
       },
       {
         "id": "PB-CON-E04",
@@ -2250,7 +2641,10 @@
             "accessed": "2026-10-13"
           }
         ],
-        "reviewBy": "2026-11-30"
+        "reviewBy": "2026-11-30",
+        "kind": "opportunity",
+        "signalValue": "cv_high",
+        "commitment": "Application: form and online assessment (no AI allowed), then case interviews. Programme: summer internship in London."
       },
       {
         "id": "PB-CON-E05",
@@ -2289,13 +2683,96 @@
             "quote": "extra-curricular activities such as club membership, team sports or work for a student society or community project.",
             "accessed": "2026-10-13"
           }
-        ]
+        ],
+        "kind": "build",
+        "signalValue": "cv_medium"
+      },
+      {
+        "type": "project",
+        "skills": [
+          "Mental Maths",
+          "Problem Solving"
+        ],
+        "signals": [
+          "PB-CON-S09",
+          "PB-CON-S03"
+        ],
+        "effort": "weekend",
+        "minYear": "1st",
+        "sources": [
+          {
+            "title": "Early careers FAQs (Wayback Machine copy of 14 Jun 2026; live page blocked automated access)",
+            "publisher": "PwC UK",
+            "url": "https://web.archive.org/web/2026/https://www.pwc.co.uk/careers/early-careers/applying/faqs.html",
+            "primary": true,
+            "quote": "We only accept one application per intake year",
+            "accessed": "2026-10-18"
+          },
+          {
+            "title": "Integrity Guidance",
+            "publisher": "Deloitte UK",
+            "url": "https://www.deloitte.com/uk/en/careers/early-careers/integrity-guidance.html",
+            "primary": true,
+            "quote": "Completing online assessments, including the Immersive Online Assessment, Onestop and Job Simulation: These assessments must be completed independently and without AI assistance.",
+            "accessed": "2026-10-18"
+          }
+        ],
+        "verified": true,
+        "kind": "build",
+        "id": "PB-CON-P05",
+        "title": "Practise your target firm's assessment type before applying",
+        "description": "Find out which test each firm uses (numerical reasoning, situational judgement, game-based or immersive), then practise that format under time pressure and without AI help. At firms that accept one application a year, a failed test ends that year's attempt.",
+        "evidence": "Practice scores you track privately; not a CV line.",
+        "signalValue": "test_prep"
+      },
+      {
+        "type": "experience",
+        "skills": [
+          "Commercial Awareness",
+          "Communication"
+        ],
+        "signals": [
+          "PB-CON-S09",
+          "PB-CON-S08"
+        ],
+        "effort": "2-4 weeks",
+        "minYear": "1st",
+        "sources": [
+          {
+            "title": "Advancing Social Mobility Programme 2027 (PwC)",
+            "publisher": "TARGETjobs",
+            "url": "https://targetjobs.co.uk/jobs/advancing-social-mobility-programme-2027-248569",
+            "primary": false,
+            "quote": "Our Advancing Social Mobility programme is a three-day paid programme which will be run in Spring 2027.",
+            "accessed": "2026-10-18"
+          },
+          {
+            "title": "What is a spring week, insight day or insight programme? (2 May 2025)",
+            "publisher": "TARGETjobs",
+            "url": "https://targetjobs.co.uk/careers-advice/internships/what-spring-week-insight-day-or-insight-programme",
+            "primary": false,
+            "quote": "Some are geared towards student cohorts of any year who are underrepresented in that profession, such as those of black heritage, those who are the first generation of their family to go to university or women",
+            "accessed": "2026-10-18"
+          }
+        ],
+        "verified": true,
+        "kind": "opportunity",
+        "id": "PB-CON-E06",
+        "title": "Big 4 spring and insight programmes",
+        "description": "PwC, Deloitte, KPMG and EY run first-year (or second-year on four-year courses) spring and insight programmes, some aimed at under-represented groups. They use the same online tests as the graduate process.",
+        "maxYear": "2nd",
+        "howToFind": "Each firm's early-careers page; targetjobs lists current programmes.",
+        "commitment": "Application: form and online tests. Programme: one to three days.",
+        "evidence": "Insight programme on your CV.",
+        "signalValue": "cv_medium",
+        "reviewBy": "2027-03-31"
       }
     ],
     "yearGuidance": {
       "year1": "Join 180DC or a consulting society, take on one leadership task with a measurable result, attend firm events (BCG London lists its events on its UK careers page), and start casual case practice with Bain's free cases.",
-      "year2_penultimate": "Apply for internships: Bain London ACI is expected to open Nov 2026; BCG London runs 1-24 Jan 2027. Prepare the numerical online test first, then do structured case practice (15-20 cases).",
-      "final": "Apply for Associate/Associate Consultant roles; check each firm's page from early autumn for its window. Lead the CV with quantified leadership and problem-solving.",
+      "2nd": "Your stage depends on your course. Three-year degree: you're penultimate (BCG London internship applications run in January; prepare the numerical test first). Four-year course: first-year insight programmes may still be open to you. Placement-year degree: Big 4 and other firms take 12-month placement students, applying in the autumn of their second year.",
+      "penultimate": "Apply for internships: prepare the numerical online test first, then do structured case practice (15-20 cases). BCG London decides after its deadline, so a polished application late in the window is fine. Big 4 consulting and deals: applications are form-and-test-led and most allow one application a year, so prepare tests first.",
+      "final": "Apply for Associate/Associate Consultant roles; check each firm's page from early autumn for its window. Lead the CV with quantified leadership and problem-solving. Big 4 graduate schemes are form-and-test-led with one application per intake year at PwC.",
       "postgrad": "Bain London accepts Master's (non-MBA) and PhD students from any discipline. BCG routes PhD and medical-degree holders to Senior Associate.",
       "note": "For 4-year courses, shift each line by one year."
     },
@@ -2323,6 +2800,332 @@
         "text": "BCG London summer internship applications open 1 Jan 2027 and close 24 Jan 2027.",
         "expiresOn": "2027-01-24",
         "ref": "PB-CON-E03"
+      }
+    ]
+  },
+  "shared": {
+    "note": "Access and diversity programmes (06#11), copied into each listed archetype at build. Shown to everyone with the same copy; Placed never infers or stores ethnicity, gender or class (UK GDPR special-category data).",
+    "actions": [
+      {
+        "type": "experience",
+        "kind": "opportunity",
+        "skills": [],
+        "signals": [],
+        "effort": "2-4 weeks",
+        "minYear": "1st",
+        "verified": true,
+        "signalValue": "cv_high",
+        "id": "PB-ALL-E01",
+        "title": "SEO London (access programme)",
+        "url": "https://www.seo-london.org/programmes-industries",
+        "archetypes": [
+          "finance_banking",
+          "consulting",
+          "software_eng",
+          "data_analytics",
+          "quant_trading"
+        ],
+        "description": "Free training, mentoring and internship routes into banking, asset management, consulting, law, insurance and tech for under-represented students. In 2024-25, 955 participants went on to secure internships or graduate roles. Check eligibility yourself; we never ask for or store your background.",
+        "eligibility": "UK nationals and residents at a UK university who went to a UK state school (or a fee-paying school on a means-tested bursary) and are from an ethnic minority or low socioeconomic background, graduating in 2027 or later. Some international students also qualify: see the page.",
+        "commitment": "Application: online form and assessments. Programme: training through the year, with routes into partner firms' internships.",
+        "evidence": "Programme and any internship on your CV.",
+        "reviewBy": "2027-06-30",
+        "sources": [
+          {
+            "title": "Programmes and industries",
+            "publisher": "SEO London",
+            "url": "https://www.seo-london.org/programmes-industries",
+            "primary": false,
+            "quote": "UK nationals and residents currently studying at a UK university who attended a state secondary school in the UK (or a fee-paying school with means-tested financial assistance), who are also from ethnic minority backgrounds or from low socioeconomic backgrounds.",
+            "accessed": "2026-10-18"
+          },
+          {
+            "title": "SEO London",
+            "publisher": "SEO London",
+            "url": "https://www.seo-london.org/",
+            "primary": false,
+            "quote": "955 participants went on to secure competitive summer internships, vacation schemes and graduate roles.",
+            "accessed": "2026-10-18"
+          }
+        ]
+      },
+      {
+        "type": "experience",
+        "kind": "opportunity",
+        "skills": [],
+        "signals": [],
+        "effort": "2-4 weeks",
+        "minYear": "1st",
+        "verified": true,
+        "signalValue": "cv_high",
+        "id": "PB-ALL-E02",
+        "title": "upReach (access programme)",
+        "url": "https://upreach.org.uk/students/",
+        "archetypes": [
+          "software_eng",
+          "data_analytics",
+          "quant_trading",
+          "consulting",
+          "product",
+          "finance_banking",
+          "marketing_growth",
+          "research"
+        ],
+        "description": "A free programme of coaching, skills sessions and employer opportunities for undergraduates from less-advantaged backgrounds. Check eligibility yourself; we never ask for or store your background.",
+        "eligibility": "Full-time first-degree undergraduates at a UK university, state-school educated (or since age 14 if previously abroad), household income below £42,875, plus grade criteria judged in context.",
+        "commitment": "Application: online form with income evidence. Programme: support throughout your degree.",
+        "evidence": "Programme and any internship on your CV.",
+        "reviewBy": "2027-06-30",
+        "sources": [
+          {
+            "title": "Students: eligibility",
+            "publisher": "upReach",
+            "url": "https://upreach.org.uk/students/",
+            "primary": false,
+            "quote": "Attended UK state schools only (or since age 14 if previously educated abroad)",
+            "accessed": "2026-10-18"
+          },
+          {
+            "title": "Students: eligibility",
+            "publisher": "upReach",
+            "url": "https://upreach.org.uk/students/",
+            "primary": false,
+            "quote": "Have a household income below £42,875",
+            "accessed": "2026-10-18"
+          }
+        ]
+      },
+      {
+        "type": "experience",
+        "kind": "opportunity",
+        "skills": [],
+        "signals": [],
+        "effort": "2-4 weeks",
+        "minYear": "1st",
+        "verified": true,
+        "signalValue": "cv_high",
+        "id": "PB-ALL-E03",
+        "title": "10,000 Black Interns (paid summer internships)",
+        "url": "https://10000internsfoundation.com/students-graduates/10000-black-interns/",
+        "archetypes": [
+          "software_eng",
+          "data_analytics",
+          "quant_trading",
+          "consulting",
+          "product",
+          "finance_banking",
+          "marketing_growth",
+          "research"
+        ],
+        "description": "Paid summer 2027 internships across about 60 sector workstreams for Black students and recent graduates. Employers do the selecting, so a place isn't guaranteed. Check eligibility yourself; we never ask for or store your background.",
+        "eligibility": "Black African, Black Caribbean, Black British or mixed Black heritage; studying at a UK university (or a 2024+ graduate); 18+ with unrestricted UK right to work.",
+        "commitment": "Application: one form by 1 November 2026, then employer interviews. Internship: summer 2027, paid.",
+        "evidence": "Internship on your CV.",
+        "expiresOn": "2026-11-01",
+        "sources": [
+          {
+            "title": "10,000 Black Interns",
+            "publisher": "10,000 Interns Foundation",
+            "url": "https://10000internsfoundation.com/students-graduates/10000-black-interns/",
+            "primary": false,
+            "quote": "Be Black African, Black Caribbean, Black British, or mixed Black heritage",
+            "accessed": "2026-10-18"
+          },
+          {
+            "title": "Students and graduates FAQs",
+            "publisher": "10,000 Interns Foundation",
+            "url": "https://10000internsfoundation.com/students-graduates/students-graduates-faqs/",
+            "primary": false,
+            "quote": "Once applications close on the 1st November 2026, we'll process all applications together.",
+            "accessed": "2026-10-18"
+          }
+        ]
+      },
+      {
+        "type": "experience",
+        "kind": "opportunity",
+        "skills": [],
+        "signals": [],
+        "effort": "2-4 weeks",
+        "minYear": "1st",
+        "verified": true,
+        "signalValue": "cv_high",
+        "id": "PB-ALL-E04",
+        "title": "GAIN: investment programmes for women and non-binary students",
+        "url": "https://www.gainuk.org/",
+        "archetypes": [
+          "finance_banking",
+          "quant_trading"
+        ],
+        "description": "Free insight programmes, an internship programme open to all degrees, an investment challenge and learning resources. Check eligibility yourself; we never ask for or store your background.",
+        "eligibility": "Women and non-binary students.",
+        "commitment": "Varies by programme: from on-demand learning to a paid internship.",
+        "evidence": "Programme or internship on your CV.",
+        "reviewBy": "2027-06-30",
+        "sources": [
+          {
+            "title": "GAIN UK",
+            "publisher": "GAIN (Girls Are INvestors)",
+            "url": "https://www.gainuk.org/",
+            "primary": false,
+            "quote": "We're a UK charity helping young women & non-binary students explore investment careers through free programmes, learning resources and real connections to the industry.",
+            "accessed": "2026-10-18"
+          }
+        ]
+      },
+      {
+        "type": "experience",
+        "kind": "opportunity",
+        "skills": [],
+        "signals": [],
+        "effort": "2-4 weeks",
+        "minYear": "1st",
+        "verified": true,
+        "signalValue": "cv_high",
+        "id": "PB-ALL-E05",
+        "title": "PwC Advancing Social Mobility Programme (spring 2027)",
+        "url": "https://targetjobs.co.uk/jobs/advancing-social-mobility-programme-2027-248569",
+        "archetypes": [
+          "consulting",
+          "finance_banking"
+        ],
+        "eligibleGradYears": [
+          2029
+        ],
+        "maxYear": "2nd",
+        "description": "A three-day paid spring programme for students from lower socio-economic backgrounds interested in professional services. It may close early. Check eligibility yourself; we never ask for or store your background.",
+        "eligibility": "First-years on three-year degrees or second-years on four-year degrees, any subject, based in the UK.",
+        "commitment": "Application: form and online tests by 31 Oct 2026. Programme: three paid days in spring 2027.",
+        "evidence": "Insight programme on your CV.",
+        "expiresOn": "2026-10-31",
+        "sources": [
+          {
+            "title": "Advancing Social Mobility Programme 2027 (PwC)",
+            "publisher": "TARGETjobs",
+            "url": "https://targetjobs.co.uk/jobs/advancing-social-mobility-programme-2027-248569",
+            "primary": false,
+            "quote": "Our Advancing Social Mobility programme is a three-day paid programme which will be run in Spring 2027.",
+            "accessed": "2026-10-18"
+          },
+          {
+            "title": "Advancing Social Mobility Programme 2027 (PwC)",
+            "publisher": "TARGETjobs",
+            "url": "https://targetjobs.co.uk/jobs/advancing-social-mobility-programme-2027-248569",
+            "primary": false,
+            "quote": "designed to inspire and support students from lower socio-economic backgrounds seeking experience in professional services.",
+            "accessed": "2026-10-18"
+          }
+        ]
+      },
+      {
+        "type": "experience",
+        "kind": "opportunity",
+        "skills": [],
+        "signals": [],
+        "effort": "2-4 weeks",
+        "minYear": "1st",
+        "verified": true,
+        "signalValue": "cv_low",
+        "id": "PB-ALL-E06",
+        "title": "Elevate@BCG insight events (BCG London)",
+        "url": "https://careers.bcg.com/global/en/locations/united-kingdom/associate-jobs",
+        "archetypes": [
+          "consulting"
+        ],
+        "description": "BCG London's socioeconomic diversity network invites students from disadvantaged backgrounds to insight events, usually in September-October; the 2026 event has passed, so watch for the next one. Check eligibility yourself; we never ask for or store your background.",
+        "eligibility": "Students from socioeconomically disadvantaged backgrounds.",
+        "commitment": "Application: short form. Event: one day.",
+        "evidence": "Event attendance; useful for your application, not a CV line on its own.",
+        "reviewBy": "2027-08-31",
+        "sources": [
+          {
+            "title": "Associate Jobs: United Kingdom (early careers FAQ)",
+            "publisher": "BCG",
+            "url": "https://careers.bcg.com/global/en/locations/united-kingdom/associate-jobs",
+            "primary": true,
+            "quote": "Elevate@BCG, BCG London's socioeconomic diversity network, invites students from socioeconomically disadvantaged backgrounds",
+            "accessed": "2026-10-18"
+          }
+        ]
+      },
+      {
+        "type": "experience",
+        "kind": "opportunity",
+        "skills": [],
+        "signals": [],
+        "effort": "2-4 weeks",
+        "minYear": "1st",
+        "verified": true,
+        "signalValue": "cv_high",
+        "id": "PB-ALL-E07",
+        "title": "Rare Recruitment (candidate support)",
+        "url": "https://www.rarerecruitment.co.uk/students",
+        "archetypes": [
+          "finance_banking",
+          "consulting"
+        ],
+        "description": "Free one-to-one development, advice and events for candidates from diverse backgrounds applying to top employers. Check eligibility yourself; we never ask for or store your background.",
+        "commitment": "Sign up online; support and events through the year.",
+        "evidence": "Any internship you secure through it.",
+        "reviewBy": "2027-06-30",
+        "sources": [
+          {
+            "title": "Students",
+            "publisher": "Rare Recruitment",
+            "url": "https://www.rarerecruitment.co.uk/students",
+            "primary": false,
+            "quote": "We help our candidates show their full potential through one-to-one development, expert advice and exclusive events.",
+            "accessed": "2026-10-18"
+          }
+        ]
+      },
+      {
+        "type": "experience",
+        "kind": "opportunity",
+        "skills": [],
+        "signals": [],
+        "effort": "2-4 weeks",
+        "minYear": "1st",
+        "verified": true,
+        "signalValue": "cv_high",
+        "id": "PB-ALL-E08",
+        "title": "Jane Street INSIGHT (London)",
+        "url": "https://www.janestreet.com/join-jane-street/programs-and-events/insight/",
+        "archetypes": [
+          "quant_trading",
+          "software_eng"
+        ],
+        "description": "A week-long London programme (5-10 April 2027) in software engineering, trading and research, or strategy and product, for women, transgender and/or gender-expansive students. Travel, meals and housing are covered and no finance knowledge is needed. Check eligibility yourself; we never ask for or store your background.",
+        "eligibility": "Women, transgender and/or gender-expansive university students; check the page for who can apply.",
+        "commitment": "Application: online form by 3 Jan 2027 (no cover letter). Programme: 6 days in London, costs covered.",
+        "evidence": "Programme on your CV.",
+        "expiresOn": "2027-01-03",
+        "sources": [
+          {
+            "title": "INSIGHT",
+            "publisher": "Jane Street",
+            "url": "https://www.janestreet.com/join-jane-street/programs-and-events/insight/",
+            "primary": true,
+            "quote": "we invite women, transgender, and/or gender-expansive individuals",
+            "accessed": "2026-10-18"
+          },
+          {
+            "title": "INSIGHT",
+            "publisher": "Jane Street",
+            "url": "https://www.janestreet.com/join-jane-street/programs-and-events/insight/",
+            "primary": true,
+            "quote": "Jane Street will cover travel to and from the program, meals, housing, and a variety of social events",
+            "accessed": "2026-10-18"
+          },
+          {
+            "title": "Programmes data feed (INSIGHT London)",
+            "publisher": "Jane Street",
+            "url": "https://www.janestreet.com/jobs/programs-endpoint.json",
+            "primary": true,
+            "quote": "Sunday, January 3rd, 2027 at 11:59pm GMT",
+            "accessed": "2026-10-18"
+          }
+        ]
       }
     ]
   }
