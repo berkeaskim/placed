@@ -234,7 +234,8 @@ export const CHECKERS: Record<CheckerId, (ctx: CvContext, rule: CvRule) => Out> 
     return bad(we.length / Math.max(1, bullets.length) > 0.2 ? "fail" : "partial", we[0].text, "Say what you did, not what the team did — start with your own action verb.");
   },
   skill_rating_glyphs: (c) => {
-    const m = c.text.match(/[★☆●○■□◼◻▮▯](?:\s?[★☆●○■□◼◻▮▯])+/) ?? ratingOutOf10(c);
+    // Stars, dots, squares and block-character bars (█░ ▓▒ ▰▱), two or more in a row.
+    const m = c.text.match(/[★☆●○■□◼◻▮▯█▓▒░▰▱](?:\s?[★☆●○■□◼◻▮▯█▓▒░▰▱])+/) ?? ratingOutOf10(c);
     return m ? bad("fail", m[0], "Replace rating bars/scores with plain labels like 'Proficient' or 'Familiar'.") : ok();
   },
   uk_grades: (c) => {
