@@ -35,7 +35,7 @@ Citation tags [Sx] refer to section 9.
    - Barclays hints and tips [S5]
    - IMC CV advice: don't list Word/Excel, rate proficiency against professionals [S15]
    - BCG UK: 2:1 minimum [S24]
-   - Bain London: penultimate-year ACI, no cover letter, full grades [S23]
+   - Bain London university hiring: no cover letter, full grades; AI may be used only to check CV grammar and spelling [S23] (accessed 2026-10-18)
    - Jane Street: no GPA or degree requirement [S13][S14]
    - Optiver posting: penultimate-year STEM, games and competitive activities, Python a plus [S17]
    - Citadel Securities: Python/C++ core [S19]
@@ -80,7 +80,7 @@ Citation tags [Sx] refer to section 9.
 | FIN-04 | **Demonstrated commitment to finance**: finance/investment society role (ideally committee), spring week/insight days, virtual internships, stock-pitch/trading competitions, personal portfolio, reading (FT/Economist) evidenced by an action. | HYBRID: RULE keyword hits from the FIN keyword bank in Activities/Experience; LLM judges depth (member vs committee vs organiser). | major (penultimate); minor (1st year) | B | [S9] (society committee, flagship event); [S7]; [S1] ("Attend Events") |
 | FIN-05 | **Any work experience counts if commercialised**: retail, hospitality and tutoring framed with numbers (revenue, customers, targets). | LLM: is a non-finance job framed with a commercial outcome? | major | A | [S3] GS ("Any experience is really good experience… quantify them"); [S5]; [S36] |
 | FIN-06 | **Leadership and teamwork evidence**: positions of responsibility, captaincy, society exec, team projects. | RULE: leadership lexicon (president, captain, founder, head, led, chair, treasurer); LLM checks scope. | major | A | [S3] ("where have you shown leadership"); [S5] (judgement, teamwork, commitment, leadership) |
-| FIN-07 | **Technical skills line**: Excel (modelling, pivot tables, VBA), PowerPoint, financial modelling/valuation (DCF, comps, LBO), Bloomberg/Capital IQ/FactSet; Python/SQL increasingly valued (markets, AM). Courses such as BIWS, WSP and the Bloomberg Market Concepts certificate are acceptable signals for students. | RULE: keyword bank match; flag proficiency adjectives without evidence. | major (IBD/AM: modelling or Excel absent); minor (spring week) | B/C | [S7]; [S8] ("Excel", "Python", "modelling"); course names (BIWS/WSP/BMC): D |
+| FIN-07 | **Technical skills line**: Excel (modelling, pivot tables, VBA), PowerPoint, financial modelling/valuation (DCF, comps, LBO), Bloomberg/Capital IQ/FactSet; Python/SQL increasingly valued (markets, AM). Courses such as BIWS, WSP and the Bloomberg Market Concepts certificate are a bonus only, never a fail or a gap: BMC costs $149 without a university terminal, and not every university has one (audit 2026-10-18 06#20). | RULE: keyword bank match; flag proficiency adjectives without evidence. | major (IBD/AM: modelling or Excel absent); minor (spring week) | B/C | [S7]; [S8] ("Excel", "Python", "modelling"); course names (BIWS/WSP/BMC): D |
 | FIN-08 | **Interests section is expected and read**: brief, specific, conversation-starting (e.g. "Marathon (3:24, London 2025)", "Chess, ECF 1650"). Generic interests ("reading, travelling, socialising") are a negative. | RULE: presence of an Interests line; generic-term list. LLM: specificity. | minor (missing); minor (generic) | A (presence) / C (specificity) | [S3] GS ("The interests part is a great opportunity…"); [S2]; [S8] |
 | FIN-09 | **Languages** with level (CEFR or "native/fluent/professional"), especially for EMEA desks and coverage. | RULE: language + level pattern. | minor | D | — (common practice; no primary source found) |
 | FIN-10 | **Professional summary/objective**: for students, optional. eFC (2026) recommends a short keyword-rich summary, while UK university and GS templates omit it. **Allow ≤ 2 lines; never penalise absence.** | RULE: profile > 3 lines → minor flag. | minor | C (conflicting) | [S8] vs [S1][S3] |
@@ -240,8 +240,8 @@ All weights are **grade D (synthesis)** from what each sector's sources emphasis
 ## 7. Year-of-study adjustments
 
 UK structure:
-- **Spring weeks/insight programmes** are aimed at first years on 3-year courses and second years on 4-year courses [S33]. Banks recruit for them from about September to October of first year [S7 p.12], and they feed second-year summer internship offers [S7 p.14][S1].
-- **Summer analyst/intern** programmes are for penultimate-year students: GS EMEA [S34], Bain London ACI [S23], Optiver QT intern [S17]. Some US-office deadlines open as early as December or January, about 18 months ahead [S7 p.13].
+- **Spring weeks/insight programmes** recruit by graduation year: mostly first years on 3-year courses and second years on 4-year courses [S33]. Applications open in about September–December of that year (some close early, most by December) [S7 p.12], and they feed second-year summer internship offers [S7 p.14][S1]. (Aligned with the role playbook, audit 2026-10-18 06#19.)
+- **Summer analyst/intern** programmes are for penultimate-year students: GS EMEA [S34], Optiver QT intern [S17]. (Bain London's university hiring is not a penultimate-year programme; see [S23] for eligibility.) Some US-office deadlines open as early as December or January, about 18 months ahead [S7 p.13].
 - Many graduate roles are filled from interns [S1][S2], so the penultimate CV is the high-stakes one.
 
 | Rule area | 1st year (spring week / insight / first-year programmes) | Penultimate (summer analyst / internship) | Final year / Master's (grad, off-cycle) |

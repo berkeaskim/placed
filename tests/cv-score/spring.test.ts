@@ -70,9 +70,11 @@ describe("track adjustments", () => {
   it("every SPRING_ADJUST key is a real rule", () => {
     for (const id of Object.keys(SPRING_ADJUST)) expect(RULES_BY_ID.has(id), id).toBe(true);
   });
-  it("trackAdjust beats yearAdjust (QNT-02 is skipped for 1st years, judged at minor on spring)", () => {
-    expect(adjustFor(R("QNT-02"), "1st", "standard")?.skip).toBe(true);
-    expect(adjustFor(R("QNT-02"), "1st", "spring")?.skip).toBeFalsy();
+  it("trackAdjust beats yearAdjust (AU-03 is minor for 2nd years, skipped on spring)", () => {
+    expect(adjustFor(R("AU-03"), "2nd", "standard")?.severity).toBe("minor");
+    expect(adjustFor(R("AU-03"), "2nd", "spring")?.skip).toBe(true);
+    // QNT-02 is no longer skipped for first-years (audit 03#10): olympiads are their strongest quant signal.
+    expect(adjustFor(R("QNT-02"), "1st", "standard")?.skip).toBeFalsy();
     expect(effectiveSeverity(R("QNT-02"), "quant_trading", "1st", "spring")).toBe("minor");
   });
   it("one page on the spring track", () => {

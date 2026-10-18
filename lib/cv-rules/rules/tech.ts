@@ -1,8 +1,8 @@
 import type { Archetype } from "@/lib/types";
 import type { CvRule } from "../types";
 import {
-  T_S1, T_S2, T_S3, T_S4, T_S5, T_S6, T_S8_TECH, T_S8_INTERN, T_S11, T_S12, T_S14, T_S15, T_S16, T_S17, T_S19, T_S20,
-  T_S21, T_S22, T_S23, T_S24, T_S25, T_S26, T_S27,
+  T_S1, T_S2, T_S3, T_S4, T_S5, T_S6, T_S8_TECH, T_S8_INTERN, T_S11, T_S12, T_S14, T_S16, T_S17, T_S19, T_S20, T_S21,
+  T_S22, T_S23, T_S24, T_S25, T_S26, T_S27,
 } from "./sources";
 
 /**
@@ -10,6 +10,12 @@ import {
  * Grades are the doc's own A–D; where a doc gives two ("B/C/D", "C/D"), the first is used.
  * Rules citing snippet-only Bright Network [S8] pages are downgraded one grade.
  * Year adjustments come from the §7 table.
+ *
+ * Audit 2026-10-18 (04#2, 03#6): SWE-01/09/10/15/16, PRD-01, MKT-02/07 and RES-01 were copies of shared checkers
+ * and are merged into G-11, G-05, G-31, G-32, G-23 and G-25 (sector wording via sectorAdjust); SWE-11 duplicated
+ * EV-03 (code, major for software and data). SWE-01's one-page limit is gone: UK sources allow one or two full
+ * pages (03#1). MKT-11 was a checklist reminder that could never be scored. Conditional rules that need the target
+ * sub-track (MKT-10, RES-10) or the advert (RES-09) are not applicable until Placed has that context (03#5).
  */
 const SWE: Archetype[] = ["software_eng"];
 const DAT: Archetype[] = ["data_analytics"];
@@ -19,12 +25,6 @@ const RES: Archetype[] = ["research"];
 
 export const TECH_RULES: CvRule[] = [
   // ---------- §2 Software engineering (SWE) ----------
-  {
-    id: "SWE-01", sectors: SWE, dimension: "clarity", check: "code", checker: "page_count", params: { maxPages: 1 }, severity: "major", evidence: "A",
-    statement: "Keep internship CVs to one full page; a page-and-a-bit spillover reads as unedited.",
-    llmGuidance: "1 page = ideal; 2 full pages = acceptable at UK firms; a ~1.3-page spillover = defect; 3+ pages = critical.",
-    citations: [T_S2, T_S6, T_S3],
-  },
   {
     id: "SWE-02", sectors: SWE, dimension: "relevance", check: "code", checker: "education_first", severity: "minor", evidence: "A",
     statement: "Put Education near the top, then Technical Skills and whichever of Experience or Projects is stronger.",
@@ -60,9 +60,8 @@ export const TECH_RULES: CvRule[] = [
     citations: [T_S1, T_S2, T_S5],
   },
   {
-    id: "SWE-07", sectors: SWE, dimension: "relevance", check: "code", checker: "github_link", severity: "major", evidence: "B",
-    statement: "Add a GitHub link (profile or per-project repo), and/or a portfolio or live demo URL.",
-    yearAdjust: { "1st": { severity: "minor" } },
+    id: "SWE-07", sectors: SWE, dimension: "relevance", check: "code", checker: "github_link", severity: "minor", evidence: "B",
+    statement: "If you have public code or a live demo, link it next to your contact details (GitHub, GitLab, Devpost or your own site). An empty or stale profile is worse than none, so this is optional.",
     citations: [T_S2, T_S3, T_S5],
   },
   {
@@ -74,25 +73,6 @@ export const TECH_RULES: CvRule[] = [
     allowPartial: true,
     yearAdjust: { "1st": { severity: "minor" } },
     citations: [T_S1, T_S2],
-  },
-  {
-    id: "SWE-09", sectors: SWE, dimension: "relevance", check: "code", checker: "skill_rating_glyphs", severity: "major", evidence: "A",
-    statement: "Group skills by category (Languages / Frameworks & Libraries / Tools & Platforms / Databases / Cloud). Text labels like \"Proficient\" or \"Familiar\" are fine; bars, stars, percentages or \"8/10\" are not.",
-    llmGuidance: "Bars/stars/ratings = major; ungrouped skills = minor.",
-    citations: [T_S2, T_S5, T_S3, T_S15],
-  },
-  {
-    id: "SWE-10", sectors: SWE, dimension: "relevance", check: "code", checker: "skills_count", severity: "minor", evidence: "B",
-    statement: "Curate your skills list to roughly 8–20 relevant items, not 40 buzzwords. Drop Word and PowerPoint for software roles unless the advert asks for them.",
-    citations: [T_S3],
-  },
-  {
-    id: "SWE-11", sectors: SWE, dimension: "relevance", check: "llm", severity: "major", evidence: "B",
-    statement: "Back up your skills: each core language or framework should appear in at least one project or experience bullet.",
-    llmGuidance: "Do more than half of the listed core languages and frameworks also appear in a project or experience bullet?",
-    passExample: "Skills: Python, React — Project: 'Built a React front end calling a Python Flask API'",
-    failExample: "Skills: Rust, Go, Kubernetes, Java — no project mentions them",
-    citations: [T_S3, T_S16],
   },
   {
     id: "SWE-12", sectors: SWE, dimension: "relevance", check: "llm", severity: "major", evidence: "B",
@@ -120,23 +100,12 @@ export const TECH_RULES: CvRule[] = [
     citations: [T_S3, T_S8_INTERN, T_S8_TECH, T_S16],
   },
   {
-    id: "SWE-15", sectors: SWE, dimension: "uk", check: "code", checker: "uk_grades", severity: "major", evidence: "B",
-    statement: "Your Education entry needs university, degree, expected graduation and a stated grade of 2:1 or above (or predicted 2:1, or a year average %). Relevant modules are optional (one line); A-levels are fine for 1st and 2nd years.",
-    llmGuidance: "Pass when a degree grade of 2:1 or above, or a predicted 2:1, is stated. Never give extra credit for a higher grade (a First, a higher percentage or a rank earns nothing more). Never score employer or university brand.",
-    citations: [T_S5, T_S2],
-  },
-  {
-    id: "SWE-16", sectors: SWE, dimension: "clarity", check: "code", checker: "bullet_length", severity: "minor", evidence: "C",
-    statement: "Keep bullets to one or two lines, and give each project no more than 2–4 bullets.",
-    citations: [T_S6],
-  },
-  {
     id: "SWE-17", sectors: SWE, dimension: "clarity", check: "llm", severity: "minor", evidence: "B",
-    statement: "Avoid red flags: tutorial clones (\"Netflix clone\") presented as original, unevidenced languages, dead GitHub links, \"Proficient in HTML\" as your headline skill, a university email only, \"references available on request\", or a colourful graphic-heavy template.",
-    llmGuidance: "Is the CV free of software red flags: tutorial clones presented as original, 'Proficient in HTML' as the headline skill, a university email as the only email, or a colourful graphic-heavy template?",
+    statement: "Avoid red flags: tutorial clones (\"Netflix clone\") presented as original work, or \"Proficient in HTML\" as your headline skill.",
+    llmGuidance: "Is the CV free of software red flags: tutorial clones presented as original work, or 'Proficient in HTML' as the headline skill?",
     passExample: "Personal project: extended a Netflix-clone tutorial with a recommendation engine using user ratings",
     failExample: "Projects: To-do app (tutorial) · Skills: Proficient in HTML",
-    citations: [T_S2, T_S3, T_S15],
+    citations: [T_S2, T_S3],
   },
 
   // ---------- §3 Data / analytics / ML (DAT) ----------
@@ -182,8 +151,7 @@ export const TECH_RULES: CvRule[] = [
   },
   {
     id: "DAT-06", sectors: DAT, dimension: "relevance", check: "code", checker: "github_link", severity: "major", evidence: "B",
-    statement: "Add a portfolio link: GitHub with notebooks, a Kaggle profile, Tableau Public, or a Streamlit / Hugging Face Spaces demo.",
-    llmGuidance: "Major for data science/ML roles; minor for analyst roles.",
+    statement: "Add a portfolio link: GitHub with notebooks, a Kaggle profile, Tableau Public, a Streamlit or Hugging Face Spaces demo, or your own site.",
     yearAdjust: { "1st": { severity: "minor" } },
     citations: [T_S3, T_S5],
   },
@@ -230,18 +198,13 @@ export const TECH_RULES: CvRule[] = [
   {
     id: "DAT-12", sectors: DAT, dimension: "relevance", check: "llm", severity: "minor", evidence: "C",
     statement: "GenAI skills (LLM APIs, RAG, prompt evaluation, fine-tuning) are a bonus, not a requirement — unless the advert asks for them.",
-    llmGuidance: "Does the CV show evidenced GenAI skills (LLM APIs, RAG, prompt evaluation, fine-tuning)? (Bonus rule: not applicable when absent unless the job description requires them.)",
+    llmGuidance: "Does the CV show evidenced GenAI skills (LLM APIs, RAG, prompt evaluation, fine-tuning)? (Bonus rule: not applicable when absent.)",
     passExample: "Built a RAG chatbot over module notes with the OpenAI API; evaluated answers on 50 questions",
     failExample: "Interested in AI",
     citations: [T_S17],
   },
 
   // ---------- §4 Product management / APM (PRD) ----------
-  {
-    id: "PRD-01", sectors: PRD, dimension: "clarity", check: "code", checker: "page_count", params: { maxPages: 2 }, severity: "major", evidence: "B",
-    statement: "Aim for one page (two at most), with Education first as a student.",
-    citations: [T_S2, T_S3],
-  },
   {
     id: "PRD-02", sectors: PRD, dimension: "impact", check: "llm", severity: "major", evidence: "C",
     statement: "Show end-to-end product ownership at least once: you spotted a user problem, researched it, prioritised, shipped and measured the result.",
@@ -292,7 +255,7 @@ export const TECH_RULES: CvRule[] = [
   },
   {
     id: "PRD-08", sectors: PRD, dimension: "impact", check: "llm", severity: "minor", evidence: "D",
-    statement: "Founder or builder signals rank highly: a start-up, a society app, hackathon product lead, a Product Hunt launch, or consulting-society case wins.",
+    statement: "Founder or builder signals are a bonus: a start-up, a society app, hackathon product lead, a Product Hunt launch, or consulting-society case wins.",
     llmGuidance: "Does the CV show a founder or builder signal (start-up, society app, hackathon product lead, Product Hunt launch, case-competition win)? (Bonus rule: not applicable when absent.)",
     passExample: "Product lead, DurHack 2025 — shipped a revision-timetable app, 2nd place",
     failExample: "No ventures or launches mentioned",
@@ -315,11 +278,6 @@ export const TECH_RULES: CvRule[] = [
     passExample: "MARKETING EXPERIENCE (social media intern) placed above Education",
     failExample: "A marketing internship buried below Education, Skills and Interests",
     citations: [T_S11],
-  },
-  {
-    id: "MKT-02", sectors: MKT, dimension: "clarity", check: "code", checker: "page_count", params: { maxPages: 2 }, severity: "major", evidence: "A",
-    statement: "Keep it to 1–2 pages with snappy, skimmable bullets — clear and concise enough to read at a glance.",
-    citations: [T_S11, T_S12],
   },
   {
     id: "MKT-03", sectors: MKT, dimension: "impact", check: "llm", severity: "critical", evidence: "A",
@@ -351,12 +309,6 @@ export const TECH_RULES: CvRule[] = [
     citations: [T_S12, T_S25],
   },
   {
-    id: "MKT-07", sectors: MKT, dimension: "clarity", check: "code", checker: "spelling", severity: "critical", evidence: "A",
-    statement: "Zero tolerance for typos: in marketing and PR the role is communication, so spelling and grammar errors are disqualifying.",
-    llmGuidance: "Any genuine spelling or grammar error is critical in marketing.",
-    citations: [T_S11, T_S3],
-  },
-  {
     id: "MKT-08", sectors: MKT, dimension: "ats", check: "llm", severity: "minor", evidence: "B",
     statement: "Creative designs are allowed in marketing, but keep a plain, parseable PDF version for large employers' online applications.",
     llmGuidance: "If the CV uses a creative design, is a plain, parseable version also available or the text still extracted cleanly? (Not applicable for a plain single-column CV.)",
@@ -376,16 +328,9 @@ export const TECH_RULES: CvRule[] = [
     id: "MKT-10", sectors: MKT, dimension: "relevance", check: "llm", severity: "major", evidence: "C",
     statement: "For growth roles, show analytics and tools: GA4, Google Ads, Meta Ads Manager, SEO tools (Semrush/Ahrefs), email (Mailchimp/Klaviyo), CRM (HubSpot/Salesforce), Canva/Adobe, Excel.",
     llmGuidance: "For growth roles, does the CV list at least three relevant marketing tools (e.g. GA4, Google Ads, Meta Ads Manager, Semrush, Mailchimp, HubSpot, Canva)? (Not applicable for brand-only roles.)",
+    needs: ["variant"],
     passExample: "GA4, Meta Ads Manager, Mailchimp, Canva",
     failExample: "Social media",
-    citations: [T_S12],
-  },
-  {
-    id: "MKT-11", sectors: MKT, dimension: "relevance", check: "llm", severity: "minor", evidence: "B",
-    statement: "Check the profiles you link don't contain anything unprofessional.",
-    llmGuidance: "Is the reminder to check linked profiles for unprofessional content shown? Always answer not_applicable; this is a checklist reminder, never scored.",
-    passExample: "Checklist reminder shown: 'Check your linked profiles are up to date and professional'",
-    failExample: "Linked profiles scored as part of the CV",
     citations: [T_S12],
   },
   {
@@ -398,11 +343,6 @@ export const TECH_RULES: CvRule[] = [
   },
 
   // ---------- §6 Research (RES) ----------
-  {
-    id: "RES-01", sectors: RES, dimension: "clarity", check: "code", checker: "page_count", params: { maxPages: 2 }, severity: "major", evidence: "B",
-    statement: "Keep a research CV to 1–2 pages as an undergraduate. Longer academic CVs only make sense with a real publication or teaching record.",
-    citations: [T_S22, T_S3],
-  },
   {
     id: "RES-02", sectors: RES, dimension: "relevance", check: "code", checker: "education_first", severity: "major", evidence: "A",
     statement: "Put Education first and in detail: grade or ranking, relevant modules with marks, dissertation or final-year project title and supervisor, prizes and scholarships.",
@@ -461,6 +401,7 @@ export const TECH_RULES: CvRule[] = [
     id: "RES-09", sectors: RES, dimension: "uk", check: "llm", severity: "minor", evidence: "C",
     statement: "Academic placements often ask for 1–2 academic referees. Include names and contacts only if the scheme asks; otherwise leave them off.",
     llmGuidance: "For academic research placements that ask for referees, does the CV include 1–2 academic referees? (Not applicable when the scheme does not ask; never fail.)",
+    needs: ["jd"],
     passExample: "Referee: Dr A. Smith, Department of Physics (on request of the scheme)",
     failExample: "Scheme requires referees and none are given",
     citations: [T_S22],
@@ -469,6 +410,7 @@ export const TECH_RULES: CvRule[] = [
     id: "RES-10", sectors: RES, dimension: "relevance", check: "llm", severity: "major", evidence: "B",
     statement: "For industry ML research internships, show research-area keywords, top venues (NeurIPS, ICML, ICLR, ACL, CVPR), a strong language (Python/C++) and a GitHub with research code.",
     llmGuidance: "For industry ML research internships, does the CV show research-area keywords, a strong language (Python or C++) and a GitHub with research code? (Not applicable for other roles.)",
+    needs: ["variant"],
     passExample: "Research: graph neural networks; Python, PyTorch; github.com/pshah/gnn-traffic",
     failExample: "Interested in AI research",
     citations: [T_S21],

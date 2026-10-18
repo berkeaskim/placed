@@ -50,15 +50,15 @@ export const MYTHS: { id: string; myth: string; verdict: string; sources: string
     id: "M7",
     myth: "Every graduate employer requires a 2:1.",
     verdict:
-      "No longer true for most. 48% of large UK graduate employers required a 2:1 in 2024 (57% in 2021) and 26% set no minimum. Still worth stating your grade if you meet common thresholds.",
-    sources: "ISE Student Recruitment Survey 2024 (via Times Higher Education)",
+      "No longer true for most. 47% of large UK graduate employers required a 2:1 in 2024/25 (71% in 2015/16); 20% accept a 2:2 and 23% set no minimum. State your grade whatever it is: forms ask anyway.",
+    sources: "ISE via Prospects Luminate, \"Early careers recruitment in 2025\" (Oct 2025), https://luminate.prospects.ac.uk/early-careers-recruitment-in-2025-integrity-inclusion-entry-standards",
   },
   {
     id: "M8",
     myth: "Add a photo to stand out.",
     verdict:
-      "Not UK convention. Employers are advised not to request age-related information, and photos draw attention away from the content.",
-    sources: "TARGETjobs; Prospects; Acas (2024); Ladders (2012)",
+      "Not UK convention: UK careers services say a photo isn't usual on a UK CV, and it invites bias. Use the space for evidence instead.",
+    sources: "University of Manchester Careers (\"It is not usual practice to use a photograph on a UK CV\"); LSE Careers; Nuffield College CSI/GEMM (2019) on ethnic penalties in UK callbacks",
   },
   {
     id: "M9",
@@ -93,8 +93,8 @@ export const MYTHS: { id: string; myth: string; verdict: string; sources: string
     id: "M13",
     myth: "Recruiters spend 6 seconds on a CV.",
     verdict:
-      "Weak commercial figure (Ladders, unpublished method). Better estimates put the first screen at about 30 seconds (median 31 s across ~2,200 judgements), with attention on titles, organisations, dates and education. Longer dwell time didn't predict a higher rating.",
+      "The \"6 seconds\" figure comes from a commercial study with an unpublished method. One recruiter dataset (experienced engineers, US tech) found a median of about 30 seconds. Either way the first look is short and focuses on titles, organisations, dates and education. In a Swedish study, longer dwell time didn't predict a higher rating.",
     sources:
-      "interviewing.io (2024), https://interviewing.io/blog/are-recruiters-better-than-a-coin-flip-at-judging-resumes; Osanami Törngren et al., Frontiers in Sociology (2024), https://www.frontiersin.org/journals/sociology/articles/10.3389/fsoc.2024.1222850/full; Ladders eye-tracking report (2012), https://www.bu.edu/com/files/2018/10/TheLadders-EyeTracking-StudyC2.pdf",
+      "interviewing.io (2024, commercial, experienced US engineers), https://interviewing.io/blog/are-recruiters-better-than-a-coin-flip-at-judging-resumes; Osanami Törngren et al., Frontiers in Sociology (2024, dwell time vs rating only), https://www.frontiersin.org/journals/sociology/articles/10.3389/fsoc.2024.1222850/full; Ladders eye-tracking report (2012, commercial), https://www.bu.edu/com/files/2018/10/TheLadders-EyeTracking-StudyC2.pdf",
   },
 ];
