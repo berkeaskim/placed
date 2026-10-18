@@ -66,9 +66,10 @@ function withDraftBullet(cv: ParsedCV, text: string, refs: string[]) {
 
 const VERIFY_REASON: Record<string, string> = {
   siblingContamination: "tool not on your CV", skillInjection: "tool not on your CV", unsupportedFacts: "not on your CV", inventedMetrics: "unsupported number", authorshipEscalation: "overstates your role", qualifierDrop: "drops a qualifier",
-  // Audit 05 claim checks (lib/verify/claims), shared with the CV tailor gate.
+  // Audit 05 claim checks (lib/verify/claims), shared with the CV tailor gate. scopeSuperlative is left out: letters
+  // describe settings ("while the café was at its busiest") that the CV states plainly ("a busy café").
   modalityDrop: "drops a hedge", outcomeEscalation: "overstates the outcome", audienceEscalation: "overstates the audience", adoptionClaim: "says it was adopted",
-  scopeSuperlative: "adds a superlative", frequencyEscalation: "overstates how often", proficiencyEscalation: "overstates your level", gradeClaim: "changes your grade",
+  frequencyEscalation: "overstates how often", proficiencyEscalation: "overstates your level", gradeClaim: "changes your grade",
   roleTypeEscalation: "inflates the role type", durationClaim: "changes the duration", causalInsertion: "adds a result or purpose", reframeGuard: "reframes beyond your CV",
 };
 /** Checks that compare against the whole CV (not one cited bullet): the only ones that make sense for a student claim inside an employer sentence. */
@@ -76,7 +77,7 @@ const CORPUS_TYPES = new Set(["inventedMetrics", "unsupportedFacts", "skillInjec
 const VERIFY_ORDER = [
   "siblingContamination", "skillInjection", "inventedMetrics", "gradeClaim", "roleTypeEscalation", "durationClaim", "authorshipEscalation", "qualifierDrop",
   "modalityDrop", "outcomeEscalation", "audienceEscalation", "adoptionClaim", "proficiencyEscalation", "frequencyEscalation", "causalInsertion", "reframeGuard",
-  "scopeSuperlative", "unsupportedFacts",
+  "unsupportedFacts",
 ];
 
 /** Reason a first-person sentence is not backed by the cited CV bullets / facts, or null if it is. */
