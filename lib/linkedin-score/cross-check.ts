@@ -41,28 +41,45 @@ export function cvRange(dates: string): [Ym | null, Ym | null | undefined] {
   return [start, /present|current|now|ongoing/i.test(parts[1]) ? null : point(parts[1])];
 }
 
-const months = (p: Ym) => p.year * 12 + (p.month ?? 1);
-/** Months apart; both month-less (year-only) dates compare on the year alone. */
-function apart(a: Ym, b: Ym): number {
-  if (a.month == null || b.month == null) return a.year === b.year ? 0 : 12;
-  return Math.abs(months(a) - months(b));
-}
+/** Earliest / latest month a point could mean: a year-only date spans Jan-Dec, so it only contradicts when certain. */
+const lo = (p: Ym) => p.year * 12 + (p.month ?? 1);
+const hi = (p: Ym) => p.year * 12 + (p.month ?? 12);
 
+/**
+ * LinkedIn often splits one CV line into several roles (a promotion, two society terms) and groups them under one
+ * company, so a LinkedIn role agrees with the CV when it sits INSIDE the CV's span for that organisation (±1 month).
+ * Flagged only when (08 #1):
+ *   (a) a LinkedIn role starts more than a month before the earliest CV date for that organisation;
+ *   (b) the LATEST LinkedIn role there says Present while the CV says ended, or the reverse;
+ *   (c) a LinkedIn role ends more than a month after every CV end date there (both ended).
+ * Year-only dates ("2025", "Summer 2025") never contradict a month inside that year.
+ */
 export function crossCheckDates(cv: ParsedCV, li: LiExperience[]): Mismatch[] {
   const cvEntries = [...cv.experience, ...cv.leadership];
   const out: Mismatch[] = [];
-  for (const e of li) {
-    if (!e.start || !DATE_LINE_RE.test(e.dates)) continue;
-    // Several CV roles at one organisation: it's a contradiction only if NONE of them agrees with this LinkedIn role.
+  const dated = li.filter((e) => e.start && DATE_LINE_RE.test(e.dates));
+  for (const e of dated) {
     const candidates = cvEntries.filter((c) => sameOrg(c.org, e.company)).map((c) => ({ c, range: cvRange(c.dates) })).filter((x) => x.range[0]);
     if (!candidates.length) continue;
-    const agrees = candidates.some(({ range: [cs, ce] }) => {
-      if (apart(cs!, e.start!) > 1) return false;
-      if (ce === undefined) return true;
-      if ((ce === null) !== (e.end === null)) return false;
-      return !ce || !e.end || apart(ce, e.end) <= 1;
-    });
-    if (!agrees) out.push({ company: e.company, cv: candidates[0].c.dates, linkedin: e.dates, evidenceLine: e.dates });
+    const cvStart = Math.min(...candidates.map((x) => lo(x.range[0]!)));
+    const ends = candidates.map((x) => x.range[1]);
+    const cvPresent = ends.some((x) => x === null);
+    const cvUnknownEnd = !cvPresent && ends.some((x) => x === undefined);
+    const cvEnd = cvPresent || cvUnknownEnd ? null : Math.max(...ends.map((x) => hi(x as Ym)));
+
+    const siblings = dated.filter((o) => sameOrg(o.company, e.company));
+    const latest = siblings.reduce((a, b) => (lo(b.start!) > lo(a.start!) ? b : a));
+    const startsEarly = hi(e.start!) < cvStart - 1;
+    const statusClash = e === latest && !cvUnknownEnd && (e.end === null) !== cvPresent;
+    const endsLate = e.end !== null && cvEnd !== null && lo(e.end) > cvEnd + 1;
+    if (startsEarly || statusClash || endsLate) out.push({ company: e.company, cv: candidates[0].c.dates, linkedin: e.dates, evidenceLine: e.dates });
   }
   return out;
+}
+
+/** Distinct organisations with a date contradiction (one mismatch alone never caps the score). */
+export function mismatchedOrgs(m: Mismatch[]): number {
+  const orgs: string[] = [];
+  for (const x of m) if (!orgs.some((o) => sameOrg(o, x.company))) orgs.push(x.company);
+  return orgs.length;
 }

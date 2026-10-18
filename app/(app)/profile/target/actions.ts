@@ -10,9 +10,9 @@ export async function planAction(id: string) {
   return r;
 }
 
-export async function completeAction(id: string, note: string, url?: string) {
+export async function completeAction(id: string, note: string, url?: string, covers?: string[]) {
   const { user } = await requireUser();
-  const r = await complete(user.id, id, note, url);
+  const r = await complete(user.id, id, note, url, covers);
   revalidatePath("/profile/target");
   return r;
 }

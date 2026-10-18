@@ -1,5 +1,6 @@
 import type { FitLabel } from "@/lib/types";
 import { daysUntil } from "@/lib/scoring/dates";
+import { playbookXp, type PlaybookEffort, type PlaybookSignalValue } from "./playbook";
 
 export type XpEventType = "onboarding_complete" | "cv_uploaded" | "quiz_done" | "job_saved" | "cv_tailored" | "applied" | "interview" | "rejected" | "offer"
   // Task 23b: tailoring screen. Job-scoped, so xp_events_once_per_job (0002) makes each once per job.
@@ -10,7 +11,7 @@ export type XpEventType = "onboarding_complete" | "cv_uploaded" | "quiz_done" | 
   | "autopilot_ready"
   // Cover letter writer: an output marked Ready. Job-scoped, so xp_events_once_per_job makes it once per job.
   | "cover_letter_ready";
-export type BadgeKey = "profile_pro" | "first_shot" | "spring_week_hunter" | "early_bird" | "bounce_back" | "made_it_yours" | "gap_closer";
+export type BadgeKey = "profile_pro" | "first_shot" | "spring_week_hunter" | "early_bird" | "bounce_back" | "made_it_yours" | "gap_closer" | "first_step";
 
 export const BADGES: Record<BadgeKey, { name: string; description: string }> = {
   profile_pro: { name: "Profile Pro", description: "Built your profile from a CV or the quiz" },
@@ -19,13 +20,18 @@ export const BADGES: Record<BadgeKey, { name: string; description: string }> = {
   early_bird: { name: "Early Bird", description: "Applied more than 7 days before the deadline" },
   bounce_back: { name: "Bounce Back", description: "Applied again after a rejection" },
   made_it_yours: { name: "Made it yours", description: "Edited a tailored line into your own words" },
-  gap_closer: { name: "Gap Closer", description: "Closed your first skill gap from a Role Playbook" },
+  gap_closer: { name: "Gap Closer", description: "Finished a Role Playbook step that builds a skill your target roles ask for" },
+  first_step: { name: "First Step", description: "Finished your first Role Playbook step" },
 };
 
 export const LEVEL_NAMES = ["Explorer", "Applicant", "Contender", "Shortlisted", "Placed"] as const;
 
 export type GamifyState = { xp: number; streakDays: number; lastActiveDate: string | null; badges: BadgeKey[]; savesToday: number; appliedCount: number; rejectedCount: number; playbookDoneToday?: number };
-export type GamifyEvent = { type: XpEventType; fitLabel?: FitLabel; jobTitle?: string; deadline?: string | null; profileComplete?: boolean; ref?: string };
+export type GamifyEvent = {
+  type: XpEventType; fitLabel?: FitLabel; jobTitle?: string; deadline?: string | null; profileComplete?: boolean; ref?: string;
+  /** playbook_done: what the step takes and proves, whether a link was given, and whether it built a gap skill. */
+  effort?: PlaybookEffort; signalValue?: PlaybookSignalValue; hasEvidence?: boolean; closesGap?: boolean;
+};
 export type AwardResult = { xpGained: number; newXp: number; level: number; levelName: string; levelUp: boolean; streakDays: number; newBadges: BadgeKey[] };
 
 export function levelFromXp(xp: number) {
@@ -37,7 +43,8 @@ export function levelFromXp(xp: number) {
 /** Programme phrases only, on word boundaries: "Data Insights Analyst" and "Springer Nature" don't count. */
 const SPRING_PROGRAMME = /\b(spring\s+(week|insights?|internship|programme|program|scheme)|insights?\s+(day|days|week|weeks|programme|program|event|scheme))\b/i;
 
-export const APPLY_XP: Record<FitLabel, number> = { "Strong fit": 50, "Good fit": 50, Stretch: 25, "Not recommended": 10 };
+/** Flat (audit 10#3): scaling by fit label rewarded the scorer's guesses and paid less for roles a gate wrongly flagged. */
+export const APPLY_XP = 50;
 
 export const PLAYBOOK_DONE_DAILY_CAP = 3;
 
@@ -47,12 +54,12 @@ export function xpFor(e: GamifyEvent, s: GamifyState): number {
     case "cv_uploaded": case "quiz_done": return 100;
     case "job_saved": return s.savesToday < 10 ? 5 : 0;
     case "cv_tailored": return 30;
-    case "applied": return e.fitLabel ? APPLY_XP[e.fitLabel] : 25;
+    case "applied": return APPLY_XP;
     case "interview": return 100;
     case "rejected": return 20;
     case "offer": return 300;
     case "number_confirmed": case "suggestion_edited": return 10;
-    case "playbook_done": return (s.playbookDoneToday ?? 0) < PLAYBOOK_DONE_DAILY_CAP ? 40 : 0;
+    case "playbook_done": return (s.playbookDoneToday ?? 0) < PLAYBOOK_DONE_DAILY_CAP ? playbookXp(e) : 0;
     case "autopilot_ready": return 50;
     case "cover_letter_ready": return 20;
   }
@@ -77,7 +84,8 @@ export function computeAward(state: GamifyState, e: GamifyEvent, today: string) 
     if (s.rejectedCount > 0) candidates.push("bounce_back");
   }
   if (e.type === "suggestion_edited") candidates.push("made_it_yours");
-  if (e.type === "playbook_done") candidates.push("gap_closer");
+  // Gap Closer only when the step built a skill the student's target roles ask for (06#8)
+  if (e.type === "playbook_done") candidates.push(e.closesGap ? "gap_closer" : "first_step");
   const newBadges = candidates.filter((b) => !earned.has(b));
 
   const next: GamifyState = {

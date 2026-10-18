@@ -1,4 +1,5 @@
 "use server";
+import { revalidatePath } from "next/cache";
 import { and, eq } from "drizzle-orm";
 import { requireUser } from "@/lib/auth/local-user";
 import { db } from "@/lib/db/client";
@@ -10,6 +11,7 @@ import { explainCacheKey, explainMatchWithSource, readCachedExplanation, shouldC
 import { aiMode } from "@/lib/ai/config";
 import { awardXP } from "@/lib/gamify/award";
 import { isUuid } from "@/lib/feed/save-result";
+import { setEligibilityOverride } from "@/lib/feed/overrides";
 import type { Explanation } from "@/lib/scoring/requirements";
 import type { AwardResult } from "@/lib/gamify/core";
 import { coverageSummary, reverifyEdits, runTailoring, type ReverifyResult, type RevertedChange, type TailorOutcome } from "@/lib/tailor/run";
@@ -32,6 +34,24 @@ import { bankStamp, cvForJob, NO_OVERRIDES, SECTIONS, type BankOverrides, type S
  */
 export type ExplanationView = Explanation & { aiWritten: boolean; aiFailed: boolean; aiOff: boolean };
 export type ExplanationResult = ExplanationView | { error: string };
+
+/**
+ * "This is wrong" / "Undo" on a job's eligibility check (audit 10#3). Gates come from regex/LLM extraction, so the
+ * student can overrule one per job; the job is then scored as eligible and the gate stays listed as overridden.
+ */
+export async function setEligibilityOverrideAction(jobId: string, on: boolean): Promise<{ ok: boolean }> {
+  if (!isUuid(jobId)) return { ok: false };
+  const { user } = await requireUser();
+  try {
+    setEligibilityOverride(user.id, jobId, on);
+  } catch (e) {
+    console.error("setEligibilityOverride failed", e instanceof Error ? e.message : e);
+    return { ok: false };
+  }
+  revalidatePath("/feed");
+  revalidatePath(`/jobs/${jobId}`);
+  return { ok: true };
+}
 
 const EXPLAIN_FAILED = "We couldn't build the explanation right now. Try again in a moment.";
 

@@ -95,7 +95,7 @@ LinkedIn does not publish how Recruiter ranks results [L9]. It states completene
 ### 2.3 AI-assisted search and Hiring Assistant (2025–26)
 
 - **AI-Assisted Search** (English, rolled out through September 2025): moves beyond keyword and filter matching to "matching based on qualifications that are unique to the candidate you're looking for — even those critical, hard-to-define skills not explicitly listed on resumes." LinkedIn reports 18% higher InMail acceptance vs manual-filter sessions [L10].
-- **Hiring Assistant**: LinkedIn's first AI agent for Recruiter & Jobs; recruiters upload job descriptions and intake notes to build pipelines. English-first rollout [L10]. Trade reports say general availability in English came at the end of September 2025 (not verified on a LinkedIn page).
+- **Hiring Assistant**: LinkedIn's first AI agent for Recruiter & Jobs; recruiters upload job descriptions and intake notes to build pipelines. English-first rollout [L10]. Verified 2026-10-18 (audit): LinkedIn Newsroom, 3 Sep 2025, "globally available in English by the end of September" (https://news.linkedin.com/2025/hiring-assistant-globally-available).
 - **2026 release**: LinkedIn describes "semantic search powered by AI" that surfaces candidates on "hard-to-define skills" and AI-written follow-up messages based on "candidate profiles and past interactions" [L11].
 
 **Implication for scoring (D).** When the recruiter types a natural-language brief, the model reads the whole profile text (headline, About, Experience descriptions, projects). Profiles with empty Experience descriptions or a one-word headline give the model nothing to match. This favours rules about *substantive, specific text in every section*, over rules about exact keyword placement. It also means a profile that only lists a skill, with no evidence anywhere, may match less well than one that describes using it (D, plausible, not demonstrated).
@@ -307,5 +307,5 @@ Dead primary sources (redirect to https://www.linkedin.com/blog/member, checked 
 3. Headline/About/Experience character limits come from trade sources; LinkedIn's help page with those limits was not fetched.
 4. No LinkedIn page lists all Recruiter filters, or whether Recruiter Lite sees recruiters-only Open to Work.
 5. No outcome data (interviews/offers) linked to any profile feature for UK students. All multipliers in circulation are unverified or LinkedIn marketing claims.
-6. Hiring Assistant GA date (September 2025) is from trade press, not a LinkedIn page.
+6. ~~Hiring Assistant GA date~~ Resolved 2026-10-18: LinkedIn Newsroom confirms English GA by end of September 2025. LinkedIn engineers' *Semantic Search at LinkedIn* (arXiv 2602.07309, Feb 2026, https://arxiv.org/html/2602.07309v1) describes semantic people search over summarised profiles plus network features.
 7. Photo and banner specs are trade-sourced only.

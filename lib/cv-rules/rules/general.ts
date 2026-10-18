@@ -1,21 +1,23 @@
 import type { CvRule } from "../types";
 import {
-  GH_PARSE, WD_PARSE, GH_FILETYPES, ICIMS_MANUAL, TEXTKERNEL_COLUMNS, HRDIVE_LADDERS_2018, LEVER_PARSING,
-  SHEFFIELD_ATS, GH_SEARCH, NOTTINGHAM_ATS, PROSPECTS_CV, MANCHESTER_CV, NCS_SECTIONS, TJ_6STEP, LADDERS_2012,
-  TJ_PROPERTY_CV, EQUALITY_ACT, ACAS_AGE, TJ_PERSONAL_STATEMENTS, PROSPECTS_PERSONAL_STATEMENT, KNOUSE_1994,
-  BRIGHT_INTERNSHIP_CV, STERKENS_2023, VAN_INWEGEN_2025, THE_ISE_2024, COLE_2007, ISE_AI_2026,
-  PUBLICTECH_CIVIL_SERVICE_AI, GRADCRACKER_EXPERIAN, GEMM_2019,
-  T_S1, T_S2, T_S3, T_S4, T_S5, T_S6, T_S7_CAREER, T_S7_EXPERIAN, T_S8_TECH, T_S8_INTERN, T_S11, T_S12, T_S14, T_S15,
-  M_QUADLIN_GPA,
-  M_BRAUN_AUDIT,
-  M_RIVERA_TILCSIK,
+  GH_PARSE, WD_PARSE, GH_FILETYPES, TEXTKERNEL_COLUMNS, LEVER_PARSING, SHEFFIELD_ATS, GH_SEARCH, PROSPECTS_CV,
+  MANCHESTER_CV, NCS_SECTIONS, TJ_6STEP, LADDERS_2012, TJ_PROPERTY_CV, EQUALITY_ACT, ACAS_AGE,
+  TJ_PERSONAL_STATEMENTS, PROSPECTS_PERSONAL_STATEMENT, KNOUSE_1994, BRIGHT_INTERNSHIP_CV, STERKENS_2023,
+  VAN_INWEGEN_2025, COLE_2007, ISE_AI_2026, PUBLICTECH_CIVIL_SERVICE_AI, GRADCRACKER_EXPERIAN, GEMM_2019, T_S1, T_S3,
+  T_S4, T_S5, T_S6, T_S11, T_S12, T_S14, M_QUADLIN_GPA, M_BRAUN_AUDIT, M_RIVERA_TILCSIK, F_S1, F_S10, F_S11, F_S13,
+  F_S15, F_S2, F_S23, F_S24, F_S29, F_S32, THE_ISE_2022, TJ_CV_FAQ_2026, TJ_TECH_CV_2025,
 } from "./sources";
 
 /**
- * Cross-industry rules.
- * G-01…G-37: docs/research/cv-rules-general.md §2 (strong→A, moderate→B, weak→C, consensus-only→D).
- * GEN-01…GEN-12: docs/research/cv-rules-tech-product.md §1 (already graded A–D). The finance doc says
- * GEN is inherited by finance/quant/consulting too, so both sets apply to every sector.
+ * Cross-industry rules: docs/research/cv-rules-general.md §2 (strong→A, moderate→B, weak→C, consensus-only→D).
+ *
+ * Audit 2026-10-18 (docs/research/audit-2026-10-18, 04#2): one detector is one rule. The GEN-01…12 baseline from
+ * cv-rules-tech-product.md §1 and the sector copies of the same checks (FCQ-01/03/04/05/08, FIN-02, QNT-09/12,
+ * CON-01/04, SWE-01/09/10/11/15/16, PRD-01, MKT-02/07, RES-01) were merged into the G- rules below; sectors now
+ * change severity, page limits and wording through sectorAdjust. Removed from scoring because the judge can't
+ * observe them: G-03 (header/footer position), G-10 (file name), G-28 (font), G-35 (link liveness), GEN-11
+ * (file type), G-09 (hidden text: ATS-HID-01 covers it). G-37 (fairness guardrail) is not a CV rule; its promise
+ * is shown in "How this score works".
  */
 export const GENERAL_RULES: CvRule[] = [
   // ---------- A. Document, file and ATS-parse safety ----------
@@ -33,28 +35,21 @@ export const GENERAL_RULES: CvRule[] = [
     citations: [GH_PARSE, GH_FILETYPES],
   },
   {
-    id: "G-03", sectors: "all", dimension: "ats", check: "llm", severity: "critical", evidence: "B",
-    statement: "Put your name and contact details in the main body of the page, not in a header, footer or text box — some ATS can't create your profile without them.",
-    llmGuidance: "Do the candidate's name, email and phone number appear in the main body text rather than only in a page header, footer or text box?",
-    passExample: "Priya Shah · priya.shah@gmail.com · 07700 900123 · London (first lines of the body)",
-    failExample: "Contact details appear only in a repeated page-footer line: 'p.shah@gmail.com | Page 1 of 2'",
-    citations: [GH_PARSE, ICIMS_MANUAL],
-  },
-  {
     id: "G-04", sectors: "all", dimension: "ats", check: "llm", severity: "major", evidence: "A",
     statement: "Use a single-column layout and don't put content in tables, text boxes or graphics. Columns and tables are a known cause of parse failures.",
-    llmGuidance: "Does the extracted text read in a single-column order, with no signs of tables, sidebars or text boxes holding core content?",
+    llmGuidance: "Does the extracted text read in one coherent order, with no fragments of a sidebar, table or text box interleaved with other sections (e.g. skill ratings mixed into job lines)?",
     passExample: "Education, Experience and Skills follow one another in a single reading order",
     failExample: "'Python ★★★★ Barista, Costa Coffee Jun 2024 SQL ★★★' — a skills sidebar interleaved with experience lines",
-    citations: [GH_PARSE, TEXTKERNEL_COLUMNS, HRDIVE_LADDERS_2018],
+    citations: [GH_PARSE, TEXTKERNEL_COLUMNS, T_S14],
   },
   {
     id: "G-05", sectors: "all", dimension: "ats", check: "code", checker: "skill_rating_glyphs", severity: "major", evidence: "B",
-    statement: "Don't use skill bars, star ratings, icons in place of words, or images of text. Parsers can't read them; write proficiency in words instead.",
+    statement: "Don't use skill bars, star ratings, percentages or \"8/10\" scores, icons in place of words, or images of text. Parsers can't read them; write proficiency in words like \"Proficient\" or \"Familiar\".",
+    sectorAdjust: { software_eng: { statement: "Group skills by category (Languages / Frameworks / Tools). Text labels like \"Proficient\" or \"Familiar\" are fine; bars, stars, percentages or \"8/10\" are not." } },
     citations: [WD_PARSE, LEVER_PARSING],
   },
   {
-    id: "G-06", sectors: "all", dimension: "ats", check: "code", checker: "section_headings", severity: "major", evidence: "A",
+    id: "G-06", sectors: "all", dimension: "ats", check: "code", checker: "section_headings", severity: "major", evidence: "B",
     statement: "Use standard section headings — Education, Experience, Projects, Skills, Leadership & Activities, Interests — not creative ones like \"My Journey\".",
     citations: [GH_PARSE, SHEFFIELD_ATS],
   },
@@ -74,28 +69,33 @@ export const GENERAL_RULES: CvRule[] = [
     failExample: "P R I Y A   S H A H",
     citations: [GH_PARSE],
   },
-  {
-    id: "G-09", sectors: "all", dimension: "ats", check: "llm", severity: "critical", evidence: "D",
-    statement: "Never hide keywords in white or tiny text, or paste in blocks from the job description. Recruiters see the parsed text, so hidden keywords get exposed, not rewarded.",
-    llmGuidance: "Is the CV free of hidden or stuffed keyword blocks, such as an uncontextualised list of job-advert terms or a passage of 25+ words copied from a job description?",
-    passExample: "Skills: Python, SQL, Tableau (used in the projects below)",
-    failExample: "Keywords: stakeholder management agile synergy leadership Python SQL Excel communication teamwork",
-    citations: [GH_SEARCH, NOTTINGHAM_ATS],
-  },
-  {
-    id: "G-10", sectors: "all", dimension: "ats", check: "llm", severity: "minor", evidence: "D",
-    statement: "Give the file a professional name like Firstname-Lastname-CV.pdf, not CV_final_v3(2).pdf.",
-    llmGuidance: "Does the file name contain the candidate's name and no draft markers such as 'final', 'v2', 'copy' or '(1)'? (Not applicable if the file name is unknown.)",
-    passExample: "Priya-Shah-CV.pdf",
-    failExample: "CV_final_v3(2).pdf",
-    citations: [PROSPECTS_CV],
-  },
 
   // ---------- B. Length and structure ----------
   {
-    id: "G-11", sectors: "all", dimension: "clarity", check: "code", checker: "page_count", params: { maxPages: 2 }, severity: "major", evidence: "D",
-    statement: "Keep your CV to at most two A4 pages; one page is the usual default for students with limited experience. Some sectors, like investment banking, expect exactly one.",
-    citations: [PROSPECTS_CV, MANCHESTER_CV],
+    id: "G-11", sectors: "all", dimension: "clarity", check: "code", checker: "page_count", params: { maxPages: 2 }, severity: "major", evidence: "B",
+    statement: "Keep your CV to one or two full A4 pages. One page is the usual default for students; if you use a second page, fill it rather than spilling over a few lines.",
+    sectorAdjust: {
+      finance_banking: {
+        maxPages: 1, severity: "critical",
+        statement: "Keep it to one page for finance applications. Cambridge, LSE and Warwick careers services all say so; two pages is for PhDs and experienced hires.",
+        citations: [F_S1, F_S11, F_S10],
+      },
+      consulting: {
+        maxPages: 1, severity: "critical",
+        statement: "Keep it to one page for consulting applications. Cambridge, LSE and Warwick careers services all say so; two pages is for PhDs and experienced hires.",
+        citations: [F_S2, F_S11, F_S10],
+      },
+      quant_trading: {
+        maxPages: 1,
+        statement: "Keep it clear and concise on one page. Put extra detail in a separate document; IMC and Jane Street don't need a cover letter.",
+        citations: [F_S15, F_S13],
+      },
+      software_eng: {
+        statement: "One or two full A4 pages is fine for UK software roles. Some US-headquartered tech firms prefer one page for students, so check the advert; avoid a second page with only a few lines on it.",
+        citations: [TJ_TECH_CV_2025, PROSPECTS_CV],
+      },
+    },
+    citations: [TJ_CV_FAQ_2026, PROSPECTS_CV, MANCHESTER_CV],
   },
   {
     id: "G-12", sectors: "all", dimension: "clarity", check: "llm", severity: "major", evidence: "D",
@@ -103,7 +103,7 @@ export const GENERAL_RULES: CvRule[] = [
     llmGuidance: "Within every section, are entries listed most recent first (with 'Present' or an expected date counting as the latest)?",
     passExample: "Experience: Jun 2025 – Present, then Jul 2024 – Sep 2024",
     failExample: "Experience: Jul 2022 – Aug 2022 listed above Jun 2025 – Present",
-    citations: [PROSPECTS_CV, NCS_SECTIONS],
+    citations: [PROSPECTS_CV, NCS_SECTIONS, T_S5, T_S11],
   },
   {
     id: "G-13", sectors: "all", dimension: "relevance", check: "llm", severity: "minor", evidence: "D",
@@ -119,26 +119,23 @@ export const GENERAL_RULES: CvRule[] = [
     llmGuidance: "Does every experience, education and project entry state the organisation, the role or qualification, and start and end dates with month and year? Never score employer or university brand.",
     passExample: "Sales Assistant, Boots — Sep 2024 – Jun 2025",
     failExample: "Sales Assistant — 2024",
-    citations: [LADDERS_2012, LEVER_PARSING],
+    citations: [LEVER_PARSING, LADDERS_2012],
   },
   {
-    id: "G-15", sectors: "all", dimension: "uk", check: "llm", severity: "minor", evidence: "D",
+    id: "G-15", sectors: "all", dimension: "uk", check: "code", checker: "cv_title", severity: "minor", evidence: "D",
     statement: "Don't title the document \"Curriculum Vitae\" or \"CV\" — your name is the title.",
-    llmGuidance: "Is the document titled with the candidate's name rather than 'Curriculum Vitae', 'CV' or 'Resume'?",
-    passExample: "PRIYA SHAH (first line)",
-    failExample: "CURRICULUM VITAE (first line)",
     citations: [PROSPECTS_CV, TJ_PROPERTY_CV],
   },
 
   // ---------- C. Contact details and UK personal-data conventions ----------
   {
     id: "G-16", sectors: "all", dimension: "uk", check: "code", checker: "contact_present", severity: "critical", evidence: "D",
-    statement: "Include your full name, mobile number, a professional email and your town or city. A LinkedIn URL is recommended; a full home address isn't needed.",
+    statement: "Put your mobile number and a professional email at the top. Your town or city and a LinkedIn URL help too; a full home address isn't needed.",
     citations: [NCS_SECTIONS, PROSPECTS_CV],
   },
   {
     id: "G-17", sectors: "all", dimension: "uk", check: "code", checker: "uk_personal_details", severity: "major", evidence: "B",
-    statement: "Leave out your photo, date of birth or age, marital status, gender and religion — it's UK convention and protects you. Nationality is optional; a right-to-work line is fine.",
+    statement: "Leave out your date of birth or age, marital status, gender, religion and ethnicity — it's UK convention and protects you. Nationality is optional; a right-to-work line is fine.",
     citations: [EQUALITY_ACT, ACAS_AGE, NCS_SECTIONS, PROSPECTS_CV],
   },
   {
@@ -150,14 +147,22 @@ export const GENERAL_RULES: CvRule[] = [
     citations: [NCS_SECTIONS, MANCHESTER_CV],
   },
 
+  {
+    id: "G-39", sectors: "all", dimension: "uk", check: "code", checker: "photo_present", severity: "minor", evidence: "B",
+    statement: "Remove the photo — UK employers don't expect one and it takes space from your evidence.",
+    sectorAdjust: {
+      finance_banking: { severity: "major", citations: [F_S1] },
+      consulting: { severity: "major", citations: [F_S2] },
+      quant_trading: { severity: "major", citations: [F_S1] },
+    },
+    citations: [MANCHESTER_CV, F_S11, GEMM_2019],
+  },
+
   // ---------- D. Personal statement / profile ----------
   {
-    id: "G-19", sectors: "all", dimension: "relevance", check: "llm", severity: "minor", evidence: "D",
-    statement: "A profile is optional. If you include one, keep it under about 150 words (3–6 lines), specific to the role, and free of clichés like \"hard-working team player\".",
-    llmGuidance: "If a profile is present, is it 150 words or fewer, specific to the target role or sector, and free of stock clichés such as 'hard-working team player'? (Not applicable if there is no profile.)",
-    passExample: "Second-year Economics student targeting consulting; led a 6-person case team to the UCL Case Competition final.",
-    failExample: "Hard-working, passionate team player with excellent communication skills seeking a challenging role.",
-    citations: [TJ_PERSONAL_STATEMENTS, PROSPECTS_PERSONAL_STATEMENT, MANCHESTER_CV],
+    id: "G-19", sectors: "all", dimension: "clarity", check: "code", checker: "summary_length", severity: "minor", evidence: "B",
+    statement: "A profile is optional. If you include one, keep it to about 100 words (four lines or so) and make it specific to the role; over 150 words is too long.",
+    citations: [PROSPECTS_PERSONAL_STATEMENT, TJ_PERSONAL_STATEMENTS, MANCHESTER_CV],
   },
 
   // ---------- E. Bullets, impact and language ----------
@@ -168,7 +173,7 @@ export const GENERAL_RULES: CvRule[] = [
     passExample: "Organised a charity quiz for 120 guests, raising £1,450",
     failExample: "Responsible for organising events for the society",
     allowPartial: true,
-    citations: [PROSPECTS_CV, MANCHESTER_CV, KNOUSE_1994],
+    citations: [PROSPECTS_CV, MANCHESTER_CV, KNOUSE_1994, T_S1, T_S4],
   },
   {
     id: "G-21", sectors: "all", dimension: "impact", check: "llm", severity: "major", evidence: "C",
@@ -180,13 +185,14 @@ export const GENERAL_RULES: CvRule[] = [
   },
   {
     id: "G-22", sectors: "all", dimension: "impact", check: "code", checker: "quantified_bullets", params: { threshold: 0.4 }, severity: "major", evidence: "D",
-    statement: "Quantify where it's true: aim for at least 4 in 10 experience and project bullets to include a number (%, £, counts, time saved, users, ranking, team size). Never invent figures.",
-    citations: [TJ_6STEP, T_S3, PROSPECTS_CV],
+    statement: "Quantify where it's true: aim for about 4 in 10 experience and project bullets to include a real number (%, £, counts, time saved, users, team size) — 2 in 10 is fine in first year. Dates don't count, and never invent figures.",
+    yearAdjust: { "1st": { threshold: 0.2 }, final: { threshold: 0.5 }, masters: { threshold: 0.5 } },
+    citations: [TJ_6STEP, T_S3, PROSPECTS_CV, T_S1, T_S4],
   },
   {
     id: "G-23", sectors: "all", dimension: "clarity", check: "code", checker: "bullet_length", severity: "minor", evidence: "C",
     statement: "Keep bullets to one or two lines (about 12–30 words), with roughly 2–5 bullets per role and no long paragraphs.",
-    citations: [HRDIVE_LADDERS_2018, NCS_SECTIONS],
+    citations: [NCS_SECTIONS, T_S6],
   },
   {
     id: "G-24", sectors: "all", dimension: "clarity", check: "llm", severity: "minor", evidence: "D",
@@ -197,9 +203,13 @@ export const GENERAL_RULES: CvRule[] = [
     citations: [NCS_SECTIONS, PROSPECTS_PERSONAL_STATEMENT],
   },
   {
-    id: "G-25", sectors: "all", dimension: "clarity", check: "code", checker: "spelling", severity: "critical", evidence: "A",
-    statement: "Have zero spelling and grammar errors. In a study of 445 recruiters, two typos cut interview chances by about 7 points and five typos by about 19.",
-    llmGuidance: "List genuine en-GB spelling and grammar errors only; ignore names, company names and technical jargon. 3+ errors = critical, 1–2 = major.",
+    id: "G-25", sectors: "all", dimension: "clarity", check: "code", checker: "spelling", severity: "major", evidence: "B",
+    statement: "Aim for zero spelling and grammar errors. In a Belgian experiment, recruiters were about 7 percentage points less likely to invite a graduate with two spelling errors, and about 19 points less with five.",
+    sectorAdjust: {
+      marketing_growth: { severity: "critical", statement: "Zero tolerance for typos: in marketing and PR the role is communication, so spelling and grammar errors count heavily against you.", citations: [T_S11] },
+      finance_banking: { severity: "critical", statement: "Aim for zero typos and no sloppy formatting. These jobs produce client documents, and some employers discard CVs that contain errors.", citations: [F_S1] },
+      consulting: { severity: "critical", statement: "Aim for zero typos and no sloppy formatting. These jobs produce client documents, and some employers discard CVs that contain errors.", citations: [F_S2] },
+    },
     citations: [STERKENS_2023, VAN_INWEGEN_2025],
   },
   {
@@ -219,14 +229,6 @@ export const GENERAL_RULES: CvRule[] = [
     citations: [GH_PARSE, NCS_SECTIONS, SHEFFIELD_ATS],
   },
   {
-    id: "G-28", sectors: "all", dimension: "clarity", check: "llm", severity: "major", evidence: "D",
-    statement: "Use a standard font (Arial, Calibri, Garamond, Georgia and similar) at 10–12pt for body text, with margins around 1.5–2.5 cm and enough white space.",
-    llmGuidance: "Is the body text in a standard font at 9.5pt or larger, with no novelty fonts? (Not applicable if font metadata is unavailable.)",
-    passExample: "Body text in Calibri 11pt",
-    failExample: "Body text in Comic Sans 9pt",
-    citations: [PROSPECTS_CV, NCS_SECTIONS],
-  },
-  {
     id: "G-29", sectors: "all", dimension: "impact", check: "llm", severity: "minor", evidence: "D",
     statement: "Avoid unsupported buzzwords. Every soft skill you claim (\"team player\", \"detail-oriented\") should be backed by an example somewhere on the CV.",
     llmGuidance: "Is every soft-skill claim on the CV (e.g. 'team player', 'detail-oriented') backed by a concrete example elsewhere on the CV?",
@@ -239,24 +241,35 @@ export const GENERAL_RULES: CvRule[] = [
   {
     id: "G-30", sectors: "all", dimension: "relevance", check: "llm", severity: "major", evidence: "B",
     statement: "Tailor your CV to the job: cover the advert's must-have skills using the employer's own wording, inside your bullets as well as your skills list.",
-    llmGuidance: "Does the CV cover at least half of the job description's must-have skills or qualifications, with matches shown inside bullets rather than only in the skills list? (Without a job description, judge against the chosen sector profile.)",
+    llmGuidance: "Does the CV cover at least half of the job description's must-have skills or qualifications, with matches shown inside bullets rather than only in the skills list?",
+    needs: ["jd"],
     passExample: "JD asks for SQL and stakeholder work; bullet: 'Wrote SQL queries to build a weekly sales report for 3 store managers'",
     failExample: "JD asks for SQL and stakeholder work; SQL appears only in the skills list and nothing mentions stakeholders",
-    citations: [GH_SEARCH, MANCHESTER_CV, TJ_6STEP],
+    citations: [GH_SEARCH, MANCHESTER_CV, TJ_6STEP, T_S12, T_S14],
   },
   {
     id: "G-31", sectors: "all", dimension: "relevance", check: "code", checker: "skills_count", severity: "minor", evidence: "B",
     statement: "Make your skills section specific and grouped (Technical: Python, SQL; Languages: Spanish (C1); Tools: Excel (pivot tables)), with proficiency in words, not bars or stars.",
-    llmGuidance: "Also check the items are relevant to the target role and not generic ('Microsoft Office', 'communication'). A missing skills section is major for technical or analytical roles; a bloated generic list is minor.",
     citations: [T_S3, WD_PARSE],
   },
 
   // ---------- G. Education and grades (UK specifics) ----------
   {
     id: "G-32", sectors: "all", dimension: "uk", check: "code", checker: "uk_grades", severity: "major", evidence: "B",
-    statement: "Your Education entry needs the institution, degree and dates with expected graduation. State your grade if it's a 2:1 or above, or predicted 2:1 (\"On track for a 2:1\") — a higher grade earns no extra credit.",
-    llmGuidance: "Pass when a degree grade of 2:1 or above, or a predicted 2:1, is stated. Never give extra credit for a higher grade (a First, a higher percentage or a rank earns nothing more). Never score employer or university brand.",
-    citations: [THE_ISE_2024, COLE_2007, PROSPECTS_CV, M_QUADLIN_GPA, M_BRAUN_AUDIT],
+    statement: "Show your degree result or your current average or predicted grade, in your university's own format — including a 2:2, a Master's Merit or an international GPA (name the scale, e.g. \"GPA 3.7/4.0\"). One in five large UK employers accept a 2:2, and a missing grade is usually read as a low one. A higher grade earns no extra points here.",
+    llmGuidance: "Code: passes on any stated result or average (UK classification, Master's Distinction/Merit, GPA or CGPA with a scale, IB points, a year average). Never gives extra credit for a higher grade, and never fails an honest 2:2 or Third.",
+    sectorAdjust: {
+      finance_banking: {
+        severity: "critical",
+        statement: "State your degree result or current average, or a predicted grade marked with an asterisk — application forms ask anyway, so leaving it off only looks like a gap. If your result was affected by circumstances, say so in the additional-information box, not on the CV. A First earns no extra points here, but strong module marks still help recruiters.",
+        citations: [F_S1, F_S32],
+      },
+      consulting: {
+        statement: "State your degree result or current average, or a predicted grade marked with an asterisk. BCG UK asks for a 2:1 or equivalent and Bain wants detail on grades; some Big 4 firms have dropped grade requirements. A higher grade earns no extra points here.",
+        citations: [F_S24, F_S23, F_S29, F_S2],
+      },
+    },
+    citations: [F_S32, TJ_CV_FAQ_2026, PROSPECTS_CV, M_QUADLIN_GPA, M_BRAUN_AUDIT, THE_ISE_2022],
   },
   {
     id: "G-33", sectors: "all", dimension: "uk", check: "llm", severity: "minor", evidence: "B",
@@ -264,7 +277,7 @@ export const GENERAL_RULES: CvRule[] = [
     llmGuidance: "Are pre-university qualifications (A-levels, IB, Highers, BTEC or a named international equivalent) listed with grades? Never score employer or university brand.",
     passExample: "A-levels: Maths A*, Economics A, History A",
     failExample: "A-levels: Maths, Economics, History",
-    citations: [MANCHESTER_CV, THE_ISE_2024],
+    citations: [MANCHESTER_CV, F_S32],
   },
 
   // ---------- H. Extracurriculars, interests, links ----------
@@ -276,122 +289,16 @@ export const GENERAL_RULES: CvRule[] = [
     failExample: "Interests: reading, travelling, socialising",
     citations: [COLE_2007, TJ_6STEP, T_S3, M_RIVERA_TILCSIK],
   },
-  {
-    id: "G-35", sectors: "all", dimension: "relevance", check: "llm", severity: "major", evidence: "D",
-    statement: "Make links live, relevant and visible as plain text (linkedin.com/in/yourname; GitHub or portfolio for technical or creative roles), and keep linked work current.",
-    llmGuidance: "Are all links shown as readable, well-formed URLs (e.g. linkedin.com/in/name), rather than icons or broken text?",
-    passExample: "linkedin.com/in/priyashah · github.com/priyashah",
-    failExample: "[LinkedIn icon] [GitHub icon] with no visible URL",
-    citations: [NCS_SECTIONS, T_S3],
-  },
 
   // ---------- I. Integrity and authenticity ----------
   {
     id: "G-36", sectors: "all", dimension: "impact", check: "llm", severity: "major", evidence: "B",
-    statement: "Keep everything truthful and specific to you: no invented metrics and no generic AI boilerplate. AI can polish wording, but not make things up.",
+    statement: "Keep everything truthful and specific to you: no invented metrics and no generic boilerplate. Some employers limit how you may use AI on applications, so check each firm's policy.",
     llmGuidance: "Are all claims and metrics specific to the candidate and plausible, with no interchangeable boilerplate or internally inconsistent details (e.g. implausibly overlapping dates)?",
     passExample: "Cut stock-count time from 3 hours to 1 hour by building a barcode spreadsheet",
     failExample: "Drove 300% growth in synergistic outcomes across dynamic cross-functional initiatives",
     citations: [ISE_AI_2026, PUBLICTECH_CIVIL_SERVICE_AI, GRADCRACKER_EXPERIAN],
   },
 
-  // ---------- J. Fairness guardrail (product rule, not a CV rule) ----------
-  {
-    id: "G-37", sectors: "all", dimension: "uk", check: "llm", severity: "minor", evidence: "A",
-    statement: "Placed never rewards or penalises who you are: your name, ethnicity, gender, age, nationality, disability, school or university prestige, or postcode don't change your score.",
-    llmGuidance: "Was this score produced without considering identity signals (name, ethnicity, gender, age, nationality, disability, school or university prestige, postcode)? Always answer yes; this is a system guardrail. Never score employer or university brand.",
-    passExample: "Placeholders such as [UNIVERSITY] are treated as neutral",
-    failExample: "A bullet is judged stronger because the university is famous",
-    citations: [GEMM_2019, EQUALITY_ACT],
-  },
 
-  // ---------- GEN: cross-sector baseline from cv-rules-tech-product.md §1 ----------
-  {
-    id: "GEN-01", sectors: "all", dimension: "uk", check: "code", checker: "uk_personal_details", severity: "major", evidence: "A",
-    statement: "Put contact details first — name, phone, personal email, LinkedIn, plus GitHub or portfolio where relevant — and leave out photo, date of birth, gender, ethnicity and marital status.",
-    llmGuidance: "Missing email or phone is critical; a photo or date of birth is major.",
-    citations: [T_S3, T_S5],
-  },
-  {
-    id: "GEN-02", sectors: "all", dimension: "ats", check: "llm", severity: "major", evidence: "B",
-    statement: "Use a single-column, text-based layout with standard headings (Education, Experience, Projects, Skills). Avoid tables, text boxes, skill bars and contact details in headers or footers.",
-    llmGuidance: "Does the extracted text look complete and single-column, with standard headings (Education, Experience, Projects, Skills) and no signs of tables, text boxes or skill bars?",
-    passExample: "EDUCATION / EXPERIENCE / PROJECTS / SKILLS in one clean reading order",
-    failExample: "'My Journey' heading, with skills apparently held in an image the text layer can't read",
-    citations: [T_S14, T_S15],
-  },
-  {
-    id: "GEN-03", sectors: "all", dimension: "impact", check: "llm", severity: "major", evidence: "B",
-    statement: "Write achievement-led bullets, not duty lists: start each with an action verb and state the outcome.",
-    llmGuidance: "Do most experience bullets start with an action verb and state an outcome?",
-    passExample: "Built a rota spreadsheet that cut weekly scheduling time by 2 hours",
-    failExample: "Duties included making rotas and answering emails",
-    citations: [T_S1, T_S4, T_S8_INTERN, T_S8_TECH],
-  },
-  {
-    id: "GEN-04", sectors: "all", dimension: "impact", check: "code", checker: "quantified_bullets", params: { threshold: 0.4 }, severity: "major", evidence: "C",
-    statement: "Quantify wherever it's honest — %, £, users, time saved, ranking, dataset size. Aim for at least 40% of experience and project bullets (20% in first year, 50% in final year).",
-    yearAdjust: { "1st": { threshold: 0.2 }, final: { threshold: 0.5 }, masters: { threshold: 0.5 } },
-    citations: [T_S1, T_S4, T_S2],
-  },
-  {
-    id: "GEN-05", sectors: "all", dimension: "relevance", check: "llm", severity: "major", evidence: "A",
-    statement: "Tailor each CV: mirror the job advert's essential skills and wording, and back the keywords up with evidence rather than just listing them.",
-    llmGuidance: "Are the job advert's essential skills both present and evidenced in bullets (not only listed)? (Without a job description, judge against the chosen sector profile.)",
-    passExample: "Advert asks for Python; bullet: 'Wrote a Python script to clean 40k survey rows'",
-    failExample: "Advert asks for Python; it appears only in the skills list",
-    citations: [T_S3, T_S12, T_S14],
-  },
-  {
-    id: "GEN-06", sectors: "all", dimension: "clarity", check: "code", checker: "spelling", severity: "major", evidence: "B",
-    statement: "Have zero spelling or grammar errors. In marketing this is critical, because the CV is your writing sample.",
-    llmGuidance: "Spell-check with a technical-term allowlist; confirm grammar errors. Major everywhere; marketing roles treat errors as critical (see MKT-07).",
-    citations: [T_S3, T_S11, T_S8_INTERN, T_S8_TECH],
-  },
-  {
-    id: "GEN-07", sectors: "all", dimension: "relevance", check: "llm", severity: "major", evidence: "B",
-    statement: "Don't exaggerate: every skill you list should be one you can defend at interview, and inconsistencies get spotted.",
-    llmGuidance: "Is every listed skill supported by evidence somewhere else on the CV?",
-    passExample: "Skills: SQL — Experience: 'Queried 2M-row sales table in SQL to find top-selling lines'",
-    failExample: "Skills: SQL, Rust, Kubernetes, Tableau — none appear anywhere else",
-    citations: [T_S3],
-  },
-  {
-    id: "GEN-08", sectors: "all", dimension: "clarity", check: "code", checker: "summary_length", severity: "minor", evidence: "C",
-    statement: "Objectives and generic summaries add little. If you include a profile, keep it to 2–3 lines and make it specific to the role.",
-    llmGuidance: "Also flag buzzword density in the profile ('passionate', 'hard-working', 'team player', 'synergy') and check it is role-specific.",
-    citations: [T_S6, T_S7_CAREER, T_S7_EXPERIAN],
-  },
-  {
-    id: "GEN-09", sectors: "all", dimension: "impact", check: "llm", severity: "minor", evidence: "B",
-    statement: "AI-written boilerplate reads as inauthentic. Use AI to help with structure, not to write your content.",
-    llmGuidance: "Is the CV free of generic AI-style phrasing (e.g. 'leveraged', 'spearheaded' with vague objects, 'in today's fast-paced world')?",
-    passExample: "Wrote the society's first sponsorship pack and secured £600 from two local cafés",
-    failExample: "Spearheaded dynamic initiatives in today's fast-paced environment",
-    citations: [T_S7_EXPERIAN],
-  },
-  {
-    id: "GEN-10", sectors: "all", dimension: "clarity", check: "llm", severity: "minor", evidence: "A",
-    statement: "List entries in reverse chronological order within each section.",
-    llmGuidance: "Are entries in each section in reverse chronological order (most recent first)?",
-    passExample: "Projects: 2025 project listed above 2024 project",
-    failExample: "Experience: 2022 summer job listed above a 2025 internship",
-    citations: [T_S5, T_S11],
-  },
-  {
-    id: "GEN-11", sectors: "all", dimension: "ats", check: "llm", severity: "minor", evidence: "B",
-    statement: "Send your CV as a PDF unless the employer asks for a different format.",
-    llmGuidance: "Is the CV a PDF, or in the format the employer asked for? (Not applicable if the file type is unknown.)",
-    passExample: "Priya-Shah-CV.pdf",
-    failExample: "CV uploaded as a .pages file",
-    citations: [T_S2],
-  },
-  {
-    id: "GEN-12", sectors: "all", dimension: "uk", check: "llm", severity: "minor", evidence: "D",
-    statement: "Write dates consistently (e.g. \"Sep 2024 – Jun 2025\") and show your expected graduation date.",
-    llmGuidance: "Is an expected or actual graduation date shown, and are dates written in one consistent format?",
-    passExample: "BSc Computer Science, expected Jun 2027; all dates as 'Mon YYYY'",
-    failExample: "BSc Computer Science (no graduation date), with dates as '2024' and '09/2025'",
-    citations: [],
-  },
 ];

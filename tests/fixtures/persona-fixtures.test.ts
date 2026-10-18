@@ -113,9 +113,9 @@ describe("judgeCvRules demo fixtures (A1, hand-labelled)", () => {
       const byId = new Map(mapped.map((r) => [r.ruleId, r.status]));
       for (const v of raw.verdicts) expect(byId.get(v.rule_id), v.rule_id).toBe(v.status);
     });
-    it("has the cited quick win: GEN-03 fails on the unquantified events bullet with a real-number placeholder", () => {
+    it("has the cited quick win: G-21 fails on the unquantified events bullet with a real-number placeholder", () => {
       const raw = JudgeOutput.parse(readJson(fixture("judgeCvRules", key())));
-      const v = raw.verdicts.find((x) => x.rule_id === "GEN-03");
+      const v = raw.verdicts.find((x) => x.rule_id === "G-21");
       expect(v).toMatchObject({ status: "fail", evidence_line: "Organised weekly society events" });
       expect(v?.fix).toMatch(/\[add your real number\]/);
     });
@@ -123,7 +123,7 @@ describe("judgeCvRules demo fixtures (A1, hand-labelled)", () => {
       const j = prepareJudgeInput(persona, rawText);
       const r = await judgeCvRules({ redactedText: j.redactedText, structuredText: j.structuredText, rules: rulesFor(sector), fixtureKey: key() });
       expect(r.cacheable).toBe(true);
-      expect(r.results.find((x) => x.ruleId === "GEN-03")).toMatchObject({ status: "fail", evidenceLine: "Organised weekly society events" });
+      expect(r.results.find((x) => x.ruleId === "G-21")).toMatchObject({ status: "fail", evidenceLine: "Organised weekly society events" });
     });
   });
 });

@@ -48,7 +48,9 @@ describe("checkers", () => {
   });
   it("spelling: na without data, fail at 3+", () => {
     expect(CHECKERS.spelling(ctx({ spellingErrors: null }), rule({})).status).toBe("not_applicable");
-    expect(CHECKERS.spelling(ctx({ spellingErrors: ["teh", "recieve", "managment"] }), rule({})).status).toBe("fail");
+    // Only words that are really in the CV count (audit 04#3: the LLM list is not trusted on its own).
+    expect(CHECKERS.spelling(ctx({ text: "teh recieve managment", spellingErrors: ["teh", "recieve", "managment"] }), rule({})).status).toBe("fail");
+    expect(CHECKERS.spelling(ctx({ spellingErrors: ["teh", "recieve", "managment"] }), rule({})).status).toBe("pass");
   });
   it("generic_interests flags vague hobbies but accepts specific ones", () => {
     expect(CHECKERS.generic_interests(ctx({ cv: cv({ interests: "Reading, travelling, socialising" }) }), rule({})).status).toBe("fail");
@@ -125,8 +127,8 @@ describe("checkers", () => {
     for (const id of CHECKER_IDS) expect(typeof CHECKERS[id]).toBe("function");
   });
   it("spelling: UK/US variants are not errors", () => {
-    expect(CHECKERS.spelling(ctx({ spellingErrors: ["colour", "organise", "analyze", "programme"] }), rule({})).status).toBe("pass");
-    expect(CHECKERS.spelling(ctx({ spellingErrors: ["teh", "recieve", "managment"] }), rule({})).status).toBe("fail");
+    expect(CHECKERS.spelling(ctx({ text: "colour organise analyze programme", spellingErrors: ["colour", "organise", "analyze", "programme"] }), rule({})).status).toBe("pass");
+    expect(CHECKERS.spelling(ctx({ text: "teh recieve managment", spellingErrors: ["teh", "recieve", "managment"] }), rule({})).status).toBe("fail");
     expect(CHECKERS.spelling(ctx({ spellingErrors: ["centre", "licence", "travelled", "catalogue", "optimisation"] }), rule({})).status).toBe("pass");
   });
   it("isSpellingVariant recognises variant families only", () => {
@@ -164,7 +166,7 @@ describe("checkers", () => {
     it("isSpellingVariant is stem-specific", () => {
       expect(isSpellingVariant("profesor")).toBe(false);
       expect(isSpellingVariant("neighbour")).toBe(true);
-      expect(CHECKERS.spelling(ctx({ spellingErrors: ["profesor", "teh", "recieve"] }), rule({})).status).toBe("fail");
+      expect(CHECKERS.spelling(ctx({ text: "profesor teh recieve", spellingErrors: ["profesor", "teh", "recieve"] }), rule({})).status).toBe("fail");
     });
     it("uk_grades ignores 'first-year' and 'First Aid'", () => {
       const edu = (details: string) => cv({ education: [{ id: "e0", institution: "UCL", degree: "BSc", dates: "", grade: null, details: [{ id: "d", text: details }] }] });

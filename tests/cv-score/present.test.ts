@@ -8,7 +8,7 @@ import { ARCHETYPES } from "@/lib/types";
 import { IMAGE_ONLY_CAP, type Fix } from "@/lib/cv-score/aggregate";
 
 const fix = (ruleId: string, lostPoints: number, over: Partial<Fix> = {}): Fix => ({
-  ruleId, statement: `why ${ruleId}`, dimension: "impact", lostPoints, evidenceLine: null, fix: null,
+  ruleId, statement: `why ${ruleId}`, dimension: "impact", lostPoints, gain: lostPoints, evidenceLine: null, fix: null,
   citation: { title: "t", publisher: "Prospects", year: "2025", url: "https://prospects.ac.uk/x" }, evidence: "A", convention: false, ...over,
 });
 

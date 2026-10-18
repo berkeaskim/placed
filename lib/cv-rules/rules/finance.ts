@@ -1,10 +1,9 @@
 import type { Archetype } from "@/lib/types";
 import type { CvRule } from "../types";
 import {
-  F_S1, F_S2, F_S3, F_S5, F_S6, F_S7, F_S7_UCAS, F_S8, F_S9, F_S10, F_S11, F_S11_BROCHURE, F_S12, F_S13, F_S14, F_S15,
-  F_S16, F_S17, F_S19, F_S20, F_S21, F_S21B, F_S22, F_S23, F_S24, F_S25, F_S26, F_S27, F_S28, F_S29, F_S31, F_S32,
-  F_S35, F_S36, F_S37,
-  M_RIVERA_TILCSIK,
+  F_S1, F_S2, F_S3, F_S5, F_S7, F_S8, F_S9, F_S10, F_S11_BROCHURE, F_S12, F_S13, F_S14, F_S15, F_S16, F_S17, F_S19,
+  F_S20, F_S21, F_S21B, F_S22, F_S23, F_S24, F_S25, F_S26, F_S27, F_S28, F_S32, F_S36, F_S37, M_RIVERA_TILCSIK,
+  BAIN_LONDON_AI, CFA_TRADEMARK,
 } from "./sources";
 
 /**
@@ -12,6 +11,10 @@ import {
  * Grades are the doc's own A–D; where a doc gives two ("B/C"), the first is used.
  * Severities that differ by sub-sector (e.g. "critical (FIN, CON); major (QNT)") use the first value;
  * the variant is kept in llmGuidance.
+ *
+ * Audit 2026-10-18 (04#2, 02#3): the FCQ/FIN/QNT/CON copies of shared detectors (page count, grades, spelling,
+ * quantification, personal details) are merged into G-11, G-32, G-25, G-22 and G-39 with sectorAdjust. Rules
+ * that need the target division (FIN-13, FIN-14, QNT-11) are not applicable until Placed collects it (02#5).
  */
 const FCQ: Archetype[] = ["finance_banking", "quant_trading", "consulting"];
 const FIN: Archetype[] = ["finance_banking"];
@@ -21,32 +24,9 @@ const CON: Archetype[] = ["consulting"];
 export const FINANCE_RULES: CvRule[] = [
   // ---------- §1 Cross-sector overrides (FCQ) ----------
   {
-    id: "FCQ-01", sectors: FCQ, dimension: "clarity", check: "code", checker: "page_count", params: { maxPages: 1 }, severity: "critical", evidence: "A", sectorAdjust: { quant_trading: { severity: "major" } },
-    statement: "Keep it to exactly one page for finance, consulting and quant applications — two pages are only for PhDs or experienced hires.",
-    llmGuidance: "Critical for finance and consulting, major for quant. Never stepped down by year of study.",
-    citations: [F_S1, F_S2, F_S3, F_S10, F_S11],
-  },
-  {
     id: "FCQ-02", sectors: FCQ, dimension: "uk", check: "code", checker: "education_first", severity: "major", evidence: "A",
-    statement: "Put Education first, straight after your contact details — students in these sectors always lead with it.",
+    statement: "Put Education first, straight after your contact details — students applying in these sectors normally lead with it.",
     citations: [F_S3, F_S7, F_S8],
-  },
-  {
-    id: "FCQ-03", sectors: FCQ, dimension: "uk", check: "code", checker: "uk_personal_details", severity: "major", evidence: "A",
-    statement: "Don't add a photo. It isn't UK practice, and Goldman Sachs recruiters say it just takes up precious space.",
-    citations: [F_S1, F_S2, F_S3, F_S8],
-  },
-  {
-    id: "FCQ-04", sectors: FCQ, dimension: "uk", check: "code", checker: "uk_grades", severity: "critical", evidence: "A", sectorAdjust: { quant_trading: { severity: "major" } },
-    statement: "State your grade explicitly if it's a 2:1 or above, or a predicted 2:1 (e.g. \"Year 1 average: 65% (2:1)\"). If you don't have marks yet, give a prediction marked with an asterisk. A higher grade earns no extra credit.",
-    llmGuidance: "Pass when a degree grade of 2:1 or above, or a predicted 2:1, is stated. Never give extra credit for a higher grade (a First, a higher percentage or a rank earns nothing more). Critical for front-office finance and MBB consulting; major for quant (sectorAdjust) and Big 4. Never score employer or university brand.",
-    citations: [F_S1, F_S2, F_S23, F_S24],
-  },
-  {
-    id: "FCQ-05", sectors: FCQ, dimension: "clarity", check: "code", checker: "spelling", severity: "critical", evidence: "A",
-    statement: "Have zero typos and no sloppy formatting. These jobs produce client documents, and some employers simply discard CVs that contain any errors.",
-    llmGuidance: "UK English spell-check plus formatting consistency (date formats, bullet styles, font sizes, alignment). Never stepped down by year of study.",
-    citations: [F_S1, F_S2, F_S3, F_S5, F_S11],
   },
   {
     id: "FCQ-06", sectors: FCQ, dimension: "relevance", check: "llm", severity: "minor", evidence: "B",
@@ -58,18 +38,11 @@ export const FINANCE_RULES: CvRule[] = [
   },
   {
     id: "FCQ-07", sectors: FCQ, dimension: "ats", check: "llm", severity: "major", evidence: "B",
-    statement: "Use an ATS-safe layout: a sans-serif font like Arial or Calibri at a consistent 10–12pt, and no tables, text boxes, columns or graphics.",
+    statement: "Use a single-column layout with no tables, text boxes or graphics for content, and one readable font at a consistent 10–12pt.",
     llmGuidance: "Is the layout ATS-safe: single column, no tables, text boxes or graphics for content, and a standard font at a consistent size?",
     passExample: "One column in Arial 10.5pt with plain bullet lists",
     failExample: "Two-column template with a photo and skills in a table",
-    citations: [F_S7, F_S10, F_S8],
-  },
-  {
-    id: "FCQ-08", sectors: FCQ, dimension: "impact", check: "code", checker: "quantified_bullets", params: { threshold: 0.4 }, severity: "major", evidence: "A",
-    statement: "Write quantified, outcome-driven bullets that show your personal responsibility — say what you did (\"I\"), not what the team did (\"we\").",
-    llmGuidance: "Thresholds (finance/quant): 25% of bullets with numbers in 1st year, 40% penultimate, 50% final year/Master's. Also check the outcome is attributable to the candidate.",
-    yearAdjust: { "1st": { threshold: 0.25 }, final: { threshold: 0.5 }, masters: { threshold: 0.5 } },
-    citations: [F_S1, F_S2, F_S25, F_S6],
+    citations: [F_S10, F_S8],
   },
   {
     id: "FCQ-09", sectors: FCQ, dimension: "impact", check: "llm", severity: "minor", evidence: "A",
@@ -82,7 +55,8 @@ export const FINANCE_RULES: CvRule[] = [
   {
     id: "FCQ-10", sectors: FCQ, dimension: "relevance", check: "llm", severity: "major", evidence: "A",
     statement: "Tailor your CV to the division and the firm: use the job's own key words and values, and be explicit about which division you're targeting (e.g. IBD vs S&T vs AM).",
-    llmGuidance: "Is the CV tailored to the target firm and division (e.g. IBD vs S&T vs AM), with nothing that reads as aimed at a different division or firm?",
+    llmGuidance: "Is the CV tailored to the job advert's firm and division (e.g. IBD vs S&T vs AM), with nothing that reads as aimed at a different division or firm?",
+    needs: ["jd"],
     passExample: "Profile: 'Targeting Sales & Trading'; bullets highlight a trading competition and FX market commentary",
     failExample: "Applying to IBD with a profile that says 'seeking a career in equity research at another bank'",
     citations: [F_S1, F_S2, F_S5, F_S9],
@@ -97,11 +71,11 @@ export const FINANCE_RULES: CvRule[] = [
   },
   {
     id: "FCQ-12", sectors: FCQ, dimension: "impact", check: "llm", severity: "minor", evidence: "B",
-    statement: "Avoid AI-generic wording — recruiters see near-identical AI-written profiles. Substance beats polish; AI can help you polish, but not misrepresent.",
+    statement: "Write in your own words with specific facts. Firms' rules on AI differ: some (e.g. Bain London) allow AI only for checking spelling and grammar, so check each firm's policy before using AI on your CV.",
     llmGuidance: "Is the profile and bullet wording specific to the candidate rather than generic AI-sounding text?",
     passExample: "Ran a 10-week stock-pitch league for 40 members; my pitch on Tesco returned 8%",
     failExample: "Results-driven, passionate individual with a proven track record of leveraging synergies",
-    citations: [F_S8, F_S21B, F_S32],
+    citations: [BAIN_LONDON_AI, F_S21B, F_S32],
   },
 
   // ---------- §2 Finance / banking (FIN) ----------
@@ -114,12 +88,6 @@ export const FINANCE_RULES: CvRule[] = [
     citations: [F_S3, F_S9, F_S7],
   },
   {
-    id: "FIN-02", sectors: FIN, dimension: "uk", check: "code", checker: "uk_grades", severity: "major", evidence: "B",
-    statement: "Show your academic record: state a 2:1 or above (or on track for one) and your A-levels or IB with grades. A higher grade earns no extra credit.",
-    llmGuidance: "Pass when a degree grade of 2:1 or above, or a predicted 2:1, is stated. Never give extra credit for a higher grade (a First, a higher percentage or a rank earns nothing more). An A-level/IB line with grades should also be present. No grades at all is critical via FCQ-04. Never score employer or university brand.",
-    citations: [F_S7_UCAS, F_S8, F_S9, F_S35],
-  },
-  {
     id: "FIN-03", sectors: FIN, dimension: "uk", check: "llm", severity: "minor", evidence: "C",
     statement: "List academic distinctions like scholarships, prizes, Dean's list or a cohort rank (\"Top 5% of cohort\") — they're a bonus.",
     llmGuidance: "Does the CV list at least one academic distinction (scholarship, prize, award, Dean's list or cohort rank)? (Bonus rule: answer not_applicable rather than fail when none is listed.)",
@@ -130,7 +98,7 @@ export const FINANCE_RULES: CvRule[] = [
   {
     id: "FIN-04", sectors: FIN, dimension: "impact", check: "llm", severity: "major", evidence: "B",
     statement: "Show real commitment to finance: a society role, spring week, competition, or a portfolio you can talk about.",
-    llmGuidance: "Does the CV show committee-level or competition/insight evidence of commitment to finance — a finance society committee role, a spring week or insight day, a virtual internship, a stock-pitch or trading competition, or a personal portfolio the candidate can discuss?",
+    llmGuidance: "Does the CV show committee-level or competition/insight evidence of commitment to finance — a finance society committee role, a spring week or insight day, a virtual work experience programme, a stock-pitch or trading competition, or a personal portfolio the candidate can discuss?",
     passExample: "Vice-President, UCL Investment Society; organised a 150-attendee markets panel; Spring Week, Barclays 2025",
     failExample: "Member, Finance Society",
     yearAdjust: { "1st": { severity: "minor" } },
@@ -152,9 +120,9 @@ export const FINANCE_RULES: CvRule[] = [
   },
   {
     id: "FIN-07", sectors: FIN, dimension: "relevance", check: "llm", severity: "major", evidence: "B",
-    statement: "Include a technical skills line: Excel (modelling, pivot tables, VBA), PowerPoint, financial modelling or valuation (DCF, comps, LBO), Bloomberg/Capital IQ/FactSet, and Python/SQL for markets or asset management.",
-    llmGuidance: "Does the CV list finance-relevant technical skills — Excel modelling, financial modelling or valuation (DCF, comps, LBO), a data terminal (Bloomberg, Capital IQ, FactSet), or Python/SQL — backed by evidence?",
-    passExample: "Built a DCF of Tesco in Excel for the society's stock pitch; Bloomberg Market Concepts certificate",
+    statement: "Include a technical skills line: Excel (modelling, pivot tables, VBA), PowerPoint, financial modelling or valuation (DCF, comps, LBO), and Python/SQL for markets or asset management. Paid courses and terminal certificates (e.g. Bloomberg Market Concepts) are optional extras, never required.",
+    llmGuidance: "Does the CV list finance-relevant technical skills — Excel modelling, financial modelling or valuation (DCF, comps, LBO), or Python/SQL — backed by evidence? A data-terminal course or certificate (e.g. Bloomberg Market Concepts) can count towards a pass, but its absence is never a reason to fail.",
+    passExample: "Built a DCF of Tesco in Excel for the society's stock pitch",
     failExample: "Skills: Microsoft Office, communication",
     yearAdjust: { "1st": { severity: "minor" } },
     citations: [F_S7, F_S8],
@@ -167,38 +135,33 @@ export const FINANCE_RULES: CvRule[] = [
   },
   {
     id: "FIN-09", sectors: FIN, dimension: "relevance", check: "llm", severity: "minor", evidence: "D",
-    statement: "List languages with a level (CEFR, or native/fluent/professional) — especially useful for EMEA desks and coverage roles.",
-    llmGuidance: "Is every listed spoken language paired with a level (CEFR A1–C2, native, fluent or professional working)? (Not applicable if no languages are listed.)",
+    statement: "List languages with a level (CEFR, or native/fluent/professional) — useful for EMEA desks and coverage roles. This is a Placed convention, not a sourced rule.",
+    llmGuidance: "Is every listed spoken language paired with a level (CEFR A1–C2, native, fluent, professional working, or the placeholder [LEVEL], which stands for a stated level)? (Not applicable if no languages are listed.)",
     passExample: "Spanish (C1), Mandarin (B1)",
     failExample: "Languages: Spanish, Mandarin",
     citations: [],
   },
   {
-    id: "FIN-10", sectors: FIN, dimension: "clarity", check: "code", checker: "summary_length", severity: "minor", evidence: "C",
-    statement: "A profile or objective is optional for students. If you include one, keep it to two lines at most; leaving it out is fine.",
-    llmGuidance: "Never penalise absence; a profile longer than 3 lines is a minor flag. Sources conflict: eFinancialCareers recommends a short keyword-rich summary, while UK university and Goldman Sachs templates omit it.",
-    citations: [F_S8, F_S1, F_S3],
-  },
-  {
     id: "FIN-11", sectors: FIN, dimension: "relevance", check: "llm", severity: "minor", evidence: "C",
-    statement: "Passing CFA Level I is a plus, especially for asset management or research — but it never replaces good grades.",
-    llmGuidance: "Does the CV state that CFA Level I has been passed? (Bonus rule: answer not_applicable rather than fail when it is absent.)",
-    passExample: "CFA Level I — passed Aug 2025",
+    statement: "Passing Level I of the CFA Program is a plus, especially for asset management or research — but it never replaces good grades. Use CFA Institute's wording: \"Passed Level I of the CFA Program\", not \"CFA Level I\".",
+    llmGuidance: "Does the CV state that Level I of the CFA Program has been passed? (Bonus rule: answer not_applicable rather than fail when it is absent.)",
+    passExample: "Passed Level I of the CFA Program (Aug 2025)",
     failExample: "Interested in finance qualifications",
-    citations: [F_S8, F_S36],
+    citations: [CFA_TRADEMARK, F_S8, F_S36],
   },
   {
     id: "FIN-12", sectors: FIN, dimension: "relevance", check: "llm", severity: "major", evidence: "A",
-    statement: "Avoid red flags: the wrong firm's name, a division interest your CV doesn't back up, unexplained gaps, bullets over two lines, or school-level detail on a penultimate-year CV.",
-    llmGuidance: "Is the CV free of banking red flags: another firm's name in the profile, a stated division interest the CV doesn't support, unexplained gaps, bullets over two lines, or GCSE-level detail on a penultimate-year CV?",
+    statement: "Avoid red flags: another firm's name in your profile, a division interest your CV doesn't back up, bullets over two lines, or a subject-by-subject GCSE list on a penultimate-year CV (one summary line is fine).",
+    llmGuidance: "Is the CV free of banking red flags: another firm's name in the profile, a stated division interest the CV doesn't support, bullets over two lines, or a paragraph or per-subject list of GCSEs/AS-levels on a penultimate-year CV? (A single GCSE summary line such as '11 GCSEs incl. Maths 9' is fine.)",
     passExample: "Profile names the target bank correctly; bullets fit on one line each",
     failExample: "Profile reads 'keen to join Goldman Sachs' on an application to Barclays",
     citations: [F_S36, F_S2],
   },
   {
-    id: "FIN-13", sectors: FIN, dimension: "relevance", check: "llm", severity: "major", evidence: "B",
+    id: "FIN-13", sectors: FIN, dimension: "relevance", check: "llm", severity: "major", evidence: "C",
     statement: "For asset management, show investment thinking — a stock pitch with a thesis and outcome, an investment club, or a portfolio with a disciplined process — not just \"interest in markets\".",
     llmGuidance: "For asset-management roles, does the CV show investment reasoning (a thesis, a process, an outcome) rather than only a stated interest in markets? (Not applicable for other roles.)",
+    needs: ["variant"],
     passExample: "Pitched a long on Unilever: thesis on pricing power; position returned 12% over 6 months",
     failExample: "Keen interest in financial markets and investing",
     citations: [F_S37],
@@ -207,6 +170,7 @@ export const FINANCE_RULES: CvRule[] = [
     id: "FIN-14", sectors: FIN, dimension: "relevance", check: "llm", severity: "major", evidence: "D",
     statement: "For markets/sales & trading, show numeracy, quick decisions and communication — trading competitions, mental maths, debating, sales roles — plus macro awareness.",
     llmGuidance: "For markets/S&T roles, does the CV show at least one numeracy, quick-decision or communication signal (trading competition, mental-maths result, debating, sales role) or macro awareness? (Not applicable for other roles.)",
+    needs: ["variant"],
     passExample: "Top 10 of 300 in the Rotman trading competition; write a weekly FX note for the investment society",
     failExample: "Interested in markets",
     citations: [F_S1],
@@ -223,17 +187,17 @@ export const FINANCE_RULES: CvRule[] = [
   },
   {
     id: "QNT-02", sectors: QNT, dimension: "relevance", check: "llm", severity: "major", evidence: "A",
-    statement: "List competition results with rankings: maths or physics olympiads (UKMT, BMO, IMO), Putnam, Kaggle, trading competitions, or chess and poker ratings.",
-    llmGuidance: "Does the CV state a result (rank, medal or percentile) in at least one maths, programming, data or trading competition, or a game rating?",
+    statement: "If you have a competition result, state the level reached: maths or physics olympiads (UKMT, BMO, IMO), Putnam, Kaggle, trading competitions, or chess and poker ratings. No competitions is fine.",
+    llmGuidance: "If the CV lists any maths, programming, data or trading competition or game rating, does it state a result (rank, medal, round reached or percentile)? (Not applicable if no competitions or ratings are listed.)",
     passExample: "UKMT British Mathematical Olympiad, Round 2 qualifier; chess ECF 1850",
     failExample: "Participated in some competitions",
-    yearAdjust: { "1st": { skip: true } },
+    yearAdjust: { "1st": { severity: "minor" } },
     citations: [F_S12, F_S17, F_S36],
   },
   {
     id: "QNT-03", sectors: QNT, dimension: "relevance", check: "llm", severity: "major", evidence: "A",
     statement: "List your programming languages honestly: Python is near-universal, C++ matters for research and dev roles, and Java, OCaml or Rust are a bonus.",
-    llmGuidance: "For quant research or dev roles, does the programming-language list include Python or C++, with an honest proficiency? (For quant trading roles, answer yes if any language list is present.)",
+    llmGuidance: "Does the CV list at least one programming language (e.g. Python, C++), with no inflated proficiency claim that nothing on the CV supports?",
     passExample: "Languages: Python (proficient), C++ (familiar)",
     failExample: "No programming languages listed",
     yearAdjust: { "1st": { severity: "minor" } },
@@ -281,12 +245,6 @@ export const FINANCE_RULES: CvRule[] = [
     citations: [F_S13, F_S14, F_S16],
   },
   {
-    id: "QNT-09", sectors: QNT, dimension: "clarity", check: "code", checker: "page_count", params: { maxPages: 1 }, severity: "major", evidence: "A",
-    statement: "Keep it clear and concise on one page. Put extra detail in a separate document; IMC and Jane Street don't need a cover letter.",
-    llmGuidance: "Also flag cover-letter-style paragraphs inside the CV.",
-    citations: [F_S15, F_S13],
-  },
-  {
     id: "QNT-10", sectors: QNT, dimension: "impact", check: "llm", severity: "minor", evidence: "A",
     statement: "Show collaboration and communication — tutoring, TA roles, team competitions. Quant firms stress humility and teamwork.",
     llmGuidance: "Does the CV show at least one example of collaboration or communication (tutoring, TA work, team competition) with the candidate's role stated?",
@@ -298,28 +256,16 @@ export const FINANCE_RULES: CvRule[] = [
     id: "QNT-11", sectors: QNT, dimension: "relevance", check: "llm", severity: "minor", evidence: "B",
     statement: "For research or dev roles, show engineering practice: testing, version control (Git) and documentation.",
     llmGuidance: "For research or dev roles, does the CV mention engineering practice (Git, unit tests, CI or documentation)? (Not applicable for trading roles.)",
+    needs: ["variant"],
     passExample: "Back-tester with pytest unit tests and GitHub Actions CI",
     failExample: "Code projects with no mention of testing or version control",
     citations: [F_S12],
   },
-  {
-    id: "QNT-12", sectors: QNT, dimension: "uk", check: "code", checker: "uk_grades", severity: "major", evidence: "B",
-    statement: "State your grade if it's a 2:1 or above, or a predicted 2:1. Firms differ — Jane Street has no grade requirement — so missing grades are a major flag, not a rejection, and a higher grade earns no extra credit.",
-    llmGuidance: "Pass when a degree grade of 2:1 or above, or a predicted 2:1, is stated. Never give extra credit for a higher grade (a First, a higher percentage or a rank earns nothing more). Never score employer or university brand.",
-    citations: [F_S13, F_S16, F_S1],
-  },
 
   // ---------- §4 Consulting (CON) ----------
   {
-    id: "CON-01", sectors: CON, dimension: "uk", check: "code", checker: "uk_grades", severity: "critical", evidence: "B",
-    statement: "State your academics clearly: BCG UK asks for at least a 2:1, and Bain wants detail on qualifications and grades. State a 2:1 or above, or a predicted 2:1; a higher grade earns no extra credit. Big 4 firms are more flexible.",
-    llmGuidance: "Pass when a degree grade of 2:1 or above, or a predicted 2:1, is stated. Never give extra credit for a higher grade (a First, a higher percentage or a rank earns nothing more). MBB/strategy: no grade stated is critical. Big 4: major (PwC dropped its 2:1 requirement; Deloitte collects GCSE/A-level/UCAS via its form). Never score employer or university brand.",
-    citations: [F_S24, F_S23, F_S22, F_S29, F_S31],
-  },
-  {
-    id: "CON-02", sectors: CON, dimension: "impact", check: "code", checker: "leadership_lexicon", severity: "critical", evidence: "A",
+    id: "CON-02", sectors: CON, dimension: "impact", check: "code", checker: "leadership_lexicon", severity: "major", evidence: "A",
     statement: "Show leadership with scope and outcome: positions of responsibility, founding or growing something, leading a team through a challenge. Say \"I\", not \"we\", with strong verbs (\"trained\", \"organised\"), not \"did\".",
-    llmGuidance: "Critical for MBB, major for Big 4. Also grade scope (team size, budget, change achieved) and the 'we'-ratio (above 0.5 triggers a warning).",
     citations: [F_S22, F_S23, F_S24, F_S25],
   },
   {
@@ -330,13 +276,6 @@ export const FINANCE_RULES: CvRule[] = [
     failExample: "Worked on a project for the society",
     allowPartial: true,
     citations: [F_S21, F_S24, F_S2],
-  },
-  {
-    id: "CON-04", sectors: CON, dimension: "impact", check: "code", checker: "quantified_bullets", params: { threshold: 0.5 }, severity: "critical", evidence: "A",
-    statement: "Quantify your impact everywhere: show why your work mattered and what changed because of you.",
-    llmGuidance: "Consulting thresholds: 30% of bullets with numbers in 1st year, 50% penultimate, 60% final year/Master's. Critical for MBB, major for Big 4.",
-    yearAdjust: { "1st": { threshold: 0.3 }, final: { threshold: 0.6 }, masters: { threshold: 0.6 } },
-    citations: [F_S22, F_S2, F_S23],
   },
   {
     id: "CON-05", sectors: CON, dimension: "impact", check: "llm", severity: "major", evidence: "A",

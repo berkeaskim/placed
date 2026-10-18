@@ -110,8 +110,8 @@ describe("aggregate", () => {
   it("labels by band", () => {
     expect([liLabel(85), liLabel(70), liLabel(59), liLabel(20)]).toEqual(["Ready", "Nearly there", "Needs work", "Starter"]);
   });
-  it("a critical fail caps at 59 and leads the fix list as a risk", () => {
-    const results = rules.filter((r) => r.dimension !== "presence").map((r) => ({ ruleId: r.id, status: r.id === "LI-GEN-01" ? "fail" as const : "pass" as const, evidenceLine: null, fix: null }));
+  it("a quoted critical fail on B evidence caps at 59 and leads the fix list as a risk", () => {
+    const results = rules.filter((r) => r.dimension !== "presence").map((r) => ({ ruleId: r.id, status: r.id === "LI-GEN-01" ? "fail" as const : "pass" as const, evidenceLine: r.id === "LI-GEN-01" ? "September 2024 - Present" : null, fix: null }));
     const s = aggregateLiScore({ rules, results, sector: "data_analytics", year: "penultimate", facts: { nearlyEmpty: false } });
     expect(s.total).toBe(59);
     expect(s.capsApplied).toEqual([CRITICAL_CAP_LABEL]);
@@ -130,12 +130,12 @@ describe("aggregate", () => {
 });
 
 describe("scoreLinkedIn end to end (stub judge)", () => {
-  it("scores the demo persona: date contradiction caps at 59, tips separate, uncovered rules counted", async () => {
+  it("scores the demo persona: one org's date mismatch is a major 'check this', not a cap (08 #1)", async () => {
     const s = await scoreLinkedIn({ li, rawText: TEXT, cv: AYSE_CV, sector: "data_analytics", year: "2nd", today: TODAY, judge: naJudge });
-    expect(s.total).toBeLessThanOrEqual(59);
-    expect(s.capsApplied).toContain(CRITICAL_CAP_LABEL);
-    expect(s.fixes[0].ruleId).toBe("LI-GEN-01");
-    expect(s.fixes[0].fix).toContain("Which is right?");
+    expect(s.capsApplied).not.toContain(CRITICAL_CAP_LABEL);
+    const gen01 = s.fixes.find((f) => f.ruleId === "LI-GEN-01")!;
+    expect(gen01).toMatchObject({ severity: "major", risk: false });
+    expect(gen01.fix).toMatch(/^Check this/);
     expect(s.tips.length).toBeGreaterThan(0);
     expect(s.notCovered).toBeGreaterThan(0);
     expect(s.importance.level).toBe("medium");

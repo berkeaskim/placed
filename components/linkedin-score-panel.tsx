@@ -26,6 +26,12 @@ const PARSE_WARNING: Record<string, string> = {
   no_experience_section: "We couldn't find an Experience section on your profile.",
   no_education_section: "We couldn't find an Education section on your profile.",
   experience_unparsed: "We found an Experience section but couldn't read its dates.",
+  archive_no_skills_file: "Your archive had no Skills.csv, so skills checks weren't run. Request Skills too next time.",
+  skills_partial: "Only your first few skills loaded, so checks that need the full list weren't run.",
+};
+/** Which input produced the score: each sees different sections, so scores from different inputs aren't comparable (08 #4). */
+const SOURCE_LABEL: Record<NonNullable<LiPanelData["source"]>, string> = {
+  pdf: "your LinkedIn PDF export", archive: "your LinkedIn data download", extension: "your profile page (Placed extension)", url: "your public profile page",
 };
 
 function Source({ fix }: { fix: LiFix }) {
@@ -70,7 +76,7 @@ export function LinkedInScorePanel({ data }: { data: LiPanelData }) {
   return (
     <div className="flex w-full flex-col gap-4">
       <p className="rounded-2xl bg-[#F6F6FA] px-4 py-3 text-sm text-[#3F3F4C]">
-        <b>How much LinkedIn matters for {label}: {LEVEL_LABEL[data.importance.level]}.</b> {data.importance.note}
+        <b title="Based on what careers services and firms say, not measured data">How much LinkedIn matters for {label}: {LEVEL_LABEL[data.importance.level]} (careers-service view).</b> {data.importance.note}
       </p>
 
       {data.capsApplied.map((c) => (
@@ -80,7 +86,7 @@ export function LinkedInScorePanel({ data }: { data: LiPanelData }) {
       {risks.length > 0 && (
         <section aria-labelledby="li-risk-h" className="flex flex-col gap-3 rounded-[20px] border-2 border-[#F2B8A6] bg-[#FFF6F3] p-5">
           <h3 id="li-risk-h" className="text-base font-bold text-[#9A2E0B]">Fix these first</h3>
-          <p className="text-sm text-[#5B5B6B]">These could actively cost you an offer if a recruiter compares your profile with your application.</p>
+          <p className="text-sm text-[#5B5B6B]">Worth fixing first: if someone compares your profile with your application, these are the things that would raise questions.</p>
           <ol className="flex flex-col gap-3">
             {risks.map((f) => <li key={f.ruleId} className="flex flex-col gap-2 border-t border-[#F5D5CB] pt-3 first:border-t-0 first:pt-0"><FixBody fix={f} /></li>)}
           </ol>
@@ -124,15 +130,17 @@ export function LinkedInScorePanel({ data }: { data: LiPanelData }) {
         {data.aiUnavailable && (
           <p role="status" className="rounded-xl bg-[#FFF1DC] px-3 py-2 text-sm text-[#7A4100]"><b>AI review unavailable — showing the automatic checks only.</b> Upload again in a moment for the full review.</p>
         )}
-        {!data.hasCv && <p className="rounded-xl bg-[#F6F6FA] px-3 py-2 text-sm text-[#3F3F4C]">Upload your CV too and we&apos;ll check your LinkedIn says the same thing. Mismatches are what recruiters notice.</p>}
+        {!data.hasCv && <p className="rounded-xl bg-[#F6F6FA] px-3 py-2 text-sm text-[#3F3F4C]">Upload your CV too and we&apos;ll check both say the same thing. If an interviewer looks you up, a mismatch is hard to explain.</p>}
         <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-[#5B5B6B]">
           <span className="font-semibold text-[#16161D]">{rulesPassedLabel(data.passed, data.assessed)}</span>
-          {data.notCovered > 0 && <span>{data.notCovered} need a screenshot, not counted</span>}
+          {data.notCovered > 0 && <span>{data.notCovered} need sections this input doesn&apos;t include, not counted</span>}
           {data.couldNotAssess > 0 && <span>{data.couldNotAssess} couldn&apos;t assess</span>}
         </div>
         <p className="text-xs leading-snug text-[#5B5B6B]">
           Measures how your profile comes across when a recruiter or contact looks you up. Recruiters may look you up; LinkedIn rarely decides UK graduate applications on its own.
+          {data.source && <> Scored from {SOURCE_LABEL[data.source]}; a different input can see different sections, so compare scores from the same one.</>}
         </p>
+        <p className="text-xs leading-snug text-[#5B5B6B]">On LinkedIn, writing &ldquo;I&rdquo; is fine. On your CV, drop it and start each bullet with a verb.</p>
       </section>
 
       {rest.length > 0 && (
@@ -147,6 +155,7 @@ export function LinkedInScorePanel({ data }: { data: LiPanelData }) {
       {data.tips.length > 0 && (
         <section aria-labelledby="li-tips-h" className="flex flex-col gap-2 rounded-[20px] border border-dashed border-[#DCDCE6] bg-white p-5">
           <h3 id="li-tips-h" className="text-sm font-bold">Presence tips <span className="font-normal text-[#5B5B6B]">· these don&apos;t affect your score</span></h3>
+          <p className="text-xs text-[#5B5B6B]">LinkedIn&apos;s people search also ranks on network signals, so connections do help people find you. Placed doesn&apos;t score them, because they depend on who you already know.</p>
           <ul className="flex list-disc flex-col gap-1.5 pl-5 text-sm text-[#3F3F4C]">{data.tips.map((t) => <li key={t.ruleId}>{t.statement}</li>)}</ul>
         </section>
       )}

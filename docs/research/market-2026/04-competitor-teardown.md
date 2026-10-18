@@ -1,6 +1,6 @@
 # 04 — Competitor teardown: CV scoring and tailoring (2025–2026)
 
-Researcher 4 of 6 · written 2026-10-13 · all URLs accessed 2026-10-13 unless stated otherwise.
+Researcher 4 of 6 · written 2026-10-13 · all URLs accessed 2026-10-13 unless stated otherwise · ISE figures updated 2026-10-18 against `docs/research/audit-2026-10-18/10-fit-ats-market.md`.
 
 **Source labels used throughout**
 
@@ -30,7 +30,7 @@ Pricing is in USD unless stated otherwise, and it changes often. Use these numbe
   - A 2026 test caught a checker inventing "Reduced regressions by 20%" [3P].
 - **Score targets push students towards keyword stuffing.** Published targets: Jobscan ≥75% [V], Simplify ≥70% [3P summary of help doc], Resume Worded Targeted ≥85% [3P], Kickresume ≥75% [V]. Reviewers note that chasing 95% makes CVs robotic [3P].
 - **UK university tools are generic and institution-licensed:** VMock, CV360, CareerSet, Shortlist.me. They score on a 0–100 scale with a "green zone" (VMock 86+, CV360 85+). None weights by UK sector (IB / consulting / quant / tech), and none offers tailoring with provenance.
-- **Employers are reacting.** ISE reports 140 applications per graduate vacancy, a "sea of sameness" from AI use, and firms such as Shoosmiths asking candidates *how* they used AI [V]. Honest, traceable tailoring is a credible counter-position, not just a feature.
+- **Employers are reacting.** ISE reports 141 applications per graduate vacancy (2026; 140 in 2025), a "sea of sameness" from AI use, and firms such as Shoosmiths asking candidates *how* they used AI [V]. Honest, traceable tailoring is a credible counter-position, not just a feature.
 
 ---
 
@@ -339,16 +339,17 @@ Pricing is in USD unless stated otherwise, and it changes often. Use these numbe
 - Sources: https://blog.loopcv.pro/lazyapply-review/ ; https://blog.theinterviewguys.com/?p=10535 ; https://au.trustpilot.com/review/lazyapply.com
 
 **Employer reaction [V] (ISE, 2025-10-27, https://ise.org.uk/knowledge/insights/499/how_can_employers_manage_and_adapt_to_mass_applications):**
-- Applications per graduate vacancy: ~40 twenty years ago → ~86 (2022/23) → **140 (2024), unchanged in 2025**.
+- Applications per graduate vacancy: ~40 twenty years ago → ~86 (2022/23) → **140 (2024), unchanged in 2025** → **141 in 2026** (ISE Student Recruitment Report 2026, 14 Oct 2026, https://ise.org.uk/knowledge/insights/615/graduate_jobs_stabilise_but_ai_use_disrupts_recruitment, accessed 2026-10-18 [V]).
 - Recruiters describe a "sea of sameness."
 - Tactics:
   - closing application windows earlier;
   - AI detection, which has reliability issues;
   - Shoosmiths asks candidates explicitly *how they used AI*.
 - Consensus: "adaptation with transparency beats prohibition."
+- 2026 update: ISE now lists "automated eligibility screening", shorter windows and limiting roles or programmes per candidate as volume tactics; 82% of employers give candidates AI guidance and up to 64% accept candidate AI use, usually for CVs and applications (ISE 2026 [V]).
 
 **Press [3P]:**
-- 67% of UK hiring managers say AI-generated applications slowed hiring, citing "fabricated work histories."
+- 67% of UK hiring managers say AI-generated applications slowed hiring, citing "fabricated work histories." ⚠ Unverifiable (2026-10-18 re-check): keep out of UI copy.
 - Source: https://www.staffingindustry.com/news/global-daily-news/ai-generated-cvs-flood-employers-and-slow-hiring-in-the-uk (direct fetch 403; figure from search snippet [NV]).
 
 **Implication:**
@@ -459,7 +460,7 @@ Effort assumes the spec's planned modules exist (§6–§8): rule library, `judg
 | 11 | **"Not applicable to me" rule dismissal** with a visible reason (CV360 advice made structural). | 1 | ★★☆☆☆ | Low | Keeps the score honest without hiding caps. |
 | 12 | **Interview-defensibility nudge:** for each changed bullet, a "Could you explain this in an interview?" prompt with one likely question. | 2 | ★★☆☆☆ | Med (one LLM call) | Answers the Reddit complaint about being "destroyed in interviews defending resumes they didn't write". |
 
-**Recommended demo order:** #4 sector switch → #3 source chip → tailor → #2 provenance → #1 caught-it → #6 confirm-number XP. Optionally close with #10, a slide citing ISE 140 apps/vacancy plus "sea of sameness".
+**Recommended demo order:** #4 sector switch → #3 source chip → tailor → #2 provenance → #1 caught-it → #6 confirm-number XP. Optionally close with #10, a slide citing ISE 141 apps/vacancy (2026) plus "sea of sameness".
 
 **Positioning line (draft):**
 - "Every other CV tool gives you a number and a rewrite. Placed gives you the receipts: where each rule comes from, and which line of *your* CV backs every claim."

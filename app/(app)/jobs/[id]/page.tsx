@@ -5,16 +5,19 @@ import { and, eq } from "drizzle-orm";
 import { requireUser } from "@/lib/auth/local-user";
 import { universityFor } from "@/lib/profile/university";
 import { db } from "@/lib/db/client";
-import { applications } from "@/lib/db/schema";
+import { applications, profiles } from "@/lib/db/schema";
 import { getActiveCv, getJob, getProfile, toStudent } from "@/lib/db/queries";
 import { coverageFor } from "@/lib/scoring/coverage";
-import { scoreFit } from "@/lib/scoring/fit";
+import { displayLabel, scoreFit } from "@/lib/scoring/fit";
+import { cvGradeOf } from "@/lib/scoring/eligibility";
+import { hasEligibilityOverride } from "@/lib/feed/overrides";
 import { closingLabel, todayLondon } from "@/lib/scoring/dates";
-import { FINDABILITY_HINT, findabilityBand, keywordStuffing, shouldWarnStuffing } from "@/lib/scoring/requirements";
+import { FINDABILITY_HINT, FINDABILITY_NOTE, findabilityBand, keywordStuffing, shouldWarnStuffing } from "@/lib/scoring/requirements";
 import { clicheDensity } from "@/lib/cv/cliches";
 import { env } from "@/lib/env";
 import { isUuid } from "@/lib/feed/save-result";
 import { applyXp } from "@/lib/feed/rank";
+import { EligibilityCheck } from "./eligibility-check";
 import { safeHttpUrl } from "@/lib/text/url";
 import { CompanyMark } from "@/components/company-mark";
 import { CuratedChip } from "@/components/curated-chip";
@@ -66,7 +69,8 @@ export default async function JobPage({ params, searchParams }: { params: Promis
   const today = todayLondon();
   const student = toStudent(profile);
   const coverage = coverageFor(job, cv?.parsed ?? null, student.skills);
-  const fit = scoreFit(student, job, coverage, today);
+  const course = db.select({ course: profiles.course }).from(profiles).where(eq(profiles.user_id, user.id)).get()?.course ?? null;
+  const fit = scoreFit(student, job, coverage, today, { cvGrade: cvGradeOf(cv?.parsed), course, overridden: hasEligibilityOverride(user.id, job.id) });
   const band = findabilityBand(coverage);
   const stuffing = cv
     ? shouldWarnStuffing({
@@ -110,14 +114,13 @@ export default async function JobPage({ params, searchParams }: { params: Promis
           <section className="flex flex-col gap-3 rounded-[20px] border bg-white p-5" aria-label="How you match">
             <div className="flex items-center justify-between gap-3">
               <div className="flex flex-wrap items-center gap-2">
-                <FitBadge label={fit.label} score={fit.global} />
-                <span className="chip-xp">+{applyXp(fit.label)} XP</span>
+                <FitBadge label={displayLabel(fit)} score={fit.global} />
+                <span className="chip-xp">+{applyXp()} XP</span>
               </div>
               <SaveButton key={status === null ? "unsaved" : "saved"} jobId={job.id} initiallySaved={status !== null} />
             </div>
-            {fit.gates.filter((g) => !g.passed).map((g) => (
-              <p key={g.key} className="rounded-xl bg-[#FFF1DC] px-3 py-2 text-sm font-semibold text-[#7A4100]">{g.reason}</p>
-            ))}
+            <EligibilityCheck jobId={job.id} gates={fit.gates} />
+            {fit.mustCap && <p className="text-sm text-[#7A4100]">{fit.mustCap}, so this reads as a stretch at best.</p>}
             {fit.softFlags.map((f) => <p key={f} className="text-sm text-[#7A4100]">{f}</p>)}
             {fit.notes.map((n) => <p key={n} className="text-sm text-[#5B5B6B]">{n}</p>)}
             <ExplainPanel jobId={job.id}>
@@ -129,11 +132,11 @@ export default async function JobPage({ params, searchParams }: { params: Promis
                     : !detail.unscoredNote && <span className="text-xs text-muted-foreground">Couldn&apos;t read the requirements</span>}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {band ? FINDABILITY_HINT[band] : detail.unscoredNote ? `${detail.unscoredNote}.` : "This posting doesn't list skills we can match."} How easily a keyword search would surface your CV for this role.
+                  {band ? FINDABILITY_HINT[band] : detail.unscoredNote ? `${detail.unscoredNote}.` : "This posting doesn't list skills we can match."} How easily a keyword search would surface your CV for this role.{band ? ` ${FINDABILITY_NOTE}` : ""}
                 </p>
                 {stuffing && (
                   <p className="mt-1 rounded-lg bg-[#FFF1DC] px-2.5 py-2 text-xs font-semibold text-[#7A4100]" role="note">
-                    Your CV matches almost every keyword, but it reads as keyword-heavy or full of stock phrases. Recruiters read CVs too: show each skill once, in a real example.
+                    Your CV repeats some keywords many times or leans on stock phrases. Recruiters read CVs too: show each skill once, in a real example.
                   </p>
                 )}
               </div>

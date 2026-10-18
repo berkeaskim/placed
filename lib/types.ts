@@ -73,12 +73,18 @@ export interface ArchetypeScore {
   why: string[];
 }
 
+/** How the student may work in the UK; null = not said (treated as no visa needed). */
+export const WORK_AUTH = ["uk_rtw", "student_visa", "graduate_visa", "needs_sponsorship"] as const;
+export type WorkAuth = (typeof WORK_AUTH)[number];
+
 export interface StudentProfile {
   year: Year;
   /** Expected graduation year; null/absent when the student hasn't said (eligibility then falls back to `year`). */
   gradYear?: number | null;
   locationPref: Region[];
+  /** Derived from workAuth: anything but UK right to work. Kept for callers that only need yes/no. */
   needsVisa: boolean;
+  workAuth?: WorkAuth | null;
   archetypes: ArchetypeScore[]; // sorted desc by score
   skills: string[]; // canonical skill names
 }

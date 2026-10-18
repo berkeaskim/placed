@@ -1,11 +1,12 @@
 import { and, asc, eq, gte, isNull, or, sql } from "drizzle-orm";
-import type { Archetype, ArchetypeScore, JobForScoring, ParsedCV, Region, StudentProfile, Year } from "@/lib/types";
+import type { Archetype, ArchetypeScore, JobForScoring, ParsedCV, Region, StudentProfile, WorkAuth, Year } from "@/lib/types";
+import { needsVisaFor, workAuthOf } from "@/lib/profile/work-auth";
 import { db } from "@/lib/db/client";
 import { companies, cvs, jobs, profiles } from "@/lib/db/schema";
 
 export type ProfileRow = {
-  user_id: string; display_name: string | null; year: Year | null; grad_year: number | null; field: string | null; location_pref: Region[];
-  needs_visa: boolean; target_archetype: Archetype | null; archetypes: ArchetypeScore[]; skills: string[];
+  user_id: string; display_name: string | null; year: Year | null; grad_year: number | null; field: string | null; course: string | null; location_pref: Region[];
+  needs_visa: boolean; work_auth?: WorkAuth | null; target_archetype: Archetype | null; archetypes: ArchetypeScore[]; skills: string[];
   onboarded: boolean; xp: number; level: number; streak_days: number; last_active_date: string | null;
 };
 
@@ -20,7 +21,8 @@ export function toStudent(p: ProfileRow): StudentProfile {
     year: p.year ?? "2nd",
     gradYear: p.grad_year ?? null,
     locationPref: p.location_pref ?? [],
-    needsVisa: p.needs_visa,
+    needsVisa: needsVisaFor(workAuthOf(p)),
+    workAuth: workAuthOf(p),
     archetypes: [...(p.archetypes ?? [])].sort((a, b) => b.score - a.score),
     skills: p.skills ?? [],
   };

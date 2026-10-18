@@ -157,7 +157,8 @@ export function parsePublicProfile(html: string, profileUrl: string): PublicProf
 
   const li: ParsedLinkedIn = {
     name, headline, location, profileUrl, links: [...new Set(links)], email: null,
-    topSkills: [], languages, certifications, honors, publications: [], about, experience, education,
+    topSkills: [], languages, certifications, honors, publications: [], about, experience, projects: [], education,
+    skillsScope: "none",
     sections: ["Summary", "Experience", "Education"].filter((_, k) => [about, experience.length, education.length][k]),
     warnings,
   };
@@ -167,7 +168,7 @@ export function parsePublicProfile(html: string, profileUrl: string): PublicProf
 /** Plain text in the export's order: what the judge quotes from and what code checks scan. */
 export function renderPublicText(li: ParsedLinkedIn): string {
   const out: string[] = [];
-  if (li.profileUrl) out.push("Contact", li.profileUrl, ...li.links);
+  if (li.profileUrl || li.links.length) out.push("Contact", ...(li.profileUrl ? [li.profileUrl] : []), ...li.links);
   if (li.topSkills.length) out.push("Top Skills", ...li.topSkills);
   if (li.languages.length) out.push("Languages", ...li.languages);
   if (li.certifications.length) out.push("Certifications", ...li.certifications);
@@ -177,6 +178,10 @@ export function renderPublicText(li: ParsedLinkedIn): string {
   if (li.experience.length) {
     out.push("Experience");
     for (const e of li.experience) out.push(e.company, e.title, e.dates, ...(e.location ? [e.location] : []), ...(e.description ? [e.description] : []));
+  }
+  if (li.projects.length) {
+    out.push("Projects");
+    for (const p of li.projects) out.push(p.title, ...(p.dates ? [p.dates] : []), ...(p.description ? [p.description] : []));
   }
   if (li.education.length) {
     out.push("Education");

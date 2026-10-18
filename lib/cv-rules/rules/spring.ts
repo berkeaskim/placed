@@ -32,8 +32,8 @@ export const SPRING_RULES: CvRule[] = [
   },
   {
     id: "SPR-04", sectors: "all", tracks: [...SPRING], dimension: "relevance", check: "llm", severity: "major", evidence: "B",
-    statement: "Show one thing you did because you're interested in this sector: an event, a virtual work experience, Bloomberg Market Concepts, a stock pitch, a competition, or a society you're active in. Membership alone is thin. An internship is not expected.",
-    llmGuidance: "Does the CV show at least one concrete, self-driven sign of interest in the sector of the target role, beyond membership alone? Counts: an insight day or spring week attended; a society event attended or organised; a named virtual work experience or job simulation (Forage, Bright Network); Bloomberg Market Concepts or another named course; a stock pitch, trading, case or coding competition; a personal portfolio or investing log; a blog or newsletter; regular named reading. Society membership plus one named activity passes. Never require an internship, a committee role or a finance employer. Never score employer, school or university brand.",
+    statement: "Show one thing you did because you're interested in this sector: an event, a virtual work experience, a free online course, a stock pitch, a competition, or a society you're active in. Membership alone is thin. An internship is not expected.",
+    llmGuidance: "Does the CV show at least one concrete, self-driven sign of interest in the sector of the target role, beyond membership alone? Counts: an insight day or spring week attended; a society event attended or organised; a named virtual work experience or job simulation (Forage, Bright Network); a named course (free or paid, e.g. Bloomberg Market Concepts; never require a paid one); a stock pitch, trading, case or coding competition; a personal portfolio or investing log; a blog or newsletter; regular named reading. Society membership plus one named activity passes. Never require an internship, a committee role or a finance employer. Never score employer, school or university brand.",
     passExample: "Investment Society (member): pitched a long on Tesco at the Oct 2026 stock-pitch night; Bloomberg Market Concepts (Sep 2026)",
     failExample: "Member, Finance Society",
     citations: [FINBOUND_SPRING_CV, BRIGHT_FIRST_YEAR],
@@ -71,10 +71,7 @@ export const SPRING_RULES: CvRule[] = [
 export const SPRING_ADJUST: Record<string, RuleAdjust> = {
   "G-11": { maxPages: 1 },                       // one page for every first-year CV
   "G-21": { severity: "minor" },                 // few outcomes yet; G-20 (action verbs) stays major
-  "G-22": { threshold: 0.2, severity: "minor" },
-  "GEN-04": { threshold: 0.2, severity: "minor" },
-  "FCQ-08": { threshold: 0.2, severity: "minor" },
-  "CON-04": { threshold: 0.25, severity: "major" },
+  "G-22": { threshold: 0.2, severity: "minor" },  // one quantification rule for every sector (audit 04#2)
   "G-30": { severity: "minor" },                 // spring adverts list almost no skills
   "G-33": { skip: true },                        // → SPR-03 (deterministic)
   "G-34": { severity: "major" },                 // extracurriculars carry a first-year CV
@@ -89,4 +86,8 @@ export const SPRING_ADJUST: Record<string, RuleAdjust> = {
   "CON-08": { severity: "minor" },               // case competitions are rare in first term
   "G-31": { skip: true },                        // no generic skills list for first-years
   "AU-03": { skip: true },                       // education first legitimately fills the top third
+  // SPR-01 is the education-first rule on this track: one detector, one rule (audit 04#2).
+  "FCQ-02": { skip: true },
+  "SWE-02": { skip: true },
+  "RES-02": { skip: true },
 };

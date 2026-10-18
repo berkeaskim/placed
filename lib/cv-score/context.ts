@@ -1,4 +1,4 @@
-import type { ParsedCV, Year } from "@/lib/types";
+import type { Archetype, ParsedCV, Year } from "@/lib/types";
 import type { SafetyReport } from "@/lib/cv/safety";
 import type { RuleStatus, Track } from "@/lib/cv-rules/types";
 
@@ -12,6 +12,8 @@ export type CvContext = {
   year: Year;
   /** Scoring track (absent = "standard"). */
   track?: Track;
+  /** Target sector: picks the sector's page limit and thresholds (sectorAdjust). Absent = the rule's defaults. */
+  sector?: Archetype;
   spellingErrors: string[] | null;
   /** Upload-time scanCvSafety() report (stored in cvs.parsed_json.safety). Absent = not scanned. */
   safety?: SafetyReport;

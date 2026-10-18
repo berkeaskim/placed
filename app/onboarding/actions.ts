@@ -7,6 +7,7 @@ import { db } from "@/lib/db/client";
 import { profiles } from "@/lib/db/schema";
 import { awardXP } from "@/lib/gamify/award";
 import { fieldForCourse } from "@/lib/profile/courses";
+import { needsVisaFor } from "@/lib/profile/work-auth";
 import { canonicalUniversity } from "@/lib/profile/uk-universities";
 import type { AwardResult } from "@/lib/gamify/core";
 import { OnboardingInput, type OnboardingInputT } from "@/lib/validation/onboarding";
@@ -22,7 +23,8 @@ export async function saveOnboarding(input: OnboardingInputT): Promise<{ award: 
       university: canonicalUniversity(parsed.data.university) ?? parsed.data.university,
       course, field: known ?? "Other",
       year: parsed.data.year, grad_year: parsed.data.gradYear ?? null, location_pref: [...new Set(parsed.data.locationPref)],
-      needs_visa: parsed.data.needsVisa, onboarded: true,
+      needs_visa: parsed.data.workAuth ? needsVisaFor(parsed.data.workAuth) : parsed.data.needsVisa,
+      work_auth: parsed.data.workAuth ?? (parsed.data.needsVisa ? "student_visa" : null), onboarded: true,
     }).where(eq(profiles.user_id, user.id)).run();
   } catch {
     return { error: "Couldn't save — try again." };

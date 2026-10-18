@@ -1,6 +1,6 @@
 import type { Archetype, Year } from "@/lib/types";
 import { CREDIT, EVID, SEV } from "@/lib/cv-score/aggregate";
-import { LI_DIMENSION_WEIGHTS, LI_DIMS, type Citation, type Evidence, type LiDimension, type LiResolvedRule, type Severity } from "@/lib/linkedin-rules";
+import { LI_DIMENSION_WEIGHTS, LI_DIMS, liEffectiveSeverity, type Citation, type Evidence, type LiDimension, type LiResolvedRule, type Severity } from "@/lib/linkedin-rules";
 import type { ScoredRuleResult } from "./context";
 
 /** Scored dimensions: presence is advisory (weight 0) and never enters the total. */
@@ -38,12 +38,25 @@ export type LiScore = {
   notCovered: number;
 };
 
-export function liEffectiveSeverity(rule: LiResolvedRule, sector: Archetype, year: Year): Severity {
-  return rule.yearAdjust?.[year]?.severity ?? rule.sectorAdjust?.[sector]?.severity ?? rule.severity;
-}
+export { liEffectiveSeverity };
 
-/** Facts the caps need that rule results alone don't carry. */
-export type LiFacts = { nearlyEmpty: boolean };
+/**
+ * Facts the caps need that rule results alone don't carry. `severityOverrides` sets one result's severity: a
+ * single CV date mismatch scores as major (08 #1); a code-detected investment promotion as critical (08 #14).
+ */
+export type LiFacts = { nearlyEmpty: boolean; severityOverrides?: Partial<Record<string, Severity>> };
+
+/** Deterministic results the scorer adds on top of the judge mark themselves with this detail prefix. */
+export const CODE_DETAIL = "code:";
+
+/**
+ * Only a failure we can stand behind caps the score at 59 (08 #2): a code check, a deterministic override, or an LLM
+ * fail that quotes a line it was verified against AND rests on evidence graded C or better.
+ */
+export function capEligible(rule: LiResolvedRule, x: ScoredRuleResult): boolean {
+  if (rule.check === "code" || x.detail?.startsWith(CODE_DETAIL)) return true;
+  return x.evidenceLine !== null && rule.evidence !== "D";
+}
 
 /** Same maths as aggregateCvScore (severity × evidence weights, renormalised over assessed dimensions), LinkedIn dimensions and caps. */
 export function aggregateLiScore(i: { rules: LiResolvedRule[]; results: ScoredRuleResult[]; sector: Archetype; year: Year; facts: LiFacts }): LiScore {
@@ -56,7 +69,7 @@ export function aggregateLiScore(i: { rules: LiResolvedRule[]; results: ScoredRu
     if (!rule || rule.advisory || rule.dimension === "presence" || rule.yearAdjust?.[i.year]?.skip) continue;
     if (x.status === "could_not_assess") { couldNotAssess++; continue; }
     if (x.status === "not_applicable") { if (x.detail?.startsWith("input:")) notCovered++; continue; }
-    const sev = liEffectiveSeverity(rule, i.sector, i.year);
+    const sev = i.facts.severityOverrides?.[rule.id] ?? liEffectiveSeverity(rule, i.sector, i.year);
     scored.push({ x, rule, sev, w: SEV[sev] * EVID[rule.evidence], credit: CREDIT[x.status] });
   }
 
@@ -74,7 +87,7 @@ export function aggregateLiScore(i: { rules: LiResolvedRule[]; results: ScoredRu
   let total = totalWeight ? active.reduce((n, d) => n + weights[d] * dimensions[d]!, 0) / totalWeight : 0;
 
   const capsApplied: string[] = [];
-  if (scored.some((s) => s.sev === "critical" && s.credit === 0)) { total = Math.min(total, CRITICAL_CAP); capsApplied.push(CRITICAL_CAP_LABEL); }
+  if (scored.some((s) => s.sev === "critical" && s.credit === 0 && capEligible(s.rule, s.x))) { total = Math.min(total, CRITICAL_CAP); capsApplied.push(CRITICAL_CAP_LABEL); }
   if (i.facts.nearlyEmpty && (i.year === "penultimate" || i.year === "final" || i.year === "masters")) {
     total = Math.min(total, EMPTY_PROFILE_CAP);
     capsApplied.push(EMPTY_PROFILE_CAP_LABEL);

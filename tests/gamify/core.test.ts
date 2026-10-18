@@ -15,9 +15,10 @@ describe("levelFromXp", () => {
 
 describe("xpFor", () => {
   it("rewards quality over volume", () => {
+    // flat (audit 10#3): a gated or low-fit role earns the same, so XP never amplifies a scorer error
     expect(xpFor({ type: "applied", fitLabel: "Strong fit" }, base)).toBe(50);
-    expect(xpFor({ type: "applied", fitLabel: "Stretch" }, base)).toBe(25);
-    expect(xpFor({ type: "applied", fitLabel: "Not recommended" }, base)).toBe(10);
+    expect(xpFor({ type: "applied", fitLabel: "Stretch" }, base)).toBe(50);
+    expect(xpFor({ type: "applied", fitLabel: "Not recommended" }, base)).toBe(50);
     expect(xpFor({ type: "rejected" }, base)).toBe(20);
     expect(xpFor({ type: "cover_letter_ready" }, base)).toBe(20);
   });

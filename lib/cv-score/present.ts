@@ -18,9 +18,22 @@ export function scoreBand(total: number): Band {
   return { label: "Needs work", bg: "#FDE7E1", fg: "#9A2E0B" };
 }
 
-const byLost = (a: Fix, b: Fix) => b.lostPoints - a.lostPoints || (a.ruleId < b.ruleId ? -1 : a.ruleId > b.ruleId ? 1 : 0);
+/** Real gain from fixing (04#5); rows stored before the audit only have the rounded lostPoints. */
+export const fixGain = (f: Pick<Fix, "lostPoints"> & { gain?: number }) => (typeof f.gain === "number" ? f.gain : f.lostPoints);
+const byLost = (a: Fix, b: Fix) => fixGain(b) - fixGain(a) || (a.ruleId < b.ruleId ? -1 : a.ruleId > b.ruleId ? 1 : 0);
 
-/** Next best fix = highest lostPoints (ties by ruleId); the rest follow in the same order, capped. */
+/**
+ * Neutral "worth" label for a fix (04#5, #23): the real gain, never "+0". Under one point reads "<1 pt"; while a cap
+ * holds the total down, a fix that can't lift it says so.
+ */
+export function fixWorthLabel(f: Pick<Fix, "lostPoints"> & { gain?: number }, capped = false): string {
+  const g = fixGain(f);
+  if (g < 0.05 && capped) return "after the cap is fixed";
+  const n = Math.round(g);
+  return n >= 1 ? `worth ~${n} pt${n === 1 ? "" : "s"}` : "worth <1 pt";
+}
+
+/** Next best fix = highest gain (ties by ruleId); the rest follow in the same order, capped. */
 export function splitFixes(fixes: Fix[], restLimit = 4): { next: Fix | null; rest: Fix[] } {
   const sorted = [...fixes].sort(byLost);
   return { next: sorted[0] ?? null, rest: sorted.slice(1, 1 + restLimit) };
@@ -55,6 +68,28 @@ export function historyTotals(rows: HistoryRow[]): number[] {
 
 export const rulesPassedLabel = (passed: number, assessed: number) => `Rules passed ${passed}/${assessed}`;
 export const couldntAssessLabel = (n: number) => (n > 0 ? `${n} couldn't assess` : null);
+
+/** "Provisional: 62–88" for a score with too little assessed to show one number (04#1). */
+export const provisionalLabel = (r: { low: number; high: number }) => `${r.low}–${r.high}`;
+
+/** Share of the rules (by weight) that got a verdict. */
+export const coverageLabel = (coverage: number) => `${Math.round(coverage * 100)}% of rules assessed`;
+
+/**
+ * Which AI judged this score (04#10): scores from different models aren't comparable. Local models are labelled
+ * experimental until one is validated against human labels.
+ */
+export function judgeLabel(scoredBy: string | null): string | null {
+  if (!scoredBy || scoredBy === "fixture" || scoredBy === "off") return null;
+  const [provider, ...rest] = scoredBy.split(":");
+  const model = rest.join(":") || "unknown model";
+  const name = provider === "anthropic" ? "Claude" : provider === "gemini" ? "Gemini" : provider === "ollama" ? "local model" : provider;
+  return provider === "ollama" ? `Judged by ${model} (${name}, experimental)` : `Judged by ${name} (${model})`;
+}
+
+/** What redaction does, shown in "How this score works" (replaces the scored G-37 guardrail, 04#14). */
+export const FAIRNESS_NOTE =
+  "We remove your name, contact details, visa status and sensitive personal terms before the AI reads your CV. University and school names are kept because rules check your education section; the AI is told not to consider their prestige.";
 
 export const disclaimer = (sector: Archetype) =>
   `Measures how well your CV follows evidence-based conventions for ${ARCHETYPE_LABELS[sector]}. It does not predict whether you'll get an interview.`;
