@@ -1,8 +1,8 @@
 import type { Signal } from "@/lib/playbooks";
 
 const GRADE = {
-  A: { cls: "bg-[#E3F6EE] text-[#0E6B4A]", label: "Evidence A" },
-  B: { cls: "bg-[#E3F6EE] text-[#0E6B4A]", label: "Evidence B" },
+  A: { cls: "bg-[#E3F6EE] text-[#0E6B4A]", label: "Employer + independent source (A)" },
+  B: { cls: "bg-[#EAF2FF] text-[#1F4E9E]", label: "Careers service or survey (B)" },
   C: { cls: "bg-[#FFF1DC] text-[#7A4100]", label: "Convention (C)" },
   D: { cls: "bg-[#F0F0F5] text-[#5B5B6B]", label: "Our view (D)" },
 } as const;

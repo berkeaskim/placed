@@ -109,9 +109,10 @@ describe("awardXP idempotency", () => {
     expect(second.xpGained).toBe(100);
   });
   it("playbook_done is once per ref", async () => {
-    const a = await awardXP(U, { type: "playbook_done", ref: "PB-DAT-P01" });
-    const b = await awardXP(U, { type: "playbook_done", ref: "PB-DAT-P01" });
-    const c = await awardXP(U, { type: "playbook_done", ref: "PB-DAT-P02" });
+    const e = { type: "playbook_done", effort: "2-4 weeks", signalValue: "cv_medium" } as const;
+    const a = await awardXP(U, { ...e, ref: "PB-DAT-P01" });
+    const b = await awardXP(U, { ...e, ref: "PB-DAT-P01" });
+    const c = await awardXP(U, { ...e, ref: "PB-DAT-P02" });
     expect([a.xpGained, b.xpGained, c.xpGained]).toEqual([40, 0, 40]);
   });
   it("rejects job events without a jobId before any write", async () => {
