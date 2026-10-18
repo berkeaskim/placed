@@ -1,5 +1,5 @@
 import { AiError, AI_UNAVAILABLE, generateStructured, runAi } from "./provider";
-import { SYSTEM_POST_BULLETS, escapeUntrusted, wrapJob } from "./prompts";
+import { SYSTEM_POST_BULLETS, escapeUntrusted } from "./prompts";
 import { PostBulletsOutput, type PostBulletsOutputT } from "./schemas";
 
 export type BankEntryRef = { id: string; org: string; title: string };
@@ -14,7 +14,7 @@ export async function extractPostBullets(postText: string, bankEntries: BankEntr
     schema: PostBulletsOutput,
     live: () => generateStructured({
       tier: "fast", thinking: "low", system: SYSTEM_POST_BULLETS, schema: PostBulletsOutput,
-      parts: [{ type: "text", text: `Existing CV entries:\n${list}\n\n${wrapJob(postText.slice(0, 8000))}` }],
+      parts: [{ type: "text", text: `Existing CV entries:\n${list}\n\n<linkedin_post>\n${escapeUntrusted(postText.slice(0, 8000))}\n</linkedin_post>` }],
     }),
     fallback: () => { throw new AiError(AI_UNAVAILABLE); },
   });

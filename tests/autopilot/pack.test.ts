@@ -15,7 +15,8 @@ describe("assemblePack (Monzo)", () => {
   it("groups each question", () => {
     expect(by("first_name")).toMatchObject({ group: "vault", value: "Ayşe" });
     expect(by("resume")).toMatchObject({ group: "vault", sourceLabel: "your tailored CV" });
-    expect(by("question_69481992")).toMatchObject({ group: "draft" });
+    // audit 09 #11: Monzo's "why are you excited to work for Monzo?" is a motivation prompt, so the letter writer owns it
+    expect(by("question_69481992")).toMatchObject({ group: "cover" });
     expect(by("question_69482005").group).toBe("confirm");              // RTW always confirm
     expect(by("question_69481993").group).toBe("yours");                // privacy notice = consent
     expect(by("question_69481997[]")).toMatchObject({ group: "vault", value: ["753686448"] }); // 2028
@@ -55,6 +56,10 @@ describe("assemblePack (Monzo)", () => {
     expect(canOpen(items, answers)).toBe(true);
   });
   it("fills drafts only when approved", () => {
+    // a non-motivation free-text question goes to the generic drafter
+    const relabelled = { ...form, fields: form.fields.map((f) => (f.target === "question_69481992" ? { ...f, label: "Tell us about a project you're proud of" } : f)) } as NormalizedForm;
+    const items = assemblePack(relabelled, AYSE_CORE, {}, { question_69481992: draft });
+    expect(items.find((i) => i.field.target === "question_69481992")).toMatchObject({ group: "draft" });
     const plan = toFillPlan(items, { question_69481992: { value: "My own words.", approved: false } });
     expect(plan.find((p) => p.target === "question_69481992")).toMatchObject({ mode: "yours", value: null });
     const ok = toFillPlan(items, { question_69481992: { value: "My own words.", approved: true } });

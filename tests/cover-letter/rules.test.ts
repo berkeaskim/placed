@@ -38,7 +38,7 @@ describe("lintParagraph", () => {
   it("maps special hard labels to their own rules", () => {
     expect(ids(lintParagraph("Dear Sir/Madam"))).toContain("CL-42");
     expect(ids(lintParagraph("It is a stepping-stone for me."))).toContain("CL-70");
-    expect(ids(lintParagraph("The salary matters."))).toContain("CL-71");
+    expect(ids(lintParagraph("The salary is what attracts me."))).toContain("CL-71");
     expect(ids(lintParagraph("Although I don't have experience."))).toContain("CL-35");
     expect(ids(lintParagraph("I work at [Company]."))).toContain("CL-21");
     expect(ids(lintParagraph("Delving into it."))).toContain("CL-50");
@@ -52,10 +52,14 @@ describe("lintParagraph", () => {
   });
 
   it("flags repeated em dashes, not-only-but and triplets", () => {
-    expect(lintParagraph("One \u2014 two.").some((h) => h.label.includes("Em dash"))).toBe(false);
-    expect(lintParagraph("One \u2014 two \u2014 three.").some((h) => h.label.includes("Em dash"))).toBe(true);
+    expect(lintParagraph("One \u2014 two.").some((h) => h.label.includes("Dash"))).toBe(false);
+    expect(lintParagraph("One \u2014 two \u2014 three.").some((h) => h.label.includes("Dash"))).toBe(true);
+    // 09 #25: the spaced en dash counts too, and three dashes are high, not block
+    expect(lintParagraph("One \u2013 two \u2013 three \u2013 four.").find((h) => h.label.includes("Dash"))?.severity).toBe("high");
     expect(lintParagraph("It was not only fast but also cheap. It was not just red but blue.").some((h) => h.label.includes("Not only"))).toBe(true);
-    expect(lintParagraph("I like a, b, and c. I like d, e, and f.").some((h) => h.label.includes("triplet"))).toBe(true);
+    expect(lintParagraph("I enjoy leading teams, building models and presenting to clients. I like reading books, running races and cooking dinner.").some((h) => h.label.includes("triplet"))).toBe(true);
+    // 09 #24: a list of tools is just a list
+    expect(lintParagraph("I use Python, SQL and Excel. I know Stata, R and Tableau.").some((h) => h.label.includes("triplet"))).toBe(false);
   });
 });
 
@@ -126,10 +130,11 @@ describe("lintLetter", () => {
     expect(hits.find((h) => h.ruleId === "CL-02")).toMatchObject({ severity: "block", scope: "letter" });
   });
 
-  it("flags field_answer under 85% of the limit as CL-03 high, and accepts 90%", () => {
+  // 09 #21: no source for 85%; short is fine, so under 60% is a low nudge and never auto-repaired
+  it("nudges a field_answer under 60% of the limit as CL-03 low, and accepts 65%", () => {
     const o = { ...base, mode: "field_answer" as const, limit: { unit: "words" as const, max: 100 }, company: "", role: "" };
-    expect(lintLetter(words(50), o).find((h) => h.ruleId === "CL-03")).toMatchObject({ severity: "high" });
-    expect(lintLetter(words(90), o).some((h) => h.ruleId === "CL-03" || h.ruleId === "CL-02")).toBe(false);
+    expect(lintLetter(words(50), o).find((h) => h.ruleId === "CL-03")).toMatchObject({ severity: "low" });
+    expect(lintLetter(words(65), o).some((h) => h.ruleId === "CL-03" || h.ruleId === "CL-02")).toBe(false);
   });
 
   it("applies word bands per mode", () => {
@@ -176,5 +181,44 @@ describe("lintLetter", () => {
     const cl20 = hits.filter((h) => h.ruleId === "CL-20");
     expect(cl20.length).toBeGreaterThan(0);
     expect(cl20.every((h) => h.scope === "letter")).toBe(true);
+  });
+});
+
+// audit 09 #2: CL-21 names must be written as names
+describe("CL-21 capital initial", () => {
+  it("fires on 'Barclays' but not on the word 'next' or 'wise'", async () => {
+    const { lintLetter } = await import("@/lib/cover-letter/rules");
+    const opts = { mode: "field_answer" as const, limit: null, company: "Citi", role: "Analyst", otherEmployers: ["Barclays", "Next", "Wise"], ownSpans: [] };
+    const hits = (t: string) => lintLetter(t, opts).filter((h) => h.ruleId === "CL-21").map((h) => h.label);
+    expect(hits("At Citi I want to learn from Barclays alumni.")).toEqual(["Another employer named: Barclays"]);
+    expect(hits("At Citi I want to learn what comes next and choose wise trades.")).toEqual([]);
+  });
+});
+
+// audit 09 #5/#18: false positives on ordinary student prose
+describe("lexicon false positives", () => {
+  const blocks = (t: string) => lintParagraph(t).filter((h) => h.severity === "block" || h.severity === "high").map((h) => h.label);
+  it.each(["Overall, the project cut processing time by 40%.", "Ultimately, the client chose the second option.", "It's not easy, but it's worth it.",
+    "I worked at Yahoo! as an intern.", "I benchmarked executive compensation for FTSE 250 clients.", "I built a bonus-pool allocation model.",
+    "I tested three pricing models before deciding on a binomial tree.", "I wrote a Python program to clean the data."])("no block or high: %s", (t) => expect(blocks(t)).toEqual([]));
+  it("still blocks 'In conclusion,' and a real negative parallelism", () => {
+    expect(blocks("In conclusion, I am a fit.")).toContain("Formulaic transition");
+    expect(blocks("It's not about the money, it's about the impact.")).toContain("Negative parallelism");
+  });
+  it("Dear Sir/Madam is low; To whom it may concern is med", () => {
+    expect(lintParagraph("Dear Sir/Madam").find((h) => h.ruleId === "CL-42")?.severity).toBe("low");
+    expect(lintParagraph("To whom it may concern").find((h) => h.ruleId === "CL-42")?.severity).toBe("med");
+  });
+  it("'program' is not flagged as a US spelling", () => expect(lintParagraph("I wrote a program.").some((h) => h.ruleId === "CL-51")).toBe(false));
+});
+
+// audit 09 #19: a full-name greeting is a named recipient
+describe("named salutation", () => {
+  it("'Dear Priya Patel' with 'Yours faithfully' asks for 'Yours sincerely'; 'Dear Hiring Manager' does not", () => {
+    const o = { ...base, company: "", role: "" };
+    const named = lintLetter("Dear Priya Patel,\n\nBody text here.\n\nYours faithfully,\nA", o).map((h) => h.label);
+    expect(named).toContain("Named recipient needs 'Yours sincerely'");
+    const team = lintLetter("Dear Hiring Manager,\n\nBody text here.\n\nYours faithfully,\nA", o).map((h) => h.label);
+    expect(team).not.toContain("Named recipient needs 'Yours sincerely'");
   });
 });

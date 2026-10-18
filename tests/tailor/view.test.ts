@@ -275,10 +275,11 @@ describe("caught it after the student confirms (fix 1)", () => {
     expect(anyConfirmed(o, { "x0-b0": { kind: "edited", text: "Tracked tickets, cutting backlog" } })).toBe(false);
   });
   it("badge copy names the student's confirmations", () => {
-    expect(verificationCopy("traced", false)).toBe("Every claim traced to your original CV");
-    expect(verificationCopy("caught", true)).toBe("Every claim traced to your CV or confirmed by you");
-    expect(verificationCopy("traced", false, true)).toBe("Every claim traced to your CV or experience bank");
-    expect(verificationCopy("caught", true, true)).toBe("Every claim traced to your CV or experience bank, or confirmed by you");
+    // audit 05 #28: never claim every claim is traced; say what was checked and ask the student to read
+    expect(verificationCopy("traced", false)).toBe("Checked against your original CV for invented numbers, employers, skills and ownership. Still read each change: we can't catch everything.");
+    expect(verificationCopy("caught", true)).toMatch(/^Checked against your original CV \(and what you confirmed\)/);
+    expect(verificationCopy("traced", false, true)).toMatch(/^Checked against your CV and experience bank for/);
+    for (const st of ["traced", "caught"] as const) expect(verificationCopy(st, false)).not.toMatch(/Every claim|Verified/);
     expect(verificationCopy("blocked", true, true)).toMatch(/aren't supported/);
   });
 });

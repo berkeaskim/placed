@@ -18,7 +18,6 @@ type Counters = {
   paragraphCvMin: number;
   paragraphMaxWords: number;
   iStartRatioMax: number;
-  aiPolicy: string;
 };
 type ModeBand = { words?: [number, number] | null; hardMax?: number; defaultWords?: number; fillRatio?: [number, number] };
 type RulesFile = {
@@ -44,9 +43,12 @@ type RawHit = Omit<LintHit, "scope">;
 const HARD_OVERRIDES: Record<string, { ruleId: string; severity: LintHit["severity"] }> = {
   Placeholder: { ruleId: "CL-21", severity: "block" },
   "Chatbot leakage": { ruleId: "CL-21", severity: "block" },
-  Salutation: { ruleId: "CL-42", severity: "high" },
-  "Consulting stepping-stone": { ruleId: "CL-70", severity: "high" },
-  "Money as motivation": { ruleId: "CL-71", severity: "high" },
+  // 09 #18: Prospects and TARGETjobs still list "Dear Sir/Madam" (with "Yours faithfully"); a name or team reads warmer
+  Salutation: { ruleId: "CL-42", severity: "med" },
+  "Generic salutation": { ruleId: "CL-42", severity: "low" },
+  // 09 #5: these fired on ordinary prose ("bonus-pool model", "tested three pricing models before deciding")
+  "Consulting stepping-stone": { ruleId: "CL-70", severity: "med" },
+  "Money as motivation": { ruleId: "CL-71", severity: "med" },
   "Deficit framing": { ruleId: "CL-35", severity: "med" },
 };
 
@@ -100,21 +102,28 @@ function lexiconHits(text: string, region: Region): RawHit[] {
 
 function counterHits(text: string): RawHit[] {
   const hits: RawHit[] = [];
-  const dashes = [...text.matchAll(/—/g)].map((m) => m.index);
+  // 09 #25: a spaced en dash and "--" are the same habit as an em dash; now a historical signal, so never a block
+  const dashes = [...text.matchAll(/—| – |--/g)].map((m) => ({ at: m.index + (m[0] === " – " ? 1 : 0), len: m[0] === "--" ? 2 : 1 }));
   if (dashes.length > C.emDashMax) {
-    const at = dashes[C.emDashMax];
+    const d = dashes[C.emDashMax];
     hits.push({
       ruleId: "CL-50",
-      severity: dashes.length >= C.emDashFail ? "block" : "high",
-      label: "Em dash overuse",
-      start: at,
-      end: at + 1,
+      severity: dashes.length >= C.emDashFail ? "high" : "med",
+      label: "Dash overuse",
+      start: d.at,
+      end: d.at + d.len,
     });
   }
   const nob = matches(NOT_ONLY_BUT, text);
   if (nob.length > C.notOnlyButMax) hits.push({ ruleId: "CL-50", severity: "high", label: "Not only... but pattern", ...nob[C.notOnlyButMax] });
   const trip = matches(TRIPLET, text);
-  if (trip.length > C.tripletMax) hits.push({ ruleId: "CL-51", severity: "med", label: "Repeated triplet list", ...trip[C.tripletMax] });
+  // 09 #24: phrase-level tricolons; a list of names or tools ("Python, SQL and Excel") is just a list
+  const phrasal = trip.filter((m) => {
+    const parts = text.slice(m.start, m.end).split(/,\s*|\s+(?:and|or)\s+/).map((x) => x.trim()).filter(Boolean);
+    const middle = parts[parts.length - 2] ?? "";
+    return !/^[A-Z0-9][\w+#.&-]*$/.test(middle); // "Python, SQL and Excel": the middle item is one name
+  });
+  if (phrasal.length > C.tripletMax) hits.push({ ruleId: "CL-51", severity: "low", label: "Repeated triplet list", ...phrasal[C.tripletMax] });
   return hits;
 }
 
@@ -234,7 +243,8 @@ function lengthHits(text: string, opts: LetterOpts): RawHit[] {
     const used = measure(eff.unit, text);
     const [lo] = band.fillRatio ?? [0.85, 1];
     if (!limit && used > eff.max) hits.push({ ruleId: "CL-02", severity: "block", label: `Over the default limit (${used}/${eff.max} words)`, ...whole });
-    if (used < Math.floor(lo * eff.max)) hits.push({ ruleId: "CL-03", severity: "high", label: `Fills under ${Math.round(lo * 100)}% of the limit (${used}/${eff.max} ${eff.unit})`, ...whole });
+    // 09 #21: short is fine; "room for one more example" is advice, never an auto-repair
+    if (used < Math.floor(lo * eff.max)) hits.push({ ruleId: "CL-03", severity: "low", label: `You have room for one more specific example (${used}/${eff.max} ${eff.unit})`, ...whole });
     return hits;
   }
   const words = letterWords(text, mode);
@@ -271,7 +281,9 @@ function pairingHits(text: string, struct: Structure, mode: Mode): RawHit[] {
   if (!so) hits.push({ ruleId: "CL-43", severity: "med", label: "Missing sign-off", ...whole });
   else {
     const first = so.text.split("\n", 1)[0].trim().toLowerCase();
-    const named = !!sal && /^dear\s+(mr|mrs|ms|mx|dr|prof|professor)\b\.?\s+\S/i.test(sal.text);
+    // 09 #19: "Dear Priya Patel" is a named recipient too
+    const named = !!sal && (/^dear\s+(mr|mrs|ms|mx|dr|prof|professor)\b\.?\s+\S/i.test(sal.text)
+      || (/^[Dd]ear\s+[A-Z][a-z]+(?:\s+[A-Z][\w'’-]+)+,?\s*$/.test(sal.text.trim()) && !/\b(?:Team|Manager|Recruitment|Recruiter|Committee|Panel|Department|Sir|Madam|Graduate|Hiring)\b/.test(sal.text)));
     if (/^sincerely\b/.test(first)) hits.push({ ruleId: "CL-43", severity: "med", label: "US-style sign-off", start: so.start, end: so.start + first.length });
     else if (named && /^yours faithfully/.test(first)) hits.push({ ruleId: "CL-43", severity: "med", label: "Named recipient needs 'Yours sincerely'", start: so.start, end: so.start + first.length });
   }
@@ -305,7 +317,8 @@ function otherEmployerHits(text: string, opts: LetterOpts): RawHit[] {
     const n = norm(name);
     if (!n || (company && (company.includes(n) || n.includes(company)))) continue;
     const re = new RegExp(`(?<![\\w])${escapeRe(name.trim())}(?![\\w])`, "gi");
-    for (const m of matches(re, text)) hits.push({ ruleId: "CL-21", severity: "block", label: `Another employer named: ${name}`, ...m });
+    // 09 #2: a name only counts written as a name (capital initial), so "next", "wise" or "three" in prose never fire
+    for (const m of matches(re, text)) if (/^[A-Z0-9]/.test(text[m.start])) hits.push({ ruleId: "CL-21", severity: "block", label: `Another employer named: ${name}`, ...m });
   }
   return hits;
 }

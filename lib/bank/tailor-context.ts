@@ -40,7 +40,10 @@ export function groundingText(activeRaw: string, base: ParsedCV, bank: Bank): st
   const bullets = new Map(bank.entries.flatMap((e) => e.bullets.map((b) => [b.id, b] as const)));
   const extra = SECTIONS.flatMap((s) => base[s].flatMap((e) => e.bullets.flatMap((b) => {
     const row = bullets.get(b.id);
-    return row ? [row.text, ...(row.sourceText ? [row.sourceText] : [])] : [];
+    // 05 #24: an AI-worded bullet (from a post) grounds on the post excerpt it came from, not on its own wording,
+    // unless the student edited it ("manual": their own claim). CV and LinkedIn rows have sourceText === text.
+    if (!row) return [];
+    return row.sourceText && !row.sourceIds.includes("manual") ? [row.sourceText] : [row.text, ...(row.sourceText ? [row.sourceText] : [])];
   })));
   return [activeRaw, ...extra].join("\n");
 }

@@ -34,7 +34,7 @@ describe("diffSpans", () => {
     const flagged = d.spans.find((s) => d.text.slice(s.start, s.end) === "We placed 3rd of 62 teams.");
     expect(flagged).toMatchObject({ kind: "ai", flag: "unsupported number" });
 
-    let after = replaceOnce(d.text, "as much as choosing it.", "as much as picking it.");
+    let after = replaceOnce(d.text, "I sized positions across rates and FX.", "I sized positions in rates and FX.");
     after = replaceOnce(after, "Thank you for considering my application", "Thanks for considering my application");
     const spans = diffSpans(d.text, d.spans, after);
 
@@ -42,11 +42,11 @@ describe("diffSpans", () => {
     const now = slices(after, spans);
     const newTheirs = now.filter((s) => s.kind === "theirs" && !before.some((b) => b.kind === "theirs" && b.text === s.text));
     expect(newTheirs.map((s) => s.text)).toEqual([
-      "Running the trading desk of a £50k student investment fund taught me that sizing a position matters as much as picking it.",
+      "Running the trading desk of a £50k student investment fund, I sized positions in rates and FX.",
       "Thanks for considering my application, and I would welcome the chance to discuss it at interview.",
     ]);
     // Every other span is untouched: same words, same owner, same flag.
-    const untouched = before.filter((b) => !b.text.includes("choosing it") && !b.text.includes("Thank you for considering"));
+    const untouched = before.filter((b) => !b.text.includes("I sized positions across rates and FX.") && !b.text.includes("Thank you for considering"));
     for (const b of untouched) expect(now).toContainEqual(b);
     expect(now.find((s) => s.text === "We placed 3rd of 62 teams.")).toMatchObject({ kind: "ai", flag: "unsupported number" });
 

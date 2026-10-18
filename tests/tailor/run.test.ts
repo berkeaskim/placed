@@ -130,13 +130,13 @@ describe("C17: per-change transparency data", () => {
 describe("NEEDS_NUMBER placeholder", () => {
   const withPlaceholder = async (): Promise<TailoredCV> => {
     const t = toTailored(cv);
-    t.experience[0].bullets[0] = { id: "x0-b0", text: `Tracked ${NEEDS_NUMBER} tickets weekly in Excel`, sourceRefs: ["x0-b0"], changeType: "rephrased" };
+    t.experience[0].bullets[0] = { id: "x0-b0", text: `Tracked ${NEEDS_NUMBER} tickets in Excel`, sourceRefs: ["x0-b0"], changeType: "rephrased" };
     return t;
   };
   it("is listed for confirmation, gated without the placeholder, and never rendered", async () => {
     const out = await runTailoring({ cv, rawText, job, confirmedFacts: [], tailor: withPlaceholder as never });
     expect(out.report.verdict).not.toBe("block");
-    expect(out.needsNumber).toEqual([{ bulletId: "x0-b0", text: `Tracked ${NEEDS_NUMBER} tickets weekly in Excel`, original: "Used Excel to track 200 tickets" }]);
+    expect(out.needsNumber).toEqual([{ bulletId: "x0-b0", text: `Tracked ${NEEDS_NUMBER} tickets in Excel`, original: "Used Excel to track 200 tickets" }]);
     const view = renderView(out.tailored, cv);
     expect(JSON.stringify(view)).not.toContain(NEEDS_NUMBER);
     expect(view.experience[0].bullets[0].text).toBe("Used Excel to track 200 tickets");

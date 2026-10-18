@@ -3,8 +3,8 @@ import { escapeUntrusted, UNTRUSTED_JD_RULE, wrapJob } from "@/lib/ai/prompts";
 import { streamText } from "@/lib/ai/provider";
 import { styleAnchors } from "@/lib/ai/tailorCV";
 import { stripPii } from "@/lib/cv-score/pii";
-import { playbookPrompt } from "@/lib/tailor/playbooks";
-import type { ParsedCV } from "@/lib/types";
+import type { Archetype, ParsedCV } from "@/lib/types";
+import sectorNotes from "./sector-notes.json";
 import type { Evidence } from "./evidence";
 import { RULES } from "./rules";
 import { MarkerParser, type Marked } from "./stream-parse";
@@ -25,9 +25,20 @@ export type DraftInput = {
   confirmedFacts: { id: string; claim: string }[];
   /** A named recipient ("Ms Priya Patel"), when the posting or the student gives one. */
   recipient?: string;
+  /** CL-21: companies that must not appear (the student's other tracked jobs and letters, rivals, big UK employers). */
+  otherEmployers?: string[];
 };
 
 const esc = escapeUntrusted;
+
+/**
+ * 09 #8: the letter prompt gets the cover-letter sector notes (00-playbook §5, CL-70 to CL-78), not the CV-tailoring
+ * playbook, which was researched for a different reader task.
+ */
+export function sectorNotesPrompt(sector: Archetype | null | undefined): string | null {
+  const notes = sector ? (sectorNotes as unknown as Record<string, string[] | undefined>)[sector] : undefined;
+  return notes?.length ? `SECTOR NOTES (shape only, never a source of facts):\n${notes.map((n) => `- ${n}`).join("\n")}` : null;
+}
 
 /** The length the model must hit, from the rules JSON (field answers: 85–100% of the form limit). */
 export function lengthBand(mode: Mode, limit: Limit): string {
@@ -76,7 +87,7 @@ function conventions(mode: Mode, company: string): string {
   if (mode === "full_letter" || mode === "short_letter") {
     return [
       "UK letter conventions:",
-      `- Start with the salutation on its own line. A named person: 'Dear Ms Patel' (no full stop after Ms, Mr or Dr). Otherwise 'Dear ${esc(company)} Graduate Recruitment Team' if the programme has one, else 'Dear Hiring Manager'. Never 'To whom it may concern' or 'Dear Sir/Madam'.`,
+      `- Start with the salutation on its own line. A named person: use their title only if the source gives it ('Dear Ms Patel', no full stop after Ms, Mr or Dr); otherwise 'Dear Priya Patel'. Never guess a title from a name. With no name: 'Dear ${esc(company)} Graduate Recruitment Team' if the programme has one, else 'Dear Hiring Manager'. Never 'To whom it may concern'.`,
       "- End with the sign-off on its own line: 'Yours sincerely,' for a named recipient, 'Yours faithfully,' otherwise. Write only the sign-off line; the app adds the student's name.",
       "- No address block, no date line, no subject line.",
     ].join("\n");
@@ -125,7 +136,7 @@ export function buildDraftPrompt(i: DraftInput): { system: string; prompt: strin
 
   const answered = i.answers.filter((a) => a.text?.trim());
   const whyFirm = i.answers.find((a) => a.question === "why_firm");
-  const playbook = playbookPrompt(ev.sector);
+  const playbook = sectorNotesPrompt(ev.sector);
   const anchors = styleAnchors(i.cv).map((b) => `- ${esc(b)}`).join("\n") || "- (none)";
 
   const prompt = [

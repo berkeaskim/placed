@@ -17,6 +17,7 @@ import type { AwardResult } from "@/lib/gamify/core";
 import { coverageSummary, reverifyEdits, runTailoring, type ReverifyResult, type RevertedChange, type TailorOutcome } from "@/lib/tailor/run";
 import { BlockedCvError, renderVerifiedPdf } from "@/lib/tailor/render";
 import { normalizeTailored, tailorCV } from "@/lib/ai/tailorCV";
+import { employerAiPolicy, needsAiPolicyAck } from "@/lib/employer-policy";
 import { TailoredCvFixture } from "@/lib/ai/schemas";
 import type { ParsedCV, TailoredBullet, TailoredCV } from "@/lib/types";
 import { revertBlocked, type VerifyReport } from "@/lib/verify/tailoring";
@@ -99,7 +100,10 @@ export type StoredTailoring = StoredTailoringT;
 export type BankView = { report: SelectionReport; stale: boolean; newCvSuggestions: number };
 /** The rendered version is over one page: nothing was stored; the UI offers the 3 lowest-scoring bullets to remove. */
 export type OverflowResult = { error: "overflow"; message: string; pages: number; remove: { bulletId: string; text: string }[] };
+/** Shown before an AI rewrite when the employer limits AI help (lib/employer-policy); the student must agree first. */
+export type PolicyNotice = { error: "ai_policy"; message: string; policyNotice: { text: string; grammarOnly: boolean; sourceUrl: string | null } };
 export type TailorResult =
+  | PolicyNotice
   | { outcome: TailorOutcome; award: AwardResult | null; pdfUrl: string; signedUrl: string | null; bank: BankView | null;
     /** Swaps only: the student's version (current if sent, else saved) carried onto the new selection, so the panel keeps their edits. */
     final?: TailoredCV;
@@ -212,7 +216,7 @@ const bankView = (ctx: TailorCtx): BankView | null =>
  * store v2 → +30 XP once per job. The stored per-job overrides (Add back / Remove) are kept, so "Tailor again to polish"
  * keeps an item the student added back.
  */
-export async function tailorForJob(jobId: string, opts?: { extraExcluded?: string[] }): Promise<TailorResult> {
+export async function tailorForJob(jobId: string, opts?: { extraExcluded?: string[]; aiPolicyAck?: boolean }): Promise<TailorResult> {
   // extraExcluded: "Remove" on a first-tailor overflow (nothing stored yet), merged into the per-job overrides.
   const extra = Array.isArray(opts?.extraExcluded) ? opts.extraExcluded.filter((x): x is string => typeof x === "string").slice(0, 20) : [];
   let overrides: BankOverrides | undefined;
@@ -225,9 +229,17 @@ export async function tailorForJob(jobId: string, opts?: { extraExcluded?: strin
   const loaded = await loadTailorContext(jobId, "fresh", overrides);
   if ("error" in loaded) return loaded;
   const { ctx } = loaded;
+  // Audit 05 #13: the employer's AI policy comes before any AI rewrite. A ban in the advert stops tailoring; a
+  // grammar-only firm gets spelling and grammar fixes only; either way the student sees why first.
+  const policy = employerAiPolicy({ company: ctx.job.company, jdText: ctx.job.textLines.join("\n") });
+  if (policy.tailorMode === "none") return { error: policy.notice ?? "This employer asks applicants not to use AI." };
+  if (needsAiPolicyAck(policy) && opts?.aiPolicyAck !== true) {
+    return { error: "ai_policy", message: policy.notice!, policyNotice: { text: policy.notice!, grammarOnly: policy.tailorMode === "grammar_only", sourceUrl: policy.entry?.url ?? null } };
+  }
   let outcome: TailorOutcome;
   try {
-    outcome = await runTailoring({ cv: ctx.cv.parsed, rawText: ctx.cv.rawText, job: ctx.job, confirmedFacts: ctx.confirmedFacts, tailor: tailorCV });
+    outcome = await runTailoring({ cv: ctx.cv.parsed, rawText: ctx.cv.rawText, job: ctx.job, confirmedFacts: ctx.confirmedFacts, tailor: tailorCV,
+      ...(policy.tailorMode === "grammar_only" ? { mode: "grammar_only" as const } : {}) });
   } catch (e) {
     console.error("tailorForJob: tailoring failed", e instanceof Error ? e.message : e);
     return { error: TAILOR_FAILED };

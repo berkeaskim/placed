@@ -205,14 +205,19 @@ describe("structuralLoss", () => {
     ] }];
     expect(structuralLoss(tailored, source)).toEqual([]);
   });
-  it("warns listing silently missing bullets", () => {
+  // audit 05 #21: one silent drop per entry warns; two or more block (|b′| ≥ |b|−1)
+  it("blocks when two or more bullets go missing silently", () => {
     const issues = structuralLoss([{ id: "r1", bullets: [tb("r1-b1", "A one")] }], source);
     expect(issues).toHaveLength(1);
-    expect(issues[0]).toMatchObject({ check: "structuralLoss", severity: "warn", roleId: "r1" });
+    expect(issues[0]).toMatchObject({ check: "structuralLoss", severity: "block", roleId: "r1" });
     expect(issues[0].evidence).toBe("r1-b2, r1-b3");
   });
-  it("warns when a whole role disappears", () => {
-    expect(structuralLoss([], source)[0]).toMatchObject({ severity: "warn", roleId: "r1" });
+  it("warns when exactly one bullet goes missing silently", () => {
+    const issues = structuralLoss([{ id: "r1", bullets: [tb("r1-b1", "A one"), tb("r1-b2", "B two")] }], source);
+    expect(issues[0]).toMatchObject({ check: "structuralLoss", severity: "warn", roleId: "r1", evidence: "r1-b3" });
+  });
+  it("blocks when a whole role disappears", () => {
+    expect(structuralLoss([], source)[0]).toMatchObject({ severity: "block", roleId: "r1" });
   });
 });
 
@@ -303,4 +308,20 @@ describe("review regressions", () => {
     expect(k8s.test("Kubernetesy")).toBe(false);
     expect(k8s.test("Deployed on k8s")).toBe(true);
   });
+});
+
+// audit 05 #18: programming-language swaps
+describe("language families", () => {
+  it("blocks Python → R", () => {
+    expect(blocks(siblingContamination(tb("b1", "Used R to analyse ticket sales"), [sb("b1", "Used Python to analyse ticket sales")]))[0]?.evidence).toBe("R");
+  });
+  it("blocks R → MATLAB and JavaScript → TypeScript", () => {
+    expect(blocks(siblingContamination(tb("b1", "Modelled demand in MATLAB"), [sb("b1", "Modelled demand in R")]))).toHaveLength(1);
+    expect(blocks(siblingContamination(tb("b1", "Built a TypeScript app"), [sb("b1", "Built a JavaScript app")]))).toHaveLength(1);
+  });
+  it("does not read R&D, 'R.' initials or a grade C as languages", () => {
+    expect(siblingContamination(tb("b1", "Worked with R&D on a survey"), [sb("b1", "Worked with the research team on a survey")])).toEqual([]);
+    expect(siblingContamination(tb("b1", "Achieved a C grade in maths"), [sb("b1", "Studied maths")])).toEqual([]);
+  });
+  it("passes R kept", () => expect(siblingContamination(tb("b1", "Analysed survey data in R"), [sb("b1", "Used R to analyse survey data")])).toEqual([]));
 });

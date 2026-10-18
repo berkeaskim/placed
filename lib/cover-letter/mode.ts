@@ -1,18 +1,32 @@
 import { RULES } from "./rules";
+import { detectJdAiPolicy } from "@/lib/employer-policy";
 import type { Limit, Mode, OutputTarget } from "./types";
 
-const MOTIVATION = /cover letter|covering letter|why (do you want|are you interested|this|us|join)\b|\bmotivation\b|what motivates you|motivated to (apply|join)|interest in (the )?(role|firm|company|programme|program|division|team)\b/i;
+/**
+ * 09 #11: the standard UK motivation prompts ("Why are you applying to Goldman Sachs?", "What attracts you to this
+ * programme?", "Why J.P. Morgan?", "Please explain your interest in this position"). "Describe a time you motivated a
+ * team" and "your interest in teamwork" are not motivation prompts.
+ */
+const MOTIVATION = new RegExp([
+  String.raw`cover(?:ing)? letter|personal statement`,
+  String.raw`\bwhy\b[^?.]{0,60}\b(?:apply|applying|applied|join|joining|work(?:ing)?\s+(?:at|for|with|in)|chose|chosen|choose|us|our|this|these|interested|want|wish)\b`,
+  String.raw`\bwhat\s+(?:attracts|interests|excites|draws|motivates|appeals\s+to)\s+you\b`,
+  String.raw`\b(?:interest|interested|motivation|motivated)\s+(?:in|for|to)\s+(?:apply|applying|join|joining|work|working|the|this|our|us|these)\b`,
+  String.raw`\bmotivation\b|\bwhat motivates you\b`,
+].join("|"), "i");
+/** "Why Anthropic?", "Why J.P. Morgan?": "Why" plus a capitalised name and nothing else. */
+const WHY_FIRM = /^\s*[Ww]hy\s+[A-Z][\w.&'’ -]{0,40}\?\s*$/;
 const NO_LETTER = /no (cover|covering) letter|cover letters? (are|is) not (required|needed|accepted)|do not (send|include) a cover letter/i;
-const AI_POLICY = new RegExp(RULES.lexicon.counters.aiPolicy, RULES.lexicon.flags);
+
 
 /** True for a free-text prompt asking why the student wants this role or firm. "Additional information" and "anything else" never match. */
 export function isMotivationLabel(label: string): boolean {
-  return MOTIVATION.test(label);
+  return MOTIVATION.test(label) || WHY_FIRM.test(label);
 }
 
-/** True when the posting says an AI-written application is not welcome. */
+/** True when the posting says not to use AI for the application at all (lib/employer-policy's advert detector). */
 export function aiPolicyBlocks(jdText: string): boolean {
-  return AI_POLICY.test(jdText);
+  return detectJdAiPolicy(jdText)?.policy === "not_permitted";
 }
 
 /** True when the posting says not to send a cover letter. */

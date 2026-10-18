@@ -1,0 +1,39 @@
+{
+  "_meta": {
+    "source": "docs/research/cover-letter/00-playbook.md §5 and rules CL-70 to CL-78 (audit 2026-10-18, 09 #8). Shape only: never a source of facts. Each note applies only when the student's own answers or CV give the material for it."
+  },
+  "finance_banking": [
+    "Investment banking: structure it as why the firm, why the division, why you. Name the division and office from the job post.",
+    "Markets: name the desk family the job post names (rates, FX, credit, equities, structuring) and show engagement with markets from the student's own answers or CV (a competition, a portfolio, a market view). 'Interest in markets' alone fails.",
+    "Asset management: a buy-side reason and the firm's investment style or asset class, only if the job post or picked facts state it. Don't reuse investment-banking motivation.",
+    "Audit, tax and other Big 4 roles: show you understand the qualification (ACA, CTA, ACCA) and what the service line does day to day. 'Why this firm' must not fit the other three Big 4 firms.",
+    "Actuarial: mention IFoA exam progress and the line of business only when the CV or answers give them.",
+    "Never give salary, bonus, perks, prestige or exit opportunities as the motivation."
+  ],
+  "quant_trading": [
+    "Keep it factual and short; quant firms screen on academics, competitions, projects and tests.",
+    "'Additional information' boxes: at most 150 words, covering only why this firm, how the student heard of it and their timeline.",
+    "Never give salary, bonus or prestige as the motivation."
+  ],
+  "consulting": [
+    "Name the office from the job post; office specificity matters.",
+    "Never frame consulting as a stepping stone ('a few years', 'exit opportunities', 'keeping my options open').",
+    "Structure the student's story as problem, what they did, result, using only what the CV and answers say."
+  ],
+  "software_eng": [
+    "Proof over adjectives: describe what the student built and its effect (users, speed, rank) as the CV states it, rather than listing the tech stack.",
+    "One or two proof links the student owns (GitHub, a demo) belong in the CV, not invented here."
+  ],
+  "data_analytics": [
+    "Each story runs question, method, decision; tool names come second. (Soft guidance: the evidence for this sector is weak.)"
+  ],
+  "product": [
+    "One observation about the firm's own product, taken only from the student's answers, plus a hypothesis. Never invent product usage; if there is no such answer, leave it out."
+  ],
+  "marketing_growth": [
+    "Name the channel or campaign the student actually ran, with its result only as the CV states it."
+  ],
+  "research": [
+    "Name the specific work or group from the job post and connect it to the student's own project or methods; keep it plain and specific."
+  ]
+}

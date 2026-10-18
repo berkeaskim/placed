@@ -79,6 +79,7 @@ const TOOL_CONTEXT_BEFORE = /(?:\b(?:in|using|with|via|and|or|on)|[,/(])\s*$/i;
 const LIST_AFTER = /^\s*[,/)]/;
 
 function mentions(mem: FamilyMember, text: string): boolean {
+  if (mem.pattern?.test(text)) return true;
   return MEMBER_RES.get(mem)!.some(({ re, caseSensitive }) => {
     for (const m of text.matchAll(new RegExp(re.source, re.flags + "g"))) {
       if (!caseSensitive) return true;
@@ -144,7 +145,8 @@ const QUALIFIERS: Qualifier[] = [
   Q("helped", "subordinate", "block", /\b[Hh]elp(?:ed|ing)\b|(?:^|[.;]\s+)[Hh]elps?\s+(?!desk|line|centre|center|page)[a-z]+/),
   Q("supported", "subordinate", "block", /\bsupport(?:ed|ing)\b/i),
   Q("contributed to", "subordinate", "block", /\bcontribut(?:ed|ing|es|e) to\b/i),
-  Q("shadowed", "subordinate", "block", /\bshadow(?:ed|ing)\b/i),
+  // 05 probe: shadowing is watching, not supporting ("shadowed an analyst" → "supported an analyst on live deals")
+  Q("shadowed", "observe", "block", /\bshadow(?:ed|ing)\b|\bwork[- ]shadow\w*/i),
   Q("under supervision", "subordinate", "block", /\bunder (?:the )?supervision\b|\bsupervised by\b/i),
   Q("co-", "co", "block", /(?<![A-Za-z])co-(?!ordinat|operat|op\b)(?=[a-z])/i),
   Q("personal project", "context", "block", /\bpersonal project\b/i),
@@ -312,6 +314,15 @@ function supports(have: Metric[], want: Metric): boolean {
   return false;
 }
 
+/**
+ * Metrics in `text` (kind + magnitude: "£5m" ≠ "£5k", "60%" ≠ "60 members") that no single source text states.
+ * Used for summary sentences, whose cited sources are the CV lines they overlap (05 #1).
+ */
+export function unbackedMetrics(text: string, sources: string[]): string[] {
+  const have = sources.map(extractMetrics);
+  return extractMetrics(text).filter((m) => !have.some((h) => supports(h, m))).map((m) => m.raw.trim());
+}
+
 export function scopedMetrics(tailored: TailoredBullet, source: SourceBullet[], confirmedFacts: string[]): Issue[] {
   if (tailored.changeType === "dropped") return [];
   const refs = cited(tailored, source);
@@ -350,8 +361,9 @@ export function structuralLoss(tailoredRoles: TailoredRole[], sourceRoles: Sourc
     }
     const missing = src.bullets.map((b) => b.id).filter((id) => !accounted.has(id));
     if (missing.length === 0) continue;
+    // 05 #21: one silent drop per entry is a warning; more is a block (Indukuri's |b′| ≥ |b|−1 invariant)
     issues.push({
-      check: "structuralLoss", severity: "warn", roleId: src.id, evidence: missing.join(", "),
+      check: "structuralLoss", severity: missing.length > 1 ? "block" : "warn", roleId: src.id, evidence: missing.join(", "),
       message: t
         ? `${missing.length} bullet(s) from ${src.title} at ${src.org} disappeared without being marked as dropped`
         : `${src.title} at ${src.org} is missing from the tailored CV`,

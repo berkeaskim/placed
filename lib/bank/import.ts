@@ -7,7 +7,8 @@ import { parseCV } from "../ai/parseCV";
 import { aiMode } from "../ai/config";
 import { extractPostBullets } from "../ai/extractPostBullets";
 import { AI_NOT_SET_UP, AiError } from "../ai/provider";
-import { numberSet, unsupportedInSource } from "../verify/tailoring";
+import { numberSet, toTailored, unsupportedInSource, verifyTailoring } from "../verify/tailoring";
+import type { ParsedCV } from "../types";
 import { assignIds } from "../cv/ids";
 import { extractPdf } from "../cv/pdf-text";
 import { parseLinkedInExport, type ParsedLinkedIn } from "../linkedin/parse-export";
@@ -153,6 +154,23 @@ function bulletKeys(kind: BankSuggestionKind, target: string | null, p: BankSugg
 
 const NEUTRAL_TITLE = "Project from LinkedIn post";
 
+/**
+ * Audit 05 #24: a post-derived bullet enters the bank (and from there the gate's fact corpus) only if the tailoring gate
+ * would accept it as a rewrite of its excerpt: no skill, tool, employer or number the post doesn't have, no ownership
+ * escalation ("helped my team build" → "Built"), no dropped qualifier, no sibling-tool swap, no hedge or ladder change.
+ */
+export function postBulletIssues(text: string, excerpt: string, post: string): string[] {
+  const source: ParsedCV = {
+    name: "", email: null, phone: null, location: null, links: [], summary: null, education: [],
+    experience: [{ id: "post", org: "", title: "", dates: "", location: "", bullets: [{ id: "excerpt", text: excerpt }] }],
+    projects: [], leadership: [], skills: [], interests: null, sectionOrder: [], yearGuess: null, archetypes: [],
+  };
+  const tailored = toTailored(source);
+  tailored.experience[0].bullets = [{ id: "excerpt", text, sourceRefs: ["excerpt"], changeType: "rephrased" }];
+  const r = verifyTailoring({ source, sourceText: post, confirmedFacts: [], tailored, jdKeywords: [], coverageBefore: null, coverageAfter: null, claimChecks: true });
+  return r.issues.filter((i) => i.severity === "block").map((i) => `${i.check ?? i.type}: ${i.claim}`);
+}
+
 /** The AI's project title, kept only when every word of 3+ letters is in the post and it names no employer the post doesn't. */
 function groundedTitle(title: string | null, post: string): string {
   const t = title?.trim() ?? "";
@@ -189,7 +207,8 @@ export async function importPosts(userId: string, posts: string[]): Promise<{ su
       const text = it.text.trim();
       const excerpt = squash(it.excerpt);
       const grounded = text.length > 0 && excerpt.length >= MIN_EXCERPT && flat.includes(excerpt)
-        && [...numberSet(text)].every((n) => postNums.has(n)) && unsupportedInSource(text, post).length === 0;
+        && [...numberSet(text)].every((n) => postNums.has(n)) && unsupportedInSource(text, post).length === 0
+        && postBulletIssues(text, it.excerpt, post).length === 0;
       if (!grounded) { dropped++; continue; }
       const target = it.entryHint
         ? bank.entries.find((e) => sameEntry({ org: it.entryHint!.org, title: it.entryHint!.title, startYm: null, endYm: null }, e))
