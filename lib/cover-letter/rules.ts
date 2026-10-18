@@ -1,4 +1,5 @@
 import rulesJson from "./rules.json";
+import { namesCompany } from "./employers";
 import type { Limit, LintHit, Mode, Span } from "./types";
 
 type HardEntry = { pattern: string; scope: "any" | "opening" | "close"; label: string };
@@ -218,12 +219,27 @@ function stats(nums: number[]) {
 const norm = (s: string) => s.toLowerCase().replace(/[‘’]/g, "'").replace(/\s+/g, " ").trim();
 const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
+const ROLE_NOUN = /\b(?:analyst|intern|internship|engineer|engineering|associate|consultant|developer|scientist|graduate|placement|insight|trainee|researcher|manager|apprentice|apprenticeship|programme|program|scheme|week)\b/i;
+const ROLE_FILLER = new Set(["programme", "program", "scheme", "the", "a", "an", "of", "and", "in", "for", "role", "position", "opportunity", "job"]);
+
+/**
+ * The role's head noun phrase (audit 09#7): scraped titles like "2027 Summer Analyst Programme – Global Banking &
+ * Markets – London" reduce to ["summer", "analyst"]. Divisions, offices, years and "Programme" are not required.
+ */
+export function roleHead(role: string): string[] {
+  const segments = role.split(/\s[–—-]\s|\s*[|,()/]\s*/).map((x) => x.trim()).filter(Boolean);
+  const seg = segments.find((x) => ROLE_NOUN.test(x)) ?? segments[0] ?? "";
+  return norm(seg).split(/[^a-z0-9]+/).filter((w) => w && !ROLE_FILLER.has(w) && !/^(?:19|20)\d{2}$/.test(w));
+}
+
+/** Every head word appears, allowing word-form changes ("Engineer" ~ "Engineering", "Intern" ~ "Internship"). */
 function roleNamed(text: string, role: string): boolean {
-  const t = norm(text);
-  const r = norm(role);
-  if (t.includes(r)) return true;
-  const parts = r.split(/[^a-z0-9]+/).filter((w) => w.length > 2);
-  return parts.length > 0 && parts.filter((w) => t.includes(w)).length / parts.length >= 0.6;
+  const head = roleHead(role);
+  if (!head.length) return true;
+  const words = norm(text).split(/[^a-z0-9]+/).filter(Boolean);
+  const has = (h: string) => words.some((w) => w === h || (Math.min(w.length, h.length) >= 4 && (w.startsWith(h) || h.startsWith(w))));
+  const found = head.filter(has).length;
+  return head.length > 4 ? found / head.length >= 0.6 : found === head.length;
 }
 
 function lengthHits(text: string, opts: LetterOpts): RawHit[] {
@@ -300,10 +316,13 @@ function openingNameHits(text: string, struct: Structure, opts: LetterOpts): Raw
     const s = sentenceSpans(firstText)[0];
     firstText = s ? firstText.slice(s.start, s.end) : firstText;
   }
-  if (opts.company.trim() && !norm(firstText).includes(norm(opts.company))) {
-    hits.push({ ruleId: "CL-20", severity: "block", label: "Company not named in the opening", ...(first ?? whole) });
+  // 09#7: any of the company's names counts. A form answer only needs the company (the field label usually names the
+  // role and firm already), as a medium note; a letter needs the company and the role's head noun phrase.
+  const field = opts.mode === "field_answer";
+  if (opts.company.trim() && !namesCompany(firstText, opts.company)) {
+    hits.push({ ruleId: "CL-20", severity: field ? "med" : "block", label: "Company not named in the opening", ...(first ?? whole) });
   }
-  if (opts.role.trim() && !roleNamed(firstText, opts.role)) {
+  if (!field && opts.role.trim() && !roleNamed(firstText, opts.role)) {
     hits.push({ ruleId: "CL-20", severity: "block", label: "Role not named in the opening", ...(first ?? whole) });
   }
   return hits;

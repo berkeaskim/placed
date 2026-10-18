@@ -222,3 +222,45 @@ describe("named salutation", () => {
     expect(team).not.toContain("Named recipient needs 'Yours sincerely'");
   });
 });
+
+// audit 09 #7: CL-20 matches a company's aliases and the role's head noun phrase, so the opening never needs string-stuffing
+describe("CL-20 company aliases and role head", () => {
+  const letter = (opening: string) => `Dear Hiring Manager,\n\n${opening}\n\nMore.\n\nYours faithfully\nA B`;
+  const cl20 = (opening: string, company: string, role: string, mode: "full_letter" | "field_answer" = "full_letter") =>
+    lintLetter(mode === "full_letter" ? letter(opening) : opening, { ...base, mode, limit: mode === "field_answer" ? { unit: "words", max: 150 } : null, company, role })
+      .filter((h) => h.ruleId === "CL-20");
+
+  it.each([
+    ["JPMorgan Chase & Co.", "I am applying for the Summer Analyst role at J.P. Morgan."],
+    ["JPMorgan Chase & Co.", "I am applying for the Summer Analyst role at JPMorgan."],
+    ["JPMorgan Chase & Co.", "I am applying for the Summer Analyst role at JPMorganChase."],
+    ["J.P. Morgan", "I am applying for the Summer Analyst role at JPMorgan Chase."],
+    ["Goldman Sachs Group, Inc.", "I am applying for the Summer Analyst role at Goldman."],
+    ["PricewaterhouseCoopers LLP", "I am applying for the Summer Analyst role at PwC."],
+    ["PwC UK", "I am applying for the Summer Analyst role at PricewaterhouseCoopers."],
+    ["Ernst & Young LLP", "I am applying for the Summer Analyst role at EY."],
+    ["The Boston Consulting Group", "I am applying for the Summer Analyst role at BCG."],
+    ["Bank of America", "I am applying for the Summer Analyst role at BofA."],
+  ])("company %s is named by an alias", (company, opening) => {
+    expect(cl20(opening, company, "Summer Analyst").map((h) => h.label)).toEqual([]);
+  });
+
+  it("still blocks when the opening names no form of the company", () => {
+    expect(cl20("I am applying for the Summer Analyst role at your firm.", "JPMorgan Chase & Co.", "Summer Analyst").map((h) => h.label)).toEqual(["Company not named in the opening"]);
+    expect(cl20("I am applying for the Summer Analyst role because they offer rotations.", "EY", "Summer Analyst").map((h) => h.label)).toEqual(["Company not named in the opening"]);
+  });
+
+  it("a long scraped title needs only its head noun phrase in a full letter", () => {
+    const role = "2027 Summer Analyst Programme – Global Banking & Markets – London";
+    expect(cl20("I am applying for the Summer Analyst programme in Global Banking at Barclays.", "Barclays", role)).toEqual([]);
+    expect(cl20("I am applying for a Summer Analyst internship at Barclays.", "Barclays", role)).toEqual([]);
+    expect(cl20("I am applying for a summer internship at Barclays.", "Barclays", role).map((h) => h.label)).toEqual(["Role not named in the opening"]);
+    expect(cl20("I am applying to the Software Engineering Intern role at Monzo.", "Monzo", "Software Engineer Intern (Summer 2027), London")).toEqual([]);
+  });
+
+  it("a form answer needs only the company, as a medium note, and never the role", () => {
+    expect(cl20("Barclays' graduate training appeals to me.", "Barclays", "2027 Summer Analyst Programme – Global Banking & Markets – London", "field_answer")).toEqual([]);
+    const miss = cl20("The graduate training appeals to me.", "Barclays", "Summer Analyst", "field_answer");
+    expect(miss.map((h) => [h.label, h.severity])).toEqual([["Company not named in the opening", "med"]]);
+  });
+});

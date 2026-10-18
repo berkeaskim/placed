@@ -14,11 +14,41 @@ export const STATIC_EMPLOYERS: string[] = KNOWN_EMPLOYERS
 
 const norm = (s: string) => s.toLowerCase().replace(/[.,'’]/g, "").replace(/\b(?:plc|ltd|llc|inc|llp|limited|group|holdings|the|& co|and co|co)\b/g, " ").replace(/\s+/g, " ").trim();
 
+/**
+ * Extra names the cover-letter opening check accepts (audit 09#7) on top of the gate's KNOWN_EMPLOYERS aliases.
+ * Kept here, not in the gate's list, because short forms like "JPMorganChase" only matter for naming the target firm.
+ */
+const EXTRA_ALIASES: Record<string, string[]> = {
+  JPMorgan: ["JPMorganChase", "JPMorgan Chase & Co", "J.P. Morgan Chase"],
+  PwC: ["Price Waterhouse Coopers"],
+  "Bank of America": ["BofA Securities", "Bank of America Merrill Lynch"],
+  McKinsey: ["McKinsey and Company"],
+  "Goldman Sachs": ["Goldman Sachs International"],
+};
+const allNames = (e: { name: string; aliases?: string[] }) => [e.name, ...(e.aliases ?? []), ...(EXTRA_ALIASES[e.name] ?? [])];
+
 /** Every name a company goes by (its known aliases too): "JPMorgan Chase & Co." → JPMorgan, J.P. Morgan, JPMC… */
 export function companyNames(company: string): string[] {
   const n = norm(company);
-  const k = KNOWN_EMPLOYERS.find((e) => [e.name, ...(e.aliases ?? [])].some((a) => { const x = norm(a); return x === n || n.startsWith(`${x} `) || n.endsWith(` ${x}`); }));
-  return [company, ...(k ? [k.name, ...(k.aliases ?? [])] : [])];
+  const k = KNOWN_EMPLOYERS.find((e) => allNames(e).some((a) => { const x = norm(a); return x === n || n.startsWith(`${x} `) || n.endsWith(` ${x}`); }));
+  return [company, ...(k ? allNames(k) : [])];
+}
+
+/** Lowercase word tokens: possessives and dots dropped ("J.P." → "jp", "Monzo's" → "monzo"), "&" → "and", legal suffixes removed. */
+const tokens = (s: string) => s.toLowerCase().replace(/['’]s\b/g, "").replace(/[.'’]/g, "").replace(/&/g, " and ")
+  .replace(/[^a-z0-9]+/g, " ").replace(/\b(?:plc|ltd|llc|inc|llp|limited|group|holdings|the)\b/g, " ").replace(/\s+/g, " ").trim();
+
+/**
+ * True when `text` names `company` by any of its names, as whole words. "J.P. Morgan", "JPMorgan" and "JPMorganChase"
+ * all name "JPMorgan Chase & Co."; "PwC" names "PricewaterhouseCoopers LLP"; "they" never names "EY".
+ */
+export function namesCompany(text: string, company: string): boolean {
+  const hay = ` ${tokens(text)} `;
+  return companyNames(company).some((name) => {
+    const t = tokens(name);
+    if (!t) return false;
+    return hay.includes(` ${t} `) || hay.includes(` ${t.replace(/ /g, "")} `);
+  });
 }
 
 /**
