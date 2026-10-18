@@ -234,3 +234,19 @@ describe("role playbooks point at CV rules that exist (PR #52 merged rule ids)",
     expect(ids.filter((id) => !RULES_BY_ID.has(id))).toEqual([]);
   });
 });
+
+describe("grade fix text (01#2, 02#9)", () => {
+  it("points students whose result was affected by circumstances to the form, never to hiding the grade", async () => {
+    const { runCodeChecks } = await import("@/lib/cv-score/checkers");
+    const { rulesFor } = await import("@/lib/cv-rules");
+    const { GRADE_POLICY } = await import("@/lib/conventions");
+    const rules = rulesFor("consulting");
+    const cv = { name: "A", email: null, phone: null, location: null, links: [], summary: null, interests: null,
+      education: [{ id: "e1", institution: "Uni", degree: "BSc Economics", dates: "2023 - 2026", grade: null, details: [] }],
+      experience: [], projects: [], leadership: [], skills: [], sectionOrder: [] };
+    const r = runCodeChecks(rules, { text: "BSc Economics", pageTexts: ["BSc Economics"], pageCount: 1, fileSize: 1000, cv: cv as never, year: "final", spellingErrors: [] })
+      .find((x) => x.status === "fail" && rules.find((y) => y.id === x.ruleId)?.checker === "uk_grades");
+    expect(r?.fix).toContain(GRADE_POLICY.cv.circumstances);
+    expect(r?.fix ?? "").not.toMatch(/leave it off|omit|hide/i);
+  });
+});

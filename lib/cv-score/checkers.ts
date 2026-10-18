@@ -7,6 +7,7 @@ import { escapeRegex } from "@/lib/text/regex";
 import { isImageOnly } from "@/lib/cv/image-only";
 import { clicheDensity, countWords } from "@/lib/cv/cliches";
 import type { SafetyReport } from "@/lib/cv/safety";
+import { GRADE_POLICY } from "@/lib/conventions";
 import type { CvContext, RuleResult } from "./context";
 
 type Out = Omit<RuleResult, "ruleId">;
@@ -244,7 +245,7 @@ export const CHECKERS: Record<CheckerId, (ctx: CvContext, rule: CvRule) => Out> 
     if (c.year === "1st" && lines.some(hasPreUniGrades)) return ok();
     return bad("fail", null, c.year === "1st"
       ? "State your predicted grade or your A-level (or equivalent) grades, e.g. 'Predicted 2:1' or 'A-levels: Maths A*, Economics A'."
-      : "State your degree result, average or predicted grade in your university's format, e.g. 'Predicted 2:1', 'Merit (expected)' or 'GPA 3.6/4.0'.");
+      : `State your degree result, average or predicted grade in your university's format, e.g. 'Predicted 2:1', 'Merit (expected)' or 'GPA 3.6/4.0'. ${GRADE_POLICY.cv.circumstances}`);
   },
   github_link: (c) =>
     hasPortfolioLink(c.text, c.cv.links ?? []) ? ok() : bad("fail", null, "Add a link to your code or portfolio (GitHub, Kaggle, Tableau Public, a demo or your own site) next to your contact details."),
