@@ -92,6 +92,7 @@ export type TailoredCvOutputT = z.infer<typeof TailoredCvOutput>;
 const TBulletLoose = TBullet.extend({
   changeType: TailorChangeTypeOut.optional(), qualifiersKept: z.array(z.string()).default([]),
   keywordsAdded: z.array(z.string()).default([]), dropReason: z.string().nullable().default(null),
+  untailored: z.boolean().optional(),
 });
 const TEntryLoose = TEntry.extend({ dates: z.string().default(""), location: z.string().default(""), bullets: z.array(TBulletLoose) });
 export const TailoredCvFixture = z.object({
@@ -114,3 +115,13 @@ export type DiscoverCompaniesOutputT = z.infer<typeof DiscoverCompaniesOutput>;
 
 export const CourseFieldOutput = z.object({ field: z.enum(FIELDS) });
 export type CourseFieldOutputT = z.infer<typeof CourseFieldOutput>;
+
+export const PostBulletsOutput = z.object({
+  items: z.array(z.object({
+    text: z.string().trim().min(1).max(300),
+    entryHint: z.object({ org: z.string(), title: z.string() }).nullable(),
+    newProjectTitle: z.string().max(120).nullable(),
+    excerpt: z.string().max(600),
+  })).max(12),
+});
+export type PostBulletsOutputT = z.infer<typeof PostBulletsOutput>;

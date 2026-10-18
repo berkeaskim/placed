@@ -30,6 +30,7 @@ import { CoverLetterButton, CoverLetterHost } from "@/components/cover-letter/co
 import { AutopilotHost } from "@/components/autopilot-chat/autopilot-host";
 import { AutopilotStartCard } from "@/components/autopilot-chat/autopilot-start-card";
 import type { StoredTailoring } from "./actions";
+import { isStale } from "@/lib/bank/tailor-context";
 import { PeoplePanel } from "@/components/outreach/people-panel";
 import { InsideTrack, WriteToSomeoneElse } from "@/components/inside-track/inside-track";
 import { OUTREACH_TARGETS } from "@/lib/outreach/targets";
@@ -142,7 +143,12 @@ export default async function JobPage({ params, searchParams }: { params: Promis
             jobId={job.id}
             hasCv={Boolean(cv)}
             original={{ skills: cv?.parsed.skills ?? [], summary: cv?.parsed.summary ?? null }}
-            initial={stored?.v === 1 && stored.outcome ? { outcome: stored.outcome, final: stored.final ?? null } : null}
+            initial={stored?.outcome
+              ? {
+                outcome: stored.outcome, final: stored.final ?? null,
+                bank: stored.v === 2 ? { report: stored.report, stale: isStale(user.id, stored), newCvSuggestions: 0 } : null,
+              }
+              : null}
           />
 
           {detail.showAutopilot && <AutopilotStartCard />}
