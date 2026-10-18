@@ -194,8 +194,10 @@ export function verificationState(r: VerifyReport, revertedCount: number): Verif
 /** fromBank: the tailoring used bank items that are not in the active CV (report.added is non-empty). */
 export function verificationCopy(state: VerificationState, confirmedAny: boolean, fromBank = false): string {
   if (state === "blocked") return "Some lines aren't supported by your CV yet. Fix the flagged lines to download.";
-  if (fromBank) return confirmedAny ? "Every claim traced to your CV or experience bank, or confirmed by you" : "Every claim traced to your CV or experience bank";
-  return confirmedAny ? "Every claim traced to your CV or confirmed by you" : "Every claim traced to your original CV";
+  // 05 #28: the check can't catch everything, so the pass state says what was checked and asks the student to read
+  const what = fromBank ? "your CV and experience bank" : "your original CV";
+  const you = confirmedAny ? " (and what you confirmed)" : "";
+  return `Checked against ${what}${you} for invented numbers, employers, skills and ownership. Still read each change: we can't catch everything.`;
 }
 
 // ---------- B6 "Caught it" → B9 confirm ----------
