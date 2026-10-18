@@ -283,7 +283,7 @@ function pairingHits(text: string, struct: Structure, mode: Mode): RawHit[] {
     const first = so.text.split("\n", 1)[0].trim().toLowerCase();
     // 09 #19: "Dear Priya Patel" is a named recipient too
     const named = !!sal && (/^dear\s+(mr|mrs|ms|mx|dr|prof|professor)\b\.?\s+\S/i.test(sal.text)
-      || (/^dear\s+[A-Z][a-z]+(?:\s+[A-Z][\w'’-]+)+,?\s*$/.test(sal.text.trim()) && !/\b(?:Team|Manager|Recruitment|Recruiter|Committee|Panel|Department|Sir|Madam|Graduate|Hiring)\b/.test(sal.text)));
+      || (/^[Dd]ear\s+[A-Z][a-z]+(?:\s+[A-Z][\w'’-]+)+,?\s*$/.test(sal.text.trim()) && !/\b(?:Team|Manager|Recruitment|Recruiter|Committee|Panel|Department|Sir|Madam|Graduate|Hiring)\b/.test(sal.text)));
     if (/^sincerely\b/.test(first)) hits.push({ ruleId: "CL-43", severity: "med", label: "US-style sign-off", start: so.start, end: so.start + first.length });
     else if (named && /^yours faithfully/.test(first)) hits.push({ ruleId: "CL-43", severity: "med", label: "Named recipient needs 'Yours sincerely'", start: so.start, end: so.start + first.length });
   }
