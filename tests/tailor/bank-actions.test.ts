@@ -54,7 +54,8 @@ const tj = () => stored().tailored_json as StoredTailoring;
 const v2 = () => { const s = tj(); if (s.v !== 2) throw new Error("expected v2"); return s; };
 const entryIds = (cv: ParsedCV) => [cv.experience, cv.projects, cv.leadership].flat().map((e) => e.id);
 
-describe("tailoring from the bank (server actions)", () => {
+// Every action here renders real PDFs (several per tailor for the one-page fit), so allow slow CI runners.
+describe("tailoring from the bank (server actions)", { timeout: 60_000 }, () => {
   beforeAll(async () => {
     process.env.AI_MODE = "fixture";
     seedCv({ is_active: true, parsed_json: activeCv() as never, raw_text: "Marlowe Cafe Barista Served 150 customers per shift" });
@@ -112,19 +113,6 @@ describe("tailoring from the bank (server actions)", () => {
     const s = v2();
     const item = s.report.leftOut.find((i) => i.id === projectId);
     expect(item?.reason).toBe("you removed this for this role");
-    expect(entryIds(s.base)).not.toContain(projectId);
-    const r = await swapBankItem(jobId, projectId, "add");
-    expect("error" in r ? r.error : null).toBeNull();
-    const after = v2();
-    expect(entryIds(after.base)).toContain(projectId);
-    expect(after.overrides.excluded).not.toContain(projectId);
-    expect(after.report.leftOut.some((i) => i.id === projectId)).toBe(false);
-  });
-
-  it("a removed item is listed in the stored report.leftOut and Add back restores it", async () => {
-    expect("error" in (await swapBankItem(jobId, projectId, "remove"))).toBe(false);
-    const s = v2();
-    expect(s.report.leftOut.find((i) => i.id === projectId)?.reason).toBe("you removed this for this role");
     expect(entryIds(s.base)).not.toContain(projectId);
     const r = await swapBankItem(jobId, projectId, "add");
     expect("error" in r ? r.error : null).toBeNull();
