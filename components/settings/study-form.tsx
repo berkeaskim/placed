@@ -1,11 +1,12 @@
 "use client";
 import { useActionState } from "react";
 import { saveStudy, type StudyState } from "@/app/(app)/settings/actions";
-import { YEARS, type Year } from "@/lib/types";
+import { WORK_AUTH, YEARS, type WorkAuth, type Year } from "@/lib/types";
+import { WORK_AUTH_LABEL } from "@/lib/profile/work-auth";
 
 const YEAR_LABEL: Record<Year, string> = { "1st": "1st year", "2nd": "2nd year", penultimate: "Penultimate", final: "Final year", masters: "Master's" };
 
-export function StudyForm({ year, gradYear, options }: { year: Year | null; gradYear: number | null; options: number[] }) {
+export function StudyForm({ year, gradYear, workAuth, options }: { year: Year | null; gradYear: number | null; workAuth: WorkAuth | null; options: number[] }) {
   const [state, action, pending] = useActionState<StudyState, FormData>(saveStudy, null);
   const select = "min-h-11 min-w-0 flex-1 rounded-[12px] border bg-white px-3 text-sm";
   return (
@@ -21,6 +22,14 @@ export function StudyForm({ year, gradYear, options }: { year: Year | null; grad
           <select name="grad_year" defaultValue={gradYear ?? ""} className={select}>
             <option value="">Not sure</option>
             {[...new Set([...(gradYear ? [gradYear] : []), ...options])].sort().map((g) => <option key={g} value={g}>{g}</option>)}
+          </select>
+        </label>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <label className="flex min-w-0 flex-1 basis-60 flex-col gap-1 text-sm font-semibold">Right to work in the UK
+          <select name="work_auth" defaultValue={workAuth ?? ""} className={select}>
+            <option value="">Prefer not to say</option>
+            {WORK_AUTH.map((w) => <option key={w} value={w}>{WORK_AUTH_LABEL[w]}</option>)}
           </select>
         </label>
         <button type="submit" disabled={pending} className="min-h-11 self-end rounded-[12px] border-2 border-border bg-white px-4 text-sm font-bold transition-colors hover:bg-muted">

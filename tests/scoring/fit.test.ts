@@ -108,3 +108,36 @@ describe("labelFor", () => {
     expect(labelFor(g)).toBe(l);
   });
 });
+
+describe("work status (10#1)", () => {
+  const finalist = { ...student, year: "final" as const };
+  const vis = (s: typeof student, workAuth: NonNullable<typeof student.workAuth>) => ({ ...s, needsVisa: workAuth !== "uk_rtw", workAuth });
+  const gated = (s: typeof student, over: Parameters<typeof job>[0]) => scoreFit(s, job(over), cov(0.8), today).gates.find((g) => g.key === "visa")!.passed === false;
+
+  it("needs_sponsorship is gated on any role that says no sponsorship, including internships", () => {
+    for (const employmentType of ["internship", "spring_week", "placement", "graduate"] as const) {
+      expect(gated(vis(finalist, "needs_sponsorship"), { sponsorsVisa: "no", employmentType }), employmentType).toBe(true);
+    }
+    expect(scoreFit(vis(student, "needs_sponsorship"), job({ sponsorsVisa: "unknown" }), cov(0.8), today).notes.join(" ")).toMatch(/ask the employer/);
+  });
+  it("student_visa is gated only on graduate and permanent roles", () => {
+    expect(gated(vis(finalist, "student_visa"), { sponsorsVisa: "no", employmentType: "graduate" })).toBe(true);
+    expect(gated(vis(student, "student_visa"), { sponsorsVisa: "no", employmentType: "internship" })).toBe(false);
+  });
+  it("graduate_visa is never gated but gets a note on no-sponsorship graduate roles", () => {
+    const r = scoreFit(vis(finalist, "graduate_visa"), job({ sponsorsVisa: "no", employmentType: "graduate" }), cov(0.8), today);
+    expect(r.gates.find((g) => g.key === "visa")!.passed).toBe(true);
+    expect(r.notes.join(" ")).toMatch(/Graduate visa lets you start/);
+  });
+  it("uk_rtw and unknown are never gated and get no visa notes", () => {
+    for (const s of [vis(finalist, "uk_rtw"), { ...finalist, needsVisa: false, workAuth: null }]) {
+      const r = scoreFit(s, job({ sponsorsVisa: "no", employmentType: "graduate" }), cov(0.8), today);
+      expect(r.gates.find((g) => g.key === "visa")!.passed).toBe(true);
+      expect(r.notes.join(" ")).not.toMatch(/visa/i);
+    }
+  });
+  it("legacy profiles with only needsVisa behave as a Student visa", () => {
+    expect(gated({ ...finalist, needsVisa: true }, { sponsorsVisa: "no", employmentType: "graduate" })).toBe(true);
+    expect(gated({ ...student, needsVisa: true }, { sponsorsVisa: "no", employmentType: "internship" })).toBe(false);
+  });
+});

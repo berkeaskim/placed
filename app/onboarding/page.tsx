@@ -2,8 +2,8 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Progress } from "@/components/ui/progress";
-import { Switch } from "@/components/ui/switch";
-import { YEARS, type Year } from "@/lib/types";
+import { WORK_AUTH, YEARS, type WorkAuth, type Year } from "@/lib/types";
+import { WORK_AUTH_LABEL, needsVisaFor } from "@/lib/profile/work-auth";
 import type { OnboardingInputT } from "@/lib/validation/onboarding";
 import { SuggestInput } from "@/components/onboarding/suggest-input";
 import { fieldForCourse, searchCourses } from "@/lib/profile/courses";
@@ -36,7 +36,7 @@ export default function Onboarding() {
   const [gradYear, setGradYear] = useState<number | null>(null);
   const today = todayLondon();
   const [loc, setLoc] = useState<string[]>([]);
-  const [visa, setVisa] = useState(false);
+  const [workAuth, setWorkAuth] = useState<WorkAuth | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
   const named = (s: string) => s.trim().length >= 2 && /\p{L}/u.test(s);
@@ -46,7 +46,7 @@ export default function Onboarding() {
   function finish() {
     setError(null);
     start(async () => {
-      const r = await saveOnboarding({ university, course, year: year!, gradYear, locationPref: loc, needsVisa: visa } as OnboardingInputT);
+      const r = await saveOnboarding({ university, course, year: year!, gradYear, locationPref: loc, needsVisa: needsVisaFor(workAuth), workAuth } as OnboardingInputT);
       if ("error" in r) { setError(r.error ?? "Something went wrong"); return; }
       celebrate(r.award);
       router.push("/profile/build");
@@ -75,7 +75,13 @@ export default function Onboarding() {
       {step === LAST && (<section className="flex flex-col gap-3"><h1 className="text-3xl font-extrabold">Where do you want to work?</h1>
         <div className="grid grid-cols-2 gap-3">{LOCATIONS.map(([k, label]) => (
           <Choice key={k} selected={loc.includes(k)} onClick={() => setLoc((l) => l.includes(k) ? l.filter((x) => x !== k) : [...l, k])}>{label}</Choice>))}</div>
-        <label className="card-quest flex min-h-14 items-center justify-between px-4 font-bold">I&apos;ll need visa sponsorship <Switch checked={visa} onCheckedChange={setVisa} /></label></section>)}
+        <label className="flex flex-col gap-1.5 font-bold">Your right to work in the UK
+          <select value={workAuth ?? ""} onChange={(e) => setWorkAuth((e.target.value || null) as WorkAuth | null)} className="card-quest min-h-14 px-4 font-semibold">
+            <option value="">Prefer not to say</option>
+            {WORK_AUTH.map((w) => <option key={w} value={w}>{WORK_AUTH_LABEL[w]}</option>)}
+          </select>
+          <span className="text-xs font-normal text-muted-foreground">On a Student visa you can usually intern full-time in the holidays, so Placed only flags sponsorship on graduate and permanent roles.</span>
+        </label></section>)}
       {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
       <div className="flex gap-3">
         {step > 0 && <button type="button" onClick={() => setStep(step - 1)} className="min-h-12 rounded-[14px] border-2 px-5 py-3 font-bold">Back</button>}

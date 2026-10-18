@@ -2,7 +2,7 @@ import { sql } from "drizzle-orm";
 import { check, index, integer, primaryKey, sqliteTable, text, unique, uniqueIndex } from "drizzle-orm/sqlite-core";
 import type { Answer, ChatMsg, Fact, Limit, LintHit, OutputStatus, OutputTarget, Span, UndoEntry } from "../cover-letter/types";
 import type { DraftResult } from "../autopilot/drafts";
-import type { Archetype, ArchetypeScore, ParsedCV, Region, Requirement, Year } from "../types";
+import type { Archetype, ArchetypeScore, ParsedCV, Region, Requirement, WorkAuth, Year } from "../types";
 
 /**
  * SQLite port of supabase/migrations 0001–0015 (minus gmail_connections / inbox_events, and 0016's auth_attempts).
@@ -62,6 +62,8 @@ export const profiles = sqliteTable("profiles", {
   university: text("university"),
   location_pref: json<Region[]>("location_pref").notNull().default(sql`'[]'`),
   needs_visa: bool("needs_visa").notNull().default(false),
+  /** uk_rtw | student_visa | graduate_visa | needs_sponsorship; null = not said. needs_visa mirrors it (any value but uk_rtw). */
+  work_auth: text("work_auth").$type<WorkAuth>(),
   target_archetype: text("target_archetype").$type<Archetype>(),
   archetypes: json<ArchetypeScore[]>("archetypes").notNull().default(sql`'[]'`),
   skills: json<string[]>("skills").notNull().default(sql`'[]'`),
