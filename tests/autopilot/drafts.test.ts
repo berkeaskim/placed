@@ -95,6 +95,21 @@ describe("gateDraft: invented facts in first-person sentences", () => {
     expect(why(me("At Revolut I used Python and SQL to clean 1,200 rental listings.", ["p0-b0"]), ab)).toHaveLength(1);
     expect(why(me("I used Python and SQL to collect and clean 1,200 rental listings.", ["p0-b0"]), ab)).toEqual([]);
   });
+  // PR #54 handoff: the CV tailor's claim checks (lib/verify/claims) also guard first-person draft sentences.
+  it.each([
+    ["frequency", "I organised daily society events using Excel to analyse attendance.", "overstates how often"],
+    ["adoption", "I organised weekly society events using Excel to analyse attendance; my approach was adopted by the committee.", "says it was adopted"],
+    ["purpose", "I organised weekly society events using Excel to analyse attendance to boost membership.", "adds a result or purpose"],
+  ])("catches a claim-check escalation: %s", (_n, text, reason) => {
+    expect(why(me(text))).toEqual([reason]);
+  });
+  it("catches a changed grade on Ayşe's real CV", async () => {
+    const { readFileSync } = await import("node:fs");
+    const ayse = JSON.parse(readFileSync("seed/demo/ayse.json", "utf8")) as ParsedCV;
+    const ab = { ...base, cv: ayse, facts: [] };
+    expect(why(me("I organised weekly society events while on track for a First.", ["l0-b0"]), ab)).toEqual(["changes your grade"]);
+    expect(why(me("I organised weekly society events.", ["l0-b0"]), ab)).toEqual([]);
+  });
   it("catches a sentence with an unresolvable ref instead of dropping the ref", () => {
     expect(why(me("I organised weekly society events using Excel to track attendance.", ["x1b1", "bogus"]))).toEqual(["bad source"]);
   });

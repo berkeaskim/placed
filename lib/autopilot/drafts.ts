@@ -64,10 +64,20 @@ function withDraftBullet(cv: ParsedCV, text: string, refs: string[]) {
   return t;
 }
 
-const VERIFY_REASON: Record<string, string> = { siblingContamination: "tool not on your CV", skillInjection: "tool not on your CV", unsupportedFacts: "not on your CV", inventedMetrics: "unsupported number", authorshipEscalation: "overstates your role", qualifierDrop: "drops a qualifier" };
+const VERIFY_REASON: Record<string, string> = {
+  siblingContamination: "tool not on your CV", skillInjection: "tool not on your CV", unsupportedFacts: "not on your CV", inventedMetrics: "unsupported number", authorshipEscalation: "overstates your role", qualifierDrop: "drops a qualifier",
+  // Audit 05 claim checks (lib/verify/claims), shared with the CV tailor gate.
+  modalityDrop: "drops a hedge", outcomeEscalation: "overstates the outcome", audienceEscalation: "overstates the audience", adoptionClaim: "says it was adopted",
+  scopeSuperlative: "adds a superlative", frequencyEscalation: "overstates how often", proficiencyEscalation: "overstates your level", gradeClaim: "changes your grade",
+  roleTypeEscalation: "inflates the role type", durationClaim: "changes the duration", causalInsertion: "adds a result or purpose", reframeGuard: "reframes beyond your CV",
+};
 /** Checks that compare against the whole CV (not one cited bullet): the only ones that make sense for a student claim inside an employer sentence. */
 const CORPUS_TYPES = new Set(["inventedMetrics", "unsupportedFacts", "skillInjection"]);
-const VERIFY_ORDER = ["siblingContamination", "skillInjection", "inventedMetrics", "authorshipEscalation", "qualifierDrop", "unsupportedFacts"];
+const VERIFY_ORDER = [
+  "siblingContamination", "skillInjection", "inventedMetrics", "gradeClaim", "roleTypeEscalation", "durationClaim", "authorshipEscalation", "qualifierDrop",
+  "modalityDrop", "outcomeEscalation", "audienceEscalation", "adoptionClaim", "proficiencyEscalation", "frequencyEscalation", "causalInsertion", "reframeGuard",
+  "scopeSuperlative", "unsupportedFacts",
+];
 
 /** Reason a first-person sentence is not backed by the cited CV bullets / facts, or null if it is. */
 export function meBlock(text: string, resolved: string[], i: DraftInput, bullets: Map<string, string>, facts: Map<string, string>, corpusOnly = false): string | null {
@@ -78,7 +88,7 @@ export function meBlock(text: string, resolved: string[], i: DraftInput, bullets
     ...authorshipEscalation(t, source), ...qualifierDrop(t, source),
   ].filter((x) => x.severity === "block");
   if (first.length) return REASON[first[0].check] ?? "not supported by your CV";
-  const rep = verifyTailoring({ source: i.cv, sourceText: "", confirmedFacts: i.facts.map((f) => f.claim), tailored: withDraftBullet(i.cv, text, resolved), jdKeywords: [], coverageBefore: null, coverageAfter: null });
+  const rep = verifyTailoring({ source: i.cv, sourceText: "", confirmedFacts: i.facts.map((f) => f.claim), tailored: withDraftBullet(i.cv, text, resolved), jdKeywords: [], coverageBefore: null, coverageAfter: null, claimChecks: true });
   const hit = rep.issues.filter((x) => x.severity === "block" && x.bulletId === "draft" && x.type in VERIFY_REASON && (!corpusOnly || CORPUS_TYPES.has(x.type)));
   if (!hit.length) return null;
   hit.sort((a, b) => VERIFY_ORDER.indexOf(a.type) - VERIFY_ORDER.indexOf(b.type));

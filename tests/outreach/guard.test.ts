@@ -28,6 +28,17 @@ describe("checkOutreach blocks fabrication", () => {
     expect(issues.some((i) => sentence.includes(i.sentence.trim()) || i.sentence.includes(sentence.trim().slice(0, 20)))).toBe(true);
   });
 
+  // PR #54 handoff: the guard opts into the CV tailor's claim checks (hedges, ladders, grades, role type).
+  it.each([
+    ["an inflated frequency", "I organised daily society events."],
+    ["an inflated frequency 2", "I ran my rent-tracker script daily on AWS."],
+    ["an adoption claim", "My rent tracker was adopted by the Finance Society."],
+    ["a stretched duration", "I've been Events Officer for three years."],
+  ])("claim check: %s", (_label, sentence) => {
+    const issues = checkOutreach(`Hi Sam, I'm a UCL Economics student. ${sentence} Could we chat?`, src());
+    expect(issues.some((i) => i.sentence.includes(sentence.slice(0, 15)))).toBe(true);
+  });
+
   it("note backs a 'we met' sentence", () => {
     const t = "Hi Sam, we met at the UCL Finance Society careers evening. Could I ask about your team?";
     expect(checkOutreach(t, src())).not.toEqual([]);
