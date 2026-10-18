@@ -14,7 +14,7 @@ function ShieldCheckDraw({ size = 18, className }: { size?: number; className?: 
   );
 }
 
-/** Spec §8.4: the verification badge. It reads "Every claim traced" once anything unsupported has been reverted. */
+/** Spec §8.4: the verification badge. It says what was checked (audit 05 #28: never "every claim traced"). */
 export function VerificationBadge({ state, text }: { state: VerificationState; text: string }) {
   const bad = state === "blocked";
   return (

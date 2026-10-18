@@ -78,6 +78,8 @@ export function TailorPanel({ jobId, hasCv, original, initial }: {
   // A one-page overflow: which call the removal buttons make depends on where it came from (a tailor stored nothing).
   const [overflow, setOverflow] = useState<{ o: Pick<OverflowResult, "message" | "remove">; source: "tailor" | "swap" } | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  /** Employer AI policy shown before the AI rewrite runs (lib/employer-policy); `extra` is the pending overflow removal. */
+  const [policy, setPolicy] = useState<{ text: string; grammarOnly: boolean; sourceUrl: string | null; extra?: string[] } | null>(null);
   const [ask, setAsk] = useState<NumberAsk | null>(null);
   const [askError, setAskError] = useState<string | null>(null);
   const [defend, setDefend] = useState<DefendState>({ status: "idle" });
@@ -114,7 +116,9 @@ export function TailorPanel({ jobId, hasCv, original, initial }: {
   }, [jobId, key, final, retry]);
 
   /** One place for every tailor / re-select / swap result: overflow shows removal buttons, success replaces the outcome. */
-  const applyResult = (r: TailorResult, source: "tailor" | "swap") => {
+  const applyResult = (r: TailorResult, source: "tailor" | "swap", extra?: string[]) => {
+    if ("policyNotice" in r) { setPolicy({ ...r.policyNotice, extra }); return; }
+    setPolicy(null);
     if ("remove" in r) { setOverflow({ o: r, source }); return; }
     if ("error" in r) { setError(r.error); return; }
     setOverflow(null);
@@ -129,10 +133,22 @@ export function TailorPanel({ jobId, hasCv, original, initial }: {
     if (source === "tailor") { setAnimateIn(true); celebrate(r.award); }
   };
 
-  const run = (extraExcluded?: string[]) => startTailor(async () => {
+  const run = (extraExcluded?: string[], aiPolicyAck = false) => startTailor(async () => {
     setError(null); setNotice(null); setOverflow(null);
-    applyResult(await tailorForJob(jobId, extraExcluded ? { extraExcluded } : undefined), "tailor");
+    applyResult(await tailorForJob(jobId, { ...(extraExcluded ? { extraExcluded } : {}), ...(aiPolicyAck ? { aiPolicyAck } : {}) }), "tailor", extraExcluded);
   });
+  const policyBox = policy && (
+    <div className="flex flex-col gap-2 rounded-xl border border-[#F2C77A] bg-[#FFF8EC] px-3 py-3 text-sm" role="alert">
+      <p className="font-semibold text-[#7A4100]">{policy.text}</p>
+      {policy.sourceUrl && <a href={policy.sourceUrl} target="_blank" rel="noreferrer" className="text-xs font-bold text-[#5B3DF5] hover:underline">Read the employer&apos;s guidance</a>}
+      <div className="flex flex-wrap gap-2">
+        <button type="button" onClick={() => run(policy.extra, true)} className="btn-quest min-h-11 px-4 py-2 text-sm">
+          {policy.grammarOnly ? "Check spelling and grammar only" : "I understand, continue"}
+        </button>
+        <button type="button" onClick={() => setPolicy(null)} className="min-h-11 px-3 text-sm font-bold text-[#5B3DF5] hover:underline">Not now</button>
+      </div>
+    </div>
+  );
 
   const removeForOverflow = (bulletId: string) => {
     if (overflow?.source === "tailor") { run([bulletId]); return; }
@@ -208,12 +224,13 @@ export function TailorPanel({ jobId, hasCv, original, initial }: {
     return (
       <section className="flex flex-col gap-3 rounded-[20px] border bg-white p-5" aria-busy={showSteps}>
         <div className="flex items-center justify-between"><h2 className="font-bold">Tailor my CV</h2><span className="chip-xp">+30 XP</span></div>
-        <p className="text-sm text-muted-foreground">We reword and reorder what&apos;s already on your CV so this posting&apos;s requirements are easy to find. Every claim is checked against your original.</p>
+        <p className="text-sm text-muted-foreground">We reorder what&apos;s already on your CV, and change a few words where it helps, so this posting&apos;s requirements are easy to find. Every claim is checked against your original.</p>
         {showSteps ? (
           <AgentSteps steps={TAILOR_STEPS} index={steps.index} label="Tailoring agent" />
         ) : (
           <button type="button" onClick={() => run()} className="btn-quest min-h-12 py-3">Tailor my CV for this role</button>
         )}
+        {policyBox}
         {error && <p className="rounded-xl bg-[#FFF1DC] px-3 py-2 text-sm font-semibold text-[#7A4100]" role="alert">{error}</p>}
         {overflow && !showSteps && <OverflowRemove overflow={overflow.o} pending={tailoring || busy} onRemove={removeForOverflow} onTailorAgain={() => run()} />}
       </section>
@@ -364,6 +381,7 @@ export function TailorPanel({ jobId, hasCv, original, initial }: {
               <button type="button" onClick={() => setRetry((n) => n + 1)} className="inline-flex min-h-11 items-center px-1 font-bold text-[#5B3DF5] hover:underline">Try again</button>
             </p>
           )}
+          {policyBox}
           {error && <p className="rounded-xl bg-[#FFF1DC] px-3 py-2 text-sm font-semibold text-[#7A4100]" role="alert">{error}</p>}
           {overflow && <OverflowRemove overflow={overflow.o} pending={tailoring || busy} onRemove={removeForOverflow} onTailorAgain={() => run()} />}
         </StaggerItem>

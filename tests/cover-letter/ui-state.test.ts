@@ -8,7 +8,7 @@ const output = (o: Partial<OutputView> = {}): OutputView => ({
 });
 const view = (v: Partial<CardView> = {}): CardView => ({
   letterId: "l1", company: "Northbridge", role: "Analyst", chat: [], next: null, researchState: "done", draftState: "idle",
-  facts: [], outputs: [output()], feedbackOnly: false, noLetter: false, confirmPerson: null, savedStory: null, ...v,
+  facts: [], outputs: [output()], feedbackOnly: false, noLetter: false, aiPolicy: null, confirmPerson: null, savedStory: null, ...v,
 });
 const QUESTION = { id: "why_firm" as const, text: "Why Northbridge?", chips: ["Skip"] };
 

@@ -3,7 +3,7 @@ import { verifyTailoring, revertBlocked, toTailored, gapsStillOpen, buildFactCor
 import type { ParsedCV, TailoredCV } from "@/lib/types";
 
 const source: ParsedCV = {
-  name: "A", email: null, phone: null, location: null, links: [], summary: null,
+  name: "A", email: null, phone: null, location: null, links: [], summary: "Economics student at UCL",
   education: [{ id: "e0", institution: "UCL", degree: "BSc Economics", dates: "2024–2027", grade: "Predicted 2:1", details: [] }],
   experience: [{ id: "x0", org: "Finance Society", title: "Events Officer", dates: "2025", location: "", bullets: [
     { id: "x0-b0", text: "Organised weekly society events for 60 members" },
@@ -12,7 +12,7 @@ const source: ParsedCV = {
   projects: [], leadership: [], skills: [{ group: "Skills", items: ["Python", "Excel"] }], interests: null, sectionOrder: [], yearGuess: null, archetypes: [],
 };
 const sourceText = "Organised weekly society events for 60 members\nUsed Python to analyse ticket sales\nPython, Excel";
-const base = (t: TailoredCV) => ({ source, sourceText, confirmedFacts: [] as string[], tailored: t, jdKeywords: ["stakeholder", "events"], coverageBefore: 0.5, coverageAfter: 0.6 });
+const base = (t: TailoredCV) => ({ source, sourceText, confirmedFacts: [] as string[], tailored: t, jdKeywords: ["stakeholder", "events"], coverageBefore: 0.5, coverageAfter: 0.6, claimChecks: true });
 
 function withBullet(text: string, sourceRefs = ["x0-b1"], extra: Partial<TailoredCV> = {}): TailoredCV {
   const t = toTailored(source);
@@ -119,7 +119,7 @@ describe("fact corpus soundness (C7)", () => {
 // ---------- Required fixtures (amendments, 05 §3) ----------
 
 const src2: ParsedCV = {
-  name: "B", email: null, phone: null, location: "London", links: [], summary: null,
+  name: "B", email: null, phone: null, location: "London", links: [], summary: "Computer Science student at UCL",
   education: [{ id: "e0", institution: "UCL", degree: "BSc Computer Science", dates: "2023–2026", grade: "First", details: [] }],
   experience: [{ id: "x1", org: "Tech Society", title: "Committee Member", dates: "Sep 2023 – Jun 2024", location: "London", bullets: [
     { id: "x1-b0", text: "Helped organise 3 society events" },
@@ -140,7 +140,7 @@ const src2Text = [
 const fx = (edit: (t: TailoredCV) => void, extra: Partial<Parameters<typeof verifyTailoring>[0]> = {}) => {
   const t = toTailored(src2);
   edit(t);
-  return verifyTailoring({ source: src2, sourceText: src2Text, confirmedFacts: [], tailored: t, jdKeywords: ["Python", "data cleaning", "CFA Level I"], coverageBefore: 0.4, coverageAfter: 0.6, ...extra });
+  return verifyTailoring({ source: src2, sourceText: src2Text, confirmedFacts: [], tailored: t, jdKeywords: ["Python", "data cleaning", "CFA Level I"], coverageBefore: 0.4, coverageAfter: 0.6, claimChecks: true, ...extra });
 };
 const setBullet = (t: TailoredCV, i: number, text: string, refs?: string[]) => {
   const b = t.experience[0].bullets[i];
@@ -298,7 +298,7 @@ describe("revertBlocked", () => {
     expect(texts).toContain("Raised £500 for a charity bake sale");
     expect(texts).toContain("Mentored 12 first-year students in Python");
     expect(out.tailored.experience[0].title).toBe("Committee Member");
-    expect(out.tailored.summary).toBeNull();
+    expect(out.tailored.summary).toBe(src2.summary); // reverted to the CV's own profile
     expect(out.reverted.map((x) => x.bulletId)).toEqual(expect.arrayContaining(["x1-m0", "summary"]));
     expect(verifyTailoring({ ...input, tailored: out.tailored }).verdict).not.toBe("block");
   });
@@ -367,7 +367,7 @@ describe("fix 2: employers in any case or position", () => {
     const t = toTailored(src2); t.summary = "Ex-Deloitte student";
     const input = { source: src2, sourceText: src2Text, confirmedFacts: [], tailored: t, jdKeywords: [], coverageBefore: 0.4, coverageAfter: 0.6 };
     const out = revertBlocked(t, src2, verifyTailoring(input).issues);
-    expect(out.tailored.summary).toBeNull();
+    expect(out.tailored.summary).toBe(src2.summary); // reverted to the CV's own profile
     expect(verifyTailoring({ ...input, tailored: out.tailored }).verdict).not.toBe("block");
   });
   it("ordinary sentence-initial words don't block", () => {
@@ -446,12 +446,22 @@ describe("fix 7: no false blocks", () => {
   });
 });
 
+// audit 05 #20: a currency swap and "N → N+" change a fact, so they block now (they were warnings)
+describe("fix 8 → 05 #20: currency swaps and inflation qualifiers block", () => {
+  it.each([
+    [5, "Raised $500 for a charity bake sale", "currencySwap"],
+    [6, "Mentored over 12 first-year students in Python", "inflationQualifier"],
+    [6, "Mentored 12+ first-year students in Python", "inflationQualifier"],
+    [6, "Mentored more than 12 first-year students in Python", "inflationQualifier"],
+  ])("blocks bullet %i → %s", (i, text, check) => {
+    const r = fx((t) => setBullet(t, i as number, text as string));
+    expect(r.verdict).toBe("block");
+    expect(r.issues.some((x) => x.check === check && x.severity === "block")).toBe(true);
+  });
+});
+
 describe("fix 8: warn-level drift", () => {
   it.each([
-    [5, "Raised $500 for a charity bake sale"],
-    [6, "Mentored over 12 first-year students in Python"],
-    [6, "Mentored 12+ first-year students in Python"],
-    [6, "Mentored more than 12 first-year students in Python"],
     [4, "Award-winning email campaign increased sign-ups by 20%"],
     [5, "Raised £500 for a charity bake sale, winning first place"],
   ])("warns on bullet %i → %s", (i, text) => {
@@ -522,7 +532,7 @@ describe("fix round 2: multi-word numbers report once", () => {
 // ---------- Fix round 3 (Economics fixture) ----------
 
 const econ: ParsedCV = {
-  name: "C", email: null, phone: null, location: "London", links: [], summary: null,
+  name: "C", email: null, phone: null, location: "London", links: [], summary: "Economics student at UCL",
   education: [{ id: "e0", institution: "UCL", degree: "BSc Economics", dates: "2024–2027", grade: "Predicted 2:1", details: [] }],
   experience: [
     { id: "x2", org: "Economics Society", title: "Events Officer", dates: "Sep 2025 – Jun 2026", location: "London", bullets: [
@@ -594,7 +604,7 @@ describe("fix round 3 #2: hyphen compounds exempt only ordinary heads", () => {
 // ---------- Fix round 4 (Economics fixture: events, retail, pandas project, charity volunteering) ----------
 
 const econ4: ParsedCV = {
-  name: "D", email: null, phone: null, location: "London", links: [], summary: null,
+  name: "D", email: null, phone: null, location: "London", links: [], summary: "Economics student at UCL",
   education: [{ id: "e0", institution: "UCL", degree: "BSc Economics", dates: "2024–2027", grade: "Predicted 2:1", details: [] }],
   experience: [
     { id: "x0", org: "Economics Society", title: "Events Officer", dates: "Sep 2025 – Jun 2026", location: "London", bullets: [

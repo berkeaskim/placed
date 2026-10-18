@@ -155,3 +155,17 @@ describe("experience bank import", () => {
 function upsertAndImport() {
   return importCandidates(U, src(), [cand()], { autoAccept: false });
 }
+
+// audit 05 #24: post-derived bullets pass the tailoring gate against their excerpt before entering the bank
+describe("postBulletIssues", async () => {
+  const { postBulletIssues } = await import("@/lib/bank/import");
+  const post = "So proud of what we shipped this term! I helped my team build a society booking app with React for 300 members.";
+  const excerpt = "I helped my team build a society booking app with React for 300 members.";
+  it.each([
+    ["Built a society booking app in React and TypeScript for 300 members", "skillInjection"],
+    ["Built a society booking app with React for 300 members", "qualifierDrop"],
+    ["Helped build a society booking app with Vue for 300 members", "Vue"],
+    ["Helped build a society booking app with React for 300 members weekly", "frequencyEscalation"],
+  ])("rejects %s", (text, check) => expect(postBulletIssues(text, excerpt, post).join(" ")).toContain(check));
+  it("accepts an honest restatement", () => expect(postBulletIssues("Helped my team build a society booking app with React for 300 members", excerpt, post)).toEqual([]));
+});

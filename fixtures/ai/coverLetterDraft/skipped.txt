@@ -6,7 +6,7 @@ The role asks for analysis under time pressure.⟦them:jd⟧ I built a rates sce
 
 Summer analysts at Northbridge rotate across flow and structured trading desks.⟦them:jd⟧ They own risk analysis from their first week, working alongside traders.⟦them:jd⟧ I have so far sized positions in rates and FX, so that rotation is the main draw of the programme for me.⟦me:x1-b0⟧
 
-At Cafe Lune I trained 4 new staff on the till during weekend peak hours.⟦me:x2-b0⟧ It taught me to explain a task simply when there is no time to repeat it.⟦me:x2-b0⟧ My modules in Econometrics, Financial Markets and Statistics sit behind the modelling I do in Python, and I would like to test them on a real desk.⟦me:ed1-d0,x1-b1⟧
+At Cafe Lune I trained 4 new staff on the till during weekend peak hours.⟦me:x2-b0⟧ Each of them was trained during weekend peak hours, while the café was at its busiest.⟦me:x2-b0⟧ My modules in Econometrics, Financial Markets and Statistics sit behind the modelling I do in Python, and I would like to test them on a real desk.⟦me:ed1-d0,x1-b1⟧
 
 I would bring careful risk work and a habit of checking the downside to your Markets team.⟦me:x1-b0,p1-b0⟧ Thank you for considering my application, and I would welcome the chance to discuss it at interview.⟦me:⟧
 

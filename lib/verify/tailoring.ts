@@ -18,12 +18,14 @@ import type { ParsedCV, TailoredCV, TailoredEntry, TailoredBullet, TailorChangeT
 import { extractSkills } from "@/lib/skills/extract";
 import { EMAIL_RE, PHONE_RE, escapeRegex } from "@/lib/text/regex";
 import { clicheDensity } from "@/lib/cv/cliches";
-import { runExtraChecks, extractMetrics, authorshipLevel, type SourceRole, type TailoredRole, type Issue as ExtraIssue } from "./checks-extra";
+import { runExtraChecks, extractMetrics, unbackedMetrics, authorshipLevel, type SourceRole, type TailoredRole, type Issue as ExtraIssue } from "./checks-extra";
+import { buildClaimCtx, skillItemIssues, unitClaimIssues, type ClaimCheck } from "./claims";
 
 export type IssueType =
   | "inventedMetrics" | "unsupportedFacts" | "authorshipEscalation" | "skillInjection" | "orphanBullets"
   | "perBulletDrift" | "forbiddenPhrases" | "coverage"
-  | "siblingContamination" | "qualifierDrop" | "structuralLoss" | "temporal" | "clicheDensity";
+  | "siblingContamination" | "qualifierDrop" | "structuralLoss" | "temporal" | "clicheDensity"
+  | "summaryCreated" | "keywordRepetition" | ClaimCheck;
 /** `check` names the fine-grained rule when it differs from `type` (e.g. scoped metrics report as inventedMetrics). */
 export type Issue = { type: IssueType; severity: "block" | "warn"; bulletId?: string; entryId?: string; claim: string; reason: string; check?: string };
 export type VerifyReport = {
@@ -35,6 +37,15 @@ export type VerifyReport = {
 export type VerifyInput = {
   source: ParsedCV; sourceText: string; confirmedFacts: string[]; tailored: TailoredCV;
   jdKeywords: string[]; coverageBefore: number | null; coverageAfter: number | null;
+  /** "Today" for date arithmetic (durationClaim on "– Present" roles). Tests pin it. */
+  now?: Date;
+  /**
+   * Audit 05 claim checks: summaryCreated, summary metric kinds, hedges/ladders/grades/role type/duration/causal/reframes,
+   * skills-list levels, keyword repetition, and blocking currency swaps and "N+" inflation. The CV tailor gate turns
+   * them on. Outreach and Autopilot drafts reuse this function with the message as a "summary" and keep the old rules
+   * until their owners opt in.
+   */
+  claimChecks?: boolean;
 };
 
 // ---------- text helpers ----------
@@ -168,7 +179,7 @@ const claimValues = (claim: string) => [...numValues(claim), ...wordMetrics(clai
 
 const STOP = new Set(("a an the and or but of to in on at by for from with into over under via per as is are was were be been this that these those it its " +
   "their them they our who which what while when where than then so such also very more most less each every all both other across within during after " +
-  "before through about using used use based including weekly daily monthly").split(" "));
+  "before through about using used use based including").split(" "));
 const stem = (w: string) => {
   let s = w.toLowerCase();
   if (s.length > 5) s = s.replace(/(ations?|ings?|edly|ed|es|ly|s)$/, "");
@@ -336,6 +347,7 @@ const OWNERSHIP: [string, RegExp][] = [
   ["in charge of", /\bin\s+charge\s+of\b/i],
   ["independently", /\bindependently\b|\bon\s+my\s+own\b/i],
   ["head of", /\bhead\s+of\b/i],
+  ["point of contact", /\b(?:primary|main|key|first|sole|go-to)\s+(?:point\s+of\s+)?contact\b|\bgo-to\s+(?:person|analyst)\b/i],
 ];
 /** New achievement claims (fix 8, warn). */
 const ACHIEVEMENT = /\baward[- ]winning\b|\bawards?\b|\bawarded\b|\bprizes?\b|\b(?:first|1st|second|2nd|third|3rd)\s+place\b|\bwinners?\b|\bwon\b|\bwinning\b|\bfinalists?\b|\bchampion(?:s|ship)?\b|\branked\b|\btop\s+\d+%?/gi;
@@ -689,7 +701,7 @@ const IMPLIED_BY: Record<string, string[]> = {
   "CRM": ["Salesforce", "HubSpot"],
   "Data Analysis": ["Pandas", "NumPy"],
 };
-type Unit = { text: string; cited: string; bulletId?: string; entryId?: string; scoped?: boolean };
+type Unit = { text: string; cited: string; bulletId?: string; entryId?: string; scoped?: boolean; merged?: boolean };
 
 function parseDates(d: string): { start?: string; end?: string } {
   const parts = d.split(/\s*(?:–|—|-|\bto\b)\s*/i).filter(Boolean);
@@ -808,6 +820,12 @@ export function verifyTailoring(i: VerifyInput): VerifyReport {
     const s = contentStems(sentence);
     return [...srcUnits.filter((u) => [...u.stems].some((x) => s.has(x))).map((u) => u.t), factsText].join("\n");
   };
+  /** 05 #1: what a summary/interests sentence may restate for claim checks — source units sharing ≥2 content words. */
+  const claimScope = (sentence: string) => {
+    const s = contentStems(sentence);
+    return [...srcUnits.filter((u) => [...u.stems].filter((x) => s.has(x)).length >= 2).map((u) => u.t), factsText].join("\n");
+  };
+  const claimCtx = buildClaimCtx(i.source, corpus, i.now);
 
   // source bullet lookup: id → text and id → owning entry id
   const srcText = new Map<string, string>();
@@ -850,6 +868,12 @@ export function verifyTailoring(i: VerifyInput): VerifyReport {
     }
   }
 
+  // ---- 05 #1 summaryCreated: tailoring never writes a profile the CV doesn't have ----
+  if (i.claimChecks && !i.source.summary?.trim() && i.tailored.summary?.trim()) {
+    issues.push({ type: "summaryCreated", severity: "block", entryId: "summary", claim: i.tailored.summary.trim().slice(0, 80),
+      reason: "Your CV has no profile, so we don't write one for you" });
+  }
+
   // ---- build text units ----
   const units: Unit[] = [];
   if (i.tailored.summary) units.push({ text: i.tailored.summary, cited: corpus, entryId: "summary", scoped: true });
@@ -875,7 +899,7 @@ export function verifyTailoring(i: VerifyInput): VerifyReport {
         : changeType === "merged" && new Set(refs).size < 2 ? "A merged bullet has to cite at least two original bullets"
         : null;
       if (reason) { issues.push({ type: "orphanBullets", severity: "block", bulletId: b.id, entryId: e.id, claim: b.text, reason }); continue; }
-      units.push({ text: b.text, cited: refs.map((r) => srcText.get(r)!).join("\n"), bulletId: b.id, entryId: e.id });
+      units.push({ text: b.text, cited: refs.map((r) => srcText.get(r)!).join("\n"), bulletId: b.id, entryId: e.id, merged: new Set(refs).size >= 2 });
 
       // ---- #6 perBulletDrift: too many new content words ----
       const citedStems = contentStems(units[units.length - 1].cited);
@@ -925,6 +949,32 @@ export function verifyTailoring(i: VerifyInput): VerifyReport {
       (wordRaws.get(k) ?? wordRaws.set(k, []).get(k)!).push(w.raw.toLowerCase());
       issues.push({ type: "inventedMetrics", severity: "block", ...where(u), claim: w.raw, check: "wordMetrics",
         reason: `"${w.raw}" isn't what your original says — confirm the figure or keep the original wording` });
+    }
+    // 05 #1: summary/interests numbers keep their kind and magnitude ("£5k" ≠ "£5m", "60 members" ≠ "60%")
+    if (u.scoped && i.claimChecks) {
+      for (const sent of text.split(/(?<=[.;!?])\s+|\n+/).filter((x) => x.trim())) {
+        const scopeLines = scopeFor(sent).split("\n");
+        // grades ("2:2,") are gradeClaim's business, not metrics
+        for (const raw of unbackedMetrics(sent.replace(/\b[12]\s?[:.]\s?[12]\b/g, "grade"), scopeLines)) {
+          const vals = numValues(raw);
+          // "2024–2027" is a date range and "'27" a CV year (accepted as dates above), not metrics
+          if ((raw.match(/\d+/g) ?? []).every((d) => isYearLike(d) || yearsUsed.get(k)?.has(String(+d)))) continue;
+          if (vals.length && vals.every((v) => invented.get(k)?.has(v))) continue;
+          addInvented(k, vals);
+          issues.push({ type: "inventedMetrics", severity: "block", ...where(u), claim: raw, check: "scopedSummary",
+            reason: `"${raw}" isn't what your CV says — keep the figure exactly as it appears there` });
+        }
+      }
+    }
+    // 05 New rules: hedges, ladders, grades, role type, duration, causal links, reframe guards
+    const claimUnits = !i.claimChecks ? [] : u.scoped
+      ? text.split(/(?<=[.;!?])\s+|\n+/).filter((x) => x.trim()).map((sent) => ({ text: sent, cited: claimScope(sent), scoped: true }))
+      : [{ text, cited: `${normCurrency(u.cited)}\n${factsText}`, merged: u.merged }];
+    for (const cu of claimUnits) {
+      for (const c of unitClaimIssues(cu, claimCtx)) {
+        if (issues.some((x) => key(x) === k && x.type === c.check && x.claim === c.claim)) continue;
+        issues.push({ type: c.check, severity: c.severity, ...where(u), claim: c.claim, reason: c.reason, check: c.check });
+      }
     }
     // #4 skillInjection: canonical skills absent from source ∪ confirmed facts (the JD never counts)
     const inj = new Set<string>();
@@ -1049,18 +1099,19 @@ export function verifyTailoring(i: VerifyInput): VerifyReport {
     for (const m of text.matchAll(/([£$€])\s?(\d[\d,.]*)/g)) {
       const amt = m[2].replace(/,/g, "");
       const others = [...citedC.matchAll(/([£$€])\s?(\d[\d,.]*)/g)].filter((c) => c[2].replace(/,/g, "") === amt);
-      if (others.length && !others.some((c) => c[1] === m[1])) issues.push({ type: "perBulletDrift", severity: "warn", ...where(u), claim: m[0], check: "currencySwap",
+      if (others.length && !others.some((c) => c[1] === m[1])) issues.push({ type: "perBulletDrift", severity: i.claimChecks ? "block" : "warn", ...where(u), claim: m[0], check: "currencySwap",
         reason: `Your CV says ${others[0][0]} — the currency changed` });
     }
     for (const m of u.text.matchAll(INFLATE)) {
       const amt = (m[1] ?? m[2]).replace(/,/g, "");
       if (!numberSet(u.cited).has(String(parseFloat(amt)))) continue;
       const already = [...u.cited.matchAll(INFLATE)].some((c) => (c[1] ?? c[2]).replace(/,/g, "") === amt);
-      if (!already) issues.push({ type: "perBulletDrift", severity: "warn", ...where(u), claim: m[0].trim(), check: "inflationQualifier",
+      if (!already) issues.push({ type: "perBulletDrift", severity: i.claimChecks ? "block" : "warn", ...where(u), claim: m[0].trim(), check: "inflationQualifier",
         reason: `Your CV says ${amt}, not "${m[0].trim()}" — keep the exact figure` });
     }
     for (const m of u.text.matchAll(ACHIEVEMENT)) {
       if (new RegExp(`\\b${escapeRegex(m[0])}\\b`, "i").test(u.cited)) continue;
+      if (issues.some((x) => key(x) === k && x.type === "outcomeEscalation")) continue;
       issues.push({ type: "perBulletDrift", severity: "warn", ...where(u), claim: m[0], check: "newAchievement",
         reason: `"${m[0]}" is a new achievement claim — only keep it if it's true and on your CV` });
     }
@@ -1069,6 +1120,12 @@ export function verifyTailoring(i: VerifyInput): VerifyReport {
   // ---- skills list: every item must be a source skill or whole-token in the corpus ----
   const skillClaims = new Set<string>();
   for (const g of i.tailored.skills) for (const item of g.items) {
+    // 05 #7: "Advanced Python", "Spanish (fluent)" must not raise the level the CV gives
+    for (const c of i.claimChecks ? skillItemIssues(item, claimCtx) : []) {
+      if (skillClaims.has(c.claim)) continue;
+      skillClaims.add(c.claim);
+      issues.push({ type: c.check, severity: c.severity, entryId: "skills", claim: item, reason: c.reason, check: c.check });
+    }
     const sk = extractSkills(item);
     const missing = sk.length ? sk.filter((s) => !impliedSkills.has(s)) : hasToken(cNorm, item) || cCompact.has(norm(item).replace(/ /g, "")) ? [] : [item];
     for (const s of missing) {
@@ -1125,6 +1182,22 @@ export function verifyTailoring(i: VerifyInput): VerifyReport {
       reason: `"${hit.w}" claims more ownership than your original bullet` });
   }
 
+  // ---- 05 #17 keywordRepetition (warn): a posting term repeated more than the CV already did ----
+  if (i.claimChecks) {
+    const srcAll = norm(sourceUnits(i.source).join("\n") + "\n" + i.source.skills.flatMap((g) => g.items).join("\n"));
+    const outAll = norm([...units.map((u) => u.text), ...i.tailored.skills.flatMap((g) => g.items)].join("\n"));
+    const sumNorm = norm(i.tailored.summary ?? "");
+    const srcSum = norm(i.source.summary ?? "");
+    const count = (hay: string, kw: string) => { const n = norm(kw); return n ? (` ${hay} `.split(` ${n} `).length - 1) : 0; };
+    for (const kw of [...new Set(i.jdKeywords)]) {
+      const all = count(outAll, kw), inSum = count(sumNorm, kw);
+      if ((all > 2 && all > count(srcAll, kw)) || (inSum > 1 && inSum > count(srcSum, kw))) {
+        issues.push({ type: "keywordRepetition", severity: "warn", claim: kw, check: "keywordRepetition",
+          reason: `"${kw}" now appears ${all} times; once or twice reads better` });
+      }
+    }
+  }
+
   // ---- #13 AU-01 cliché density on the tailored output ----
   const outText = units.map((u) => u.text).join("\n");
   const cd = clicheDensity(outText);
@@ -1177,6 +1250,8 @@ export function revertBlocked(tailored: TailoredCV, source: ParsedCV, issues: Is
   const badBullets = new Set(blocks.filter((x) => x.bulletId).map((x) => x.bulletId!));
   const orphans = new Set(blocks.filter((x) => x.type === "orphanBullets").map((x) => x.bulletId!));
   const badHeads = new Set(blocks.filter((x) => !x.bulletId && x.entryId).map((x) => x.entryId!));
+  // 05 #21: an entry that silently lost bullets gets them back
+  const lossEntries = new Set(blocks.filter((x) => x.type === "structuralLoss" && x.entryId).map((x) => x.entryId!));
   const reverted: { bulletId: string; reason: string }[] = [];
 
   const fixEntries = (es: TailoredEntry[]): TailoredEntry[] => es.flatMap((e) => {
@@ -1200,6 +1275,13 @@ export function revertBlocked(tailored: TailoredCV, source: ParsedCV, issues: Is
         return [{ id: n === 0 ? b.id : r, text: srcText.get(r)!, sourceRefs: [r], changeType: "kept" as const }];
       });
     });
+    if (lossEntries.has(e.id)) {
+      const covered = new Set(bullets.flatMap((b) => [b.id, ...b.sourceRefs]));
+      for (const sb of se.bullets) if (!covered.has(sb.id)) {
+        bullets.push({ id: sb.id, text: sb.text, sourceRefs: [sb.id], changeType: "kept" });
+        reverted.push({ bulletId: sb.id, reason: reasonFor((x) => x.type === "structuralLoss" && x.entryId === e.id, "This line disappeared, so we put it back") });
+      }
+    }
     return [{ ...e, ...head, bullets }];
   });
 
@@ -1223,12 +1305,20 @@ export function revertBlocked(tailored: TailoredCV, source: ParsedCV, issues: Is
     }),
   }));
 
+  // 05 #21: a role the tailor left out entirely comes back unchanged (tailoring never removes entries)
+  const restoreMissing = (section: "experience" | "projects" | "leadership", es: TailoredEntry[]): TailoredEntry[] => {
+    const have = new Set(es.map((e) => e.id));
+    const missing = source[section].filter((e) => !have.has(e.id) && lossEntries.has(e.id));
+    for (const e of missing) reverted.push({ bulletId: e.id, reason: reasonFor((x) => x.type === "structuralLoss" && x.entryId === e.id, "This role disappeared, so we put it back") });
+    return [...es, ...toTailored({ ...source, experience: missing, projects: [], leadership: [] }).experience];
+  };
   const out: TailoredCV = {
     ...tailored,
     summary: revertField("summary"),
     interests: revertField("interests"),
     education: eduBad ? source.education.map((e) => ({ ...e, details: e.details.map((d) => ({ ...d })) })) : tailored.education,
-    experience: fixEntries(tailored.experience), projects: fixEntries(tailored.projects), leadership: fixEntries(tailored.leadership),
+    experience: restoreMissing("experience", fixEntries(tailored.experience)), projects: restoreMissing("projects", fixEntries(tailored.projects)),
+    leadership: restoreMissing("leadership", fixEntries(tailored.leadership)),
     skills,
     changes: [],
   };

@@ -14,7 +14,7 @@
    "The component the student owned within a team project, stated as their own action.",
    "Engineering practice the advert asks for (Git, testing, CI, code review, Agile) when the CV already shows it."
   ],
-  "summaryFormula": "One or two lines: degree, year, university (grade if 2:1+) + two or three advert-matching languages/frameworks the bullets already evidence + the strongest shipped project or internship fact with its existing number + target role type; drop it if space is tight and a cover letter exists.",
+  "summaryFormula": "Only when the CV already has a profile: shorten it to at most two lines of facts it already states (degree, year, university, and languages or frameworks the bullets already show). Leave out figures, any job title the student is applying for, and the grade. If the CV has no profile, leave it out: never write one.",
   "verbs": {
    "prefer": [
     "Built",
@@ -130,7 +130,7 @@
    "Who used the output (dashboard used weekly by X, recommendation adopted).",
    "Advert-named tools the bullet already uses."
   ],
-  "summaryFormula": "Two lines: quantitative degree and year + the core tools the bullets already evidence (SQL, Python/R, BI tool) + one project or role written as question-to-result with only its existing numbers + the target (analyst vs data science) taken from the advert.",
+  "summaryFormula": "Only when the CV already has a profile: shorten it to at most two lines of facts it already states (degree, year, university, and the tools the bullets already show, such as SQL, Python or R, or a BI tool). Leave out figures, any job title the student is applying for, and the grade. If the CV has no profile, leave it out: never write one.",
   "verbs": {
    "prefer": [
     "Analysed",
@@ -242,7 +242,7 @@
    "The teams or stakeholders the student worked with.",
    "Launch or delivery of the thing, if it happened."
   ],
-  "summaryFormula": "Two lines: degree and year + one user-facing thing the student launched, ran or improved, with its existing outcome + the analytical or cross-functional evidence already in the CV + the target (graduate product manager, APM, product analyst); never call the student a 'product manager' unless that is their actual job title.",
+  "summaryFormula": "Only when the CV already has a profile: shorten it to at most two lines of facts it already states (degree, year, university, and the user-facing work the bullets already show). Leave out figures, any job title the student is applying for, and the grade. If the CV has no profile, leave it out: never write one. Never call the student a 'product manager' unless that is their actual job title.",
   "verbs": {
    "prefer": [
     "Identified",
@@ -304,11 +304,6 @@
     "from": "changed it after people's comments",
     "to": "iterated on user feedback",
     "onlyIf": "specific changes after feedback are described"
-   },
-   {
-    "from": "worked with committee, sponsors and the SU",
-    "to": "stakeholder management",
-    "onlyIf": "several distinct groups with different interests are named"
    }
   ],
   "competencyThemes": [
@@ -354,7 +349,7 @@
    "Advert-named tools the bullet already uses.",
    "Budget handled, where stated."
   ],
-  "summaryFormula": "Two lines at most: degree and year + the channel(s) or campaign the student actually ran, with its existing headline metric and timeframe + tools already evidenced + the target (brand, content, performance or growth) from the advert; keep it specific because generic graduate profiles are widely disliked.",
+  "summaryFormula": "Only when the CV already has a profile: shorten it to at most two lines of facts it already states (degree, year, university, and the channels and tools the bullets already show). Leave out figures, any job title the student is applying for, and the grade. If the CV has no profile, leave it out: never write one. Keep it specific: generic graduate profiles are widely disliked.",
   "verbs": {
    "prefer": [
     "Launched",
@@ -466,7 +461,7 @@
    "Outputs: report, poster, talk, dataset, code, prize.",
    "Links between the work and the target group's area."
   ],
-  "summaryFormula": "Prefer a short 'Research interests' line over a sales pitch: degree, year and institution with grade or ranking + the research area in the student's own terms, matched to the project + the methods already evidenced + the strongest research output or project.",
+  "summaryFormula": "Only when the CV already has a profile or a 'Research interests' line: shorten it to at most two lines of facts it already states (degree, year, institution, the research area in the student's own words, and the methods the bullets already show). Leave out figures, any job title the student is applying for, and the grade. If the CV has no profile, leave it out: never write one.",
   "verbs": {
    "prefer": [
     "Investigated",
@@ -578,7 +573,7 @@
    "The deepest language and what was done in it",
    "Tutoring or team competitions as communication evidence"
   ],
-  "summaryFormula": "skip: quant firms want concise CVs, screen on academics, competitions, projects and tests, and no source recommends a profile; if the source has one, cut it to 1 line: degree, year, grade and the strongest quant fact already in the CV.",
+  "summaryFormula": "Quant firms want concise CVs and screen on academics, competitions, projects and tests; no source recommends a profile. Only when the CV already has one: cut it to one line of facts it already states (degree, year, university, the strongest quant activity the bullets show). Leave out figures, any job title the student is applying for, and the grade. If the CV has no profile, leave it out: never write one.",
   "verbs": {
    "prefer": [
     "implemented",
@@ -689,7 +684,7 @@
    "The analysis-to-recommendation step, where shown",
    "Client or stakeholder contact; presenting or persuading"
   ],
-  "summaryFormula": "skip: TARGETjobs and LSE advise students to drop profiles and generic ones read as AI-written; if the source has one, keep 2 plain-English lines leading with its strongest quantified leadership or impact fact.",
+  "summaryFormula": "TARGETjobs and LSE advise students to drop profiles, and generic ones read as AI-written. Only when the CV already has one: shorten it to at most two lines of facts it already states (degree, year, university, and the leadership or problem-solving work the bullets already show). Leave out figures, any job title the student is applying for, and the grade. If the CV has no profile, leave it out: never write one. Plain English.",
   "verbs": {
    "prefer": [
     "analysed",
@@ -744,11 +739,6 @@
     "onlyIf": "student owned planning; figures in source"
    },
    {
-    "from": "spoke to customers",
-    "to": "client-facing",
-    "onlyIf": "direct contact with external people"
-   },
-   {
     "from": "presented to the committee",
     "to": "presented recommendations to [audience]",
     "onlyIf": "the talk contained recommendations"
@@ -786,8 +776,8 @@
    "Duty lists with no result",
    "'We' bullets that hide the student's part; interviewers dig into it",
    "Technical jargon a generalist cannot follow",
-   "Generic AI-sounding text (Bain London allows AI only for CV grammar and spelling)",
-   "Unevidenced soft skills in the skills line"
+   "Unevidenced soft skills in the skills line",
+   "Generic AI-sounding text"
   ]
  },
  "finance_banking": {
@@ -805,7 +795,7 @@
    "Analysis actually done (modelling, research, data) before admin or shadowing",
    "Responsibility (committee, treasurer, captain) before membership"
   ],
-  "summaryFormula": "skip: UK careers services and the TARGETjobs banking template omit a student profile because the cover letter or form does that job; if the source has one, compress it to 2 factual lines (year, degree, university, grade, target division, 1-2 finance signals already in the CV) with no adjectives.",
+  "summaryFormula": "UK careers services and the TARGETjobs banking template omit a student profile because the cover letter or form does that job. Only when the CV already has one: shorten it to at most two lines of facts it already states (year, degree, university, and one or two finance signals the bullets already show). Leave out figures, any job title the student is applying for, and the grade. If the CV has no profile, leave it out: never write one. No adjectives.",
   "verbs": {
    "prefer": [
     "analysed",
@@ -858,11 +848,6 @@
     "from": "made slides for the sponsor meeting",
     "to": "prepared sponsorship pitch deck",
     "onlyIf": "the deck sought money or agreement from an outside party; never 'pitchbook' unless for a deal"
-   },
-   {
-    "from": "dealt with customers",
-    "to": "client-facing: handled customer enquiries",
-    "onlyIf": "direct, repeated customer contact"
    },
    {
     "from": "went to a spring week at X",

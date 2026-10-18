@@ -2,17 +2,23 @@ import type { ParsedCV, TailorChange, TailoredBullet, TailoredCV, TailoredEntry 
 import type { JobListItem } from "@/lib/db/queries";
 import { stripPii } from "@/lib/cv-score/pii";
 import { AiError, generateStructured, runAi } from "./provider";
-import { SYSTEM_TAILOR, wrapJob } from "./prompts";
+import { SYSTEM_TAILOR, SYSTEM_TAILOR_GRAMMAR_ONLY, wrapJob } from "./prompts";
 import { TailoredCvFixture, TailoredCvOutput, type TailoredCvFixtureT } from "./schemas";
 import { heuristicTailor } from "./heuristics";
 import { playbookPrompt } from "@/lib/tailor/playbooks";
 
 /**
- * tailorCV (spec §7.1, 05 §2 [2]). Fast tier (latency), low thinking, default temperature. `allowed` = existing ∪ supportedByResume skills only:
+ * tailorCV (spec §7.1, 05 §2 [2]). Smart tier (audit 05 #12: prompt-only grounding needs a capable model; the old
+ * fast-tier choice was for a 300 s hosted function limit that a local-first app doesn't have), low thinking. `allowed` = existing ∪ supportedByResume skills only:
  * the caller's deterministic pre-pass never passes a gap skill. The output is NOT trusted: lib/tailor/run.ts runs
  * verifyTailoring on it, retries once and reverts what still blocks.
  */
-export type TailorInput = { cv: ParsedCV; job: JobListItem; allowed: string[]; supported: string[]; feedback: string[] | null };
+/**
+ * `mode`: "grammar_only" for an employer that allows AI only for spelling and grammar (lib/employer-policy). The
+ * playbook is left out and the model may only fix spelling, grammar and punctuation.
+ */
+export type TailorMode = "full" | "grammar_only";
+export type TailorInput = { cv: ParsedCV; job: JobListItem; allowed: string[]; supported: string[]; feedback: string[] | null; mode?: TailorMode };
 
 /** tailorCV's answer, plus whether it came from the reorder-only heuristic instead of the model (and why). */
 export type TailorCvResult = TailoredCV & { usedFallback?: boolean; fallbackReason?: string };
@@ -40,7 +46,7 @@ export function styleAnchors(cv: ParsedCV, max = 3): string[] {
 
 export function buildTailorPrompt(i: TailorInput): string {
   const anchors = styleAnchors(i.cv).map((b) => `- ${escapeData(b)}`).join("\n") || "- (none)";
-  const playbook = playbookPrompt(i.job.archetype);
+  const playbook = i.mode === "grammar_only" ? null : playbookPrompt(i.job.archetype);
   const out = [
     `ALLOWED KEYWORDS: ${i.allowed.map(escapeData).join(", ") || "(none)"}`,
     `MAY MOVE INTO SKILLS (already in the CV's prose): ${i.supported.map(escapeData).join(", ") || "(none)"}`,
@@ -113,7 +119,7 @@ export async function tailorCV(i: TailorInput): Promise<TailorCvResult> {
       fromFixture: (raw) => normalizeTailored(raw, i.cv),
       live: async () => {
         const o = await generateStructured({
-          tier: "fast", system: SYSTEM_TAILOR, schema: TailoredCvOutput, maxTokens: 16000, thinking: "low", // fast: Pro took 130-300s per call (300s function limit); no temperature: Claude rejects it
+          tier: "smart", system: i.mode === "grammar_only" ? SYSTEM_TAILOR_GRAMMAR_ONLY : SYSTEM_TAILOR, schema: TailoredCvOutput, maxTokens: 16000, thinking: "low", // no temperature: Claude rejects it
           parts: [{ type: "text", text: buildTailorPrompt(i) }],
         });
         return normalizeTailored(o, i.cv);

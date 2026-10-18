@@ -1,7 +1,8 @@
 {
   "_meta": {
     "compiled": "2026-10-14",
-    "notes": "Per-archetype tailoring guidance for Placed's 'tailor my CV to this role' rewrite (UK undergraduate spring weeks, insight programmes, summer internships). Hard constraint above everything here: rewrite only what the source CV already says. No new facts, numbers, skills, employers or tools. No authorship escalation: a 'prefer' verb may replace a source verb only at the same or a lower level of the ladder familiar < used/assisted/supported/contributed < built/developed/implemented < led/managed/founded, and qualifiers ('helped', 'as part of a team of 4', 'coursework') must survive. A reframe applies only when its onlyIf condition is visibly met by the original line. Grades: A = employer's own guidance or several top UK careers services agree; B = one top-tier UK source (TARGETjobs, Prospects, a Russell Group careers service); C = practitioner or trade press (eFinancialCareers and consultants it quotes); D = our synthesis. Quotes are verbatim from pages fetched on 2026-10-14 (curly quotes and dashes normalised for matching), each 25 words or fewer. TF18, TF24 and TF29 were read via web.archive.org 2026 snapshots because the live sites blocked automated fetches; TF35 was not re-fetched and is carried over from docs/research/market-2026/02-recruiter-screening-evidence.md F16. Mapping to cv-rules-finance-consulting.md tags: TF1=S1, TF2=S2, TF3=S3, TF8=S8, TF14=S5, TF15=S6, TF18=S12, TF19=S15, TF20=S16, TF21=S14, TF22=S13, TF23=S17, TF24=S19, TF25=S22, TF26=S25, TF27=S26, TF28=S24, TF29=S23, TF30=S11-LSE brochure, TF32=S10. Caveat: Bain London asks candidates to use AI only to check CV grammar and spelling (TF29), so the product should tell users to check each target firm's AI policy."
+    "notes": "Per-archetype tailoring guidance for Placed's 'tailor my CV to this role' rewrite (UK undergraduate spring weeks, insight programmes, summer internships). Hard constraint above everything here: rewrite only what the source CV already says. No new facts, numbers, skills, employers or tools. No authorship escalation: a 'prefer' verb may replace a source verb only at the same or a lower level of the ladder familiar < used/assisted/supported/contributed < built/developed/implemented < led/managed/founded, and qualifiers ('helped', 'as part of a team of 4', 'coursework') must survive. A reframe applies only when its onlyIf condition is visibly met by the original line. Grades: A = employer's own guidance or several top UK careers services agree; B = one top-tier UK source (TARGETjobs, Prospects, a Russell Group careers service); C = practitioner or trade press (eFinancialCareers and consultants it quotes); D = our synthesis. Quotes are verbatim from pages fetched on 2026-10-14 (curly quotes and dashes normalised for matching), each 25 words or fewer. TF18, TF24 and TF29 were read via web.archive.org 2026 snapshots because the live sites blocked automated fetches; TF35 was not re-fetched and is carried over from docs/research/market-2026/02-recruiter-screening-evidence.md F16. Mapping to cv-rules-finance-consulting.md tags: TF1=S1, TF2=S2, TF3=S3, TF8=S8, TF14=S5, TF15=S6, TF18=S12, TF19=S15, TF20=S16, TF21=S14, TF22=S13, TF23=S17, TF24=S19, TF25=S22, TF26=S25, TF27=S26, TF28=S24, TF29=S23, TF30=S11-LSE brochure, TF32=S10. Caveat: Bain London asks candidates to use AI only to check CV grammar and spelling (TF29), so the product should tell users to check each target firm's AI policy.",
+    "auditFixes": "2026-10-18 audit 05: summaryFormula rewritten (no numbers, no target-role label, no grade, never create a profile: #10); dead-letter reframes removed (client-facing x2, stakeholder management: #9); Bain AI policy moved out of pitfalls into lib/employer-policy (#13)."
   },
   "sources": [
     {
@@ -265,7 +266,7 @@
       "Analysis actually done (modelling, research, data) before admin or shadowing",
       "Responsibility (committee, treasurer, captain) before membership"
     ],
-    "summaryFormula": "skip: UK careers services and the TARGETjobs banking template omit a student profile because the cover letter or form does that job; if the source has one, compress it to 2 factual lines (year, degree, university, grade, target division, 1-2 finance signals already in the CV) with no adjectives.",
+    "summaryFormula": "UK careers services and the TARGETjobs banking template omit a student profile because the cover letter or form does that job. Only when the CV already has one: shorten it to at most two lines of facts it already states (year, degree, university, and one or two finance signals the bullets already show). Leave out figures, any job title the student is applying for, and the grade. If the CV has no profile, leave it out: never write one. No adjectives.",
     "verbs": {
       "prefer": [
         "analysed",
@@ -318,11 +319,6 @@
         "from": "made slides for the sponsor meeting",
         "to": "prepared sponsorship pitch deck",
         "onlyIf": "the deck sought money or agreement from an outside party; never 'pitchbook' unless for a deal"
-      },
-      {
-        "from": "dealt with customers",
-        "to": "client-facing: handled customer enquiries",
-        "onlyIf": "direct, repeated customer contact"
       },
       {
         "from": "went to a spring week at X",
@@ -635,7 +631,7 @@
       "The deepest language and what was done in it",
       "Tutoring or team competitions as communication evidence"
     ],
-    "summaryFormula": "skip: quant firms want concise CVs, screen on academics, competitions, projects and tests, and no source recommends a profile; if the source has one, cut it to 1 line: degree, year, grade and the strongest quant fact already in the CV.",
+    "summaryFormula": "Quant firms want concise CVs and screen on academics, competitions, projects and tests; no source recommends a profile. Only when the CV already has one: cut it to one line of facts it already states (degree, year, university, the strongest quant activity the bullets show). Leave out figures, any job title the student is applying for, and the grade. If the CV has no profile, leave it out: never write one.",
     "verbs": {
       "prefer": [
         "implemented",
@@ -903,7 +899,7 @@
       "The analysis-to-recommendation step, where shown",
       "Client or stakeholder contact; presenting or persuading"
     ],
-    "summaryFormula": "skip: TARGETjobs and LSE advise students to drop profiles and generic ones read as AI-written; if the source has one, keep 2 plain-English lines leading with its strongest quantified leadership or impact fact.",
+    "summaryFormula": "TARGETjobs and LSE advise students to drop profiles, and generic ones read as AI-written. Only when the CV already has one: shorten it to at most two lines of facts it already states (degree, year, university, and the leadership or problem-solving work the bullets already show). Leave out figures, any job title the student is applying for, and the grade. If the CV has no profile, leave it out: never write one. Plain English.",
     "verbs": {
       "prefer": [
         "analysed",
@@ -958,11 +954,6 @@
         "onlyIf": "student owned planning; figures in source"
       },
       {
-        "from": "spoke to customers",
-        "to": "client-facing",
-        "onlyIf": "direct contact with external people"
-      },
-      {
         "from": "presented to the committee",
         "to": "presented recommendations to [audience]",
         "onlyIf": "the talk contained recommendations"
@@ -1000,8 +991,8 @@
       "Duty lists with no result",
       "'We' bullets that hide the student's part; interviewers dig into it",
       "Technical jargon a generalist cannot follow",
-      "Generic AI-sounding text (Bain London allows AI only for CV grammar and spelling)",
-      "Unevidenced soft skills in the skills line"
+      "Unevidenced soft skills in the skills line",
+      "Generic AI-sounding text"
     ],
     "evidence": [
       {

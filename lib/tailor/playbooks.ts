@@ -34,10 +34,10 @@ export function playbookPrompt(archetype: Archetype | null | undefined): string 
     `ROLE PLAYBOOK: ${ARCHETYPE_LABELS[archetype]}. Research on how screeners read student CVs for this kind of role. It shapes emphasis, order and wording only; it is never a source of facts.`,
     `What the screener checks first:\n${list(p.recruiterScan)}`,
     `Lead each entry with:\n${list(p.leadWith)}`,
-    `Profile/summary: ${p.summaryFormula}`,
+    `Profile/summary (only if the CV already has one): ${p.summaryFormula}`,
     `Verbs that read well (use one only when the original line describes that action): ${p.verbs.prefer.join(", ")}`,
     `Avoid for this role: ${p.verbs.avoid.join("; ")}`,
-    `Reframes (use only when the condition holds; [brackets] are slots filled from the CV, never invented):\n${p.reframes.map((r) => `- "${r.from}" → "${r.to}" (only if ${r.onlyIf})`).join("\n")}`,
+    `Reframes (use only when the condition holds; [brackets] are slots filled from the CV, never invented; a reframe that names a skill or tool needs it in ALLOWED KEYWORDS):\n${p.reframes.map((r) => `- "${r.from}" → "${r.to}" (only if ${r.onlyIf})`).join("\n")}`,
     `Reads badly for this role:\n${list(p.pitfalls)}`,
   ].join("\n");
 }

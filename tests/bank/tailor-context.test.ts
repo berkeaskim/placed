@@ -127,4 +127,19 @@ describe("tailor context from the bank", () => {
     expect(text).toContain("POST EXCERPT: I cleaned 1,200 listings");
     expect(r!.rawText).toBe(text);
   });
+
+  // audit 05 #24: an unedited post-derived bullet grounds on its excerpt, never on its AI wording
+  it("groundingText leaves out the AI wording of an unedited post bullet", async () => {
+    const job = await setup();
+    await cvForJob(U, job, null);
+    insertEntry(U, {
+      section: "projects", org: "Booking App", title: "Project from LinkedIn post", dates: "2025", startYm: "2025-01", endYm: "2025-06", location: "",
+      pinned: false, hidden: false, sourceIds: ["src-post"],
+      bullets: [{ text: "Built a booking app in React and TypeScript", position: 0, pinned: false, hidden: false, sourceIds: ["src-post"], sourceText: "I helped my team build a booking app with React" }],
+    });
+    const r = await cvForJob(U, job, null);
+    const text = groundingText(RAW, r!.parsed, getBank(U));
+    expect(text).toContain("I helped my team build a booking app with React");
+    expect(text).not.toContain("Built a booking app in React and TypeScript");
+  });
 });

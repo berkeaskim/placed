@@ -142,6 +142,26 @@ describe("verifyOutput", () => {
   });
 });
 
+// audit 09 #3 (CL-81): an AI-written lesson or motivation the student never stated is flagged and not confirmable
+describe("inferred inner state", () => {
+  const src = (t: string) => readFileSync("fixtures/ai/coverLetterDraft/default.txt", "utf8").replace(
+    "Running the trading desk of a £50k student investment fund, I sized positions across rates and FX.", t);
+  it.each([
+    "Running the fund taught me that risk sizing matters more than the idea.",
+    "Since childhood I have been fascinated by capital markets.",
+    "This experience confirmed my wish to work in restructuring.",
+  ])("flags: %s", (t) => {
+    const m = parseMarked(src(t));
+    const r = verifyOutput({ ...m, input: fixtureDraftInput(), ownSpans: [], judged: okVerdicts(m.sentences) });
+    expect(flagged(r.spans).map((s) => s.flag)).toContain("AI-inferred motivation: say it in your own words");
+  });
+  it("passes a lesson the student's own answer states", () => {
+    const m = parseMarked(src("Running the fund taught me to present the downside case that changed our position size."));
+    const r = verifyOutput({ ...m, input: fixtureDraftInput(), ownSpans: [], judged: okVerdicts(m.sentences) });
+    expect(flagged(r.spans).map((s) => s.flag)).not.toContain("AI-inferred motivation: say it in your own words");
+  });
+});
+
 describe("repair", () => {
   it("stops after 2 rounds when the rewrite keeps inventing", async () => {
     const m = letter("I ran the trading desk of a £50k student investment fund with 12 traders.⟦me:x1-b0⟧");
