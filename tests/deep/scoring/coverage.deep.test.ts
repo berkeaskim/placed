@@ -124,7 +124,7 @@ describe("empty / degenerate inputs", () => {
     const src = cvSkillSource({ skills: [{ group: "x", items: ["JS", "MS Excel", "Some Unknown Tool"] }], experience: [], projects: [] });
     expect(src.skillsList).toEqual(["JavaScript", "Excel", "Some Unknown Tool"]);
   });
-  it("cvSkillSource: experience/project/leadership titles and bullets are 'bullet' evidence; education details are prose", () => {
+  it("cvSkillSource: experience/project/leadership titles and bullets are 'bullet' evidence; education details are prose; summary and interests are only mentions (10#16)", () => {
     const entry = (title: string, bullet: string) => ({ id: "e", org: "o", title, dates: "", location: "", bullets: [{ id: "b", text: bullet }] });
     const src = cvSkillSource({
       skills: [], experience: [entry("Python Developer", "x")], projects: [entry("p", "Built it in SQL")], leadership: [entry("l", "Ran Excel training")],
@@ -133,7 +133,8 @@ describe("empty / degenerate inputs", () => {
     });
     const r = computeCoverage(["Python", "SQL", "Excel", "Statistics", "Tableau", "Chess"].map((s) => ({ skill: s, section: "must" as const })), src);
     const status = Object.fromEntries(r.items.map((i) => [i.skill, i.status]));
-    expect(status).toEqual({ Python: "existing", SQL: "existing", Excel: "existing", Statistics: "supportedByResume", Tableau: "supportedByResume", Chess: "supportedByResume" });
+    expect(status).toEqual({ Python: "existing", SQL: "existing", Excel: "existing", Statistics: "supportedByResume", Tableau: "gap", Chess: "gap" });
+    expect(r.items.filter((i) => i.mentioned).map((i) => i.skill)).toEqual(["Tableau", "Chess"]);
   });
   it("profileSkillSource matches case-insensitively", () => {
     expect(computeCoverage([{ skill: "Python", section: "must" }], profileSkillSource(["python"])).weighted).toBe(1);

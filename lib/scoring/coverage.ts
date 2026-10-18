@@ -1,17 +1,24 @@
 import type { ParsedCV, Requirement } from "@/lib/types";
 import { tagSections } from "@/lib/text/jd";
-import { extractSkills, canonicalize } from "@/lib/skills/extract";
+import { extractSkills, canonicalize, impliedSkills, SOFT_SKILLS } from "@/lib/skills/extract";
 
 export type CoverageStatus = "existing" | "supportedByResume" | "gap";
-export type CoverageItem = { skill: string; section: "must" | "nice"; anyOf?: string[]; status: CoverageStatus };
+/** `mentioned`: a gap the CV only names in its summary or interests, worth a little credit but never "matched". */
+export type CoverageItem = { skill: string; section: "must" | "nice"; anyOf?: string[]; status: CoverageStatus; mentioned?: true };
 export type JdSkill = { skill: string; section: "must" | "nice"; anyOf?: string[] };
 export type CoverageResult = {
   readable: boolean; weighted: number | null;
   must: { matched: number; total: number }; nice: { matched: number; total: number }; items: CoverageItem[];
 };
-export type CvSkillSource = { skillsList: string[]; bulletText: string; otherText: string };
+/**
+ * `otherText`: education lines (degree, modules), credited 0.75. `mentionText`: summary and interests, credited 0.25:
+ * "Interests: Python meetups" is not evidence of Python (10#16; the docs' EV-03 rule wants skills in a bullet).
+ */
+export type CvSkillSource = { skillsList: string[]; bulletText: string; otherText: string; mentionText?: string };
 
 const CREDIT: Record<CoverageStatus, number> = { existing: 1, supportedByResume: 0.75, gap: 0 };
+const MENTION_CREDIT = 0.25;
+const isSoft = (skill: string) => SOFT_SKILLS.has(canonicalize(skill) ?? skill);
 const WEIGHT = { must: 2, nice: 1 } as const;
 
 const norm = (s: string) => s.toLowerCase().replace(/\s+/g, " ").trim();
@@ -25,7 +32,7 @@ export function jdRequirementSkills(textLines: string[], tagged: Requirement[]):
   const map = new Map<string, { skill: string; section: "must" | "nice" }>();
   const add = (raw: string, section: "must" | "nice") => {
     const skill = raw.replace(/\s+/g, " ").trim();
-    if (!skill) return;
+    if (!skill || isSoft(skill)) return;
     const key = skill.toLowerCase();
     const prev = map.get(key);
     if (!prev) map.set(key, { skill, section });
@@ -34,7 +41,8 @@ export function jdRequirementSkills(textLines: string[], tagged: Requirement[]):
   const groups = new Map<string, JdSkill>();
   for (const r of tagged) {
     if (!r.skill || !r.anyOf || r.anyOf.length < 2) continue;
-    const anyOf = r.anyOf.map((s) => canonicalize(s) ?? s);
+    const anyOf = r.anyOf.map((s) => canonicalize(s) ?? s).filter((s) => !isSoft(s));
+    if (anyOf.length < 2) continue;
     const key = [...anyOf].map((s) => s.toLowerCase()).sort().join("|");
     const prev = groups.get(key);
     groups.set(key, { skill: anyOf.join(" or "), anyOf, section: prev?.section === "must" ? "must" : r.section });
@@ -61,7 +69,8 @@ export function cvSkillSource(cv: SkillSourceCv): CvSkillSource {
     // "Python (Pandas, NumPy)" or "Python, SQL" in one item must still count each skill
     skillsList: [...new Set(cv.skills.flatMap((g) => g.items.flatMap((i) => [canonicalize(i) ?? i, ...extractSkills(i)])))],
     bulletText: entries.flatMap((e) => [e.title, ...e.bullets.map((b) => b.text)]).join("\n"),
-    otherText: [cv.summary ?? "", cv.interests ?? "", ...(cv.education ?? []).flatMap((e) => [e.degree, ...e.details.map((d) => d.text)])].join("\n"),
+    otherText: (cv.education ?? []).flatMap((e) => [e.degree, ...e.details.map((d) => d.text)]).join("\n"),
+    mentionText: [cv.summary ?? "", cv.interests ?? ""].join("\n"),
   };
 }
 
@@ -69,16 +78,18 @@ export function profileSkillSource(skills: string[]): CvSkillSource {
   return { skillsList: skills, bulletText: "", otherText: "" };
 }
 
-type SourceSets = { listed: Set<string>; inBullets: Set<string>; inOther: Set<string> };
+type SourceSets = { listed: Set<string>; inBullets: Set<string>; inOther: Set<string>; implied: Set<string>; mentioned: Set<string> };
 /** Per-source skill sets: the feed scores every live job against one source, and extractSkills over the CV text was most of that time. */
 const sourceSets = new WeakMap<CvSkillSource, SourceSets>();
 function setsFor(cv: CvSkillSource): SourceSets {
   let sets = sourceSets.get(cv);
   if (!sets) {
+    const listed = cv.skillsList, inBullets = extractSkills(cv.bulletText), inOther = extractSkills(cv.otherText);
+    const lower = (xs: string[]) => new Set(xs.map((s) => s.toLowerCase()));
     sets = {
-      listed: new Set(cv.skillsList.map((s) => s.toLowerCase())),
-      inBullets: new Set(extractSkills(cv.bulletText).map((s) => s.toLowerCase())),
-      inOther: new Set(extractSkills(cv.otherText).map((s) => s.toLowerCase())),
+      listed: lower(listed), inBullets: lower(inBullets), inOther: lower(inOther),
+      implied: lower(impliedSkills([...listed, ...inBullets, ...inOther].map((s) => canonicalize(s) ?? s))),
+      mentioned: lower(cv.mentionText ? extractSkills(cv.mentionText) : []),
     };
     sourceSets.set(cv, sets);
   }
@@ -86,20 +97,21 @@ function setsFor(cv: CvSkillSource): SourceSets {
 }
 
 export function computeCoverage(reqs: JdSkill[], cv: CvSkillSource): CoverageResult {
-  const { listed, inBullets, inOther } = setsFor(cv);
+  const { listed, inBullets, inOther, implied, mentioned } = setsFor(cv);
+  // implied (pandas ⇒ Python) is credited like a prose mention: shown, but not named (10#11)
   const statusOf = (skill: string): CoverageStatus => {
     const k = skill.toLowerCase();
-    return listed.has(k) || inBullets.has(k) ? "existing" : inOther.has(k) ? "supportedByResume" : "gap";
+    return listed.has(k) || inBullets.has(k) ? "existing" : inOther.has(k) || implied.has(k) ? "supportedByResume" : "gap";
   };
   const items: CoverageItem[] = reqs.map((r) => {
     // an anyOf group takes the best status among its alternatives
-    const statuses = (r.anyOf?.length ? r.anyOf : [r.skill]).map(statusOf);
-    const status = statuses.reduce((best, s) => (CREDIT[s] > CREDIT[best] ? s : best), "gap" as CoverageStatus);
-    return { ...r, status };
+    const names = r.anyOf?.length ? r.anyOf : [r.skill];
+    const status = names.map(statusOf).reduce((best, s) => (CREDIT[s] > CREDIT[best] ? s : best), "gap" as CoverageStatus);
+    return status === "gap" && names.some((n) => mentioned.has(n.toLowerCase())) ? { ...r, status, mentioned: true as const } : { ...r, status };
   });
   if (items.length === 0) return { readable: false, weighted: null, must: { matched: 0, total: 0 }, nice: { matched: 0, total: 0 }, items };
   let num = 0, den = 0;
-  for (const i of items) { num += WEIGHT[i.section] * CREDIT[i.status]; den += WEIGHT[i.section]; }
+  for (const i of items) { num += WEIGHT[i.section] * (i.mentioned ? MENTION_CREDIT : CREDIT[i.status]); den += WEIGHT[i.section]; }
   const count = (section: "must" | "nice") => ({
     matched: items.filter((i) => i.section === section && i.status !== "gap").length,
     total: items.filter((i) => i.section === section).length,
