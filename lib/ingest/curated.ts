@@ -96,6 +96,10 @@ function escapeHtml(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
 
+const KIND_TYPE: Record<ProgrammeKind, NonNullable<RawJob["employmentType"]>> = {
+  "spring-week": "spring_week", internship: "internship", graduate: "graduate",
+};
+
 export function programmeToRawJob(p: Programme): RawJob {
   return {
     extId: `${p.employer}:${p.season}:${p.kind}:${slugify(p.title)}`,
@@ -107,6 +111,7 @@ export function programmeToRawJob(p: Programme): RawJob {
     postedAt: null,
     deadline: p.closes ?? null,
     opensOn: `${p.opens}-01`,
+    employmentType: KIND_TYPE[p.kind],
   };
 }
 

@@ -32,10 +32,10 @@ describe("copy", () => {
   it("names both versions", () => {
     expect(outdatedNotice("0.2.0", "0.3.0")).toBe("Your Placed extension is out of date (0.2.0 → 0.3.0). Download the new version");
   });
-  it("ships the manifest version, bumped to 0.3.0", () => {
+  it("ships the manifest version, at least the first version with the outdated notice (0.3.0)", () => {
     const manifest = JSON.parse(readFileSync("extension/manifest.json", "utf8"));
-    expect(manifest.version).toBe("0.3.0");
     expect(SHIPPED_EXTENSION_VERSION).toBe(manifest.version);
+    expect(compareVersions(manifest.version, "0.3.0")).toBeGreaterThanOrEqual(0);
   });
   it("the install card and the Open & fill hint both use the outdated state", () => {
     const src = readFileSync("components/autopilot/extension-install.tsx", "utf8");

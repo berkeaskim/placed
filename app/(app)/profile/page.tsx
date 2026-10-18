@@ -16,18 +16,22 @@ import { MythCard } from "@/components/myth-card";
 import { LiveScoring, ScoringSteps } from "@/components/cv-score/scoring-agent";
 import { rulesFor } from "@/lib/cv-rules";
 import { SectorSelect } from "./sector-select";
+import type { Track } from "@/lib/cv-rules/types";
+import { scoreTrackFor } from "@/lib/profile/cycle";
+import { todayLondon } from "@/lib/scoring/dates";
 import { ProfileTabs } from "./tabs";
 import { ScoreNowButton } from "./score-now-button";
 import { scoreMyCv } from "./actions";
 
 export const metadata: Metadata = { title: "Your profile · Placed" };
 
-const llmRuleCount = (sector: Archetype) => rulesFor(sector).filter((r) => r.check === "llm").length;
+const llmRuleCount = (sector: Archetype, track: Track = "standard") => rulesFor(sector, track).filter((r) => r.check === "llm").length;
 
-function RetryScoreForm({ sector }: { sector: Archetype }) {
+function RetryScoreForm({ sector, track }: { sector: Archetype; track: Track }) {
   return (
     <form action={scoreMyCv}>
       <input type="hidden" name="sector" value={sector} />
+      <input type="hidden" name="track" value={track} />
       <ScoreNowButton />
     </form>
   );
@@ -40,12 +44,12 @@ function RetryScoreForm({ sector }: { sector: Archetype }) {
  * the page waits for it instead of making a second live judge call (lib/cv-score/defer.ts).
  */
 async function ScoreSection(p: {
-  userId: string; cvId: string; sector: Archetype; year: Year; failed: boolean; uploadScoring: boolean;
+  userId: string; cvId: string; sector: Archetype; year: Year; track: Track; failed: boolean; uploadScoring: boolean;
 }) {
-  const base = { userId: p.userId, cvId: p.cvId, sector: p.sector, year: p.year };
+  const base = { userId: p.userId, cvId: p.cvId, sector: p.sector, year: p.year, track: p.track };
   let data: CvScorePanelData | null = await loadCvScorePanel(base);
   if (!data && p.uploadScoring && !p.failed) {
-    return <LiveScoring llmRules={llmRuleCount(p.sector)} />;
+    return <LiveScoring llmRules={llmRuleCount(p.sector, p.track)} />;
   }
   if (!data && !p.failed) {
     try {
@@ -59,7 +63,7 @@ async function ScoreSection(p: {
     return (
       <>
         <CvScorePanel data={data} />
-        {data.aiUnavailable && <RetryScoreForm sector={p.sector} />}
+        {data.aiUnavailable && <RetryScoreForm sector={p.sector} track={p.track} />}
       </>
     );
   }
@@ -69,22 +73,22 @@ async function ScoreSection(p: {
       <p className="text-sm text-[#5B5B6B]">
         {p.failed ? "Scoring didn't finish that time. Give it another go in a moment." : "We couldn't score your CV just now."}
       </p>
-      <RetryScoreForm sector={p.sector} />
+      <RetryScoreForm sector={p.sector} track={p.track} />
     </div>
   );
 }
 
-function ScoreLoading({ sector }: { sector: Archetype }) {
+function ScoreLoading({ sector, track }: { sector: Archetype; track: Track }) {
   return (
     <div className="flex flex-col gap-3 rounded-[20px] border border-[#E6E6EF] bg-white p-5">
       <h2 className="text-base font-bold">Your CV Score</h2>
-      <ScoringSteps llmRules={llmRuleCount(sector)} />
+      <ScoringSteps llmRules={llmRuleCount(sector, track)} />
     </div>
   );
 }
 
-export default async function ProfilePage({ searchParams }: { searchParams: Promise<{ warn?: string; score?: string }> }) {
-  const { warn, score } = await searchParams;
+export default async function ProfilePage({ searchParams }: { searchParams: Promise<{ warn?: string; score?: string; track?: string }> }) {
+  const { warn, score, track: trackParam } = await searchParams;
   const { user } = await requireUser();
   const p = await getProfile(user.id);
   const cv = db.select({ id: cvs.id, uploaded_at: cvs.uploaded_at }).from(cvs).where(and(eq(cvs.user_id, user.id), eq(cvs.is_active, true))).get();
@@ -92,7 +96,11 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
   const target = p.target_archetype && (ARCHETYPES as readonly string[]).includes(p.target_archetype) ? p.target_archetype : null;
   const sector: Archetype = target ?? roles[0]?.key ?? "consulting";
   const year: Year = p.year && (YEARS as readonly string[]).includes(p.year) ? p.year : "2nd";
-  const uploadScoring = cv ? uploadScoringInFlight({ uploadedAt: cv.uploaded_at, sector, target }) : false;
+  // Spring-week-eligible students are scored as spring applicants by default; either can switch (?track=).
+  const defaultTrack = scoreTrackFor({ year, gradYear: p.grad_year }, todayLondon());
+  const track: Track = trackParam === "spring" || trackParam === "standard" ? trackParam : defaultTrack;
+  // Upload-time scoring only ever runs the default track.
+  const uploadScoring = cv && track === defaultTrack ? uploadScoringInFlight({ uploadedAt: cv.uploaded_at, sector, target }) : false;
 
   return (
     <>
@@ -113,9 +121,20 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
           </div>
           {cv && <SectorSelect key={sector} value={sector} />}
         </div>
+        {cv && defaultTrack === "spring" && (
+          <nav aria-label="Score for" className="flex flex-wrap items-center gap-2 text-sm">
+            <span className="font-semibold text-[#5B5B6B]">Score for:</span>
+            {(["spring", "standard"] as const).map((t) => (
+              <Link key={t} href={`/profile?track=${t}`} aria-current={track === t ? "true" : undefined}
+                className={`rounded-full border px-3 py-1.5 font-semibold no-underline ${track === t ? "border-foreground bg-foreground text-white" : "bg-white text-foreground"}`}>
+                {t === "spring" ? "Spring weeks" : "Internships"}
+              </Link>
+            ))}
+          </nav>
+        )}
         {cv ? (
-          <Suspense key={`${cv.id}-${sector}`} fallback={<ScoreLoading sector={sector} />}>
-            <ScoreSection userId={user.id} cvId={cv.id} sector={sector} year={year} failed={score === "failed"} uploadScoring={uploadScoring} />
+          <Suspense key={`${cv.id}-${sector}-${track}`} fallback={<ScoreLoading sector={sector} track={track} />}>
+            <ScoreSection userId={user.id} cvId={cv.id} sector={sector} year={year} track={track} failed={score === "failed"} uploadScoring={uploadScoring} />
           </Suspense>
         ) : (
           <div className="card-quest flex flex-wrap items-center justify-between gap-4 p-5">

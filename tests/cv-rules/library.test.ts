@@ -6,7 +6,7 @@ import { ARCHETYPES } from "@/lib/types";
 /** Rule counts per id prefix: 161 from the three research docs (spec §6.1) + 8 from the approved CV amendments. */
 const EXPECTED_PER_PREFIX: Record<string, number> = {
   G: 37, GEN: 12, FCQ: 12, FIN: 14, QNT: 12, CON: 13, SWE: 17, DAT: 12, PRD: 9, MKT: 12, RES: 11,
-  EV: 3, AU: 3, ATS: 2,
+  EV: 3, AU: 3, ATS: 2, SPR: 7,
 };
 
 const prefixOf = (id: string) => id.split("-")[0];
@@ -15,8 +15,8 @@ describe("CV rule library", () => {
   it("has the transcribed research rules with unique ids", () => {
     expect(new Set(RULES.map((r) => r.id)).size).toBe(RULES.length);
   });
-  it("has exactly the 169 rules (161 research + 8 amendments)", () => {
-    expect(RULES.length).toBe(169);
+  it("has exactly the 176 rules (161 research + 8 amendments + 7 spring-week)", () => {
+    expect(RULES.length).toBe(176);
   });
   for (const [prefix, n] of Object.entries(EXPECTED_PER_PREFIX)) {
     it(`has ${n} ${prefix} rules`, () => {

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Placed Autopilot",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Fills internship application forms from your Placed Answer Vault (never presses Submit) and reads your own LinkedIn profile for your Placed LinkedIn Score.",
   "icons": {
     "16": "icons/icon16.png",

@@ -21,7 +21,7 @@ export async function saveOnboarding(input: OnboardingInputT): Promise<{ award: 
     db.update(profiles).set({
       university: canonicalUniversity(parsed.data.university) ?? parsed.data.university,
       course, field: known ?? "Other",
-      year: parsed.data.year, location_pref: [...new Set(parsed.data.locationPref)],
+      year: parsed.data.year, grad_year: parsed.data.gradYear ?? null, location_pref: [...new Set(parsed.data.locationPref)],
       needs_visa: parsed.data.needsVisa, onboarded: true,
     }).where(eq(profiles.user_id, user.id)).run();
   } catch {

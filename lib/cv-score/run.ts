@@ -2,6 +2,7 @@ import "server-only";
 import { and, eq } from "drizzle-orm";
 import type { Archetype, ParsedCV, Year } from "@/lib/types";
 import type { SafetyReport } from "@/lib/cv/safety";
+import type { Track } from "@/lib/cv-rules/types";
 import { isImageOnly } from "@/lib/cv/image-only";
 import { rulesFor } from "@/lib/cv-rules";
 import { countUnevidencedFails, judgeCvRules, PROMPT_VERSION } from "@/lib/ai/judgeCvRules";
@@ -32,15 +33,16 @@ type CvRow = { raw_text: string; page_texts: string[] | null; page_count: number
 const cvGone = (e: unknown) => (e as { code?: string } | null)?.code === "SQLITE_CONSTRAINT_FOREIGNKEY";
 
 /**
- * Score one CV for one sector and upsert cv_scores (one row per cv × sector).
+ * Score one CV for one sector on one track and upsert cv_scores (one row per cv × sector × track).
  * LLM verdicts are reused whenever a row with the same cache key exists for this user (06 R2):
  * sha256(normalised redacted text) + sector + rules_version + model_id + prompt_version.
  * Code checks and aggregation always re-run (pure and cheap). No XP is awarded here (amendment item 5).
  * The CV read is scoped to `userId`, and the score is never written unless it returns the row.
  */
 export async function scoreCv(
-  i: { userId: string; cvId: string; sector: Archetype; year: Year },
+  i: { userId: string; cvId: string; sector: Archetype; year: Year; track?: Track },
 ): Promise<CvScore & { aiUnavailable: boolean }> {
+  const track: Track = i.track ?? "standard";
   const cv = db.select({ raw_text: cvs.raw_text, page_texts: cvs.page_texts, page_count: cvs.page_count, file_size: cvs.file_size, parsed_json: cvs.parsed_json })
     .from(cvs).where(and(eq(cvs.id, i.cvId), eq(cvs.user_id, i.userId))).get() as CvRow | undefined;
   if (!cv) throw new Error(`CV not found: ${i.cvId}`);
@@ -48,14 +50,14 @@ export async function scoreCv(
   const parsed = cv.parsed_json;
   const rawText = cv.raw_text ?? "";
   const pageTexts = cv.page_texts ?? [];
-  const rules = rulesFor(i.sector);
+  const rules = rulesFor(i.sector, track);
 
   const judgeInput = prepareJudgeInput(parsed, rawText);
   const hash = textHash(judgeInput.redactedText);
   const modelId = currentModelId("smart");
 
   const cached = db.select({ rule_results: cvScores.rule_results }).from(cvScores).where(and(
-    eq(cvScores.user_id, i.userId), eq(cvScores.sector, i.sector), eq(cvScores.text_hash, hash), eq(cvScores.model_id, modelId),
+    eq(cvScores.user_id, i.userId), eq(cvScores.sector, i.sector), eq(cvScores.track, track), eq(cvScores.text_hash, hash), eq(cvScores.model_id, modelId),
     eq(cvScores.prompt_version, PROMPT_VERSION), eq(cvScores.rules_version, RULES_VERSION),
   )).limit(1).get() as { rule_results: StoredRuleResults } | undefined;
 
@@ -68,18 +70,18 @@ export async function scoreCv(
       structuredText: judgeInput.structuredText,
       rules,
       // Exact fixtures only (fixture mode): keyed by content + sector, never by identity.
-      fixtureKey: `${hash.slice(0, 16)}-${i.sector}`,
+      fixtureKey: track === "standard" ? `${hash.slice(0, 16)}-${i.sector}` : `${hash.slice(0, 16)}-${i.sector}-${track}`,
     });
     llm = { results: j.results, spellingErrors: j.spellingErrors, cacheable: j.cacheable, aiUnavailable: j.aiUnavailable === true };
   }
 
   const code = runCodeChecks(rules, {
-    text: rawText, pageTexts, pageCount: cv.page_count, fileSize: cv.file_size, cv: parsed, year: i.year,
+    text: rawText, pageTexts, pageCount: cv.page_count, fileSize: cv.file_size, cv: parsed, year: i.year, track,
     spellingErrors: llm.spellingErrors, safety: parsed.safety,
   });
   const textLayerFailed = code.some((r) => r.status === "fail" && rules.find((x) => x.id === r.ruleId)?.checker === "text_layer");
   const score = aggregateCvScore({
-    rules, results: [...code, ...llm.results], sector: i.sector, year: i.year,
+    rules, results: [...code, ...llm.results], sector: i.sector, year: i.year, track,
     facts: {
       imageOnly: textLayerFailed || isImageOnly(pageTexts),
       spellingErrors: llm.spellingErrors?.length ?? 0,
@@ -94,7 +96,7 @@ export async function scoreCv(
     ...(llm.aiUnavailable ? { aiUnavailable: true } : {}),
   };
   const row = {
-    cv_id: i.cvId, user_id: i.userId, sector: i.sector, total: score.total, dimensions: score.dimensions,
+    cv_id: i.cvId, user_id: i.userId, sector: i.sector, track, total: score.total, dimensions: score.dimensions,
     caps_applied: score.capsApplied, rule_results: ruleResults, fixes: score.fixes,
   };
   // No verdicts obtained (fixture mode without an exact fixture): store the hash but no key parts, so it never serves as a cache hit.
@@ -103,7 +105,7 @@ export async function scoreCv(
     : { text_hash: hash, model_id: null, prompt_version: null, rules_version: null };
   const values = { ...row, ...cacheCols };
   try {
-    db.insert(cvScores).values(values).onConflictDoUpdate({ target: [cvScores.cv_id, cvScores.sector], set: values }).run();
+    db.insert(cvScores).values(values).onConflictDoUpdate({ target: [cvScores.cv_id, cvScores.sector, cvScores.track], set: values }).run();
   } catch (e) {
     if (cvGone(e)) throw new Error(`Couldn't save CV score: CV ${i.cvId} was deleted while it was being scored`);
     throw new Error(`Couldn't save CV score: ${e instanceof Error ? e.message : String(e)}`);

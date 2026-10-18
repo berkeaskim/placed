@@ -93,6 +93,8 @@ test("Autopilot fills the real Monzo form and never submits", async () => {
       first_name: "Ayşe", last_name: "Demir", email: "ayse.demir.demo@example.com", phone: "+44 7700 900123",
       country: "United Kingdom", city: "London", university: "University College London", degree: "BSc Economics",
       grad_year: "2028", start_date: "2027-06-01", heard_about: "Placed",
+      // A CV upload can prefill LinkedIn without a scheme, which the url input rejects and so blocks Save.
+      linkedin: "https://www.linkedin.com/in/ayse-demir-demo",
     };
     for (const [name, value] of Object.entries(text)) await pick(page, `#${name}`, value);
     await page.locator("#year_of_study").selectOption("2nd");
@@ -169,7 +171,7 @@ test("Autopilot fills the real Monzo form and never submits", async () => {
         state: el.dataset.placed,
         id: (inner && inner.id) || el.id || String(el.className).slice(0, 30),
         kind: el.querySelector(".select__control") ? "react-select" : "plain",
-        shown: ((el.querySelector(".select__single-value") || {}).textContent || "").slice(0, 40),
+        shown: [...el.querySelectorAll(".select__single-value, .select__multi-value__label")].map((n) => n.textContent).join(" + ").slice(0, 40),
         tag: ((el.querySelector(":scope > .placed-tag") || {}).textContent || ""),
         why: (inner && inner.getAttribute("data-placed-why")) || "",
       };
@@ -191,6 +193,15 @@ test("Autopilot fills the real Monzo form and never submits", async () => {
       expect(row?.state, `${what} (${id}) filled; tag=${row?.tag} why=${row?.why}`).toBe("filled");
       expect(row?.shown, `${what} shows a chosen option`).not.toBe("");
     }
+    // Identity survey (Greenhouse demographic_questions, react-selects #627..#632): the persona answered each in the chat
+    // (the first option), so each one is filled from the remembered answer. Its consent box stays the student's.
+    for (const id of ["627", "628", "629", "630", "631", "632"]) {
+      const row = audit.find((r) => r.id === id);
+      expect(row, `identity survey ${id} is in the audit`).toBeTruthy();
+      expect(row?.state, `identity survey ${id} filled; tag=${row?.tag} why=${row?.why}`).toBe("filled");
+      expect(row?.shown, `identity survey ${id} shows a chosen option`).not.toBe("");
+    }
+    expect(audit.find((r) => r.id === "gdpr_demographic_data_consent_given_1")?.state, "survey consent is the student's call").toBe("yours");
     // Autopilot never ticks consent, and leaves diversity answers empty unless the student gave one
     expect(await form.evaluate(`document.querySelectorAll("input[type=checkbox][id*=consent]:checked, input[type=checkbox][name*=consent]:checked").length`)).toBe(0);
     expect(audit.filter((r) => r.state === "yours" && r.shown), "fields left to the student stay empty").toEqual([]);

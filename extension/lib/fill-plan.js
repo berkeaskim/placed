@@ -12,7 +12,13 @@
   function fileFor(field, ctx) {
     return (field.asset === "cover" ? ctx.coverFile : ctx.cvFile) || null;
   }
-  const api = { summarize, fileFor };
+  /** Option labels a multi-select still needs: the plan's labels minus the ones already chosen on the page (compared folded). */
+  function stillToPick(field, chosen, norm) {
+    const wanted = Array.isArray(field.optionLabels) && field.optionLabels.length ? field.optionLabels : field.optionLabel ? [field.optionLabel] : [];
+    const have = new Set(chosen.map(norm));
+    return wanted.filter((l, i) => !have.has(norm(l)) && wanted.findIndex((x) => norm(x) === norm(l)) === i);
+  }
+  const api = { summarize, fileFor, stillToPick };
   root.PlacedFillPlan = api;
   if (typeof module !== "undefined") module.exports = api;
 })(globalThis);

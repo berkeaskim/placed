@@ -1,5 +1,6 @@
 import type { ParsedCV, Year } from "@/lib/types";
-import type { CheckerId, CvRule } from "@/lib/cv-rules/types";
+import type { CheckerId, CvRule, Track } from "@/lib/cv-rules/types";
+import { adjustFor } from "@/lib/cv-rules/adjust";
 import { extractSkills, canonicalize } from "@/lib/skills/extract";
 import { escapeRegex } from "@/lib/text/regex";
 import { isImageOnly } from "@/lib/cv/image-only";
@@ -16,9 +17,14 @@ export function allBullets(cv: ParsedCV) {
   return [...cv.experience, ...cv.projects, ...cv.leadership].flatMap((e) => e.bullets);
 }
 
-export function thresholdFor(rule: CvRule, year: Year, fallback: number) {
-  return rule.yearAdjust?.[year]?.threshold ?? rule.params?.threshold ?? fallback;
+export function thresholdFor(rule: CvRule, year: Year, fallback: number, track: Track = "standard") {
+  return adjustFor(rule, year, track)?.threshold ?? rule.params?.threshold ?? fallback;
 }
+
+/** Education text: degree, grade and detail lines (where A-levels and GCSEs are parsed to). */
+const eduText = (c: CvContext) => c.cv.education.map((e) => [e.degree, e.grade ?? "", ...e.details.map((d) => d.text)].join("\n")).join("\n");
+const PRE_UNI = /\bA[\s-]?levels?\b|\bIB\b|International Baccalaureate|\bHighers?\b|\bBTEC\b|\bPre-U\b|\bAbitur\b|\bBaccalaur[ée]at\b|\bCBSE\b|\bISC\b|\bWAEC\b|\bLeaving Cert/i;
+const PRE_UNI_GRADE = /A\*|\b[A-E]\b(?!-level)|\bD\*|\bDistinction\*?|\bMerit\b|\b\d{2}\s*\/\s*45\b|\b\d{2,3}(?:\.\d)?%|\b[1-7]\b|\b[1-4][.,]\d\b/;
 
 /** UK/US spelling variants are both correct (06 R12 / T14): never count them as spelling errors. */
 const VARIANT_PATTERNS: RegExp[] = [
@@ -82,7 +88,7 @@ export const CHECKERS: Record<CheckerId, (ctx: CvContext, rule: CvRule) => Out> 
     isImageOnly(c.pageTexts) ? bad("fail", null, "Export your CV as a text PDF from Word/Google Docs — this one looks like an image, so ATS can't read it.") : ok(),
   file_size: (c) => (c.fileSize <= 2.5 * 1024 * 1024 ? ok() : bad("fail", null, "Compress the PDF under 2.5 MB — larger files fail to parse in Greenhouse.")),
   page_count: (c, r) => {
-    const max = r.params?.maxPages ?? 2;
+    const max = adjustFor(r, c.year, c.track)?.maxPages ?? r.params?.maxPages ?? 2;
     if (c.pageCount <= max) return ok();
     if (c.pageCount === max + 1 && max === 1) return bad("partial", null, "Cut to one full page — trim older or less relevant bullets.");
     return bad("fail", null, `Cut to ${max} page${max > 1 ? "s" : ""}.`);
@@ -108,7 +114,7 @@ export const CHECKERS: Record<CheckerId, (ctx: CvContext, rule: CvRule) => Out> 
     if (bullets.length === 0) return na();
     const withNum = bullets.filter((b) => hasQuantity(b.text));
     const share = withNum.length / bullets.length;
-    const t = thresholdFor(r, c.year, 0.4);
+    const t = thresholdFor(r, c.year, 0.4, c.track);
     if (share >= t) return ok();
     const first = bullets.find((b) => !hasQuantity(b.text))?.text ?? null;
     return bad(share >= t / 2 ? "partial" : "fail", first, "Add a real number to this bullet: how many, how much, how often, or by how much it improved.");
@@ -156,7 +162,8 @@ export const CHECKERS: Record<CheckerId, (ctx: CvContext, rule: CvRule) => Out> 
   },
   leadership_lexicon: (c) => {
     const text = [...c.cv.leadership, ...c.cv.experience].map((e) => `${e.title} ${e.bullets.map((b) => b.text).join(" ")}`).join(" ");
-    return /(president|captain|founder|co-founder|head of|\bled\b|chair|treasurer|secretary|committee|officer|organis(ed|er)|organiz(ed|er)|mentor)/i.test(text)
+    // School roles count too (a first-year's strongest evidence): prefect, head student, house captain, Young Enterprise.
+    return /(president|captain|founder|co-founder|head of|\bled\b|chair|treasurer|secretary|committee|officer|organis(ed|er)|organiz(ed|er)|mentor|prefect|head (boy|girl|student)|deputy head|ambassador|representative|\brep\b|coach(ed)?|young enterprise|duke of edinburgh|\bdofe\b)/i.test(text)
       ? ok() : bad("fail", null, "Show a position of responsibility — a society role, captaincy, or something you organised.");
   },
   projects_count: (c) => {
@@ -230,6 +237,23 @@ export const CHECKERS: Record<CheckerId, (ctx: CvContext, rule: CvRule) => Out> 
     const detail = `${d.severity === "major" ? "Major: " : "Minor: "}${d.per100Words.toFixed(1)} clichés per 100 words. Spans: ${spans.join("; ")}`;
     return { ...bad("fail", d.hits[0]?.match ?? null, "Replace stock phrases ('passionate', 'results-driven', 'leverage') with what you actually did and the result."), detail };
   },
+  pre_uni_grades: (c) => {
+    const lines = eduText(c).split("\n").filter((l) => PRE_UNI.test(l));
+    if (!lines.length) return bad("fail", null, "Add your A-levels (or equivalent) with grades, on one line: 'A-levels: Mathematics (A*), Economics (A), History (A)'.");
+    return lines.some((l) => PRE_UNI_GRADE.test(l.replace(PRE_UNI, " "))) ? ok()
+      : bad("partial", lines[0], "Add the grade after each subject: 'Mathematics (A*), Economics (A)'.");
+  },
+  gcse_summarised: (c) => {
+    const t = eduText(c);
+    const asLevel = t.match(/\bAS[\s-]?[Ll]evels?\b|\bAS:\s/); // case-sensitive "AS", so prose "as" never matches
+    if (asLevel) return bad("fail", asLevel[0], "Leave AS-levels off. Your A-level grades supersede them.");
+    const seg = t.split("\n").filter((l) => /GCSE|IGCSE/i.test(l)).join(" ");
+    if (!seg) return na();
+    // "Subject 9" / "Subject (A*)" pairs: a list of them means GCSEs are itemised.
+    const pairs = seg.match(/\b[A-Z][A-Za-z&.]+(?:\s[A-Z][A-Za-z&.]+){0,3}\s*[:(–-]?\s*(?:[4-9]|A\*|[ABC])\)?(?=[,;\s)]|$)/g) ?? [];
+    return pairs.length <= 3 ? ok() : bad(pairs.length <= 5 ? "partial" : "fail", seg.slice(0, 80),
+      `Replace the list with one line: '${pairs.length} GCSEs (range), including Maths and English'.`);
+  },
   hidden_text: (c) => safetyCheck(c.safety, "ATS-HID-01", "Remove the hidden text — ATS can read it even though people can't, and some reject CVs that contain it."),
   prompt_injection: (c) => safetyCheck(c.safety, "ATS-INJ-01", "Remove the instruction-style text aimed at an AI screener — it won't help you and can get your CV rejected."),
 };
@@ -237,5 +261,5 @@ export const CHECKERS: Record<CheckerId, (ctx: CvContext, rule: CvRule) => Out> 
 export function runCodeChecks(rules: CvRule[], ctx: CvContext): RuleResult[] {
   return rules
     .filter((r) => r.check === "code" && r.checker)
-    .map((r) => (r.yearAdjust?.[ctx.year]?.skip ? { ruleId: r.id, ...na() } : { ruleId: r.id, ...CHECKERS[r.checker!](ctx, r) }));
+    .map((r) => (adjustFor(r, ctx.year, ctx.track)?.skip ? { ruleId: r.id, ...na() } : { ruleId: r.id, ...CHECKERS[r.checker!](ctx, r) }));
 }
