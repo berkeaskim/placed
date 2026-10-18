@@ -64,29 +64,67 @@ describe("completeAction", () => {
   const NOTE = "Finished the course and the notebook exercises";
 
   it("stores ONLY the student's words as the fact (never the action title), then marks done and awards XP", async () => {
-    setup({ prevStatus: "planned" });
-    const r = await completeAction(U, "PB-DAT-C01", NOTE, "https://github.com/a/tableau-sql");
-    expect(r).toMatchObject({ award: { xpGained: 40 }, firstTime: true });
+    setup();
+    const r = await completeAction(U, "PB-DAT-P01", NOTE, "https://github.com/a/tableau-sql");
+    expect(r).toMatchObject({ award: { xpGained: 40 }, firstTime: true, usableInTailoring: true });
     expect(facts()).toEqual([{ user_id: U, claim: NOTE, source: "user-stated" }]);
     expect(progress()).toEqual([expect.objectContaining({ status: "done", evidence_note: NOTE, evidence_url: "https://github.com/a/tableau-sql" })]);
     const { awardXP } = await import("@/lib/gamify/award");
-    expect(awardXP).toHaveBeenCalledWith(U, { type: "playbook_done", ref: "PB-DAT-C01" });
+    expect(awardXP).toHaveBeenCalledWith(U, {
+      type: "playbook_done", ref: "PB-DAT-P01", effort: "2-4 weeks", signalValue: "cv_medium", hasEvidence: true, closesGap: false,
+    });
+  });
+
+  it("a finished course never becomes tailoring evidence (07#19): the note stays on the step only", async () => {
+    // "Finished Kaggle Learn Python and SQL" used to make Strengthen say "tailoring can use it now"
+    setup({ prevStatus: "planned" });
+    const r = await completeAction(U, "PB-DAT-C01", "Finished Kaggle Learn Python and SQL", undefined);
+    expect(r).toMatchObject({ firstTime: true, usableInTailoring: false });
+    expect(facts()).toEqual([]);
+    expect(progress()[0]).toMatchObject({ status: "done", evidence_note: "Finished Kaggle Learn Python and SQL" });
+  });
+
+  it("a job simulation never becomes tailoring evidence (06#9, BCG's Forage listing rule)", async () => {
+    setup();
+    expect(await completeAction(U, "PB-DAT-E05", "Completed a Forage data simulation", undefined)).toMatchObject({ usableInTailoring: false });
+    expect(facts()).toEqual([]);
+  });
+
+  it("Gap Closer needs a step that really lists the gap skill (06#8)", async () => {
+    const { awardXP } = await import("@/lib/gamify/award");
+    setup();
+    await completeAction(U, "PB-DAT-P01", NOTE, undefined, ["SQL", "Python or R"]);
+    expect(vi.mocked(awardXP).mock.calls.at(-1)?.[1]).toMatchObject({ closesGap: true });
+    setup();
+    await completeAction(U, "PB-DAT-P01", NOTE, undefined, ["Kubernetes"]); // not a skill this step builds
+    expect(vi.mocked(awardXP).mock.calls.at(-1)?.[1]).toMatchObject({ closesGap: false });
+    setup();
+    await completeAction(U, "PB-DAT-P01", NOTE, undefined, "SQL" as never);
+    expect(vi.mocked(awardXP).mock.calls.at(-1)?.[1]).toMatchObject({ closesGap: false });
+  });
+
+  it("uses graduation year: a 2nd year graduating next-but-one summer is penultimate", async () => {
+    setup({ profile: { target_archetype: "product", year: "2nd", grad_year: 2029 } });
+    expect(await completeAction(U, "PB-PRD-E04", NOTE, undefined)).toMatchObject({ error: expect.stringMatching(/target role/) });
+    setup({ profile: { target_archetype: "product", year: "2nd", grad_year: null } });
+    expect(await completeAction(U, "PB-PRD-E04", NOTE, undefined)).toMatchObject({ firstTime: true });
   });
 
   it("re-completing updates the note without a second fact or XP", async () => {
     setup({ prevStatus: "done" });
     const r = await completeAction(U, "PB-DAT-C01", "Finished the course again", undefined);
-    expect(r).toEqual({ award: null, firstTime: false });
+    expect(r).toEqual({ award: null, firstTime: false, usableInTailoring: false });
     expect(facts()).toEqual([]);
     expect(progress()[0]).toMatchObject({ evidence_note: "Finished the course again" });
   });
 
   it("if the fact can't be saved, the action is NOT marked done (so a retry still adds it)", async () => {
-    setup({ prevStatus: "planned" });
+    setup();
+    db.insert(playbookProgress).values({ user_id: U, action_id: "PB-DAT-P01", status: "planned" }).run();
     db.$client.exec("create trigger no_facts before insert on confirmed_facts begin select raise(abort, 'boom'); end");
     vi.spyOn(console, "error").mockImplementation(() => {});
     try {
-      expect(await completeAction(U, "PB-DAT-C01", NOTE, undefined)).toMatchObject({ error: expect.any(String) });
+      expect(await completeAction(U, "PB-DAT-P01", NOTE, undefined)).toMatchObject({ error: expect.any(String) });
       expect(progress()[0]).toMatchObject({ status: "planned" });
     } finally {
       db.$client.exec("drop trigger no_facts");
@@ -97,7 +135,7 @@ describe("completeAction", () => {
     setup();
     const { awardXP } = await import("@/lib/gamify/award");
     vi.mocked(awardXP).mockRejectedValueOnce(new Error("rpc down"));
-    expect(await completeAction(U, "PB-DAT-C01", NOTE, undefined)).toEqual({ award: null, firstTime: true });
+    expect(await completeAction(U, "PB-DAT-C01", NOTE, undefined)).toEqual({ award: null, firstTime: true, usableInTailoring: false });
     expect(progress()[0]).toMatchObject({ status: "done" });
   });
 

@@ -623,7 +623,7 @@
           "SWE-05",
           "SWE-11"
         ],
-        "grade": "A",
+        "grade": "B",
         "basis": "evidence (employer + careers publisher)",
         "sources": [
           {
@@ -636,7 +636,8 @@
             "quote": "you need to be prepared to speak about anything on your CV at interview.",
             "accessed": "2026-10-13"
           }
-        ]
+        ],
+        "note": "Graded B: the employer quote comes from Monzo's guide for experienced mobile hires, not its intern process."
       },
       {
         "id": "PB-SWE-S04",
@@ -644,13 +645,24 @@
         "ruleIds": [
           "SWE-14"
         ],
-        "grade": "A",
+        "grade": "B",
         "basis": "evidence (employer + two careers publishers)",
         "sources": [
           {
-            "ref": "R3",
-            "quote": "the collaboration and project delivery skills we explore in this stage are just as important as technical excellence.",
-            "accessed": "2026-10-13"
+            "title": "Associate Software Engineer - Intern (Summer 2027)",
+            "publisher": "Monzo",
+            "url": "https://job-boards.greenhouse.io/monzo/jobs/8156261",
+            "primary": true,
+            "quote": "Reviewing code for your colleagues, to pick up any improvements and learn from your peers",
+            "accessed": "2026-10-18"
+          },
+          {
+            "title": "Associate Software Engineer - Intern (Summer 2027)",
+            "publisher": "Monzo",
+            "url": "https://job-boards.greenhouse.io/monzo/jobs/8156261",
+            "primary": true,
+            "quote": "Working with product managers, designers and data analysts on your team",
+            "accessed": "2026-10-18"
           },
           {
             "ref": "R2",
@@ -666,15 +678,18 @@
       },
       {
         "id": "PB-SWE-S05",
-        "text": "Problem-solving ability is a core requirement; Monzo says it hires for problem-solving ability over experience.",
+        "text": "Problem-solving ability is a core requirement; Jane Street says it cares more about how you think and learn than what you already know.",
         "ruleIds": [],
-        "grade": "A",
+        "grade": "B",
         "basis": "evidence (employer + careers publisher)",
         "sources": [
           {
-            "ref": "R3",
-            "quote": "In general, we hire for problem-solving ability over experience.",
-            "accessed": "2026-10-13"
+            "title": "Software Engineer Internship, London (job feed)",
+            "publisher": "Jane Street",
+            "url": "https://www.janestreet.com/jobs/main.json",
+            "primary": true,
+            "quote": "We're more interested in how you think and learn than what you currently know.",
+            "accessed": "2026-10-18"
           },
           {
             "ref": "R1",
@@ -722,6 +737,130 @@
             "accessed": "2026-10-13"
           }
         ]
+      },
+      {
+        "id": "PB-SWE-S08",
+        "text": "Most tech internships screen with a timed online coding exercise, then live problem-solving interviews. Data structures and algorithms are tested directly, not read off your CV, so practise them separately from your projects.",
+        "ruleIds": [],
+        "grade": "A",
+        "basis": "evidence (employer postings + careers service)",
+        "sources": [
+          {
+            "title": "Associate Software Engineer - Intern (Summer 2027)",
+            "publisher": "Monzo",
+            "url": "https://job-boards.greenhouse.io/monzo/jobs/8156261",
+            "primary": true,
+            "quote": "If you're successful, we'll invite you to complete an exercise to demonstrate your programming and problem-solving skills",
+            "accessed": "2026-10-18"
+          },
+          {
+            "title": "Software Engineering, Site Reliability Engineering, BS/MS Intern, 2027",
+            "publisher": "Google",
+            "url": "https://www.google.com/about/careers/applications/jobs/results/100028133205254854-software-engineering-site-reliability-engineering-bsms-intern-2027",
+            "primary": true,
+            "quote": "Experience working with data structures or algorithms during coursework/projects, research, internships or practical experience in school or work (e.g., open-source coding).",
+            "accessed": "2026-10-18"
+          },
+          {
+            "title": "Banking & Financial Markets: Short Guide to Recruitment 2025-2026 (PDF)",
+            "publisher": "University of Cambridge Careers Service",
+            "url": "https://www.careers.cam.ac.uk/sites/default/files/Banking%20and%20Financial%20Markets%20Short%20Guide%20to%20Recruitment%202025%20-%202026.pdf",
+            "primary": false,
+            "quote": "For technical roles, prepare for timed coding tests in your chosen language.",
+            "accessed": "2026-10-18"
+          }
+        ]
+      },
+      {
+        "id": "PB-SWE-S09",
+        "text": "Employers split on AI in interviews. Some (Canva; Meta is piloting it) expect you to use AI tools and judge how you direct and correct them; others (Anthropic, Monzo) ban live AI use. Be able to code unaided and to review AI output critically, and check each employer's policy.",
+        "ruleIds": [],
+        "grade": "A",
+        "basis": "evidence (several employers' own guidance)",
+        "sources": [
+          {
+            "title": "Yes, You Can Use AI in Our Interviews. In fact, we insist (11 Jun 2025)",
+            "publisher": "Canva Engineering",
+            "url": "https://www.canva.dev/blog/engineering/yes-you-can-use-ai-in-our-interviews/",
+            "primary": true,
+            "quote": "we now expect Backend, Machine Learning and Frontend engineering candidates to use AI tools like Copilot, Cursor, and Claude during our technical interviews.",
+            "accessed": "2026-10-18"
+          },
+          {
+            "title": "Yes, You Can Use AI in Our Interviews. In fact, we insist (11 Jun 2025)",
+            "publisher": "Canva Engineering",
+            "url": "https://www.canva.dev/blog/engineering/yes-you-can-use-ai-in-our-interviews/",
+            "primary": true,
+            "quote": "Can they identify and fix issues in AI-generated code?",
+            "accessed": "2026-10-18"
+          },
+          {
+            "title": "Candidate AI guidance (updated 10 Jul 2025)",
+            "publisher": "Anthropic",
+            "url": "https://www.anthropic.com/candidate-ai-guidance",
+            "primary": true,
+            "quote": "This is all you–no AI assistance unless we indicate otherwise.",
+            "accessed": "2026-10-18"
+          },
+          {
+            "title": "The ultimate guide on using AI to ace an interview at Monzo (30 Jul 2024)",
+            "publisher": "Monzo",
+            "url": "https://monzo.com/blog/the-ultimate-guide-on-using-ai-to-ace-an-interview-at-monzo",
+            "primary": true,
+            "quote": "Having a few notes to support you is fine, but please do not use AI live in the interview.",
+            "accessed": "2026-10-18"
+          },
+          {
+            "title": "Meta says it will let candidates use AI in some job interviews (30 Jul 2025)",
+            "publisher": "TechRadar",
+            "url": "https://www.techradar.com/pro/meta-is-going-to-let-candidates-use-ai-in-job-interviews",
+            "primary": false,
+            "quote": "Meta is developing a new type of coding interview in which candidates have access to an AI assistant",
+            "accessed": "2026-10-18"
+          },
+          {
+            "title": "Stack Overflow Developer Survey 2025: AI",
+            "publisher": "Stack Overflow",
+            "url": "https://survey.stackoverflow.co/2025/ai",
+            "primary": false,
+            "quote": "More developers actively distrust the accuracy of AI tools (46%) than trust it (33%)",
+            "accessed": "2026-10-18"
+          }
+        ],
+        "note": "Meta's AI-assisted interview is a press-reported pilot (TechRadar, citing 404 Media), not confirmed for UK graduate hiring."
+      },
+      {
+        "id": "PB-SWE-S10",
+        "text": "Trading-firm software roles (quant dev) look for strong programming in C++, Java, C# or Python and an understanding of how computers run code. Functional languages such as OCaml are taught on the job.",
+        "ruleIds": [],
+        "grade": "B",
+        "basis": "evidence (several employer pages)",
+        "sources": [
+          {
+            "title": "Engineering internships",
+            "publisher": "G-Research",
+            "url": "https://www.gresearch.com/students-graduates/engineering-internships/",
+            "primary": true,
+            "quote": "You should be graduating in 2028, studying Computer Science or a related discipline with a 2:1 or above, and have experience in an object-oriented programming language such as C#, Java or C++.",
+            "accessed": "2026-10-18"
+          },
+          {
+            "title": "Software Engineer Internship (2027 start), London",
+            "publisher": "Optiver",
+            "url": "https://www.optiver.com/join-us/jobs/technology/london/software-engineer-internship-2027-start/",
+            "primary": true,
+            "quote": "Proficient in industry-standard coding languages such as C++, Python, or Java, with a strong understanding of underlying computer architecture and system operations",
+            "accessed": "2026-10-18"
+          },
+          {
+            "title": "Interviewing",
+            "publisher": "Jane Street",
+            "url": "https://www.janestreet.com/join-jane-street/interviewing/",
+            "primary": true,
+            "quote": "Most of the software engineers we hire come in without any OCaml or even functional programming experience.",
+            "accessed": "2026-10-18"
+          }
+        ]
       }
     ],
     "actions": [
@@ -745,7 +884,7 @@
         ],
         "effort": "2-4 weeks",
         "minYear": "1st",
-        "evidence": "Live link + public GitHub repo; README states the problem, stack, who uses it and one outcome (e.g. users, time saved), honestly measured.",
+        "evidence": "Live link + public GitHub repo; README states the problem, stack, who uses it and one outcome (e.g. users, time saved), honestly measured. Add one fact someone else can check: number of users, sessions or issues filed by other people.",
         "sources": [
           {
             "ref": "R5",
@@ -753,13 +892,15 @@
             "accessed": "2026-10-13"
           }
         ],
-        "verified": true
+        "verified": true,
+        "kind": "build",
+        "signalValue": "cv_high"
       },
       {
         "id": "PB-SWE-P02",
         "type": "project",
-        "title": "Take a tutorial project and make it genuinely yours",
-        "description": "Extend a course or tutorial project with a feature the tutorial did not cover, then add automated tests and a CI pipeline.",
+        "title": "Turn a tutorial project into one that solves your own problem",
+        "description": "Use a tutorial only as a starting point: change it so it solves a problem you or a named group actually have, add tests and CI, and write a short 'what I'd change next' note. Treat it as a stepping stone to a project with real users (see 'Build and ship a tool for a real group'), not a headline project: AI tools make tutorial-style code cheap to produce.",
         "skills": [
           "Python",
           "FastAPI",
@@ -774,7 +915,7 @@
         ],
         "effort": "2-4 weeks",
         "minYear": "1st",
-        "evidence": "Repo with passing CI; README section 'What I changed from the tutorial and why' (addresses SWE-17a: unextended tutorial clones).",
+        "evidence": "Repo with passing CI, a live demo, and README sections 'What problem this solves for whom' and 'What I'd change next' (addresses SWE-17a: unextended tutorial clones).",
         "sources": [
           {
             "ref": "R4",
@@ -782,7 +923,9 @@
             "accessed": "2026-10-13"
           }
         ],
-        "verified": true
+        "verified": true,
+        "kind": "build",
+        "signalValue": "cv_low"
       },
       {
         "id": "PB-SWE-P03",
@@ -806,13 +949,15 @@
             "accessed": "2026-10-13"
           }
         ],
-        "verified": true
+        "verified": true,
+        "kind": "build",
+        "signalValue": "interview_prep"
       },
       {
         "id": "PB-SWE-P04",
         "type": "project",
         "title": "Implement and benchmark core data structures and algorithms",
-        "description": "Implement several classic structures (e.g. hash map, heap, graph search), test them, and benchmark them against the standard library on growing inputs.",
+        "description": "Implement several classic structures (e.g. hash map, heap, graph search), test them, and benchmark them against the standard library on growing inputs. This is interview preparation, not a CV line: pair it with the timed practice block.",
         "skills": [
           "Algorithms",
           "Python",
@@ -820,8 +965,8 @@
           "Unit Testing"
         ],
         "signals": [
-          "PB-SWE-S05",
-          "PB-SWE-S06"
+          "PB-SWE-S08",
+          "PB-SWE-S05"
         ],
         "effort": "2-4 weeks",
         "minYear": "1st",
@@ -833,7 +978,9 @@
             "accessed": "2026-10-13"
           }
         ],
-        "verified": true
+        "verified": true,
+        "kind": "build",
+        "signalValue": "interview_prep"
       },
       {
         "id": "PB-SWE-P05",
@@ -859,7 +1006,9 @@
             "accessed": "2026-10-13"
           }
         ],
-        "verified": true
+        "verified": true,
+        "kind": "build",
+        "signalValue": "cv_medium"
       },
       {
         "id": "PB-SWE-C01",
@@ -888,7 +1037,9 @@
             "accessed": "2026-10-13"
           }
         ],
-        "verified": true
+        "verified": true,
+        "kind": "build",
+        "signalValue": "cv_low"
       },
       {
         "id": "PB-SWE-C02",
@@ -915,7 +1066,9 @@
             "accessed": "2026-10-13"
           }
         ],
-        "verified": true
+        "verified": true,
+        "kind": "build",
+        "signalValue": "cv_low"
       },
       {
         "id": "PB-SWE-C03",
@@ -946,19 +1099,21 @@
             "accessed": "2026-10-13"
           }
         ],
-        "verified": true
+        "verified": true,
+        "kind": "build",
+        "signalValue": "cv_low"
       },
       {
         "id": "PB-SWE-C04",
         "type": "course",
         "title": "MIT 6.006 Introduction to Algorithms (OCW)",
         "url": "https://ocw.mit.edu/courses/6-006-introduction-to-algorithms-spring-2020/",
-        "description": "University-level algorithms and data structures with problem sets. Learning value for technical interviews; signal value on a CV low.",
+        "description": "University-level algorithms and data structures with problem sets. Learning value for technical interviews; signal value on a CV low. Use it to prepare for coding interviews; it is not a CV credential.",
         "skills": [
           "Algorithms"
         ],
         "signals": [
-          "PB-SWE-S05"
+          "PB-SWE-S08"
         ],
         "effort": "term",
         "minYear": "1st",
@@ -972,14 +1127,16 @@
             "accessed": "2026-10-13"
           }
         ],
-        "verified": true
+        "verified": true,
+        "kind": "build",
+        "signalValue": "interview_prep"
       },
       {
         "id": "PB-SWE-E01",
         "type": "experience",
         "title": "Hackathons (MLH season listings)",
-        "url": "https://www.mlh.com/seasons/2027/events",
-        "description": "Attend a hackathon, ship a demo with a team, then polish it afterwards so it can sit in your Projects section. Filter the MLH list by Europe/UK.",
+        "url": "https://www.mlh.com/events",
+        "description": "Attend a hackathon, ship a demo with a team, then polish it afterwards so it can sit in your Projects section. UK student hackathons (OxHack, HackTheBurgh, DurHack and others) mostly run October to March.",
         "skills": [
           "Hackathon",
           "Teamwork"
@@ -990,11 +1147,14 @@
         ],
         "effort": "weekend",
         "minYear": "1st",
-        "howToFind": "MLH 2027 season events page, region filter 'Europe/UK'; also your university's tech society.",
+        "howToFind": "MLH events list (it always shows the current season), filtered to Europe/UK; also your university's tech society.",
         "evidence": "Devpost/GitHub link to what you built; your role stated",
         "sources": [
           {
-            "ref": "R50",
+            "title": "Events",
+            "publisher": "Major League Hacking",
+            "url": "https://www.mlh.com/events",
+            "primary": false,
             "quote": "Filter events This Month Next Month Diversity Focused Region North America Europe/UK Asia Pacific",
             "accessed": "2026-10-13"
           },
@@ -1004,7 +1164,10 @@
             "accessed": "2026-10-13"
           }
         ],
-        "verified": true
+        "verified": true,
+        "kind": "build",
+        "signalValue": "cv_medium",
+        "reviewBy": "2027-08-31"
       },
       {
         "id": "PB-SWE-E02",
@@ -1031,14 +1194,17 @@
             "accessed": "2026-10-13"
           }
         ],
-        "verified": true
+        "verified": true,
+        "kind": "build",
+        "signalValue": "cv_medium",
+        "evergreen": true
       },
       {
         "id": "PB-SWE-E03",
         "type": "experience",
         "title": "Google Summer of Code",
         "url": "https://summerofcode.withgoogle.com/",
-        "description": "Mentored 12+ week open-source project. Start by contributing small fixes to a participating organisation before applying. No dates given here: check the site for the 2027 timeline.",
+        "description": "Mentored 12+ week open-source project. Start contributing small fixes to a participating organisation in January–February; the contributor application window ran for about two weeks in mid–late March in 2026. Write the proposal yourself: Google warns AI-written proposals can be rejected outright, and you can only be accepted twice in total.",
         "skills": [
           "Open Source",
           "Google Summer of Code",
@@ -1062,16 +1228,37 @@
             "ref": "R52",
             "quote": "be a student or a beginner to open source software development.",
             "accessed": "2026-10-13"
+          },
+          {
+            "title": "Google Summer of Code FAQ",
+            "publisher": "Google",
+            "url": "https://developers.google.com/open-source/gsoc/faq",
+            "primary": true,
+            "quote": "using AI to write your GSoC proposal could result in an automatic rejection by the organization, depending on their individual guidance.",
+            "accessed": "2026-10-18"
+          },
+          {
+            "title": "Google Summer of Code FAQ",
+            "publisher": "Google",
+            "url": "https://developers.google.com/open-source/gsoc/faq",
+            "primary": true,
+            "quote": "Accepted into GSoC no more than once previously",
+            "accessed": "2026-10-18"
           }
         ],
-        "verified": true
+        "verified": true,
+        "kind": "opportunity",
+        "signalValue": "cv_high",
+        "eligibility": "18 or over, a student or open-source beginner, and accepted into GSoC no more than once before. Check each organisation's AI policy.",
+        "reviewBy": "2027-02-28",
+        "commitment": "Application: a few weeks of contributions plus a written proposal. Programme: 12+ weeks, remote, part-time or full-time."
       },
       {
         "id": "PB-SWE-E04",
         "type": "experience",
         "title": "Outreachy (paid remote open-source internship; eligibility restricted)",
         "url": "https://www.outreachy.org/",
-        "description": "Remote open-source internships for people who face under-representation or discrimination in tech where they live. Check eligibility before investing time. No 2027 dates given here.",
+        "description": "Paid, remote open-source internships for people who face under-representation or discrimination in tech where they live. UK university students can only join the May–August cohort, need 42 consecutive days free of term and exams, and work 30 hours a week. The May 2026 cohort ran with reduced funding.",
         "skills": [
           "Open Source",
           "Git"
@@ -1089,9 +1276,46 @@
             "ref": "R53",
             "quote": "Outreachy provides internships to anyone from any background who faces underrepresentation, systemic bias, or discrimination in the technical industry where they are living.",
             "accessed": "2026-10-13"
+          },
+          {
+            "title": "Applicant Guide",
+            "publisher": "Outreachy",
+            "url": "https://www.outreachy.org/docs/applicant/",
+            "primary": true,
+            "quote": "If you are a student of a university in the Northern Hemisphere , you will only be eligible for the May to August internship cohort.",
+            "accessed": "2026-10-18"
+          },
+          {
+            "title": "Applicant Guide",
+            "publisher": "Outreachy",
+            "url": "https://www.outreachy.org/docs/applicant/",
+            "primary": true,
+            "quote": "University students must have 42 consecutive days free from school and exams during the internship period.",
+            "accessed": "2026-10-18"
+          },
+          {
+            "title": "Applicant Guide",
+            "publisher": "Outreachy",
+            "url": "https://www.outreachy.org/docs/applicant/",
+            "primary": true,
+            "quote": "Outreachy interns work 30 hours per week.",
+            "accessed": "2026-10-18"
+          },
+          {
+            "title": "Call for May 2026 mentoring communities (6 Feb 2026)",
+            "publisher": "Outreachy",
+            "url": "https://www.outreachy.org/blog/2026-02-06/may-2026-call-for-mentoring-organizations/",
+            "primary": true,
+            "quote": "Outreachy will be running the May 2026 internship cohort with reduced funding and activities.",
+            "accessed": "2026-10-18"
           }
         ],
-        "verified": true
+        "verified": true,
+        "kind": "opportunity",
+        "signalValue": "cv_high",
+        "eligibility": "Northern Hemisphere university students: May–August cohort only (initial applications usually open in January–February); students taking a term off to intern are not eligible.",
+        "reviewBy": "2027-02-01",
+        "commitment": "Application: an eligibility form, then a contribution period. Programme: summer, 30 hours a week, remote."
       },
       {
         "id": "PB-SWE-E05",
@@ -1105,7 +1329,7 @@
         "signals": [
           "PB-SWE-S07"
         ],
-        "effort": "weekend",
+        "effort": "2-4 weeks",
         "minYear": "1st",
         "howToFind": "targetjobs insight-programme search; employer graduate sites. Many are aimed at first years (or second years on four-year courses).",
         "evidence": "Programme listed under Experience with one takeaway",
@@ -1119,9 +1343,21 @@
             "ref": "R57",
             "quote": "Insight programme opportunities",
             "accessed": "2026-10-13"
+          },
+          {
+            "title": "2027 Spring Insights: Engineer & Innovate (JPMorganChase), job board mirror",
+            "publisher": "Built In London",
+            "url": "https://builtinlondon.uk/job/2027-spring-insights-engineer-innovate-jpmorganchase-london/11463041",
+            "primary": false,
+            "quote": "Please note that you are only permitted to make an application to one of our Spring Insights programmes",
+            "accessed": "2026-10-18"
           }
         ],
-        "verified": true
+        "verified": true,
+        "kind": "opportunity",
+        "signalValue": "cv_medium",
+        "evergreen": true,
+        "commitment": "Application: a form, online tests and often a video interview, spread over several weeks. Programme: usually 1–5 days. Many banks allow one spring insight application each (JPMorganChase does)."
       },
       {
         "id": "PB-SWE-E06",
@@ -1130,9 +1366,7 @@
         "url": "https://www.theforage.com/",
         "description": "Free, self-paced employer-designed task sets. Convention: no source here shows recruiters weight these; use them to explore roles, not as a CV centrepiece.",
         "skills": [],
-        "signals": [
-          "PB-SWE-S07"
-        ],
+        "signals": [],
         "effort": "weekend",
         "minYear": "1st",
         "howToFind": "theforage.com, search for your target function; skip if no relevant simulation exists.",
@@ -1144,15 +1378,438 @@
             "accessed": "2026-10-13"
           }
         ],
-        "verified": true
+        "verified": true,
+        "kind": "build",
+        "signalValue": "cv_low",
+        "simulation": true,
+        "evergreen": true
+      },
+      {
+        "type": "experience",
+        "skills": [
+          "Algorithms",
+          "Competitive Programming",
+          "Python",
+          "Java",
+          "C++"
+        ],
+        "signals": [
+          "PB-SWE-S08",
+          "PB-SWE-S05"
+        ],
+        "effort": "2-4 weeks",
+        "minYear": "1st",
+        "sources": [
+          {
+            "title": "Associate Software Engineer - Intern (Summer 2027)",
+            "publisher": "Monzo",
+            "url": "https://job-boards.greenhouse.io/monzo/jobs/8156261",
+            "primary": true,
+            "quote": "If you're successful, we'll invite you to complete an exercise to demonstrate your programming and problem-solving skills",
+            "accessed": "2026-10-18"
+          },
+          {
+            "title": "Banking & Financial Markets: Short Guide to Recruitment 2025-2026 (PDF)",
+            "publisher": "University of Cambridge Careers Service",
+            "url": "https://www.careers.cam.ac.uk/sites/default/files/Banking%20and%20Financial%20Markets%20Short%20Guide%20to%20Recruitment%202025%20-%202026.pdf",
+            "primary": false,
+            "quote": "For technical roles, prepare for timed coding tests in your chosen language.",
+            "accessed": "2026-10-18"
+          }
+        ],
+        "verified": true,
+        "kind": "build",
+        "id": "PB-SWE-E07",
+        "title": "Timed coding-assessment practice block",
+        "description": "Two to four weeks of timed data-structures-and-algorithms practice in the language you'll interview in, under test conditions and without AI help. Keep a log of the mistakes you make and re-do those problems. This prepares you for the online coding exercise; it is not a CV line.",
+        "evidence": "A private log of timed attempts and the mistakes you fixed.",
+        "signalValue": "interview_prep"
+      },
+      {
+        "type": "project",
+        "skills": [
+          "LLM",
+          "OpenAI API",
+          "Anthropic API",
+          "Unit Testing",
+          "Code Review",
+          "Git"
+        ],
+        "signals": [
+          "PB-SWE-S09",
+          "PB-SWE-S03"
+        ],
+        "effort": "2-4 weeks",
+        "minYear": "1st",
+        "sources": [
+          {
+            "title": "Yes, You Can Use AI in Our Interviews. In fact, we insist (11 Jun 2025)",
+            "publisher": "Canva Engineering",
+            "url": "https://www.canva.dev/blog/engineering/yes-you-can-use-ai-in-our-interviews/",
+            "primary": true,
+            "quote": "Can they identify and fix issues in AI-generated code?",
+            "accessed": "2026-10-18"
+          },
+          {
+            "title": "Stack Overflow Developer Survey 2025: AI",
+            "publisher": "Stack Overflow",
+            "url": "https://survey.stackoverflow.co/2025/ai",
+            "primary": false,
+            "quote": "More developers actively distrust the accuracy of AI tools (46%) than trust it (33%)",
+            "accessed": "2026-10-18"
+          }
+        ],
+        "verified": true,
+        "kind": "build",
+        "id": "PB-SWE-P06",
+        "title": "AI-assisted build with a review log",
+        "description": "Build a small tool with an AI coding assistant, and keep an AI_LOG.md of the suggestions you rejected and the bugs you caught in AI-written code. Add tests that would have caught them. In interviews you can then explain how you direct and check AI output, and still code the core parts unaided.",
+        "evidence": "Repo with AI_LOG.md, tests that catch the bugs you found, and a README on what you wrote yourself.",
+        "signalValue": "cv_medium"
+      },
+      {
+        "type": "project",
+        "skills": [
+          "Java",
+          "Go",
+          "C#",
+          "Kotlin",
+          "Spring Boot",
+          ".NET",
+          "REST API",
+          "Unit Testing"
+        ],
+        "signals": [
+          "PB-SWE-S06",
+          "PB-SWE-S03"
+        ],
+        "effort": "2-4 weeks",
+        "minYear": "1st",
+        "sources": [
+          {
+            "title": "Engineering internships",
+            "publisher": "G-Research",
+            "url": "https://www.gresearch.com/students-graduates/engineering-internships/",
+            "primary": true,
+            "quote": "You should be graduating in 2028, studying Computer Science or a related discipline with a 2:1 or above, and have experience in an object-oriented programming language such as C#, Java or C++.",
+            "accessed": "2026-10-18"
+          }
+        ],
+        "verified": true,
+        "kind": "build",
+        "id": "PB-SWE-P07",
+        "title": "Rebuild one of your project backends in the employer's language",
+        "description": "Many internship adverts ask for Java, Go, C# or Kotlin. Port the backend of a project you already have to the language your target employers use, keep the same tests passing, and write up what changed (types, concurrency, tooling).",
+        "evidence": "Repo with both versions and a short comparison in the README.",
+        "signalValue": "cv_medium"
+      },
+      {
+        "type": "project",
+        "skills": [
+          "AWS",
+          "GCP",
+          "Azure",
+          "Docker",
+          "Kubernetes",
+          "Terraform",
+          "CI/CD",
+          "Linux"
+        ],
+        "signals": [
+          "PB-SWE-S06",
+          "PB-SWE-S01"
+        ],
+        "effort": "2-4 weeks",
+        "minYear": "1st",
+        "sources": [],
+        "verified": true,
+        "kind": "build",
+        "id": "PB-SWE-P08",
+        "title": "Deploy a project on a cloud free tier with infrastructure as code",
+        "description": "Containerise one project, deploy it on a free tier (AWS, GCP or Azure) using Terraform or similar, add CI/CD, and set a budget alert so it can't run up a bill. Document how to tear it down.",
+        "evidence": "Live URL, the IaC files in the repo, and a diagram of what runs where.",
+        "signalValue": "cv_medium"
+      },
+      {
+        "type": "project",
+        "skills": [
+          "Machine Learning",
+          "LLM",
+          "RAG",
+          "Vector Database",
+          "LangChain",
+          "Deep Learning",
+          "MLOps",
+          "Python"
+        ],
+        "signals": [
+          "PB-SWE-S09",
+          "PB-SWE-S06"
+        ],
+        "effort": "2-4 weeks",
+        "minYear": "1st",
+        "sources": [
+          {
+            "title": "Yes, You Can Use AI in Our Interviews. In fact, we insist (11 Jun 2025)",
+            "publisher": "Canva Engineering",
+            "url": "https://www.canva.dev/blog/engineering/yes-you-can-use-ai-in-our-interviews/",
+            "primary": true,
+            "quote": "Can they identify and fix issues in AI-generated code?",
+            "accessed": "2026-10-18"
+          }
+        ],
+        "verified": true,
+        "kind": "build",
+        "id": "PB-SWE-P09",
+        "title": "Add an ML or LLM feature and measure whether it works",
+        "description": "Add a machine-learning or LLM feature to a project (search, classification, summarisation, retrieval). Build a small labelled test set, compare against a simple baseline, and report accuracy, cost and failure cases honestly.",
+        "evidence": "Repo with the evaluation script, the test set and a results table including where it fails.",
+        "signalValue": "cv_medium"
+      },
+      {
+        "type": "project",
+        "skills": [
+          "Distributed Systems",
+          "Microservices",
+          "System Design",
+          "Go",
+          "Redis",
+          "Docker"
+        ],
+        "signals": [
+          "PB-SWE-S03",
+          "PB-SWE-S06"
+        ],
+        "effort": "term",
+        "minYear": "1st",
+        "sources": [],
+        "verified": true,
+        "kind": "build",
+        "id": "PB-SWE-P10",
+        "title": "Build a small distributed system and test it under failure",
+        "description": "Build a replicated key-value store or job queue across several processes, then kill nodes and show what still works. Explain the trade-offs you chose (consistency, latency, recovery).",
+        "evidence": "Repo, a failure-test script and a design note on the trade-offs.",
+        "signalValue": "cv_medium"
+      },
+      {
+        "type": "project",
+        "skills": [
+          "C++",
+          "Rust",
+          "Linux",
+          "Algorithms",
+          "System Design"
+        ],
+        "signals": [
+          "PB-SWE-S10",
+          "PB-SWE-S03"
+        ],
+        "effort": "2-4 weeks",
+        "minYear": "2nd",
+        "sources": [
+          {
+            "title": "Software Engineer Internship (2027 start), London",
+            "publisher": "Optiver",
+            "url": "https://www.optiver.com/join-us/jobs/technology/london/software-engineer-internship-2027-start/",
+            "primary": true,
+            "quote": "Proficient in industry-standard coding languages such as C++, Python, or Java, with a strong understanding of underlying computer architecture and system operations",
+            "accessed": "2026-10-18"
+          }
+        ],
+        "verified": true,
+        "kind": "build",
+        "id": "PB-SWE-P11",
+        "title": "Quant-dev project: a toy order-matching engine with benchmarks",
+        "description": "Write a limit-order matching engine in C++ (or Rust), test it against a simple reference implementation, and measure throughput and latency on your machine. This is the kind of systems project trading-firm software teams can talk to you about.",
+        "evidence": "Repo with tests, a benchmark script and results, and what you would optimise next.",
+        "signalValue": "cv_medium"
+      },
+      {
+        "type": "experience",
+        "skills": [
+          "C++",
+          "Java",
+          "C#",
+          "Python"
+        ],
+        "signals": [
+          "PB-SWE-S10",
+          "PB-SWE-S08"
+        ],
+        "effort": "term",
+        "minYear": "penultimate",
+        "sources": [
+          {
+            "title": "Engineering internships",
+            "publisher": "G-Research",
+            "url": "https://www.gresearch.com/students-graduates/engineering-internships/",
+            "primary": true,
+            "quote": "You should be graduating in 2028, studying Computer Science or a related discipline with a 2:1 or above, and have experience in an object-oriented programming language such as C#, Java or C++.",
+            "accessed": "2026-10-18"
+          },
+          {
+            "title": "Software Engineer Internship (2027 start), London",
+            "publisher": "Optiver",
+            "url": "https://www.optiver.com/join-us/jobs/technology/london/software-engineer-internship-2027-start/",
+            "primary": true,
+            "quote": "Proficient in industry-standard coding languages such as C++, Python, or Java, with a strong understanding of underlying computer architecture and system operations",
+            "accessed": "2026-10-18"
+          },
+          {
+            "title": "Software Engineer Internship (2027 start), London",
+            "publisher": "Optiver",
+            "url": "https://www.optiver.com/join-us/jobs/technology/london/software-engineer-internship-2027-start/",
+            "primary": true,
+            "quote": "Optiver is unable to provide visa sponsorship, visa extension support, or other immigration support.",
+            "accessed": "2026-10-18"
+          },
+          {
+            "title": "Interviewing",
+            "publisher": "Jane Street",
+            "url": "https://www.janestreet.com/join-jane-street/interviewing/",
+            "primary": true,
+            "quote": "Most of the software engineers we hire come in without any OCaml or even functional programming experience.",
+            "accessed": "2026-10-18"
+          }
+        ],
+        "verified": true,
+        "kind": "opportunity",
+        "id": "PB-SWE-E08",
+        "title": "Software engineering internships at trading firms (quant dev)",
+        "url": "https://www.gresearch.com/students-graduates/engineering-internships/",
+        "description": "Trading firms such as G-Research, Optiver and Jane Street run penultimate-year software internships in London. They test programming and problem solving rather than finance knowledge.",
+        "maxYear": "penultimate",
+        "howToFind": "Each firm's students page (G-Research, Optiver, Jane Street, IMC). G-Research's 2027 engineering internships were 'opening soon' when we checked.",
+        "eligibility": "G-Research: graduating in 2028 with a 2:1 or above. Optiver: no visa sponsorship.",
+        "commitment": "Application: online tests and several technical interviews. Programme: 10–24 weeks in London, depending on the firm.",
+        "evidence": "Internship on your CV; the usual route to a graduate offer.",
+        "signalValue": "cv_high",
+        "reviewBy": "2027-01-31"
+      },
+      {
+        "type": "experience",
+        "skills": [
+          "Algorithms",
+          "Python",
+          "Java"
+        ],
+        "signals": [
+          "PB-SWE-S08",
+          "PB-SWE-S07"
+        ],
+        "effort": "term",
+        "minYear": "penultimate",
+        "sources": [
+          {
+            "title": "Software Engineering, Site Reliability Engineering, BS/MS Intern, 2027",
+            "publisher": "Google",
+            "url": "https://www.google.com/about/careers/applications/jobs/results/100028133205254854-software-engineering-site-reliability-engineering-bsms-intern-2027",
+            "primary": true,
+            "quote": "Currently enrolled in your penultimate/final year of education.",
+            "accessed": "2026-10-18"
+          },
+          {
+            "title": "Software Engineering, Site Reliability Engineering, BS/MS Intern, 2027",
+            "publisher": "Google",
+            "url": "https://www.google.com/about/careers/applications/jobs/results/100028133205254854-software-engineering-site-reliability-engineering-bsms-intern-2027",
+            "primary": true,
+            "quote": "Individuals applying for this position will not be eligible for immigration sponsorship.",
+            "accessed": "2026-10-18"
+          },
+          {
+            "title": "Associate Software Engineer - Intern (Summer 2027)",
+            "publisher": "Monzo",
+            "url": "https://job-boards.greenhouse.io/monzo/jobs/8156261",
+            "primary": true,
+            "quote": "You have the right to work in the UK without restrictions for the full 12-week internship and would not require visa sponsorship if offered a permanent position",
+            "accessed": "2026-10-18"
+          },
+          {
+            "title": "2027 Software Dev Engineer Intern - United Kingdom",
+            "publisher": "Amazon",
+            "url": "https://www.amazon.jobs/en/jobs/10581332/2027-software-dev-engineer-intern-united-kingdom",
+            "primary": true,
+            "quote": "Applicants should have a minimum of one quarter/semester/trimester remaining in their studies after their internship concludes.",
+            "accessed": "2026-10-18"
+          }
+        ],
+        "verified": true,
+        "kind": "opportunity",
+        "id": "PB-SWE-E09",
+        "title": "Penultimate-year software internships at large tech and fintech firms",
+        "description": "Big-tech and fintech firms recruit summer interns from about August to November of your penultimate year, often with rolling offers. Expect a coding exercise before interviews.",
+        "maxYear": "final",
+        "howToFind": "Gradcracker, Bright Network and targetjobs, search 'software engineering internship 2027'. Examples in the 2026/27 cycle: Google, Monzo, Amazon, G-Research. Rate My Placement is now called Higherin.",
+        "eligibility": "Some firms need UK right to work without sponsorship for the whole internship (Google, Monzo). Amazon wants at least one term of study left after the internship.",
+        "commitment": "Application: a form and a timed coding exercise, then two or three interviews. Programme: 10–17 weeks.",
+        "evidence": "Internship on your CV; the usual route to a graduate offer.",
+        "signalValue": "cv_high",
+        "reviewBy": "2027-03-31"
+      },
+      {
+        "type": "experience",
+        "skills": [
+          "Open Source",
+          "Git",
+          "Teamwork"
+        ],
+        "signals": [
+          "PB-SWE-S01",
+          "PB-SWE-S07"
+        ],
+        "effort": "term",
+        "minYear": "1st",
+        "sources": [
+          {
+            "title": "MLH Fellowship",
+            "publisher": "Major League Hacking",
+            "url": "https://fellowship.mlh.com/",
+            "primary": false,
+            "quote": "A fully remote, 12-week internship alternative where participants earn a stipend",
+            "accessed": "2026-10-18"
+          }
+        ],
+        "verified": true,
+        "kind": "opportunity",
+        "id": "PB-SWE-E10",
+        "title": "MLH Fellowship (remote, stipend)",
+        "url": "https://fellowship.mlh.com/",
+        "description": "A remote, 12-week internship alternative on open-source or software projects with a stipend. It needs 20+ hours a week and past hackathon experience.",
+        "howToFind": "fellowship.mlh.com; read the FAQ for your country and track before applying.",
+        "eligibility": "Not open to residents of US-embargoed countries; some tracks (Production Engineering) are for the US, Canada and Mexico only.",
+        "evidence": "Fellowship and the merged work on your CV.",
+        "signalValue": "cv_medium",
+        "reviewBy": "2027-06-30"
+      },
+      {
+        "id": "PB-SWE-P12",
+        "type": "project",
+        "title": "Make your first open-source contributions",
+        "description": "Pick a project you already use, start with a documentation fix or a 'good first issue', and work up to a small feature that a maintainer reviews and merges. Read the project's contribution and AI-use rules first. This is also the best preparation for Google Summer of Code or Outreachy.",
+        "skills": [
+          "Open Source",
+          "Git",
+          "Code Review"
+        ],
+        "signals": [
+          "PB-SWE-S01",
+          "PB-SWE-S04"
+        ],
+        "effort": "2-4 weeks",
+        "minYear": "1st",
+        "evidence": "Links to merged pull requests and any review discussion.",
+        "sources": [],
+        "verified": true,
+        "kind": "build",
+        "signalValue": "cv_medium"
       }
     ],
     "yearGuidance": {
-      "1st": "Ship 1-2 small projects with a README and GitHub link, go to a hackathon, apply to insight/spring programmes (many are aimed at first years).",
-      "2nd": "On four-year courses this is the main insight-programme year; otherwise treat as penultimate.",
-      "penultimate": "Apply for summer internships/placements; have 2-4 projects with stack and outcome, and a design note you can talk through.",
-      "final": "Graduate applications; lead with internship or strongest project, add final-year project, keep GitHub current.",
-      "masters": "Same as final year; make the dissertation/project a headline item with results."
+      "1st": "Ship 1-2 small projects with a README and GitHub link, go to a hackathon, and start light coding-interview practice. Few big-tech firms run first-year internships now; bank technology spring insights (for students graduating in 2029; JPMorganChase allows one Spring Insights application) and trading-firm programmes such as Jane Street FTTP are the main first-year routes.",
+      "2nd": "Your stage depends on your course. Three-year degree: you're penultimate, so apply for summer internships in the autumn. Four-year integrated master's (MEng/MSci): spring weeks and insight programmes are often still open to you, and you can try a first summer internship. Degree with a placement year: the autumn of your second year is your main application season, as 12-month placements open around September and big employers fill early.",
+      "penultimate": "Apply for summer internships or placements early in the autumn: many tech firms open in August–September, close by November and make offers on a rolling basis. Expect a timed coding test first, so practise data structures and algorithms before applying. Have 2-4 projects with stack and outcome, and a design note you can talk through.",
+      "final": "Graduate schemes open around September to November, and many close by December or fill on a rolling basis. Lead with internship or strongest project, add your final-year project, keep GitHub current, and keep coding-test practice going.",
+      "masters": "On a one-year MSc, apply in your first 6-8 weeks: employers see your undergraduate CV plus your MSc modules. Make the dissertation or project a headline item with results."
     },
     "yearGuidanceBasis": "Synthesis (grade D), aligned with cv-rules-tech-product.md section 7; first-year insight targeting cites R6.",
     "yearGuidanceDated": [
@@ -1201,9 +1858,12 @@
             "accessed": "2026-10-13"
           },
           {
-            "ref": "R9",
-            "quote": "Employers are looking for specialised knowledge and an in-depth understanding of programming languages used in big data such as Java, C# and Python",
-            "accessed": "2026-10-13"
+            "title": "Job profile: Data scientist",
+            "publisher": "Prospects",
+            "url": "https://www.prospects.ac.uk/job-profiles/data-scientist/",
+            "primary": false,
+            "quote": "Knowledge of programming languages such as Python, R, SQL, C or Java, and strong database and coding skills, is essential.",
+            "accessed": "2026-10-18"
           }
         ]
       },
@@ -1261,14 +1921,17 @@
         "basis": "evidence (professional body + careers publisher)",
         "sources": [
           {
-            "ref": "R9",
-            "quote": "Data scientists typically have a background in mathematics, statistics or other numerate subjects such as computer science or engineering",
-            "accessed": "2026-10-13"
-          },
-          {
             "ref": "R7",
             "quote": "analytical and numerical ability to interpret large datasets and test conclusions",
             "accessed": "2026-10-13"
+          },
+          {
+            "title": "Associate Data Scientist - Intern (2027)",
+            "publisher": "Monzo",
+            "url": "https://job-boards.greenhouse.io/monzo/jobs/8232726",
+            "primary": true,
+            "quote": "You are completing a degree in STEM or Computer Science with exposure to programming and are graduating in 2028",
+            "accessed": "2026-10-18"
           }
         ]
       },
@@ -1313,6 +1976,32 @@
             "accessed": "2026-10-13"
           }
         ]
+      },
+      {
+        "id": "PB-DAT-S07",
+        "text": "Data roles increasingly mention AI: nearly half of UK data and analytics postings reference it. Show that you can use LLM tools in analysis and also judge when not to trust them (evaluation, leakage, made-up output).",
+        "ruleIds": [],
+        "grade": "B",
+        "basis": "evidence (job-postings data + developer survey)",
+        "sources": [
+          {
+            "title": "Mid-year UK jobs and hiring trends report (3 Aug 2026)",
+            "publisher": "Indeed Hiring Lab",
+            "url": "https://hiringlab.indeed.com/uk/blog/2026/08/03/mid-year-uk-jobs-hiring-trends-report/",
+            "primary": false,
+            "quote": "In data and analytics alone, nearly half of all postings now reference AI",
+            "accessed": "2026-10-18"
+          },
+          {
+            "title": "Stack Overflow Developer Survey 2025: AI",
+            "publisher": "Stack Overflow",
+            "url": "https://survey.stackoverflow.co/2025/ai",
+            "primary": false,
+            "quote": "More developers actively distrust the accuracy of AI tools (46%) than trust it (33%)",
+            "accessed": "2026-10-18"
+          }
+        ],
+        "note": "Keep this minor for analyst roles; it matters most for data science."
       }
     ],
     "actions": [
@@ -1343,7 +2032,9 @@
             "accessed": "2026-10-13"
           }
         ],
-        "verified": true
+        "verified": true,
+        "kind": "build",
+        "signalValue": "cv_medium"
       },
       {
         "id": "PB-DAT-P02",
@@ -1354,7 +2045,8 @@
           "Excel",
           "Power BI",
           "Tableau",
-          "Data Visualisation"
+          "Data Visualisation",
+          "Looker"
         ],
         "signals": [
           "PB-DAT-S03",
@@ -1370,35 +2062,9 @@
             "accessed": "2026-10-13"
           }
         ],
-        "verified": true
-      },
-      {
-        "id": "PB-DAT-P03",
-        "type": "project",
-        "title": "Kaggle 'Getting Started' competition with an honest baseline",
-        "description": "Enter a Getting Started competition, report a simple baseline first, then your improved model and what drove the gain. Use it to learn; do not make Titanic-type data your headline project (DAT-11c).",
-        "skills": [
-          "Python",
-          "Scikit-learn",
-          "Feature Engineering",
-          "Cross-validation",
-          "Kaggle"
-        ],
-        "signals": [
-          "PB-DAT-S05",
-          "PB-DAT-S04"
-        ],
-        "effort": "weekend",
-        "minYear": "1st",
-        "evidence": "Public notebook with baseline vs final metric and leaderboard position.",
-        "sources": [
-          {
-            "ref": "R55",
-            "quote": "Competitions with approachable ML fundamentals.",
-            "accessed": "2026-10-13"
-          }
-        ],
-        "verified": true
+        "verified": true,
+        "kind": "build",
+        "signalValue": "cv_high"
       },
       {
         "id": "PB-DAT-P04",
@@ -1425,7 +2091,9 @@
             "accessed": "2026-10-13"
           }
         ],
-        "verified": true
+        "verified": true,
+        "kind": "build",
+        "signalValue": "cv_medium"
       },
       {
         "id": "PB-DAT-P05",
@@ -1449,7 +2117,9 @@
             "accessed": "2026-10-13"
           }
         ],
-        "verified": true
+        "verified": true,
+        "kind": "build",
+        "signalValue": "interview_prep"
       },
       {
         "id": "PB-DAT-C01",
@@ -1478,7 +2148,9 @@
             "accessed": "2026-10-13"
           }
         ],
-        "verified": true
+        "verified": true,
+        "kind": "build",
+        "signalValue": "cv_low"
       },
       {
         "id": "PB-DAT-C02",
@@ -1504,7 +2176,9 @@
             "accessed": "2026-10-13"
           }
         ],
-        "verified": true
+        "verified": true,
+        "kind": "build",
+        "signalValue": "cv_low"
       },
       {
         "id": "PB-DAT-C03",
@@ -1534,7 +2208,9 @@
             "accessed": "2026-10-13"
           }
         ],
-        "verified": true
+        "verified": true,
+        "kind": "build",
+        "signalValue": "cv_low"
       },
       {
         "id": "PB-DAT-C04",
@@ -1567,17 +2243,23 @@
             "accessed": "2026-10-13"
           }
         ],
-        "verified": true
+        "verified": true,
+        "kind": "build",
+        "signalValue": "cv_low"
       },
       {
         "id": "PB-DAT-E01",
         "type": "experience",
-        "title": "Kaggle competitions",
+        "title": "Kaggle competitions (start with a beginner one, then an active one)",
         "url": "https://www.kaggle.com/competitions",
-        "description": "Start with Getting Started or Playground competitions; report rank as a percentile once you place meaningfully (DAT-07).",
+        "description": "Start with a beginner-friendly competition and an honest baseline, then enter an active competition. Only list it once you have a result worth stating (for example, a top-quarter finish) or a write-up that explains your method; a Titanic-style notebook on its own is weak evidence.",
         "skills": [
+          "Cross-validation",
+          "Feature Engineering",
           "Kaggle",
-          "Machine Learning"
+          "Machine Learning",
+          "Python",
+          "Scikit-learn"
         ],
         "signals": [
           "PB-DAT-S05"
@@ -1598,7 +2280,10 @@
             "accessed": "2026-10-13"
           }
         ],
-        "verified": true
+        "verified": true,
+        "kind": "build",
+        "signalValue": "cv_medium",
+        "evergreen": true
       },
       {
         "id": "PB-DAT-E02",
@@ -1630,7 +2315,9 @@
             "accessed": "2026-10-13"
           }
         ],
-        "verified": true
+        "verified": true,
+        "kind": "build",
+        "signalValue": "cv_high"
       },
       {
         "id": "PB-DAT-E03",
@@ -1657,7 +2344,10 @@
             "accessed": "2026-10-13"
           }
         ],
-        "verified": true
+        "verified": true,
+        "kind": "build",
+        "signalValue": "cv_medium",
+        "evergreen": true
       },
       {
         "id": "PB-DAT-E04",
@@ -1669,7 +2359,7 @@
           "Commercial Awareness"
         ],
         "signals": [],
-        "effort": "weekend",
+        "effort": "2-4 weeks",
         "minYear": "1st",
         "howToFind": "targetjobs insight-programme search; employer graduate sites.",
         "evidence": "Experience entry",
@@ -1685,7 +2375,11 @@
             "accessed": "2026-10-13"
           }
         ],
-        "verified": true
+        "verified": true,
+        "kind": "opportunity",
+        "signalValue": "cv_medium",
+        "evergreen": true,
+        "commitment": "Application: a form, online tests and often a video interview, spread over several weeks. Programme: usually 1–5 days."
       },
       {
         "id": "PB-DAT-E05",
@@ -1706,15 +2400,179 @@
             "accessed": "2026-10-13"
           }
         ],
-        "verified": true
+        "verified": true,
+        "kind": "build",
+        "signalValue": "cv_low",
+        "simulation": true,
+        "evergreen": true
+      },
+      {
+        "type": "project",
+        "skills": [
+          "LLM",
+          "OpenAI API",
+          "Anthropic API",
+          "Natural Language Processing",
+          "Hugging Face",
+          "Python",
+          "Statistics"
+        ],
+        "signals": [
+          "PB-DAT-S07",
+          "PB-DAT-S02"
+        ],
+        "effort": "2-4 weeks",
+        "minYear": "1st",
+        "sources": [
+          {
+            "title": "Mid-year UK jobs and hiring trends report (3 Aug 2026)",
+            "publisher": "Indeed Hiring Lab",
+            "url": "https://hiringlab.indeed.com/uk/blog/2026/08/03/mid-year-uk-jobs-hiring-trends-report/",
+            "primary": false,
+            "quote": "In data and analytics alone, nearly half of all postings now reference AI",
+            "accessed": "2026-10-18"
+          }
+        ],
+        "verified": true,
+        "kind": "build",
+        "id": "PB-DAT-P06",
+        "title": "Evaluate an LLM on a real labelling task",
+        "description": "Take a real text-labelling task (reviews, support tickets, survey answers). Compare a simple classifier with an LLM on a hand-labelled test set, and report accuracy, cost per item and where each fails.",
+        "evidence": "Notebook or repo with the test set, both approaches and an error analysis.",
+        "signalValue": "cv_medium"
+      },
+      {
+        "type": "project",
+        "skills": [
+          "dbt",
+          "Airflow",
+          "Spark",
+          "BigQuery",
+          "Snowflake",
+          "SQL",
+          "Python",
+          "GCP",
+          "AWS"
+        ],
+        "signals": [
+          "PB-DAT-S01",
+          "PB-DAT-S02"
+        ],
+        "effort": "2-4 weeks",
+        "minYear": "1st",
+        "sources": [
+          {
+            "title": "Job profile: Data scientist",
+            "publisher": "Prospects",
+            "url": "https://www.prospects.ac.uk/job-profiles/data-scientist/",
+            "primary": false,
+            "quote": "Knowledge of programming languages such as Python, R, SQL, C or Java, and strong database and coding skills, is essential.",
+            "accessed": "2026-10-18"
+          }
+        ],
+        "verified": true,
+        "kind": "build",
+        "id": "PB-DAT-P07",
+        "title": "Build a small data pipeline end to end",
+        "description": "Load a public dataset that updates (transport, weather, energy) into a warehouse on a free tier, transform it with dbt, schedule it with Airflow or similar, and test the data. Spark is optional for larger data.",
+        "evidence": "Repo with the pipeline, data tests and a diagram.",
+        "signalValue": "cv_medium"
+      },
+      {
+        "type": "project",
+        "skills": [
+          "A/B Testing",
+          "Causal Inference",
+          "Time Series",
+          "Statsmodels",
+          "Bayesian",
+          "Python",
+          "R"
+        ],
+        "signals": [
+          "PB-DAT-S04",
+          "PB-DAT-S03"
+        ],
+        "effort": "2-4 weeks",
+        "minYear": "1st",
+        "sources": [],
+        "verified": true,
+        "kind": "build",
+        "id": "PB-DAT-P08",
+        "title": "Experiment or forecast write-up on real data",
+        "description": "Analyse a real A/B test dataset or a time series (sales, footfall, energy): state the question, check assumptions, give an effect size or forecast with uncertainty, and say what you would recommend.",
+        "evidence": "Write-up with method, result with uncertainty and a plain-English recommendation.",
+        "signalValue": "cv_medium"
+      },
+      {
+        "type": "experience",
+        "skills": [
+          "Statistics",
+          "Excel",
+          "Python",
+          "R"
+        ],
+        "signals": [
+          "PB-DAT-S04",
+          "PB-DAT-S06"
+        ],
+        "effort": "term",
+        "minYear": "2nd",
+        "sources": [
+          {
+            "title": "Government Operational Research Service sandwich student scheme",
+            "publisher": "GOV.UK",
+            "url": "https://www.gov.uk/guidance/government-operational-research-service-sandwich-student-scheme",
+            "primary": true,
+            "quote": "Applications for sandwich student placements run once a year, usually from around January to March.",
+            "accessed": "2026-10-18"
+          },
+          {
+            "title": "Government Operational Research Service sandwich student scheme",
+            "publisher": "GOV.UK",
+            "url": "https://www.gov.uk/guidance/government-operational-research-service-sandwich-student-scheme",
+            "primary": true,
+            "quote": "you will return to university for your final year after your placement",
+            "accessed": "2026-10-18"
+          },
+          {
+            "title": "GSS Sandwich Year Placements 2027",
+            "publisher": "TARGETjobs",
+            "url": "https://targetjobs.co.uk/jobs/gss-sandwich-year-placements-2027-252695",
+            "primary": false,
+            "quote": "Please do not apply if you are graduating in 2028.",
+            "accessed": "2026-10-18"
+          },
+          {
+            "title": "GSS Sandwich Year Placements 2027",
+            "publisher": "TARGETjobs",
+            "url": "https://targetjobs.co.uk/jobs/gss-sandwich-year-placements-2027-252695",
+            "primary": false,
+            "quote": "Apply by: 10/11/2026",
+            "accessed": "2026-10-18"
+          }
+        ],
+        "verified": true,
+        "kind": "opportunity",
+        "id": "PB-DAT-E06",
+        "title": "Government analytical sandwich placements (GSS, GORS)",
+        "url": "https://www.gov.uk/guidance/government-operational-research-service-sandwich-student-scheme",
+        "description": "The Government Statistical Service and the Government Operational Research Service take sandwich-year students on paid 12-month placements, then you return for your final year. GORS applications usually run January to March; GSS 2027 placements closed on 10 November 2026.",
+        "maxYear": "penultimate",
+        "howToFind": "GOV.UK GORS sandwich scheme page; search targetjobs or Civil Service Jobs for 'GSS sandwich placement'.",
+        "eligibility": "A numerate degree with a placement year; Civil Service nationality rules apply. GSS asks you not to apply if you graduate in 2028.",
+        "commitment": "Application: online form and tests, then an interview. Placement: 12 months.",
+        "evidence": "Placement year on your CV.",
+        "signalValue": "cv_high",
+        "reviewBy": "2027-03-31"
       }
     ],
     "yearGuidance": {
-      "1st": "Learn SQL + Python basics, publish one question-led analysis, try a Kaggle Getting Started competition, apply to insight programmes.",
-      "2nd": "On four-year courses: insight year plus a statistics write-up; otherwise treat as penultimate.",
-      "penultimate": "Apply for analytics internships/placements; 2-3 portfolio projects with dataset, method, metric and a 'so what'.",
-      "final": "Graduate applications; foreground any internship and the dissertation if it is quantitative.",
-      "masters": "Lead with the MSc project (data, method, result); show statistics explicitly for DS roles."
+      "1st": "Learn SQL + Python basics, publish one question-led analysis, try a beginner Kaggle competition, and apply to insight programmes.",
+      "2nd": "Your stage depends on your course. Three-year degree: you're penultimate, so apply for analytics internships in the autumn. Four-year integrated master's: an insight year plus a statistics write-up. Placement-year degree: apply in the autumn for 12-month placements, including government analytical placements.",
+      "penultimate": "Apply for analytics internships or placements early in the autumn; many offer on a rolling basis. Have 2-3 portfolio projects with dataset, method, metric and a 'so what'.",
+      "final": "Graduate schemes open around September to November and many close by December. Foreground any internship and your dissertation if it is quantitative.",
+      "masters": "On a one-year MSc, apply in your first 6-8 weeks. Lead with the MSc project (data, method, result); show statistics explicitly for data science roles."
     },
     "yearGuidanceBasis": "Synthesis (grade D), aligned with cv-rules-tech-product.md sections 3 and 7.",
     "yearGuidanceDated": [
@@ -1722,12 +2580,18 @@
         "year": "penultimate",
         "text": "Monzo's 2027 Associate Data Scientist internship (London, graduating 2028) closes 1 Nov 2026 and makes offers on a rolling basis; it needs unrestricted UK right to work for the full 12 weeks.",
         "expiresOn": "2026-11-01"
+      },
+      {
+        "year": "2nd",
+        "text": "GSS sandwich-year placements 2027 (government statistics, 12 months) close 10 Nov 2026; for second-years on a numerate degree with a placement year.",
+        "expiresOn": "2026-11-10",
+        "ref": "https://targetjobs.co.uk/jobs/gss-sandwich-year-placements-2027-252695"
       }
     ]
   },
   "product": {
     "caveat": {
-      "text": "Entry-level PM hiring is rare; graduate PM schemes exist but many people enter via adjacent roles.",
+      "text": "Entry-level PM hiring is rare (Prospects says employers almost always want two years' experience), yet a growing number of UK graduate schemes hire into product directly (retail, banking, fintech); many people still enter via adjacent roles.",
       "sources": [
         {
           "ref": "R10",
@@ -1896,7 +2760,9 @@
             "accessed": "2026-10-13"
           }
         ],
-        "verified": true
+        "verified": true,
+        "kind": "build",
+        "signalValue": "cv_medium"
       },
       {
         "id": "PB-PRD-P02",
@@ -1923,7 +2789,9 @@
             "accessed": "2026-10-13"
           }
         ],
-        "verified": true
+        "verified": true,
+        "kind": "build",
+        "signalValue": "cv_high"
       },
       {
         "id": "PB-PRD-P03",
@@ -1950,7 +2818,9 @@
             "accessed": "2026-10-13"
           }
         ],
-        "verified": true
+        "verified": true,
+        "kind": "build",
+        "signalValue": "cv_low"
       },
       {
         "id": "PB-PRD-P04",
@@ -1978,7 +2848,9 @@
             "accessed": "2026-10-13"
           }
         ],
-        "verified": true
+        "verified": true,
+        "kind": "build",
+        "signalValue": "cv_high"
       },
       {
         "id": "PB-PRD-P05",
@@ -2004,7 +2876,9 @@
             "accessed": "2026-10-13"
           }
         ],
-        "verified": true
+        "verified": true,
+        "kind": "build",
+        "signalValue": "cv_medium"
       },
       {
         "id": "PB-PRD-C01",
@@ -2031,7 +2905,9 @@
             "accessed": "2026-10-13"
           }
         ],
-        "verified": true
+        "verified": true,
+        "kind": "build",
+        "signalValue": "cv_low"
       },
       {
         "id": "PB-PRD-C02",
@@ -2059,7 +2935,9 @@
             "accessed": "2026-10-13"
           }
         ],
-        "verified": true
+        "verified": true,
+        "kind": "build",
+        "signalValue": "cv_low"
       },
       {
         "id": "PB-PRD-C03",
@@ -2086,7 +2964,9 @@
             "accessed": "2026-10-13"
           }
         ],
-        "verified": true
+        "verified": true,
+        "kind": "build",
+        "signalValue": "cv_low"
       },
       {
         "id": "PB-PRD-E01",
@@ -2112,7 +2992,9 @@
             "accessed": "2026-10-13"
           }
         ],
-        "verified": true
+        "verified": true,
+        "kind": "build",
+        "signalValue": "cv_high"
       },
       {
         "id": "PB-PRD-E02",
@@ -2140,7 +3022,10 @@
             "accessed": "2026-10-13"
           }
         ],
-        "verified": true
+        "verified": true,
+        "kind": "build",
+        "signalValue": "cv_high",
+        "evergreen": true
       },
       {
         "id": "PB-PRD-E03",
@@ -2168,7 +3053,10 @@
             "accessed": "2026-10-13"
           }
         ],
-        "verified": true
+        "verified": true,
+        "kind": "build",
+        "signalValue": "cv_medium",
+        "evergreen": true
       },
       {
         "id": "PB-PRD-E04",
@@ -2193,7 +3081,9 @@
             "accessed": "2026-10-13"
           }
         ],
-        "verified": true
+        "verified": true,
+        "kind": "opportunity",
+        "signalValue": "cv_high"
       },
       {
         "id": "PB-PRD-E05",
@@ -2205,7 +3095,7 @@
           "Commercial Awareness"
         ],
         "signals": [],
-        "effort": "weekend",
+        "effort": "2-4 weeks",
         "minYear": "1st",
         "howToFind": "targetjobs insight-programme search; employer graduate sites.",
         "evidence": "Experience entry",
@@ -2221,17 +3111,101 @@
             "accessed": "2026-10-13"
           }
         ],
-        "verified": true
+        "verified": true,
+        "kind": "opportunity",
+        "signalValue": "cv_medium",
+        "evergreen": true,
+        "commitment": "Application: a form, online tests and often a video interview, spread over several weeks. Programme: usually 1–5 days."
+      },
+      {
+        "type": "experience",
+        "skills": [
+          "Product Management",
+          "Stakeholder Management",
+          "User Research"
+        ],
+        "signals": [
+          "PB-PRD-S01",
+          "PB-PRD-S03"
+        ],
+        "effort": "term",
+        "minYear": "final",
+        "sources": [
+          {
+            "title": "Technology - Product Management Graduate Scheme (Tesco)",
+            "publisher": "TARGETjobs",
+            "url": "https://targetjobs.co.uk/jobs/technology-product-management-graduate-scheme-245101",
+            "primary": false,
+            "quote": "During this 2-year scheme, you'll hold workshops with stakeholders, write user stories, collate data and analyse feedback.",
+            "accessed": "2026-10-18"
+          },
+          {
+            "title": "Technology - Product Management Graduate Scheme (Tesco)",
+            "publisher": "TARGETjobs",
+            "url": "https://targetjobs.co.uk/jobs/technology-product-management-graduate-scheme-245101",
+            "primary": false,
+            "quote": "Apply by: 31/10/2026",
+            "accessed": "2026-10-18"
+          },
+          {
+            "title": "Product & Partnerships Graduate Scheme (Lloyds Banking Group)",
+            "publisher": "TARGETjobs",
+            "url": "https://targetjobs.co.uk/jobs/product-partnerships-graduate-scheme-242019",
+            "primary": false,
+            "quote": "We do not require a minimum degree achievement, but we strongly recommend that you can demonstrate the knowledge, understanding, and skills aligned to the role.",
+            "accessed": "2026-10-18"
+          },
+          {
+            "title": "Product & Partnerships Graduate Scheme (Lloyds Banking Group)",
+            "publisher": "TARGETjobs",
+            "url": "https://targetjobs.co.uk/jobs/product-partnerships-graduate-scheme-242019",
+            "primary": false,
+            "quote": "Our graduate schemes may close early if we receive a high number of applications",
+            "accessed": "2026-10-18"
+          },
+          {
+            "title": "Job profile: Product manager",
+            "publisher": "Prospects",
+            "url": "https://www.prospects.ac.uk/job-profiles/product-manager/",
+            "primary": false,
+            "quote": "It's extremely unusual for an employer to recruit a product manager without at least two years of relevant experience.",
+            "accessed": "2026-10-18"
+          }
+        ],
+        "verified": true,
+        "kind": "opportunity",
+        "id": "PB-PRD-E06",
+        "title": "Graduate product management schemes",
+        "description": "Some UK employers hire graduates straight into product. In the 2026/27 cycle these included Tesco Technology's two-year Product Management scheme (Welwyn Garden City) and Lloyds Banking Group's Product & Partnerships scheme. They may close early.",
+        "howToFind": "Search targetjobs or Bright Network for 'product management graduate scheme'.",
+        "commitment": "Application: form, online tests, video interview and an assessment centre over several weeks. Scheme: usually two years.",
+        "evidence": "Graduate role.",
+        "signalValue": "cv_high",
+        "reviewBy": "2027-03-01"
       }
     ],
     "yearGuidance": {
       "1st": "Take a society role, run a discovery sprint, apply to insight programmes.",
-      "2nd": "On four-year courses: ship an MVP and lead a society project; otherwise treat as penultimate.",
+      "2nd": "Your stage depends on your course. Three-year degree: you're penultimate, so apply for internships in the autumn. Four-year integrated master's: ship an MVP and lead a society project. Placement-year degree: apply in the autumn for 12-month placements in product, analytics or operations.",
       "penultimate": "Apply to graduate-PM-feeding internships and to adjacent-function internships; have one shipped product with a metric.",
-      "final": "Apply to graduate PM schemes and adjacent roles in parallel (see caveat).",
-      "masters": "Same as final; frame any prior work around users, data and delivery."
+      "final": "Apply to graduate PM schemes and adjacent roles in parallel: direct PM hiring is rare, but some schemes (retail, banking, fintech) take graduates. Many open in September and may close early.",
+      "masters": "Same as final year; on a one-year MSc apply in your first 6-8 weeks. Frame any prior work around users, data and delivery."
     },
-    "yearGuidanceBasis": "Synthesis (grade D); the dual-track advice follows the Prospects caveat (R10)."
+    "yearGuidanceBasis": "Synthesis (grade D); the dual-track advice follows the Prospects caveat (R10).",
+    "yearGuidanceDated": [
+      {
+        "year": "final",
+        "text": "Tesco Technology Product Management Graduate Scheme (starts 6 Sep 2027, Welwyn Garden City) closes 31 Oct 2026.",
+        "expiresOn": "2026-10-31",
+        "ref": "https://targetjobs.co.uk/jobs/technology-product-management-graduate-scheme-245101"
+      },
+      {
+        "year": "final",
+        "text": "Lloyds Banking Group Product & Partnerships Graduate Scheme closes 8 Nov 2026, or earlier if it gets many applications.",
+        "expiresOn": "2026-11-08",
+        "ref": "https://targetjobs.co.uk/jobs/product-partnerships-graduate-scheme-242019"
+      }
+    ]
   },
   "marketing_growth": {
     "signals": [
@@ -2292,9 +3266,12 @@
             "accessed": "2026-10-13"
           },
           {
-            "ref": "R59",
-            "quote": "Accomplished X, as measured by Y, by doing Z.",
-            "accessed": "2026-10-13"
+            "title": "Job profile: Marketing executive",
+            "publisher": "Prospects",
+            "url": "https://www.prospects.ac.uk/job-profiles/marketing-executive/",
+            "primary": false,
+            "quote": "track marketing performance and return on investment, as well as prepare weekly or monthly reports for management",
+            "accessed": "2026-10-18"
           }
         ]
       },
@@ -2418,7 +3395,9 @@
             "accessed": "2026-10-13"
           }
         ],
-        "verified": true
+        "verified": true,
+        "kind": "build",
+        "signalValue": "cv_high"
       },
       {
         "id": "PB-MKT-P02",
@@ -2444,7 +3423,9 @@
             "accessed": "2026-10-13"
           }
         ],
-        "verified": true
+        "verified": true,
+        "kind": "build",
+        "signalValue": "cv_medium"
       },
       {
         "id": "PB-MKT-P03",
@@ -2471,7 +3452,9 @@
             "accessed": "2026-10-13"
           }
         ],
-        "verified": true
+        "verified": true,
+        "kind": "build",
+        "signalValue": "cv_low"
       },
       {
         "id": "PB-MKT-P04",
@@ -2497,7 +3480,9 @@
             "accessed": "2026-10-13"
           }
         ],
-        "verified": true
+        "verified": true,
+        "kind": "build",
+        "signalValue": "cv_high"
       },
       {
         "id": "PB-MKT-P05",
@@ -2523,7 +3508,9 @@
             "accessed": "2026-10-13"
           }
         ],
-        "verified": true
+        "verified": true,
+        "kind": "build",
+        "signalValue": "interview_prep"
       },
       {
         "id": "PB-MKT-C01",
@@ -2536,7 +3523,9 @@
           "A/B Testing",
           "Marketing Analytics"
         ],
-        "signals": [],
+        "signals": [
+          "PB-MKT-S04"
+        ],
         "effort": "weekend",
         "minYear": "1st",
         "hours": "4 hr 53 min, 9 lessons (provider)",
@@ -2549,7 +3538,9 @@
             "accessed": "2026-10-13"
           }
         ],
-        "verified": true
+        "verified": true,
+        "kind": "build",
+        "signalValue": "cv_low"
       },
       {
         "id": "PB-MKT-C02",
@@ -2581,7 +3572,9 @@
             "accessed": "2026-10-13"
           }
         ],
-        "verified": true
+        "verified": true,
+        "kind": "build",
+        "signalValue": "cv_low"
       },
       {
         "id": "PB-MKT-C03",
@@ -2610,33 +3603,9 @@
             "accessed": "2026-10-13"
           }
         ],
-        "verified": true
-      },
-      {
-        "id": "PB-MKT-C04",
-        "type": "course",
-        "title": "Semrush Academy",
-        "url": "https://www.semrush.com/academy/",
-        "description": "Free SEO and content courses. Learning value; signal value modest.",
-        "skills": [
-          "SEO",
-          "Content Marketing",
-          "Semrush"
-        ],
-        "signals": [],
-        "effort": "weekend",
-        "minYear": "1st",
-        "hours": "not stated",
-        "free": "free (provider)",
-        "evidence": "Certificate",
-        "sources": [
-          {
-            "ref": "R44",
-            "quote": "Learn Marketing for Free with Online Courses from Semrush Academy",
-            "accessed": "2026-10-13"
-          }
-        ],
-        "verified": true
+        "verified": true,
+        "kind": "build",
+        "signalValue": "cv_low"
       },
       {
         "id": "PB-MKT-E01",
@@ -2662,7 +3631,9 @@
             "accessed": "2026-10-13"
           }
         ],
-        "verified": true
+        "verified": true,
+        "kind": "build",
+        "signalValue": "cv_high"
       },
       {
         "id": "PB-MKT-E02",
@@ -2693,7 +3664,9 @@
             "accessed": "2026-10-13"
           }
         ],
-        "verified": true
+        "verified": true,
+        "kind": "build",
+        "signalValue": "cv_high"
       },
       {
         "id": "PB-MKT-E03",
@@ -2719,7 +3692,10 @@
             "accessed": "2026-10-13"
           }
         ],
-        "verified": true
+        "verified": true,
+        "kind": "build",
+        "signalValue": "cv_high",
+        "evergreen": true
       },
       {
         "id": "PB-MKT-E04",
@@ -2733,7 +3709,7 @@
         "signals": [
           "PB-MKT-S07"
         ],
-        "effort": "weekend",
+        "effort": "2-4 weeks",
         "minYear": "1st",
         "howToFind": "targetjobs insight-programme search; employer graduate sites.",
         "evidence": "Experience entry",
@@ -2749,7 +3725,11 @@
             "accessed": "2026-10-13"
           }
         ],
-        "verified": true
+        "verified": true,
+        "kind": "opportunity",
+        "signalValue": "cv_medium",
+        "evergreen": true,
+        "commitment": "Application: a form, online tests and often a video interview, spread over several weeks. Programme: usually 1–5 days."
       },
       {
         "id": "PB-MKT-E05",
@@ -2758,9 +3738,7 @@
         "url": "https://www.theforage.com/",
         "description": "Free, self-paced employer tasks. Convention: low CV signal; good for testing interest.",
         "skills": [],
-        "signals": [
-          "PB-MKT-S07"
-        ],
+        "signals": [],
         "effort": "weekend",
         "minYear": "1st",
         "howToFind": "theforage.com, search 'marketing'.",
@@ -2772,14 +3750,98 @@
             "accessed": "2026-10-13"
           }
         ],
-        "verified": true
+        "verified": true,
+        "kind": "build",
+        "signalValue": "cv_low",
+        "simulation": true,
+        "evergreen": true
+      },
+      {
+        "type": "project",
+        "skills": [
+          "CRM",
+          "Email Marketing",
+          "Paid Social",
+          "Conversion Rate Optimisation",
+          "Growth Marketing",
+          "A/B Testing",
+          "Metrics",
+          "Excel",
+          "SQL",
+          "Looker"
+        ],
+        "signals": [
+          "PB-MKT-S03",
+          "PB-MKT-S04"
+        ],
+        "effort": "2-4 weeks",
+        "minYear": "1st",
+        "sources": [
+          {
+            "title": "Job profile: Marketing executive",
+            "publisher": "Prospects",
+            "url": "https://www.prospects.ac.uk/job-profiles/marketing-executive/",
+            "primary": false,
+            "quote": "track marketing performance and return on investment, as well as prepare weekly or monthly reports for management",
+            "accessed": "2026-10-18"
+          }
+        ],
+        "verified": true,
+        "kind": "build",
+        "id": "PB-MKT-P06",
+        "title": "Run and measure a small campaign end to end",
+        "description": "For a society, charity or your own channel, run a small email, social or paid campaign with a clear goal. Track it in a spreadsheet or dashboard, test one change (subject line, audience, landing page), and report what moved and what it cost.",
+        "evidence": "One-page results summary with the numbers, the test and what you would do next.",
+        "signalValue": "cv_high"
+      },
+      {
+        "type": "experience",
+        "skills": [
+          "Brand Strategy",
+          "Market Research",
+          "Marketing Analytics"
+        ],
+        "signals": [
+          "PB-MKT-S07",
+          "PB-MKT-S04"
+        ],
+        "effort": "term",
+        "minYear": "final",
+        "sources": [
+          {
+            "title": "Applying for Unilever's Future Leaders Programme (23 Oct 2023)",
+            "publisher": "TARGETjobs",
+            "url": "https://targetjobs.co.uk/careers-advice/interviews-and-assessment-centres/applying-future-leaders-programme-unilever-digital-interview",
+            "primary": false,
+            "quote": "This consists of five online games designed to test your cognitive, social and emotional traits.",
+            "accessed": "2026-10-18"
+          },
+          {
+            "title": "Applying for Unilever's Future Leaders Programme (23 Oct 2023)",
+            "publisher": "TARGETjobs",
+            "url": "https://targetjobs.co.uk/careers-advice/interviews-and-assessment-centres/applying-future-leaders-programme-unilever-digital-interview",
+            "primary": false,
+            "quote": "At this stage, you must select which of the seven business functions you'd like to apply to",
+            "accessed": "2026-10-18"
+          }
+        ],
+        "verified": true,
+        "kind": "opportunity",
+        "id": "PB-MKT-E06",
+        "title": "FMCG marketing graduate schemes",
+        "description": "Consumer-goods firms (for example Unilever, L'Oréal, P&G, Mars) run graduate schemes with marketing tracks. Expect game-based or psychometric tests early on; Unilever asks you to choose one of seven business functions when you apply.",
+        "howToFind": "Each firm's early-careers page; targetjobs and Bright Network list current schemes.",
+        "commitment": "Application: form, online games or tests, digital interview and an assessment day.",
+        "evidence": "Graduate role.",
+        "signalValue": "cv_high",
+        "reviewBy": "2027-03-31"
       }
     ],
     "yearGuidance": {
       "1st": "Get a society comms role or start your own channel; take one free certification; apply to insight programmes.",
-      "2nd": "On four-year courses: build a results-based case study; otherwise treat as penultimate.",
+      "2nd": "Your stage depends on your course. Three-year degree: you're penultimate, so apply for marketing internships in the autumn. Four-year integrated master's: build a results-based case study. Placement-year degree: apply in the autumn for 12-month placements.",
       "penultimate": "Apply for marketing internships; lead with experience and 2 case studies with measurable results.",
-      "final": "Graduate schemes; experience-first CV (MKT-01), zero typos (MKT-07), current links.",
+      "final": "Graduate schemes open around September to November and many close by December. Experience-first CV (MKT-01), zero typos (MKT-07), current links. Expect game-based tests at FMCG firms.",
       "masters": "Same as final; turn the dissertation into a consumer-insight story if relevant."
     },
     "yearGuidanceBasis": "Synthesis (grade D), aligned with cv-rules-tech-product.md section 5."
@@ -2918,7 +3980,9 @@
             "accessed": "2026-10-13"
           }
         ],
-        "verified": true
+        "verified": true,
+        "kind": "build",
+        "signalValue": "cv_medium"
       },
       {
         "id": "PB-RES-P02",
@@ -2945,7 +4009,9 @@
             "accessed": "2026-10-13"
           }
         ],
-        "verified": true
+        "verified": true,
+        "kind": "build",
+        "signalValue": "cv_high"
       },
       {
         "id": "PB-RES-P03",
@@ -2969,7 +4035,9 @@
             "accessed": "2026-10-13"
           }
         ],
-        "verified": true
+        "verified": true,
+        "kind": "build",
+        "signalValue": "cv_medium"
       },
       {
         "id": "PB-RES-P04",
@@ -2995,7 +4063,9 @@
             "accessed": "2026-10-13"
           }
         ],
-        "verified": true
+        "verified": true,
+        "kind": "build",
+        "signalValue": "cv_high"
       },
       {
         "id": "PB-RES-P05",
@@ -3020,7 +4090,9 @@
             "accessed": "2026-10-13"
           }
         ],
-        "verified": true
+        "verified": true,
+        "kind": "build",
+        "signalValue": "cv_low"
       },
       {
         "id": "PB-RES-C01",
@@ -3054,7 +4126,9 @@
             "accessed": "2026-10-13"
           }
         ],
-        "verified": true
+        "verified": true,
+        "kind": "build",
+        "signalValue": "cv_low"
       },
       {
         "id": "PB-RES-C02",
@@ -3080,7 +4154,9 @@
             "accessed": "2026-10-13"
           }
         ],
-        "verified": true
+        "verified": true,
+        "kind": "build",
+        "signalValue": "cv_low"
       },
       {
         "id": "PB-RES-C03",
@@ -3106,7 +4182,9 @@
             "accessed": "2026-10-13"
           }
         ],
-        "verified": true
+        "verified": true,
+        "kind": "build",
+        "signalValue": "cv_low"
       },
       {
         "id": "PB-RES-C04",
@@ -3134,7 +4212,9 @@
             "accessed": "2026-10-13"
           }
         ],
-        "verified": true
+        "verified": true,
+        "kind": "build",
+        "signalValue": "cv_low"
       },
       {
         "id": "PB-RES-C05",
@@ -3160,7 +4240,9 @@
             "accessed": "2026-10-13"
           }
         ],
-        "verified": true
+        "verified": true,
+        "kind": "build",
+        "signalValue": "cv_low"
       },
       {
         "id": "PB-RES-E01",
@@ -3190,7 +4272,9 @@
             "accessed": "2026-10-13"
           }
         ],
-        "verified": true
+        "verified": true,
+        "kind": "opportunity",
+        "signalValue": "cv_high"
       },
       {
         "id": "PB-RES-E02",
@@ -3224,7 +4308,9 @@
           }
         ],
         "verified": true,
-        "expiresOn": "2027-02-01"
+        "expiresOn": "2027-02-01",
+        "kind": "opportunity",
+        "signalValue": "cv_high"
       },
       {
         "id": "PB-RES-E03",
@@ -3250,14 +4336,16 @@
             "accessed": "2026-10-13"
           }
         ],
-        "verified": true
+        "verified": true,
+        "kind": "opportunity",
+        "signalValue": "cv_high"
       },
       {
         "id": "PB-RES-E04",
         "type": "experience",
         "title": "Outreachy (research tracks exist; eligibility restricted)",
         "url": "https://www.outreachy.org/",
-        "description": "Paid remote open-source internships; some projects are research. Check eligibility first. No 2027 dates given here.",
+        "description": "Paid, remote open-source internships, including research-software projects, for people who face under-representation in tech where they live. UK university students can only join the May–August cohort, need 42 consecutive days free of term and exams, and work 30 hours a week.",
         "skills": [
           "Open Source"
         ],
@@ -3273,18 +4361,166 @@
             "ref": "R53",
             "quote": "Outreachy internship projects may include programming, research, user experience, documentation, graphical design, data science, marketing",
             "accessed": "2026-10-13"
+          },
+          {
+            "title": "Applicant Guide",
+            "publisher": "Outreachy",
+            "url": "https://www.outreachy.org/docs/applicant/",
+            "primary": true,
+            "quote": "If you are a student of a university in the Northern Hemisphere , you will only be eligible for the May to August internship cohort.",
+            "accessed": "2026-10-18"
+          },
+          {
+            "title": "Applicant Guide",
+            "publisher": "Outreachy",
+            "url": "https://www.outreachy.org/docs/applicant/",
+            "primary": true,
+            "quote": "University students must have 42 consecutive days free from school and exams during the internship period.",
+            "accessed": "2026-10-18"
           }
         ],
-        "verified": true
+        "verified": true,
+        "kind": "opportunity",
+        "signalValue": "cv_high",
+        "eligibility": "Northern Hemisphere university students: May–August cohort only.",
+        "reviewBy": "2027-02-01"
+      },
+      {
+        "type": "project",
+        "skills": [
+          "PyTorch",
+          "Deep Learning",
+          "Natural Language Processing",
+          "Computer Vision",
+          "Hugging Face",
+          "Fine-tuning",
+          "LLM",
+          "HPC",
+          "TensorFlow"
+        ],
+        "signals": [
+          "PB-RES-S05",
+          "PB-RES-S01"
+        ],
+        "effort": "term",
+        "minYear": "2nd",
+        "sources": [],
+        "verified": true,
+        "kind": "build",
+        "id": "PB-RES-P06",
+        "title": "Reproduce a machine-learning paper result",
+        "description": "Pick a recent paper with released code or data, reproduce one table or figure, and write up what matched and what didn't. Use your university's compute if you have access; small models are fine.",
+        "evidence": "Repo and a short report comparing your numbers with the paper's.",
+        "signalValue": "cv_medium"
+      },
+      {
+        "type": "experience",
+        "skills": [
+          "Research Assistant",
+          "Lab Techniques"
+        ],
+        "signals": [
+          "PB-RES-S01",
+          "PB-RES-S03"
+        ],
+        "effort": "term",
+        "minYear": "2nd",
+        "sources": [
+          {
+            "title": "Vacation Studentships",
+            "publisher": "Microbiology Society",
+            "url": "https://microbiologysociety.org/grants-prizes/all-grants/vacation-studentships.html",
+            "primary": true,
+            "quote": "Applications for 2027 will open on 10 Dec 2026 and will close on 10 February 2027 .",
+            "accessed": "2026-10-18"
+          },
+          {
+            "title": "Vacation Studentships",
+            "publisher": "Microbiology Society",
+            "url": "https://microbiologysociety.org/grants-prizes/all-grants/vacation-studentships.html",
+            "primary": true,
+            "quote": "BSc students should have completed a minimum of two years of study on the programme but not have started their final year",
+            "accessed": "2026-10-18"
+          }
+        ],
+        "verified": true,
+        "kind": "opportunity",
+        "id": "PB-RES-E05",
+        "title": "Microbiology Society vacation studentships",
+        "url": "https://microbiologysociety.org/grants-prizes/all-grants/vacation-studentships.html",
+        "description": "Funded 6–8 week summer research projects in microbiology. A society member supervisor applies with you, so line up a supervisor before the window.",
+        "maxYear": "penultimate",
+        "eligibility": "BSc students must have finished at least two years and not started their final year. The supervisor needs at least a year's membership.",
+        "commitment": "Application: a joint proposal with your supervisor. Programme: 6–8 weeks over summer, paid weekly.",
+        "evidence": "Funded research project on your CV.",
+        "signalValue": "cv_high",
+        "expiresOn": "2027-02-10"
+      },
+      {
+        "type": "experience",
+        "skills": [
+          "Research Assistant",
+          "Lab Techniques"
+        ],
+        "signals": [
+          "PB-RES-S01",
+          "PB-RES-S03"
+        ],
+        "effort": "term",
+        "minYear": "2nd",
+        "sources": [
+          {
+            "title": "Summer Vacation Studentships: research studentship",
+            "publisher": "Biochemical Society",
+            "url": "https://www.biochemistry.org/grants-and-awards/grants-and-bursaries/summer-vacation-studentships/research-studentship/",
+            "primary": true,
+            "quote": "First year and final year students are not eligible for this studentship, which includes those graduating in year 2026 and final year students on an integrated master's degree.",
+            "accessed": "2026-10-18"
+          },
+          {
+            "title": "Summer Vacation Studentships: research studentship",
+            "publisher": "Biochemical Society",
+            "url": "https://www.biochemistry.org/grants-and-awards/grants-and-bursaries/summer-vacation-studentships/research-studentship/",
+            "primary": true,
+            "quote": "Students do not need to be members of the Biochemical Society to apply.",
+            "accessed": "2026-10-18"
+          }
+        ],
+        "verified": true,
+        "kind": "opportunity",
+        "id": "PB-RES-E06",
+        "title": "Biochemical Society summer vacation studentships",
+        "url": "https://www.biochemistry.org/grants-and-awards/grants-and-bursaries/summer-vacation-studentships/research-studentship/",
+        "description": "Funded summer research projects in the molecular biosciences, applied for with a supervisor who is a society member. Students don't need to be members.",
+        "maxYear": "penultimate",
+        "eligibility": "Not open to first-year or final-year students (including final-year integrated master's students).",
+        "commitment": "Application: a joint proposal with your supervisor. Programme: several weeks over summer.",
+        "evidence": "Funded research project on your CV.",
+        "signalValue": "cv_high",
+        "reviewBy": "2027-04-30"
       }
     ],
     "yearGuidance": {
-      "1st": "Protect your grades; make one analysis reproducible; write a short literature review; start conversations with academics.",
-      "2nd": "Seek a summer research project (UROP-style) or vacation work; reproduce a published result.",
+      "1st": "Protect your grades; make one analysis reproducible; write a short literature review; start conversations with academics. In the biosciences, find out now which supervisors could back a summer vacation studentship in your second year.",
+      "2nd": "Seek a summer research project (UROP-style) or a learned-society vacation studentship (Microbiology Society opens in December; the Biochemical Society in late February). Reproduce a published result.",
       "penultimate": "Apply for funded summer research (e.g. LMS bursary for maths/stats); present a poster if possible.",
       "final": "Make the dissertation your headline research experience; line up academic referees.",
       "masters": "Research project + any posters/preprints, cited honestly (RES-04); apply for PhD or research roles."
     },
-    "yearGuidanceBasis": "Synthesis (grade D), aligned with cv-rules-tech-product.md section 6; LMS eligibility from R20."
+    "yearGuidanceBasis": "Synthesis (grade D), aligned with cv-rules-tech-product.md section 6; LMS eligibility from R20.",
+    "yearGuidanceDated": [
+      {
+        "year": "2nd",
+        "text": "Microbiology Society vacation studentships for summer 2027 open 10 Dec 2026 and close 10 Feb 2027; your supervisor applies with you.",
+        "expiresOn": "2027-02-10",
+        "ref": "PB-RES-E05"
+      },
+      {
+        "year": "penultimate",
+        "text": "Microbiology Society vacation studentships for summer 2027 open 10 Dec 2026 and close 10 Feb 2027 (not open once you've started your final year).",
+        "expiresOn": "2027-02-10",
+        "ref": "PB-RES-E05"
+      }
+    ]
   }
 }
