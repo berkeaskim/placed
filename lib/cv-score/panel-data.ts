@@ -9,6 +9,7 @@ import { aggregateCvScore, type CvScore, type Fix } from "./aggregate";
 import type { ScoredRuleResult } from "./context";
 import { prepareJudgeInput } from "./pii";
 import { historyTotals, type HistoryRow } from "./present";
+import { disputedRuleIds } from "./feedback";
 
 /** Everything the CV Score panel renders. Plain, serialisable data: no raw CV text ever reaches it. */
 export type CvScorePanelData = {
@@ -35,6 +36,12 @@ export type CvScorePanelData = {
   coverage: number | null;
   /** The model that judged this score (e.g. "anthropic:claude-sonnet-5-5"); null on older rows. */
   scoredBy: string | null;
+  /** The CV was rendered by Placed's tailor, so the judge is the same AI family that rewrote it (04#28). */
+  madeByPlaced: boolean;
+  /** Rules this user said "I disagree" on for this CV and sector: shown as disputed, still counted (04#25). */
+  disputed: string[];
+  /** After an edit, how many verdicts were kept from the earlier CV and how many the AI re-checked (04#9, #30). */
+  delta: { reused: number; rejudged: number } | null;
 };
 
 type ScoreRow = {
@@ -44,15 +51,18 @@ type ScoreRow = {
 type StoredResults = {
   code?: ScoredRuleResult[]; llm?: ScoredRuleResult[]; couldNotAssess?: number; assessed?: number; passed?: number; aiUnavailable?: boolean;
   scoredBy?: string; provisional?: boolean; coverage?: number; range?: { low: number; high: number };
+  madeByPlaced?: boolean; delta?: { reused: number; rejudged: number };
 };
 
 /**
- * History points comparable with the current score (04#10, #11): same judge model, and never a provisional or
- * AI-unavailable run. Rows scored before the model was recorded are left out rather than guessed.
+ * History points comparable with the current score (04#10, #11, #28): same judge model, never a provisional or
+ * AI-unavailable run, and never mixing CVs made by Placed's tailor with the student's own (the judge may favour its
+ * own family's writing, so a tailored-vs-original rise isn't evidence). Rows without a recorded model are left out.
  */
-export function comparableHistory<T extends { rule_results: StoredResults | null }>(rows: T[], scoredBy: string | null): T[] {
+export function comparableHistory<T extends { rule_results: StoredResults | null }>(rows: T[], scoredBy: string | null, madeByPlaced = false): T[] {
   if (!scoredBy) return [];
-  return rows.filter((r) => r.rule_results?.scoredBy === scoredBy && !r.rule_results.provisional && !r.rule_results.aiUnavailable);
+  return rows.filter((r) => r.rule_results?.scoredBy === scoredBy && !r.rule_results.provisional && !r.rule_results.aiUnavailable
+    && (r.rule_results.madeByPlaced === true) === madeByPlaced);
 }
 
 /**
@@ -76,7 +86,10 @@ const NEUTRAL_FACTS = { imageOnly: false, spellingErrors: 0, hasPhone: true, has
  * Every read is scoped to `userId`.
  */
 export async function loadCvScorePanel(
-  i: { userId: string; cvId: string; sector: Archetype; year: Year; track?: Track; score?: CvScore & { aiUnavailable?: boolean; scoredBy?: string } },
+  i: {
+    userId: string; cvId: string; sector: Archetype; year: Year; track?: Track;
+    score?: CvScore & { aiUnavailable?: boolean; scoredBy?: string; madeByPlaced?: boolean; delta?: { reused: number; rejudged: number } | null };
+  },
 ): Promise<CvScorePanelData | null> {
   const track: Track = i.track ?? "standard";
   const scoreRow = i.score ? undefined : db.select({
@@ -89,13 +102,14 @@ export async function loadCvScorePanel(
     .where(and(eq(cvScores.user_id, i.userId), eq(cvScores.sector, i.sector), eq(cvScores.track, track))).orderBy(desc(cvScores.created_at)).limit(20).all() as
     { total: number; created_at: string; uploaded_at: string; rule_results: StoredResults | null }[];
 
-  let core: Pick<CvScorePanelData, "total" | "dimensions" | "capsApplied" | "fixes" | "assessed" | "passed" | "couldNotAssess" | "aiUnavailable" | "provisional" | "range" | "coverage" | "scoredBy">;
+  let core: Pick<CvScorePanelData, "total" | "dimensions" | "capsApplied" | "fixes" | "assessed" | "passed" | "couldNotAssess" | "aiUnavailable" | "provisional" | "range" | "coverage" | "scoredBy" | "madeByPlaced" | "delta">;
   if (i.score) {
     const s = i.score;
     core = {
       total: s.total, dimensions: s.dimensions, capsApplied: s.capsApplied, fixes: s.fixes, assessed: s.assessed, passed: s.passed,
       couldNotAssess: s.couldNotAssess, aiUnavailable: s.aiUnavailable === true,
       provisional: s.provisional || s.aiUnavailable === true, range: s.range, coverage: s.coverage, scoredBy: s.scoredBy ?? null,
+      madeByPlaced: s.madeByPlaced === true, delta: s.delta ? { reused: s.delta.reused, rejudged: s.delta.rejudged } : null,
     };
   } else {
     const row = scoreRow;
@@ -108,9 +122,10 @@ export async function loadCvScorePanel(
       aiUnavailable: rr?.aiUnavailable === true,
       provisional: rr?.provisional === true || rr?.aiUnavailable === true,
       range: rr?.range ?? null, coverage: rr?.coverage ?? null, scoredBy: rr?.scoredBy ?? null,
+      madeByPlaced: rr?.madeByPlaced === true, delta: rr?.delta ? { reused: rr.delta.reused, rejudged: rr.delta.rejudged } : null,
     };
   }
-  const hist: HistoryRow[] = comparableHistory(histRows, core.scoredBy)
+  const hist: HistoryRow[] = comparableHistory(histRows, core.scoredBy, core.madeByPlaced)
     .map((r) => ({ total: r.total, created_at: r.created_at, cvs: { uploaded_at: r.uploaded_at } }));
 
   let aiSaw: string | null = null;
@@ -119,5 +134,8 @@ export async function loadCvScorePanel(
     catch (e) { console.error("cv score panel: redaction failed", e); }
   }
 
-  return { cvId: i.cvId, sector: i.sector, track, ...core, history: historyTotals(hist), aiSaw };
+  let disputed: string[] = [];
+  try { disputed = disputedRuleIds(i.userId, i.cvId, i.sector); } catch (e) { console.error("cv score panel: feedback read failed", e); }
+
+  return { cvId: i.cvId, sector: i.sector, track, ...core, history: historyTotals(hist), aiSaw, disputed };
 }

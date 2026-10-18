@@ -15,6 +15,7 @@ import { LOCAL_USER_ID } from "@/lib/auth/local-user";
 import { seedCv, withTempDb } from "../cv/temp-db";
 import { rulesFor } from "@/lib/cv-rules";
 import { prepareJudgeInput } from "@/lib/cv-score/pii";
+import { putFile } from "@/lib/files";
 
 describe("cache key (R2)", () => {
   const k = { textHash: textHash("abc"), sector: "consulting" as const, rulesVersion: RULES_VERSION, modelId: "anthropic:claude-sonnet-5-5", promptVersion: PROMPT_VERSION };
@@ -238,5 +239,25 @@ describe("scoreCv delta re-judging", () => {
     db.update(cvScores).set({ user_id: "someone-else" }).run();
     await run(id);
     expect(vi.mocked(judgeCvRules).mock.calls[0][0].reuse).toBeUndefined();
+  });
+});
+
+// Audit 04#28: a CV rendered by Placed's tailor is flagged when it's scored.
+describe("scoreCv provenance", () => {
+  const saved = process.env.AI_MODE;
+  beforeEach(() => { process.env.AI_MODE = "fixture"; });
+  afterEach(() => { if (saved === undefined) delete process.env.AI_MODE; else process.env.AI_MODE = saved; });
+
+  it("records madeByPlaced when the stored PDF carries Placed's tailor stamp, and not otherwise", async () => {
+    await putFile("cvs", `${U}/placed.pdf`, new TextEncoder().encode("%PDF-1.4\n<< /Creator (Placed) /Producer (Placed) >>\n"), "application/pdf");
+    await putFile("cvs", `${U}/word.pdf`, new TextEncoder().encode("%PDF-1.7\n<< /Creator (Microsoft Word) /Producer (macOS) >>\n"), "application/pdf");
+    const tailored = await run(seed({ storage_path: `${U}/placed.pdf` }));
+    expect(tailored.madeByPlaced).toBe(true);
+    expect((only().rule_results as { madeByPlaced?: boolean }).madeByPlaced).toBe(true);
+    const own = await run(seed({ storage_path: `${U}/word.pdf` }));
+    expect(own.madeByPlaced).toBe(false);
+    expect((only().rule_results as { madeByPlaced?: boolean }).madeByPlaced).toBeUndefined();
+    // A missing file is just "not known to be tailored".
+    expect((await run(seed({ storage_path: `${U}/missing.pdf` }))).madeByPlaced).toBe(false);
   });
 });

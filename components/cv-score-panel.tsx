@@ -5,8 +5,9 @@ import { caveatFor } from "@/lib/cv-rules/profiles";
 import type { Fix } from "@/lib/cv-score/aggregate";
 import type { CvScorePanelData } from "@/lib/cv-score/panel-data";
 import {
-  DIM_LABEL, FAIRNESS_NOTE, IMAGE_ONLY_CAP_COPY, barColor, capBanners, couldntAssessLabel, coverageLabel, disclaimer, fixWorthLabel,
-  isConvention, judgeLabel, provisionalLabel, rulesPassedLabel, scoreBand, sourceChip, sparklineLabel, sparklinePoints, splitFixes,
+  DIM_LABEL, DISPUTED_TITLE, FAIRNESS_NOTE, IMAGE_ONLY_CAP_COPY, MODEL_CARD_URL, SELF_PREFERENCE_LABEL, SELF_PREFERENCE_NOTE, barColor, capBanners,
+  couldntAssessLabel, coverageLabel, deltaLabel, disclaimer, fixWorthLabel, isConvention, judgeLabel, provisionalLabel, rulesPassedLabel, scoreBand,
+  sourceChip, sparklineLabel, sparklinePoints, splitFixes,
 } from "@/lib/cv-score/present";
 import { DisagreeButton } from "@/components/cv-score/disagree-button";
 import { CountUp, DrawCircle, GrowBar } from "@/components/agent/reveal";
@@ -82,7 +83,15 @@ function Worth({ fix, capped, small }: { fix: Fix; capped: boolean; small?: bool
   );
 }
 
-function Tags({ fix, lead, capped }: { fix: Fix; lead?: string; capped: boolean }) {
+function DisputedChip() {
+  return (
+    <span className="rounded-full border border-[#F5D9A8] bg-[#FFF8EC] px-2 py-0.5 text-[11px] font-semibold text-[#7A4100]" title={DISPUTED_TITLE}>
+      Disputed<span className="sr-only">: {DISPUTED_TITLE}</span>
+    </span>
+  );
+}
+
+function Tags({ fix, lead, capped, disputed }: { fix: Fix; lead?: string; capped: boolean; disputed: boolean }) {
   return (
     <div className="flex flex-wrap items-center gap-2">
       {lead && <span className="text-xs font-bold uppercase tracking-wide text-[#3A20C4]">{lead}</span>}
@@ -92,6 +101,7 @@ function Tags({ fix, lead, capped }: { fix: Fix; lead?: string; capped: boolean 
           Convention
         </span>
       )}
+      {disputed && <DisputedChip />}
       <Worth fix={fix} capped={capped} />
     </div>
   );
@@ -106,7 +116,7 @@ function OffendingLine({ line }: { line: string | null }) {
   );
 }
 
-function NextBestFix({ fix, cvId, sector, capped }: { fix: Fix; cvId: string; sector: string; capped: boolean }) {
+function NextBestFix({ fix, cvId, sector, capped, disputed }: { fix: Fix; cvId: string; sector: string; capped: boolean; disputed: boolean }) {
   return (
     <section aria-labelledby="next-fix-h" className="card-quest flex h-full flex-col gap-3 p-5">
       <div className="flex items-center gap-2">
@@ -114,7 +124,7 @@ function NextBestFix({ fix, cvId, sector, capped }: { fix: Fix; cvId: string; se
           <span className="text-[#5B3DF5]">{Icon.target}</span>Next best fix
         </h3>
       </div>
-      <Tags fix={fix} capped={capped} />
+      <Tags fix={fix} capped={capped} disputed={disputed} />
       <p className="text-sm font-semibold leading-snug text-[#16161D]">{fix.statement}</p>
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="flex min-w-0 flex-col gap-1">
@@ -130,19 +140,20 @@ function NextBestFix({ fix, cvId, sector, capped }: { fix: Fix; cvId: string; se
       </div>
       <div className="mt-auto flex flex-wrap items-center justify-between gap-x-2">
         <SourceChip fix={fix} />
-        <DisagreeButton cvId={cvId} ruleId={fix.ruleId} sector={sector} />
+        <DisagreeButton cvId={cvId} ruleId={fix.ruleId} sector={sector} disputed={disputed} />
       </div>
     </section>
   );
 }
 
-function CompactFix({ fix, cvId, sector, capped }: { fix: Fix; cvId: string; sector: string; capped: boolean }) {
+function CompactFix({ fix, cvId, sector, capped, disputed }: { fix: Fix; cvId: string; sector: string; capped: boolean; disputed: boolean }) {
   return (
     <li className="border-t border-[#ECECF3] first:border-t-0">
       <details className="group">
         <summary className="flex min-h-11 cursor-pointer list-none items-center gap-3 py-2.5 [&::-webkit-details-marker]:hidden">
           <span className="w-20 shrink-0 text-[11px] font-bold uppercase tracking-wide text-[#5B5B6B]">{DIM_LABEL[fix.dimension]}</span>
           <span className="min-w-0 flex-1 truncate text-sm font-medium group-open:whitespace-normal">{fix.statement}</span>
+          {disputed && <DisputedChip />}
           <Worth fix={fix} capped={capped} small />
           {Icon.chevron}
         </summary>
@@ -156,7 +167,7 @@ function CompactFix({ fix, cvId, sector, capped }: { fix: Fix; cvId: string; sec
           {fix.fix && <p className="text-sm leading-snug text-[#16161D] break-words"><span className="font-semibold">Try: </span>{fix.fix}</p>}
           <div className="flex flex-wrap items-center justify-between gap-x-2">
             <SourceChip fix={fix} />
-            <DisagreeButton cvId={cvId} ruleId={fix.ruleId} sector={sector} />
+            <DisagreeButton cvId={cvId} ruleId={fix.ruleId} sector={sector} disputed={disputed} />
           </div>
         </div>
       </details>
@@ -190,6 +201,8 @@ export function CvScorePanel({ data }: { data: CvScorePanelData }) {
   const capped = data.capsApplied.length > 0;
   const judge = judgeLabel(data.scoredBy);
   const range = data.range ?? { low: total, high: total };
+  const disputed = new Set(data.disputed);
+  const edited = deltaLabel(data.delta);
 
   return (
     <div className="grid w-full grid-cols-1 gap-4 lg:grid-cols-2 [&>*]:min-w-0">
@@ -207,7 +220,7 @@ export function CvScorePanel({ data }: { data: CvScorePanelData }) {
         </div>
       ))}
 
-      {next && <NextBestFix fix={next} cvId={cvId} sector={sector} capped={capped} />}
+      {next && <NextBestFix fix={next} cvId={cvId} sector={sector} capped={capped} disputed={disputed.has(next.ruleId)} />}
 
       <section aria-labelledby="cv-score-h" className={`flex flex-col gap-4 rounded-[20px] border border-[#E6E6EF] bg-white p-5 ${next ? "" : "lg:col-span-2"}`}>
         <div className="flex items-center justify-between gap-2">
@@ -262,6 +275,14 @@ export function CvScorePanel({ data }: { data: CvScorePanelData }) {
           </p>
         )}
 
+        {data.madeByPlaced && (
+          <div role="note" className="flex gap-2 rounded-xl border border-[#DCDCE6] bg-[#F6F6FA] px-3 py-2 text-sm text-[#3F3F4C]">
+            {Icon.info}<span><b>{SELF_PREFERENCE_LABEL}.</b> {SELF_PREFERENCE_NOTE}</span>
+          </div>
+        )}
+        {edited && <p className="text-xs leading-snug text-[#5B5B6B]">{edited}</p>}
+
+        {/* Visible, never collapsed (04#23): what the number is and isn't. */}
         <p className="text-xs leading-snug text-[#5B5B6B]">{disclaimer(sector)}</p>
 
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[#5B5B6B]">
@@ -281,6 +302,14 @@ export function CvScorePanel({ data }: { data: CvScorePanelData }) {
             <p className="leading-snug">Each rule counts by how much it matters (critical, major or minor), and the sector shifts that a little. A fix shows how many points it would really add.</p>
             <p className="leading-snug">{FAIRNESS_NOTE}</p>
             <p className="leading-snug">Scores from different AI models aren&apos;t comparable, so your trend only shows scores from the same model.</p>
+            <p className="leading-snug">A range instead of one number means the AI couldn&apos;t check enough rules: your score is somewhere in it. The bands (Developing, Strong, Polished) are rough guides, not yet set from data.</p>
+            <p className="leading-snug">
+              We haven&apos;t yet checked the AI&apos;s verdicts against careers advisers.{" "}
+              <a href={MODEL_CARD_URL} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center font-semibold text-[#3A20C4] underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-[#5B3DF5]">
+                Read the model card<span className="sr-only"> (opens in a new tab)</span>
+              </a>{" "}
+              for what the score measures, what it doesn&apos;t, and its known limits.
+            </p>
           </div>
         </details>
       </section>
@@ -289,7 +318,7 @@ export function CvScorePanel({ data }: { data: CvScorePanelData }) {
         <section aria-labelledby="more-fixes-h" className={`flex flex-col gap-1 rounded-[20px] border border-[#E6E6EF] bg-white px-5 pt-4 pb-2 ${data.aiSaw ? "" : "lg:col-span-2"}`}>
           <h3 id="more-fixes-h" className="text-sm font-bold">More fixes <span className="font-semibold text-[#5B5B6B]">· {rest.length}</span></h3>
           <ol className="flex flex-col">
-            {rest.map((f) => <CompactFix key={f.ruleId} fix={f} cvId={cvId} sector={sector} capped={capped} />)}
+            {rest.map((f) => <CompactFix key={f.ruleId} fix={f} cvId={cvId} sector={sector} capped={capped} disputed={disputed.has(f.ruleId)} />)}
           </ol>
         </section>
       )}

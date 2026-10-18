@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { storedCounts } from "@/lib/cv-score/panel-data";
+import { comparableHistory, storedCounts } from "@/lib/cv-score/panel-data";
 import { aggregateCvScore, type ScoreFacts } from "@/lib/cv-score/aggregate";
 import type { CvRule } from "@/lib/cv-rules/types";
 import type { ScoredRuleResult } from "@/lib/cv-score/context";
@@ -39,5 +39,17 @@ describe("storedCounts", () => {
   });
   it("null rule_results → zeros", () => {
     expect(storedCounts(null, rules, "consulting", "2nd")).toEqual({ assessed: 0, passed: 0, couldNotAssess: 0 });
+  });
+});
+
+// Audit 04#28: a tailored CV's score is never put on one trend line with the student's own CVs.
+describe("comparableHistory and Placed-tailored CVs", () => {
+  const row = (scoredBy: string, madeByPlaced?: boolean) => ({ rule_results: { scoredBy, ...(madeByPlaced ? { madeByPlaced } : {}) } });
+  const rows = [row("m"), row("m", true), row("m"), row("other")];
+  it("an original CV's trend leaves out tailored CVs", () => {
+    expect(comparableHistory(rows, "m")).toHaveLength(2);
+  });
+  it("a tailored CV's trend only shows tailored CVs", () => {
+    expect(comparableHistory(rows, "m", true)).toHaveLength(1);
   });
 });

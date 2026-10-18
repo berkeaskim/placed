@@ -10,12 +10,14 @@ import { currentModelId } from "@/lib/ai/models";
 import { db } from "@/lib/db/client";
 import { cvs, cvScores } from "@/lib/db/schema";
 import { EMAIL_RE, PHONE_RE } from "@/lib/text/regex";
+import { getFile } from "@/lib/files";
 import { runCodeChecks } from "./checkers";
 import { aggregateCvScore, type CvScore } from "./aggregate";
 import { prepareJudgeInput } from "./pii";
 import { RULES_VERSION, textHash } from "./cache";
 import type { ScoredRuleResult } from "./context";
 import { planDelta, type DeltaPlan } from "./delta";
+import { madeByPlacedTailor } from "./provenance";
 
 type StoredRuleResults = {
   code: ScoredRuleResult[]; llm: ScoredRuleResult[]; spellingErrors: string[] | null;
@@ -37,8 +39,10 @@ type StoredRuleResults = {
   range?: { low: number; high: number };
   /** Delta re-judging (04#9): verdicts kept from an earlier score of an edited CV, and how many went back to the AI. */
   delta?: { fromCvId: string; reused: number; rejudged: number; cosmetic: boolean };
+  /** The uploaded PDF was rendered by Placed's tailor (04#28): judged by the same AI family that rewrote it. */
+  madeByPlaced?: boolean;
 };
-type CvRow = { raw_text: string; page_texts: string[] | null; page_count: number; file_size: number; parsed_json: ParsedCV & { safety?: SafetyReport } };
+type CvRow = { storage_path: string; raw_text: string; page_texts: string[] | null; page_count: number; file_size: number; parsed_json: ParsedCV & { safety?: SafetyReport } };
 
 /** Foreign key violation: the CV row was deleted (re-upload, data reset) while it was being scored. */
 const cvGone = (e: unknown) => (e as { code?: string } | null)?.code === "SQLITE_CONSTRAINT_FOREIGNKEY";
@@ -85,13 +89,15 @@ function findDeltaBase(i: {
  */
 export async function scoreCv(
   i: { userId: string; cvId: string; sector: Archetype; year: Year; track?: Track },
-): Promise<CvScore & { aiUnavailable: boolean; scoredBy: string }> {
+): Promise<CvScore & { aiUnavailable: boolean; scoredBy: string; madeByPlaced: boolean; delta: StoredRuleResults["delta"] | null }> {
   const track: Track = i.track ?? "standard";
-  const cv = db.select({ raw_text: cvs.raw_text, page_texts: cvs.page_texts, page_count: cvs.page_count, file_size: cvs.file_size, parsed_json: cvs.parsed_json })
+  const cv = db.select({ storage_path: cvs.storage_path, raw_text: cvs.raw_text, page_texts: cvs.page_texts, page_count: cvs.page_count, file_size: cvs.file_size, parsed_json: cvs.parsed_json })
     .from(cvs).where(and(eq(cvs.id, i.cvId), eq(cvs.user_id, i.userId))).get() as CvRow | undefined;
   if (!cv) throw new Error(`CV not found: ${i.cvId}`);
 
   const parsed = cv.parsed_json;
+  // Best effort: a missing or unreadable file just means no "made by Placed" label.
+  const madeByPlaced = madeByPlacedTailor((await getFile("cvs", cv.storage_path).catch(() => null))?.bytes);
   const rawText = cv.raw_text ?? "";
   const pageTexts = cv.page_texts ?? [];
   const rules = rulesFor(i.sector, track);
@@ -150,6 +156,7 @@ export async function scoreCv(
     couldNotAssess: score.couldNotAssess, assessed: score.assessed, passed: score.passed, unevidencedFails: countUnevidencedFails(llm.results),
     ...(llm.aiUnavailable ? { aiUnavailable: true } : {}),
     ...(llm.delta ? { delta: llm.delta } : {}),
+    ...(madeByPlaced ? { madeByPlaced: true } : {}),
     scoredBy: modelId, judgeYear: i.year, provisional: score.provisional, coverage: score.coverage, range: score.range,
   };
   const row = {
@@ -167,5 +174,5 @@ export async function scoreCv(
     if (cvGone(e)) throw new Error(`Couldn't save CV score: CV ${i.cvId} was deleted while it was being scored`);
     throw new Error(`Couldn't save CV score: ${e instanceof Error ? e.message : String(e)}`);
   }
-  return { ...score, aiUnavailable: llm.aiUnavailable, scoredBy: modelId };
+  return { ...score, aiUnavailable: llm.aiUnavailable, scoredBy: modelId, madeByPlaced, delta: llm.delta ?? null };
 }
