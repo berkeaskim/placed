@@ -1,4 +1,5 @@
 import type { Archetype, Year } from "@/lib/types";
+import { aiPolicyLine } from "@/lib/employer-policy";
 import type { Citation, CvRule, RuleAdjust, Severity, Track } from "./types";
 
 /**
@@ -31,9 +32,20 @@ export function resolvedMaxPages(rule: CvRule, sector: Archetype | undefined, ye
   return adjustFor(rule, year, track, sector)?.maxPages ?? (sector ? rule.sectorAdjust?.[sector]?.maxPages : undefined) ?? rule.params?.maxPages;
 }
 
-/** The statement the student sees for this sector. */
-export function resolvedStatement(rule: CvRule, sector: Archetype): string {
-  return rule.sectorAdjust?.[sector]?.statement ?? rule.statement;
+/** The firm and advert a CV is being scored against, when known. */
+export type StatementTarget = { company?: string | null; jdText?: string | null };
+
+/**
+ * The statement the student sees for this sector. A firmPolicy rule (FCQ-12) swaps its generic AI sentence for the
+ * target firm's own policy when one is known (curated table or the advert's wording), and stays neutral otherwise.
+ */
+export function resolvedStatement(rule: CvRule, sector: Archetype, target?: StatementTarget): string {
+  const base = rule.sectorAdjust?.[sector]?.statement ?? rule.statement;
+  if (!rule.firmPolicy || !target?.company?.trim()) return base;
+  const line = aiPolicyLine(target.company, target.jdText ?? "");
+  if (!line) return base;
+  const firstSentence = base.match(/^.*?[.!?](?=\s|$)/)?.[0] ?? base;
+  return `${firstSentence} ${line}`;
 }
 
 /** Citations for this sector: the sector's own first, then the rule's (deduplicated by URL). */

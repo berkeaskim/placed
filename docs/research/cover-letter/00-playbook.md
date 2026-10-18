@@ -46,7 +46,7 @@ Not in scope for v1: networking notes (Inside Track already covers outreach), Ci
 | # | Section | Words | Job |
 |---|---|---|---|
 | 0 | Header | — | Name, email, phone, LinkedIn, date (`17 October 2026`), company, a `Ref:` line with the exact role title and vacancy ID. No home address by default (privacy) |
-| 1 | Salutation | — | Named person → `Dear Ms Patel` (no full stop after Ms/Mr/Dr). Otherwise `Dear {Firm} Graduate Recruitment Team` if the programme has one, else `Dear Hiring Manager`. Never "To whom it may concern" or "Dear Sir/Madam" |
+| 1 | Salutation | — | Named person → `Dear Ms Patel` (no full stop after Ms/Mr/Dr). Otherwise `Dear {Firm} Graduate Recruitment Team` if the programme has one, else `Dear Hiring Manager`. Avoid "To whom it may concern". "Dear Sir or Madam" (with "Yours faithfully") is still fine in the UK, but a name or team reads warmer (audit 09#18) |
 | 2 | Opening | 40–70 | **One sentence that names the exact role (and division/office) and carries a hook.** The hook is a specific link between *this* candidate and *this* role or firm. UK services want the role up front, US experts want a hook first; doing both in one sentence satisfies both |
 | 3 | Why me | 120–200 | 2–3 requirements from the job description, each with its own example: what *I* did, how, and the result (with a number if the source has one), ending with a "so what" link to the role. Don't restate the CV; explain the how and why behind 2–3 items |
 | 4 | Why them | 60–100 | 1–2 firm-specific facts (division, programme feature, deal, product, event, person met), **each connected to the candidate's own experience or goal**. Must pass the swap test. At most one company value, illustrated by something the candidate did |
@@ -153,7 +153,7 @@ The full lexicon with regex is in `cover-letter-rules.json` → `lexicon`. In su
 
 | Question | Positions | Decision |
 |---|---|---|
-| Fallback greeting | "Dear Hiring Manager" (MIT, Prospects, Green) vs "Dear Sir/Madam" (LSE, TARGETjobs) vs team name (eFC) | Team name if the programme has one → "Dear Hiring Manager". Never Sir/Madam (dated; eFC lists it as a mistake) |
+| Fallback greeting | "Dear Hiring Manager" (MIT, Prospects, Green) vs "Dear Sir/Madam" (LSE, TARGETjobs) vs team name (eFC) | Team name if the programme has one → "Dear Hiring Manager". "Dear Sir or Madam" is acceptable (Prospects, TARGETjobs) but reads colder; eFC alone lists it as a mistake, so it is a low-severity note, not a ban (audit 09#18) |
 | Sign-off after "Dear Hiring Manager" | Faithfully (strict UK) vs sincerely (common) | Default `Yours faithfully`, user-configurable; the lint only fails clear mismatches (named + faithfully) |
 | Opening: role first or hook first? | UK services vs Green/Lees | One sentence that does both |
 | Bad letter vs no letter | Practitioners say a bad letter is worse; ResumeGo found generic slightly beats none | A generic letter is never offered; with no hook on an optional upload → suggest `skip` |

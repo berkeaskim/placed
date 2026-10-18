@@ -83,6 +83,11 @@ type CvRuleBase = {
   failExample?: string;
   /** Only for llm rules whose partial verdict is defined numerically in llmGuidance. */
   allowPartial?: true;
+  /**
+   * The statement's AI-policy sentence depends on the target firm (FCQ-12, audit 02#1): with a target company the
+   * generic sentence after the first is replaced by lib/employer-policy's aiPolicyLine() for that firm.
+   */
+  firmPolicy?: true;
   /** Findings block PDF export until fixed (hidden text, prompt injection). */
   blocksExport?: true;
 };

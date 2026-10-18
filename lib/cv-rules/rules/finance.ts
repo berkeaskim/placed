@@ -1,5 +1,6 @@
 import type { Archetype } from "@/lib/types";
 import type { CvRule } from "../types";
+import { CFA, CFA_WORDING_COPY, VIRTUAL_WORK_EXPERIENCE } from "@/lib/conventions";
 import {
   F_S1, F_S2, F_S3, F_S5, F_S7, F_S8, F_S9, F_S10, F_S11_BROCHURE, F_S12, F_S13, F_S14, F_S15, F_S16, F_S17, F_S19,
   F_S20, F_S21, F_S21B, F_S22, F_S23, F_S24, F_S25, F_S26, F_S27, F_S28, F_S32, F_S36, F_S37, M_RIVERA_TILCSIK,
@@ -71,7 +72,8 @@ export const FINANCE_RULES: CvRule[] = [
   },
   {
     id: "FCQ-12", sectors: FCQ, dimension: "impact", check: "llm", severity: "minor", evidence: "B",
-    statement: "Write in your own words with specific facts. Firms' rules on AI differ: some (e.g. Bain London) allow AI only for checking spelling and grammar, so check each firm's policy before using AI on your CV.",
+    statement: "Write in your own words with specific facts. Firms' rules on AI differ: some allow AI only for checking spelling and grammar, so check each firm's policy before using AI on your CV.",
+    firmPolicy: true,
     llmGuidance: "Is the profile and bullet wording specific to the candidate rather than generic AI-sounding text?",
     passExample: "Ran a 10-week stock-pitch league for 40 members; my pitch on Tesco returned 8%",
     failExample: "Results-driven, passionate individual with a proven track record of leveraging synergies",
@@ -97,8 +99,8 @@ export const FINANCE_RULES: CvRule[] = [
   },
   {
     id: "FIN-04", sectors: FIN, dimension: "impact", check: "llm", severity: "major", evidence: "B",
-    statement: "Show real commitment to finance: a society role, spring week, competition, or a portfolio you can talk about.",
-    llmGuidance: "Does the CV show committee-level or competition/insight evidence of commitment to finance — a finance society committee role, a spring week or insight day, a virtual work experience programme, a stock-pitch or trading competition, or a personal portfolio the candidate can discuss?",
+    statement: `Show real commitment to finance: a society role, spring week, competition, ${VIRTUAL_WORK_EXPERIENCE.example}, or a portfolio you can talk about.`,
+    llmGuidance: "Does the CV show committee-level or competition/insight evidence of commitment to finance — a finance society committee role, a spring week or insight day, a virtual work experience programme (e.g. a Forage job simulation; never call it an internship), a stock-pitch or trading competition, or a personal portfolio the candidate can discuss?",
     passExample: "Vice-President, UCL Investment Society; organised a 150-attendee markets panel; Spring Week, Barclays 2025",
     failExample: "Member, Finance Society",
     yearAdjust: { "1st": { severity: "minor" } },
@@ -143,9 +145,9 @@ export const FINANCE_RULES: CvRule[] = [
   },
   {
     id: "FIN-11", sectors: FIN, dimension: "relevance", check: "llm", severity: "minor", evidence: "C",
-    statement: "Passing Level I of the CFA Program is a plus, especially for asset management or research — but it never replaces good grades. Use CFA Institute's wording: \"Passed Level I of the CFA Program\", not \"CFA Level I\".",
+    statement: `Passing Level I of the CFA Program is a plus, especially for asset management or research, but it never replaces good grades. ${CFA_WORDING_COPY}`,
     llmGuidance: "Does the CV state that Level I of the CFA Program has been passed? (Bonus rule: answer not_applicable rather than fail when it is absent.)",
-    passExample: "Passed Level I of the CFA Program (Aug 2025)",
+    passExample: `${CFA.passedLevelI} (Aug 2025)`,
     failExample: "Interested in finance qualifications",
     citations: [CFA_TRADEMARK, F_S8, F_S36],
   },
@@ -265,7 +267,7 @@ export const FINANCE_RULES: CvRule[] = [
   // ---------- §4 Consulting (CON) ----------
   {
     id: "CON-02", sectors: CON, dimension: "impact", check: "code", checker: "leadership_lexicon", severity: "major", evidence: "A",
-    statement: "Show leadership with scope and outcome: positions of responsibility, founding or growing something, leading a team through a challenge. Say \"I\", not \"we\", with strong verbs (\"trained\", \"organised\"), not \"did\".",
+    statement: "Show leadership with scope and outcome: positions of responsibility, founding or growing something, leading a team through a challenge. Make your own part clear (what you did, not what \"we\" did), with strong verbs (\"trained\", \"organised\"), not \"did\".",
     citations: [F_S22, F_S23, F_S24, F_S25],
   },
   {

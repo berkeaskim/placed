@@ -1,5 +1,6 @@
 import type { ParsedCV } from "@/lib/types";
 import { KNOWN_EMPLOYERS, buildFactCorpus, toTailored, verifyTailoring } from "@/lib/verify/tailoring";
+import type { ClaimCheck } from "@/lib/verify/claims";
 import { extractSkills } from "@/lib/skills/extract";
 
 export const CONNECTION_NOTE_MAX = 300;
@@ -204,6 +205,12 @@ function noteBacks(note: string | null, re: RegExp): boolean {
   return false;
 }
 
+/** verifyTailoring claim-check types (lib/verify/claims) that the guard opts into. */
+const CLAIM_CHECKS = new Set<string>([
+  "modalityDrop", "outcomeEscalation", "audienceEscalation", "adoptionClaim", "scopeSuperlative", "frequencyEscalation",
+  "proficiencyEscalation", "gradeClaim", "roleTypeEscalation", "durationClaim", "causalInsertion", "evaluativeAdverb", "reframeGuard",
+] satisfies ClaimCheck[]);
+
 export function checkOutreach(text: string, s: GuardSource): GuardIssue[] {
   const issues: GuardIssue[] = [];
   const add = (sentence: string, reason: string) => issues.push({ sentence, reason });
@@ -222,12 +229,16 @@ export function checkOutreach(text: string, s: GuardSource): GuardIssue[] {
   const bounded = stripped.replace(/(?:[A-Za-z][A-Za-z&]*[ \t]+){40}/g, (m) => `${m.trimEnd()}, `);
   const report = verifyTailoring({
     source: s.cv, sourceText: s.cvText, confirmedFacts: s.facts, tailored: { ...toTailored(s.cv), summary: bounded },
-    jdKeywords: [], coverageBefore: null, coverageAfter: null,
+    jdKeywords: [], coverageBefore: null, coverageAfter: null, claimChecks: true,
   });
   for (const i of report.issues) {
     if (i.entryId !== "summary") continue;
+    // Excluded: the message rides in the summary slot, so "no profile on your CV" is about the vehicle, not a claim.
+    if (i.type === "summaryCreated") continue;
     const promoted = i.check === "newAchievement"; // warn on a CV bullet, but in a message a new achievement is a fabrication
     if (i.severity !== "block" && !promoted) continue;
+    // Audit 05 claim checks (hedges, ladders, grades, role type…) only count when the student is the one claiming.
+    const studentOnly = promoted || CLAIM_CHECKS.has(i.type);
     // Excluded: untagged unsupportedFacts is the capitalised-word detector; it flags greetings, the recipient's name, "Could", "I'm".
     if (i.type === "unsupportedFacts" && !i.check) continue;
     // Excluded: untagged digit inventedMetrics; our own number check (below) covers digits without CV-specific context.
@@ -240,7 +251,7 @@ export function checkOutreach(text: string, s: GuardSource): GuardIssue[] {
       if (at >= 0 && ASK_AFTER.test(stripped.slice(at + i.claim.length))) continue;
     }
     let sens = attribute(text, i.claim);
-    if (promoted) {
+    if (studentOnly) {
       // Excluded: "won't" is not "won".
       if (new RegExp(`${esc(i.claim)}['’]t`, "i").test(stripped)) continue;
       // Excluded: "Lendable won an award" is about them, not a claim by the student.

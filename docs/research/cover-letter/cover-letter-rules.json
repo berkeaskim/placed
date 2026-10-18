@@ -445,7 +445,7 @@
     },
     {
       "id": "CL-42",
-      "rule": "Salutation: a named person ('Dear Ms Patel', no full stop) → else '{Firm} Graduate Recruitment Team' if the programme has one → else 'Dear Hiring Manager'. Never 'To whom it may concern' or 'Dear Sir/Madam'.",
+      "rule": "Salutation: a named person ('Dear Ms Patel', no full stop) → else '{Firm} Graduate Recruitment Team' if the programme has one → else 'Dear Hiring Manager'. Avoid 'To whom it may concern'. 'Dear Sir or Madam' is still fine in the UK (with 'Yours faithfully'), but a name or team reads warmer.",
       "severity": "high",
       "check": "regex",
       "sources": [

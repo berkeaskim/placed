@@ -621,7 +621,7 @@
         "text": "Can talk in depth about their own projects: technology choices, trade-offs and what they would change.",
         "ruleIds": [
           "SWE-05",
-          "SWE-11"
+          "EV-03"
         ],
         "grade": "B",
         "basis": "evidence (employer + careers publisher)",
@@ -702,7 +702,7 @@
         "id": "PB-SWE-S06",
         "text": "Skills are applied and self-driven, not just listed.",
         "ruleIds": [
-          "SWE-11"
+          "EV-03"
         ],
         "grade": "B",
         "basis": "evidence (employer recruiter quoted by careers publisher + careers publisher)",
@@ -3305,7 +3305,7 @@
         "id": "PB-MKT-S05",
         "text": "Flawless written communication.",
         "ruleIds": [
-          "MKT-07"
+          "G-25"
         ],
         "grade": "B",
         "basis": "evidence (two careers publishers)",
@@ -3326,8 +3326,7 @@
         "id": "PB-MKT-S06",
         "text": "Active, up-to-date and clean online presence.",
         "ruleIds": [
-          "MKT-04",
-          "MKT-11"
+          "MKT-04"
         ],
         "grade": "B",
         "basis": "evidence (careers publisher + professional body)",

@@ -67,8 +67,7 @@
         "id": "PB-FIN-S02",
         "text": "Grades matter: Prospects says banking employers usually look for at least a 2:1, and Barclays says it does not select purely on academic record but also on activities and work experience. Across all graduate employers, ISE reports the share requiring a 2:1 fell from 71% (2015/16) to 47% (2024/25). ISE data suggests that fall may be plateauing. If you're below a 2:1 or had mitigating circumstances, look for firms that use contextual recruitment or set no grade bar, and declare extenuating circumstances where the form allows.",
         "ruleIds": [
-          "FCQ-04",
-          "FIN-02"
+          "G-32"
         ],
         "grade": "A",
         "sources": [
@@ -236,7 +235,7 @@
         "text": "Any job counts (retail, hospitality, tutoring) if you quantify what you achieved in it.",
         "ruleIds": [
           "FIN-05",
-          "FCQ-08"
+          "G-22"
         ],
         "grade": "A",
         "sources": [
@@ -262,7 +261,7 @@
         "id": "PB-FIN-S07",
         "text": "Tailored, error-free applications that use the job description's key words and name the division and role you want.",
         "ruleIds": [
-          "FCQ-05",
+          "G-25",
           "FCQ-10"
         ],
         "grade": "A",
@@ -310,7 +309,7 @@
             "accessed": "2026-10-13"
           }
         ],
-        "note": "Convention: only one independent source states it. Modelling is taught on the job; treat it as a differentiator for penultimate-year IBD applicants, not a gate. CFA Level I is at most a minor bonus for asset-management or research roles and never a substitute for grades (convention, C); its fee is a real cost barrier, so we don't suggest it as a step."
+        "note": "Convention: only one independent source states it. Modelling is taught on the job; treat it as a differentiator for penultimate-year IBD applicants, not a gate. Passing Level I of the CFA Program is at most a minor bonus for asset-management or research roles and never a substitute for grades (convention, C); its fee is a real cost barrier, so we don't suggest it as a step."
       },
       {
         "id": "PB-FIN-S09",
@@ -1195,7 +1194,7 @@
         "text": "A concise CV with honestly calibrated skill levels: rate yourself against professionals, not classmates.",
         "ruleIds": [
           "QNT-04",
-          "QNT-09",
+          "G-11",
           "FCQ-11"
         ],
         "grade": "C",
@@ -1926,8 +1925,7 @@
         "id": "PB-CON-S01",
         "text": "Strong academics: BCG London asks for at least a 2:1 or equivalent (predicted, for interns), Prospects says a 2:1 is usually needed, and Bain London asks for strong academics.",
         "ruleIds": [
-          "CON-01",
-          "FCQ-04"
+          "G-32"
         ],
         "grade": "A",
         "sources": [
@@ -2045,7 +2043,7 @@
         "text": "Leadership, initiative and impact: what changed because of you, outside academics too.",
         "ruleIds": [
           "CON-02",
-          "CON-04",
+          "G-22",
           "CON-05"
         ],
         "grade": "A",

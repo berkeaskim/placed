@@ -3270,7 +3270,7 @@
         "software_eng"
       ],
       "dimension": "proof",
-      "statement": "Education carries SWE signal: expected graduation date, grade if 2:1 or above (or a year average), 3-6 relevant modules and/or the group or final-year project with stack.",
+      "statement": "Education carries SWE signal: expected graduation date, 3-6 relevant modules and/or the group or final-year project with stack, and the grade or a year average if 2:1 or above (optional below that; a missing grade is never a fail).",
       "check": "code",
       "input": "pdf_export",
       "severity": "minor",
@@ -3968,7 +3968,7 @@
       ],
       "llmGuidance": "Code counts finance vs quant keyword hits. LLM: does finance-related content outnumber concrete quantitative evidence on this profile? (yes = fail)",
       "passExample": "'Probability, C++, BMO, Kaggle medal'",
-      "failExample": "'CFA L1 candidate, Bloomberg Market Concepts, Excel for Finance, passionate about markets' and nothing quantitative."
+      "failExample": "'CFA Program candidate, Bloomberg Market Concepts, Excel for Finance, passionate about markets' and nothing quantitative."
     },
     {
       "id": "LI-QUANT_TRADING-12",
@@ -4309,7 +4309,7 @@
         "consulting"
       ],
       "dimension": "proof",
-      "statement": "Education shows classification or current average when 2:1 or above, plus 2-4 relevant modules; never inflated or rounded up.",
+      "statement": "Education shows 2-4 relevant modules, plus the classification or current average when 2:1 or above (optional below that; a missing grade is never a fail); never inflated or rounded up.",
       "check": "hybrid",
       "input": "pdf_export",
       "severity": "minor",
@@ -4634,7 +4634,7 @@
         "product"
       ],
       "dimension": "findability",
-      "statement": "Education is complete for product screens: degree, university, expected graduation month and year, grade or average if 2:1+, and 2-4 relevant modules (HCI, statistics, ML, economics, entrepreneurship).",
+      "statement": "Education is complete for product screens: degree, university, expected graduation month and year, and 2-4 relevant modules (HCI, statistics, ML, economics, entrepreneurship), plus the grade or average if 2:1 or above (optional below that; a missing grade is never a fail).",
       "check": "code",
       "input": "pdf_export",
       "severity": "minor",
@@ -5500,7 +5500,7 @@
         "research"
       ],
       "dimension": "proof",
-      "statement": "Education includes research-relevant detail: grade or average to date (if 2:1/First or equivalent), dissertation title and supervisor (final/MSc), 3-5 relevant advanced modules.",
+      "statement": "Education includes research-relevant detail: dissertation title and supervisor (final/MSc), 3-5 relevant advanced modules, and the grade or average to date if 2:1/First or equivalent (optional below that; a missing grade is never a fail).",
       "check": "hybrid",
       "input": "pdf_export",
       "severity": "minor",
