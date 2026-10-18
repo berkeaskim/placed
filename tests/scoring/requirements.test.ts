@@ -79,12 +79,15 @@ describe("keyword stuffing warning", () => {
   it("handles skills with regex characters", () => {
     expect(keywordStuffing(Array(STUFFING_REPEAT_MIN).fill("C++").join(" "), ["C++"])).toBe(true);
   });
-  it(`warns only above ${STUFFING_COVERAGE_MIN * 100}% coverage with major cliché density or stuffing`, () => {
+  it("repetition warns at any coverage (10#27); heavy stock phrasing only above 85% coverage", () => {
     expect(STUFFING_COVERAGE_MIN).toBe(0.85);
+    expect(STUFFING_REPEAT_MIN).toBe(5);
     expect(shouldWarnStuffing({ weighted: 0.9, clicheSeverity: "major", stuffed: false })).toBe(true);
     expect(shouldWarnStuffing({ weighted: 0.9, clicheSeverity: "ok", stuffed: true })).toBe(true);
     expect(shouldWarnStuffing({ weighted: 0.9, clicheSeverity: "minor", stuffed: false })).toBe(false);
-    expect(shouldWarnStuffing({ weighted: 0.85, clicheSeverity: "major", stuffed: true })).toBe(false);
-    expect(shouldWarnStuffing({ weighted: null, clicheSeverity: "major", stuffed: true })).toBe(false);
+    expect(shouldWarnStuffing({ weighted: 0.85, clicheSeverity: "major", stuffed: false })).toBe(false);
+    expect(shouldWarnStuffing({ weighted: 0.85, clicheSeverity: "major", stuffed: true })).toBe(true);
+    expect(shouldWarnStuffing({ weighted: 0.3, clicheSeverity: "ok", stuffed: true })).toBe(true);
+    expect(shouldWarnStuffing({ weighted: null, clicheSeverity: "major", stuffed: true })).toBe(true);
   });
 });

@@ -3,7 +3,7 @@ import type { ParsedCV, Requirement, StudentProfile } from "@/lib/types";
 import type { JobListItem } from "@/lib/db/queries";
 import type { CoverageResult } from "@/lib/scoring/coverage";
 import {
-  IMPORTANCE_RANK, capImportance, isMustHave, orderRequirementRows,
+  CHECK_KINDS, IMPORTANCE_RANK, capImportance, isMustHave, orderRequirementRows, requirementKind,
   type Explanation, type ExplanationGap, type RequirementRow,
 } from "@/lib/scoring/requirements";
 import { renderCvContent, stripPii } from "@/lib/cv-score/pii";
@@ -124,7 +124,11 @@ export function mergeSameText(rows: RequirementRow[]): RequirementRow[] {
  * given); gaps ordered by importance.
  */
 export function finalizeExplanation(rows: RequirementRow[], gaps: ExplanationGap[], whyFit: string[]): Explanation {
-  const table = orderRequirementRows(mergeSameText(rows));
+  // A CV can't show right to work, a degree class, a language or years of experience: those become checks for the
+  // student, not unmet must-haves with nonsense "how to close" advice (10#13). A row the CV does show stays.
+  const isCheck = (r: RequirementRow) => r.match !== "strong" && CHECK_KINDS.has(requirementKind(r));
+  const checks = [...new Set(rows.filter(isCheck).map((r) => r.text))];
+  const table = orderRequirementRows(mergeSameText(rows.filter((r) => !isCheck(r))));
   const byText = new Map(table.map((r) => [r.text, r]));
   const seen = new Set<string>();
   const out: ExplanationGap[] = [];
@@ -142,7 +146,7 @@ export function finalizeExplanation(rows: RequirementRow[], gaps: ExplanationGap
   }
   const rank = (g: ExplanationGap) => IMPORTANCE_RANK[byText.get(g.requirement)!.importance];
   out.sort((a, b) => rank(a) - rank(b));
-  return { rows: table, whyFit: whyFit.map((w) => w.trim()).filter(Boolean), gaps: out };
+  return { rows: table, whyFit: whyFit.map((w) => w.trim()).filter(Boolean), gaps: out, ...(checks.length ? { checks } : {}) };
 }
 
 /**
@@ -232,7 +236,7 @@ export async function explainMatch(i: ExplainInput): Promise<Explanation> {
 // ---------- cache record (matches.explanation_json) ----------
 
 /** Bump when toExplanation / the prompt change meaning: older cached rows are then recomputed. */
-export const EXPLAIN_CACHE_VERSION = 4;
+export const EXPLAIN_CACHE_VERSION = 5;
 
 /** Heuristic results are cheap and would mask a fixture or live answer added later, so they are never cached. */
 export const shouldCacheExplanation = (source: ExplainSource) => source !== "heuristic";

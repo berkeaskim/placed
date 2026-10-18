@@ -12,7 +12,7 @@ import { displayLabel, scoreFit } from "@/lib/scoring/fit";
 import { cvGradeOf } from "@/lib/scoring/eligibility";
 import { hasEligibilityOverride } from "@/lib/feed/overrides";
 import { closingLabel, todayLondon } from "@/lib/scoring/dates";
-import { FINDABILITY_HINT, findabilityBand, keywordStuffing, shouldWarnStuffing } from "@/lib/scoring/requirements";
+import { FINDABILITY_HINT, FINDABILITY_NOTE, findabilityBand, keywordStuffing, shouldWarnStuffing } from "@/lib/scoring/requirements";
 import { clicheDensity } from "@/lib/cv/cliches";
 import { env } from "@/lib/env";
 import { isUuid } from "@/lib/feed/save-result";
@@ -132,11 +132,11 @@ export default async function JobPage({ params, searchParams }: { params: Promis
                     : !detail.unscoredNote && <span className="text-xs text-muted-foreground">Couldn&apos;t read the requirements</span>}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {band ? FINDABILITY_HINT[band] : detail.unscoredNote ? `${detail.unscoredNote}.` : "This posting doesn't list skills we can match."} How easily a keyword search would surface your CV for this role.
+                  {band ? FINDABILITY_HINT[band] : detail.unscoredNote ? `${detail.unscoredNote}.` : "This posting doesn't list skills we can match."} How easily a keyword search would surface your CV for this role.{band ? ` ${FINDABILITY_NOTE}` : ""}
                 </p>
                 {stuffing && (
                   <p className="mt-1 rounded-lg bg-[#FFF1DC] px-2.5 py-2 text-xs font-semibold text-[#7A4100]" role="note">
-                    Your CV matches almost every keyword, but it reads as keyword-heavy or full of stock phrases. Recruiters read CVs too: show each skill once, in a real example.
+                    Your CV repeats some keywords many times or leans on stock phrases. Recruiters read CVs too: show each skill once, in a real example.
                   </p>
                 )}
               </div>

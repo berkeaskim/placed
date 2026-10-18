@@ -190,7 +190,9 @@ describe("jdRequirementSkills", () => {
   it("idempotent: feeding the output back as tagged requirements is a fixed point", () => {
     const lines = ["## Requirements", "- Python, SQL and Excel", "## Preferred", "- Tableau or Power BI", "- Docker (preferred)"];
     const once = jdRequirementSkills(lines, []);
-    const twice = jdRequirementSkills([], once.map((o) => req(o.skill, o.section)));
+    // "Tableau or Power BI" is one alternatives group (10#15); it round-trips as a tagged anyOf requirement
+    expect(once.find((o) => o.anyOf)).toEqual({ skill: "Tableau or Power BI", anyOf: ["Tableau", "Power BI"], section: "nice" });
+    const twice = jdRequirementSkills([], once.map((o) => (o.anyOf ? { ...req(o.anyOf[0], o.section), text: o.skill, anyOf: o.anyOf } : req(o.skill, o.section))));
     expect(twice).toEqual(once);
   });
 

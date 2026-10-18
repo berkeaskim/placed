@@ -150,6 +150,16 @@ export function ExplainPanel({ jobId, children }: { jobId: string; children?: Re
         </StaggerItem>
       )}
 
+      {e.checks && e.checks.length > 0 && (
+        <StaggerItem>
+          <section aria-labelledby="checks">
+            <h3 id="checks" className="mb-1 font-bold">Check these yourself</h3>
+            <p className="mb-1 text-xs text-muted-foreground">A CV can&apos;t show these, so they aren&apos;t counted for or against you.</p>
+            <ul className="list-disc pl-5 text-sm">{e.checks.map((c) => <li key={c}>{c}</li>)}</ul>
+          </section>
+        </StaggerItem>
+      )}
+
       {e.gaps.length > 0 && (
         <section aria-labelledby="gaps">
           <h3 id="gaps" className="mb-2 flex flex-wrap items-center gap-2 font-bold">What&apos;s missing, and how to close it{e.aiWritten && <AiWrittenTag />}</h3>

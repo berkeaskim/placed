@@ -1,7 +1,8 @@
 import { ARCHETYPES, type Archetype, type ArchetypeScore, type CvEntry, type ParsedCV, type Requirement, type Year } from "@/lib/types";
 import { EMAIL_RE, PHONE_RE, escapeRegex } from "@/lib/text/regex";
-import type { CoverageResult, CoverageStatus } from "@/lib/scoring/coverage";
-import type { Explanation, RequirementRow } from "@/lib/scoring/requirements";
+import { listShape, type CoverageResult, type CoverageStatus } from "@/lib/scoring/coverage";
+export { listShape } from "@/lib/scoring/coverage";
+import { CHECK_KINDS, requirementKind, type Explanation, type RequirementRow } from "@/lib/scoring/requirements";
 import { tagSections } from "@/lib/text/jd";
 import { detectEmploymentType, detectSponsorship } from "@/lib/ingest/filter";
 import { extractSkills } from "@/lib/skills/extract";
@@ -11,13 +12,14 @@ import { toTailored } from "@/lib/verify/tailoring";
 
 const KEYWORDS: Record<Archetype, RegExp> = {
   software_eng: /\b(software|engineer(ing)?|developer|backend|frontend|full[- ]stack|swe|devops|mobile)\b/gi,
-  data_analytics: /\b(data|analytics|business intelligence|bi analyst|data scien\w*|machine learning)\b/gi,
+  // phrases, not bare words: "data", "product", "research" and "markets" appear in every kind of posting and CV (10#28)
+  data_analytics: /\b(data (analyst|analytics|analysis|engineer\w*|scien\w*|visuali[sz]ation)|analytics|business intelligence|bi analyst|machine learning)\b/gi,
   quant_trading: /\b(quant\w*|trading|trader|systematic|market making|algorithmic)\b/gi,
   consulting: /\b(consult\w*|advisory|strategy|transformation)\b/gi,
-  product: /\b(product (manager|management|intern|analyst)|apm|product)\b/gi,
-  finance_banking: /\b(investment banking|banking|markets|m&a|asset management|equity research|summer analyst|corporate finance|private equity|finance)\b/gi,
+  product: /\b(product (manager|management|intern|analyst|owner|designer)|apm)\b/gi,
+  finance_banking: /\b(investment banking|banking|global markets|capital markets|financial markets|m&a|asset management|equity research|summer analyst|corporate finance|private equity|finance)\b/gi,
   marketing_growth: /\b(marketing|growth|brand|content|social media|communications|seo)\b/gi,
-  research: /\b(research(er)?|scientist|phd|laborator\w*|publication)\b/gi,
+  research: /\b(research (assistant|scientist|engineer|intern\w*|fellow|associate|programme|placement)|researcher|scientist|phd|laborator\w*|publications?)\b/gi,
 };
 
 export function archetypeScores(text: string, title = ""): ArchetypeScore[] {
@@ -42,11 +44,16 @@ function parseDeadline(text: string): string | null {
   return Number.isNaN(d.getTime()) ? null : d.toISOString().slice(0, 10);
 }
 
+/**
+ * Year-of-study labels from explicit wording only. A graduation year ("graduating in 2028") is NOT turned into a label:
+ * on a 2027 summer internship it means penultimate, not final, so fit reads the window from the text itself (10#2).
+ * "2nd" next to "penultimate" is the 3-year-degree alias; a known graduation year settles it at scoring time.
+ */
 function yearsFrom(text: string, employmentType: TaggedJob["employmentType"]): Year[] {
   const t = text.toLowerCase();
   const out = new Set<Year>();
   if (/penultimate/.test(t)) { out.add("penultimate"); out.add("2nd"); }
-  if (/final[- ]year|graduating in 202[6-8]|recent graduate/.test(t)) { out.add("final"); out.add("masters"); }
+  if (/final[- ]year (students?|undergraduates?)|in (your|their) final year|recent graduates?/.test(t)) { out.add("final"); out.add("masters"); }
   if (/first[- ]year|1st[- ]year/.test(t)) out.add("1st");
   if (/second[- ]year|2nd[- ]year/.test(t)) out.add("2nd");
   if (out.size === 0 && (employmentType === "spring_week" || employmentType === "insight")) { out.add("1st"); out.add("2nd"); }
@@ -54,24 +61,27 @@ function yearsFrom(text: string, employmentType: TaggedJob["employmentType"]): Y
   return [...out];
 }
 
+const HEURISTIC_HIGH_MAX = 5;
+
 export function heuristicTagJob(input: { title: string; textLines: string[] }): TaggedJob {
   const text = input.textLines.join("\n");
   const employmentType = detectEmploymentType(input.title, text);
   const seen = new Set<string>();
   const requirements: Requirement[] = [];
+  let highs = 0;
   for (const line of tagSections(input.textLines)) {
     if (line.isHeader || line.section === "other") continue;
-    for (const skill of extractSkills(line.text)) {
-      if (seen.has(skill)) continue;
-      seen.add(skill);
-      requirements.push({
-        text: line.text.replace(/^- /, ""),
-        skill,
-        importance: line.section === "must" ? "high" : "preferred",
-        section: line.section,
-        evidenceTier: "structural",
-      });
-    }
+    const skills = extractSkills(line.text).filter((s) => !seen.has(s));
+    if (!skills.length) continue;
+    skills.forEach((s) => seen.add(s));
+    const text = line.text.replace(/^- /, "");
+    const shape = listShape(text, skills.length);
+    // "such as / e.g." lists are examples, not demands; past the first 5 must-haves the heuristic can't tell (10#15)
+    const section = shape === "examples" ? "nice" : line.section;
+    const importance = section === "must" && highs < HEURISTIC_HIGH_MAX ? "high" : section === "must" ? "meaningful" : "preferred";
+    if (importance === "high") highs++;
+    const anyOf = shape === "alternatives" ? skills : undefined;
+    for (const skill of skills) requirements.push({ text, skill, ...(anyOf ? { anyOf } : {}), importance, section, evidenceTier: "structural" });
   }
   const firstProse = input.textLines.find((l) => !l.startsWith("## ") && l.length > 40) ?? "";
   return {
@@ -186,13 +196,16 @@ export function heuristicExplain(i: { requirements: Requirement[]; coverage: Cov
     ...(i.archetypeMatch ? ["This role matches the kind of work your profile points to."] : []),
     ...(matched.length ? [`Your CV already shows ${matched.slice(0, 3).join(", ")}.`] : []),
   ];
-  const gaps = rows.filter((r) => r.match !== "strong").map((r) => ({
+  // Non-skill requirements (right to work, degree, language, years) are listed as checks by finalizeExplanation, not gaps (10#13)
+  const gaps = rows.filter((r) => r.match !== "strong" && !CHECK_KINDS.has(requirementKind(r))).map((r) => ({
     requirement: r.text,
     blocking: (r.importance === "critical" || r.importance === "high") && r.evidenceTier !== "inferred",
     adjacentExperience: null,
-    howToClose: r.skill
-      ? `Do a small project with ${r.skill} (a weekend is enough) and add it to Projects.`
-      : "Look for a society role, module or job that shows this, and describe it on your CV in your own words.",
+    howToClose: requirementKind(r) === "behaviour"
+      ? "Keywords can't judge this one. Point to a line on your CV that shows it, such as a team project, society role or job, and describe what you did."
+      : r.skill
+        ? `Not shown in your CV. If you've used ${r.skill}, add a line that shows it; if not, a small project, module or course can close it.`
+        : "Not shown in your CV yet. If you have done this, add a line that shows it in your own words.",
   }));
   return { rows, whyFit, gaps };
 }

@@ -23,6 +23,17 @@ const WEIGHT = { must: 2, nice: 1 } as const;
 
 const norm = (s: string) => s.toLowerCase().replace(/\s+/g, " ").trim();
 
+const EXAMPLES = /\b(such as|e\.g\.?|for example|for instance|including|like)\b/i;
+const ALTERNATIVES = /\b(any of|one of|either|at least one|one or more of)\b/i;
+
+/** "Python, Java or C++" accepts any one; "such as Python, SQL" gives examples; otherwise every skill is asked for (10#15). */
+export function listShape(text: string, skillCount: number): "alternatives" | "examples" | "all" {
+  if (skillCount < 2) return "all";
+  if (ALTERNATIVES.test(text)) return "alternatives";
+  if (EXAMPLES.test(text)) return "examples";
+  return /\bor\b/i.test(text) && !/\band\b|&/i.test(text) ? "alternatives" : "all";
+}
+
 /**
  * Skills the JD asks for. "Python or Java" (a tagged anyOf group) becomes ONE item that any member satisfies,
  * and the line it came from is not also scanned skill-by-skill (that would demand both).
@@ -52,7 +63,16 @@ export function jdRequirementSkills(textLines: string[], tagged: Requirement[]):
     if (l.isHeader || l.section === "other") continue;
     const t = norm(l.text);
     if (groupTexts.some((g) => t.includes(g) || (t.length >= 12 && g.includes(t)))) continue;
-    for (const s of extractSkills(l.text)) add(s, l.section);
+    const skills = extractSkills(l.text).filter((s) => !isSoft(s));
+    const shape = listShape(l.text, skills.length);
+    if (shape === "alternatives") {
+      const key = [...skills].map((s) => s.toLowerCase()).sort().join("|");
+      const prev = groups.get(key);
+      groups.set(key, { skill: skills.join(" or "), anyOf: skills, section: prev?.section === "must" ? "must" : l.section });
+      continue;
+    }
+    // "such as / e.g." lists are examples of what helps, not separate demands
+    for (const s of skills) add(s, shape === "examples" ? "nice" : l.section);
   }
   for (const r of tagged) if (r.skill && !(r.anyOf && r.anyOf.length > 1)) add(canonicalize(r.skill.trim()) ?? r.skill, r.section);
   const single = [...map.values()].map(({ skill, section }) => ({ skill, section }));
