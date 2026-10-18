@@ -9,8 +9,9 @@ import { parseLinkedInExport, type ParsedLinkedIn } from "@/lib/linkedin/parse-e
 import { fetchPublicProfile, normalizeProfileUrl } from "@/lib/linkedin/fetch-public";
 import { parsePublicProfile } from "@/lib/linkedin/parse-public";
 import { parseCapturedProfile, type CapturePayload } from "@/lib/linkedin/parse-capture";
+import { parseLinkedInArchive } from "@/lib/linkedin/parse-archive";
 import { judgeLinkedIn } from "@/lib/ai/judgeLinkedIn";
-import { presenceTipFor } from "@/lib/linkedin-rules";
+import { presenceTipFor, type LiInputSource } from "@/lib/linkedin-rules";
 import { scoreLinkedIn, type LiScoreResult } from "./score";
 import type { LiFix } from "./aggregate";
 
@@ -32,6 +33,8 @@ export type LiPanelData = {
   aiUnavailable: boolean;
   hasCv: boolean;
   parseWarnings: string[];
+  /** Which input produced this score. Scores from different inputs aren't comparable (08 #4). Missing on rows saved before 2026-10-18. */
+  source?: LiInputSource;
   /** What we read from the export, so the student can spot a misread. */
   profile: { headline: string | null; location: string | null; experience: number; education: number; topSkills: string[] };
   scoredAt: string;
@@ -100,6 +103,20 @@ export async function scoreLinkedInCapture(
 }
 
 /**
+ * LinkedIn "Download your data" archive (zip) → score. The sanctioned input (08 #11): only the profile CSVs are read,
+ * in memory, and the zip is never stored. Throws NotLinkedInArchiveError for anything else.
+ */
+export async function scoreLinkedInArchive(
+  i: { userId: string; bytes: Uint8Array; sector: Archetype; year: Year; today?: Date },
+): Promise<LiPanelData> {
+  const cv = activeCv(i.userId);
+  const { li, text } = parseLinkedInArchive(i.bytes);
+  const cvName = cv?.name?.trim();
+  if (cvName && li.name && !sameName(li.name, cvName)) throw new NotYourProfileError("profile name does not match the CV");
+  return scoreParsed({ ...i, li, text, cv, source: "archive" });
+}
+
+/**
  * PDF bytes → parsed profile → score for one sector, compared with the user's active CV when there is one.
  * Persists to linkedin_scores. Never stores the PDF.
  */
@@ -113,22 +130,22 @@ export async function scoreLinkedInPdf(
   return scoreParsed({ ...i, li, text, cv, source: "pdf" });
 }
 
-/** Shared core for both inputs: score, persist, return the panel data. */
+/** Shared core for every input: score, persist, return the panel data. */
 async function scoreParsed(
-  i: { userId: string; li: ParsedLinkedIn; text: string; cv: ParsedCV | null; sector: Archetype; year: Year; today?: Date; source: "pdf" | "url" | "extension"; extraMeta?: Record<string, string> },
+  i: { userId: string; li: ParsedLinkedIn; text: string; cv: ParsedCV | null; sector: Archetype; year: Year; today?: Date; source: LiInputSource; extraMeta?: Record<string, string> },
 ): Promise<LiPanelData> {
   const { li, text, cv } = i;
   const hash = createHash("sha256").update(text.replace(/\s+/g, " ").trim()).digest("hex");
   const score = await scoreLinkedIn({
     li, rawText: text, cv, sector: i.sector, year: i.year, today: i.today ?? new Date(),
-    judge: judgeLinkedIn, fixtureKey: `${hash.slice(0, 16)}-${i.sector}`,
+    judge: judgeLinkedIn, fixtureKey: `${hash.slice(0, 16)}-${i.sector}`, source: i.source,
   });
 
   const data: LiPanelData = {
     sector: i.sector, year: i.year, total: score.total, label: score.label, dimensions: score.dimensions,
     capsApplied: score.capsApplied, fixes: score.fixes, tips: score.tips, importance: score.importance,
     assessed: score.assessed, passed: score.passed, notCovered: score.notCovered, couldNotAssess: score.couldNotAssess,
-    aiUnavailable: score.aiUnavailable, hasCv: cv !== null, parseWarnings: score.parseWarnings,
+    aiUnavailable: score.aiUnavailable, hasCv: cv !== null, parseWarnings: score.parseWarnings, source: i.source,
     profile: { headline: li.headline, location: li.location, experience: li.experience.length, education: li.education.length, topSkills: li.topSkills },
     scoredAt: new Date().toISOString(), saved: false,
   };
@@ -151,7 +168,7 @@ async function scoreParsed(
 type Row = {
   sector: Archetype; year: Year; total: number; label: LiPanelData["label"]; dimensions: LiPanelData["dimensions"];
   caps_applied: string[]; fixes: LiFix[]; tips: LiPanelData["tips"]; created_at: string;
-  meta: Pick<LiPanelData, "assessed" | "passed" | "notCovered" | "couldNotAssess" | "aiUnavailable" | "hasCv" | "parseWarnings" | "profile">;
+  meta: Pick<LiPanelData, "assessed" | "passed" | "notCovered" | "couldNotAssess" | "aiUnavailable" | "hasCv" | "parseWarnings" | "profile" | "source">;
 };
 
 /** Latest saved score for a sector, or null. */
