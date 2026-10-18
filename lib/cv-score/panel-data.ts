@@ -28,13 +28,32 @@ export type CvScorePanelData = {
   aiSaw: string | null;
   /** The AI review failed when this was scored: the score is the automatic checks only. */
   aiUnavailable: boolean;
+  /** Too little was assessed for a confident number: show `range`, no band (audit 04#1). */
+  provisional: boolean;
+  range: { low: number; high: number } | null;
+  /** Share of the applicable rule weight assessed (0–1); null on rows scored before it was recorded. */
+  coverage: number | null;
+  /** The model that judged this score (e.g. "anthropic:claude-sonnet-5-5"); null on older rows. */
+  scoredBy: string | null;
 };
 
 type ScoreRow = {
   total: number; dimensions: Record<Dimension, number | null>; caps_applied: string[] | null; fixes: Fix[] | null;
   rule_results: StoredResults | null;
 };
-type StoredResults = { code?: ScoredRuleResult[]; llm?: ScoredRuleResult[]; couldNotAssess?: number; assessed?: number; passed?: number; aiUnavailable?: boolean };
+type StoredResults = {
+  code?: ScoredRuleResult[]; llm?: ScoredRuleResult[]; couldNotAssess?: number; assessed?: number; passed?: number; aiUnavailable?: boolean;
+  scoredBy?: string; provisional?: boolean; coverage?: number; range?: { low: number; high: number };
+};
+
+/**
+ * History points comparable with the current score (04#10, #11): same judge model, and never a provisional or
+ * AI-unavailable run. Rows scored before the model was recorded are left out rather than guessed.
+ */
+export function comparableHistory<T extends { rule_results: StoredResults | null }>(rows: T[], scoredBy: string | null): T[] {
+  if (!scoredBy) return [];
+  return rows.filter((r) => r.rule_results?.scoredBy === scoredBy && !r.rule_results.provisional && !r.rule_results.aiUnavailable);
+}
 
 /**
  * "Rules passed X/Y" counts for a stored cv_scores row. Rows scored since Task 18b persist them (run.ts);
@@ -57,7 +76,7 @@ const NEUTRAL_FACTS = { imageOnly: false, spellingErrors: 0, hasPhone: true, has
  * Every read is scoped to `userId`.
  */
 export async function loadCvScorePanel(
-  i: { userId: string; cvId: string; sector: Archetype; year: Year; track?: Track; score?: CvScore & { aiUnavailable?: boolean } },
+  i: { userId: string; cvId: string; sector: Archetype; year: Year; track?: Track; score?: CvScore & { aiUnavailable?: boolean; scoredBy?: string } },
 ): Promise<CvScorePanelData | null> {
   const track: Track = i.track ?? "standard";
   const scoreRow = i.score ? undefined : db.select({
@@ -65,28 +84,34 @@ export async function loadCvScorePanel(
   }).from(cvScores).where(and(eq(cvScores.user_id, i.userId), eq(cvScores.cv_id, i.cvId), eq(cvScores.sector, i.sector), eq(cvScores.track, track))).get() as ScoreRow | undefined;
   const cv = db.select({ raw_text: cvs.raw_text, parsed_json: cvs.parsed_json }).from(cvs)
     .where(and(eq(cvs.id, i.cvId), eq(cvs.user_id, i.userId))).get();
-  const hist: HistoryRow[] = db.select({ total: cvScores.total, created_at: cvScores.created_at, uploaded_at: cvs.uploaded_at })
+  const histRows = db.select({ total: cvScores.total, created_at: cvScores.created_at, uploaded_at: cvs.uploaded_at, rule_results: cvScores.rule_results })
     .from(cvScores).innerJoin(cvs, eq(cvs.id, cvScores.cv_id))
-    .where(and(eq(cvScores.user_id, i.userId), eq(cvScores.sector, i.sector), eq(cvScores.track, track))).orderBy(desc(cvScores.created_at)).limit(20).all()
-    .map((r) => ({ total: r.total, created_at: r.created_at, cvs: { uploaded_at: r.uploaded_at } }));
+    .where(and(eq(cvScores.user_id, i.userId), eq(cvScores.sector, i.sector), eq(cvScores.track, track))).orderBy(desc(cvScores.created_at)).limit(20).all() as
+    { total: number; created_at: string; uploaded_at: string; rule_results: StoredResults | null }[];
 
-  let core: Pick<CvScorePanelData, "total" | "dimensions" | "capsApplied" | "fixes" | "assessed" | "passed" | "couldNotAssess" | "aiUnavailable">;
+  let core: Pick<CvScorePanelData, "total" | "dimensions" | "capsApplied" | "fixes" | "assessed" | "passed" | "couldNotAssess" | "aiUnavailable" | "provisional" | "range" | "coverage" | "scoredBy">;
   if (i.score) {
     const s = i.score;
     core = {
       total: s.total, dimensions: s.dimensions, capsApplied: s.capsApplied, fixes: s.fixes, assessed: s.assessed, passed: s.passed,
       couldNotAssess: s.couldNotAssess, aiUnavailable: s.aiUnavailable === true,
+      provisional: s.provisional || s.aiUnavailable === true, range: s.range, coverage: s.coverage, scoredBy: s.scoredBy ?? null,
     };
   } else {
     const row = scoreRow;
     if (!row) return null;
+    const rr = row.rule_results;
     // Total, dimensions, caps and fixes stay exactly as stored.
     core = {
       total: row.total, dimensions: row.dimensions, capsApplied: row.caps_applied ?? [], fixes: row.fixes ?? [],
-      ...storedCounts(row.rule_results, rulesFor(i.sector, track), i.sector, i.year, track),
-      aiUnavailable: row.rule_results?.aiUnavailable === true,
+      ...storedCounts(rr, rulesFor(i.sector, track), i.sector, i.year, track),
+      aiUnavailable: rr?.aiUnavailable === true,
+      provisional: rr?.provisional === true || rr?.aiUnavailable === true,
+      range: rr?.range ?? null, coverage: rr?.coverage ?? null, scoredBy: rr?.scoredBy ?? null,
     };
   }
+  const hist: HistoryRow[] = comparableHistory(histRows, core.scoredBy)
+    .map((r) => ({ total: r.total, created_at: r.created_at, cvs: { uploaded_at: r.uploaded_at } }));
 
   let aiSaw: string | null = null;
   if (cv?.parsed_json) {

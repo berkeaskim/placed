@@ -14,11 +14,11 @@ const data: CvScorePanelData = {
   dimensions: { ats: 82, impact: 54, clarity: 71, relevance: 66, uk: null },
   capsApplied: [IMAGE_ONLY_CAP],
   fixes: [
-    { ruleId: "GEN-04", statement: "Quantify results.", dimension: "impact", lostPoints: 9, evidenceLine: "Organised weekly society events", fix: "Organised weekly events for [add your real number] members", citation: { title: "CV guide", publisher: "Prospects", year: "2025", url: "https://www.prospects.ac.uk/cv" }, evidence: "A", convention: false },
-    { ruleId: "CON-02", statement: "Show leadership.", dimension: "relevance", lostPoints: 4, evidenceLine: null, fix: null, citation: null, evidence: "D", convention: true },
+    { ruleId: "GEN-04", statement: "Quantify results.", dimension: "impact", lostPoints: 9, gain: 9.2, evidenceLine: "Organised weekly society events", fix: "Organised weekly events for [add your real number] members", citation: { title: "CV guide", publisher: "Prospects", year: "2025", url: "https://www.prospects.ac.uk/cv" }, evidence: "A", convention: false },
+    { ruleId: "CON-02", statement: "Show leadership.", dimension: "relevance", lostPoints: 4, gain: 0.3, evidenceLine: null, fix: null, citation: null, evidence: "D", convention: true },
   ],
   assessed: 31, passed: 23, couldNotAssess: 2, history: [55, 61, 68], aiSaw: "CV\n[NAME]\nEDUCATION",
-  aiUnavailable: false,
+  aiUnavailable: false, provisional: false, range: { low: 68, high: 68 }, coverage: 1, scoredBy: "anthropic:claude-sonnet-5-5",
 };
 
 describe("CvScorePanel render", () => {
