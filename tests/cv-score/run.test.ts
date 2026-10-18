@@ -84,7 +84,7 @@ describe("scoreCv", () => {
     expect(springRules).not.toContain("G-33");
   });
 
-  it("fixture mode: scores from code rules, passes safety into checks, never stores a cache key for all-not_applicable verdicts", async () => {
+  it("fixture mode: scores from code rules, passes safety into checks, never stores a cache key when no verdicts were obtained", async () => {
     const id = seed();
     const score = await run(id);
     expect(score.total).toBeGreaterThan(0);
@@ -95,7 +95,9 @@ describe("scoreCv", () => {
     const rr = row.rule_results as { code: { ruleId: string; status: string }[]; llm: { status: string }[]; unevidencedFails: number };
     expect(rr.unevidencedFails).toBe(0);
     expect(rr.code.find((x) => x.ruleId === "ATS-INJ-01")?.status).toBe("fail");
-    expect(rr.llm.every((x) => x.status === "not_applicable")).toBe(true);
+    // No verdicts: judged rules are could_not_assess (audit 04#1), except rules that need a job advert.
+    expect(rr.llm.every((x) => x.status === "could_not_assess" || (x.status === "not_applicable" && (x as { detail?: string }).detail?.startsWith("needs:")))).toBe(true);
+    expect(score.provisional).toBe(true);
   });
 
   it("upserts one row per cv × sector and keeps created_at on a rescore", async () => {

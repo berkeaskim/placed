@@ -18,7 +18,11 @@ export const RULES_VERSION =
   "r-" +
   sha256(
     JSON.stringify(
-      RULES.filter((r) => r.check === "llm").map((r) => [r.id, r.sectors, r.llmGuidance, r.passExample, r.failExample, r.allowPartial ?? false]),
+      // The judge sees each rule's statement (incl. sector wording), N/A permission and required context (audit 03#23, 04#1).
+      RULES.filter((r) => r.check === "llm").map((r) => [
+        r.id, r.sectors, r.statement, r.sectorAdjust ?? null, r.llmGuidance, r.passExample, r.failExample, r.allowPartial ?? false,
+        r.naAllowed ?? false, r.needs ?? [], r.yearAdjust ?? null, r.trackAdjust ?? null,
+      ]),
     ),
   ).slice(0, 16);
 
