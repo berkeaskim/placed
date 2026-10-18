@@ -56,13 +56,15 @@ test("onboarding: school and course search, then tap-only steps, saves and route
   await page.getByRole("button", { name: "Remote" }).click();
   await page.getByRole("button", { name: "Remote" }).click(); // toggle off again
   await expect(page.getByRole("button", { name: "Remote" })).toHaveAttribute("aria-pressed", "false");
-  await page.getByRole("switch").click();
-  await expect(page.getByRole("switch")).toBeChecked();
+  const workAuth = page.getByLabel("Your right to work in the UK");
+  await workAuth.selectOption("student_visa");
+  await expect(workAuth).toHaveValue("student_visa");
 
   // Back keeps prior answers
   await page.getByRole("button", { name: "Back" }).click();
   await expect(page.getByRole("button", { name: "Penultimate" })).toHaveAttribute("aria-pressed", "true");
   await page.getByRole("button", { name: "Next", exact: true }).click();
+  await expect(workAuth).toHaveValue("student_visa");
 
   await go.click();
   await expect(page).toHaveURL(/\/profile\/build$/, { timeout: 30_000 });
