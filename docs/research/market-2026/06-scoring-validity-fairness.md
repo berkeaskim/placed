@@ -1,7 +1,7 @@
 # 06 — CV Score: validity, reliability, fairness, motivation, legal safety
 
-> Researcher 6 of 6 · 2026-10-13 · Feeds spec §6 (CV Score), §10 (Gamification), §11 (Privacy).
-> **Evidence grades:** **A** peer-reviewed paper, statute, or regulator/government publication · **B** preprint (arXiv) or institutional report · **C** practitioner source · **D** our own inference.
+> Researcher 6 of 6 · 2026-10-13 · last re-verified 2026-10-18 against `docs/research/audit-2026-10-18/10-fit-ats-market.md` · Feeds spec §6 (CV Score), §10 (Gamification), §11 (Privacy).
+> **Evidence grades:** **A** peer-reviewed paper, statute, or regulator/government publication · **B** preprint (arXiv) or institutional report · **C** practitioner source, or a single small preprint graded down (Takano 2608.26171, Chen & Xiao 2609.16517 and Tan et al. 2603.05189 are C across 02/05/06 as of 2026-10-18) · **D** our own inference.
 > Many of the LLM-judge and LLM-bias papers are 2025–2026 arXiv preprints. Each one is a **single study** and has not been replicated. Treat them as direction, not as precise effect sizes.
 
 ---
@@ -68,7 +68,7 @@ Another study found "repeated-sample juries add little when errors are correlate
 — "Using Human-LLM Disagreement to Improve Checklist-Based Quality Appraisal", arXiv 2608.20385 (2026), https://arxiv.org/abs/2608.20385 · **B**
 
 **F9. Asking for explanations can increase bias.** In a CV-screening stress test across 18 LLMs, "prompting for explanations may paradoxically amplify bias". The practical consequence: keep the LLM's output to a **quoted evidence line + verdict**, not free-form reasoning about the candidate.
-— "Small Changes, Big Impact…", arXiv 2603.05189 (2026), https://arxiv.org/abs/2603.05189 · **B**
+— Tan et al., "Small Changes, Big Impact…", arXiv 2603.05189 (2026; Singapore context), https://arxiv.org/abs/2603.05189 · **C**
 
 ### C. Feedback, motivation, gamification, Goodhart
 
@@ -109,10 +109,10 @@ Another study found "repeated-sample juries add little when errors are correlate
 **Take-away:** pointwise scoring of anonymised text is much safer than pairwise ranking of named CVs. (**D**, synthesis.)
 
 **F17. Anonymisation leaks: proxies survive redaction.**
-- In 4,100 counterfactual CVs across 18 LLMs, models recovered ethnicity and gender from **languages, hobbies, societies and volunteering**, and showed disparities without any names present.
+- In 4,100 counterfactual CVs across 18 LLMs (Singapore context: four ethnicities common there), models recovered ethnicity and gender from **languages, hobbies, societies and volunteering**, and showed disparities without any names present.
 - A second 2026 study removed language fields and still found target-group recovery of 0.757, from **prose alone**. It also showed that pairwise protocols *manufacture* apparent bias (a forced-choice selection-rate ratio of 0.39), while pointwise scoring showed "very small" differences.
 - UK vs Indian interview transcripts scored lower for the Indian set **even when anonymised**, driven by sentence complexity and lexical diversity. This is a direct risk for international students' clarity scores.
-— arXiv 2603.05189 (2026), https://arxiv.org/abs/2603.05189 · **B**
+— Tan et al., arXiv 2603.05189 (2026; Singapore context), https://arxiv.org/abs/2603.05189 · **C**
 — arXiv 2609.16501 (2026), https://arxiv.org/abs/2609.16501 · **B**
 — "Invisible Filters", arXiv 2508.16673 (2025), https://arxiv.org/abs/2508.16673 · **B**
 
