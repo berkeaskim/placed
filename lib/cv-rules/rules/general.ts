@@ -1,4 +1,5 @@
 import type { CvRule } from "../types";
+import { DEFAULT_MAX_PAGES, FIRST_PERSON, GRADE_POLICY, PAGE_LENGTH_COPY, PROFILE_COPY, cvMaxPages } from "@/lib/conventions";
 import {
   GH_PARSE, WD_PARSE, GH_FILETYPES, TEXTKERNEL_COLUMNS, LEVER_PARSING, SHEFFIELD_ATS, GH_SEARCH, PROSPECTS_CV,
   MANCHESTER_CV, NCS_SECTIONS, TJ_6STEP, LADDERS_2012, TJ_PROPERTY_CV, EQUALITY_ACT, ACAS_AGE,
@@ -72,21 +73,21 @@ export const GENERAL_RULES: CvRule[] = [
 
   // ---------- B. Length and structure ----------
   {
-    id: "G-11", sectors: "all", dimension: "clarity", check: "code", checker: "page_count", params: { maxPages: 2 }, severity: "major", evidence: "B",
-    statement: "Keep your CV to one or two full A4 pages. One page is the usual default for students; if you use a second page, fill it rather than spilling over a few lines.",
+    id: "G-11", sectors: "all", dimension: "clarity", check: "code", checker: "page_count", params: { maxPages: DEFAULT_MAX_PAGES }, severity: "major", evidence: "B",
+    statement: `Keep your CV to ${PAGE_LENGTH_COPY.default}. One page is the usual default for students; if you use a second page, fill it rather than spilling over a few lines.`,
     sectorAdjust: {
       finance_banking: {
-        maxPages: 1, severity: "critical",
+        maxPages: cvMaxPages("finance_banking"), severity: "critical",
         statement: "Keep it to one page for finance applications. Cambridge, LSE and Warwick careers services all say so; two pages is for PhDs and experienced hires.",
         citations: [F_S1, F_S11, F_S10],
       },
       consulting: {
-        maxPages: 1, severity: "critical",
+        maxPages: cvMaxPages("consulting"), severity: "critical",
         statement: "Keep it to one page for consulting applications. Cambridge, LSE and Warwick careers services all say so; two pages is for PhDs and experienced hires.",
         citations: [F_S2, F_S11, F_S10],
       },
       quant_trading: {
-        maxPages: 1,
+        maxPages: cvMaxPages("quant_trading"),
         statement: "Keep it clear and concise on one page. Put extra detail in a separate document; IMC and Jane Street don't need a cover letter.",
         citations: [F_S15, F_S13],
       },
@@ -161,7 +162,7 @@ export const GENERAL_RULES: CvRule[] = [
   // ---------- D. Personal statement / profile ----------
   {
     id: "G-19", sectors: "all", dimension: "clarity", check: "code", checker: "summary_length", severity: "minor", evidence: "B",
-    statement: "A profile is optional. If you include one, keep it to about 100 words (four lines or so) and make it specific to the role; over 150 words is too long.",
+    statement: PROFILE_COPY,
     citations: [PROSPECTS_PERSONAL_STATEMENT, TJ_PERSONAL_STATEMENTS, MANCHESTER_CV],
   },
 
@@ -196,8 +197,8 @@ export const GENERAL_RULES: CvRule[] = [
   },
   {
     id: "G-24", sectors: "all", dimension: "clarity", check: "llm", severity: "minor", evidence: "D",
-    statement: "Use present tense for current roles and past tense for finished ones, and don't use \"I\" or \"my\" in bullets.",
-    llmGuidance: "Are bullets in the right tense (present for current roles, past for finished ones) and free of first-person pronouns ('I', 'my', 'me')?",
+    statement: `Use present tense for current roles and past tense for finished ones, and don't use "I" or "my" in your bullets. ${FIRST_PERSON.note}`,
+    llmGuidance: "In experience, project and activity bullets only: are they in the right tense (present for current roles, past for finished ones) and free of first-person pronouns ('I', 'my', 'me')? Ignore the profile: it may be written in the first or third person, as long as it is consistent.",
     passExample: "Tutor GCSE maths to 4 students weekly (current role)",
     failExample: "I was responsible for tutoring my students in maths",
     citations: [NCS_SECTIONS, PROSPECTS_PERSONAL_STATEMENT],
@@ -214,10 +215,10 @@ export const GENERAL_RULES: CvRule[] = [
   },
   {
     id: "G-26", sectors: "all", dimension: "clarity", check: "llm", severity: "minor", evidence: "D",
-    statement: "Stick to UK English for UK roles (\"analysed\", \"organised\", \"programme\") and use it consistently.",
-    llmGuidance: "Does the CV use UK English spellings consistently, with no mix of UK and US variants?",
-    passExample: "Analysed survey data and organised the programme",
-    failExample: "Analysed survey data and organized the program",
+    statement: "Stick to UK English for UK roles (\"analysed\", \"organised\", \"programme\" for a scheme) and use it consistently. \"Program\" is correct British English for software.",
+    llmGuidance: "Does the CV use UK English spellings consistently, with no mix of UK and US variants? 'Program' for software and Oxford -ize spellings used consistently are acceptable British usage; don't flag them.",
+    passExample: "Analysed survey data and organised the summer programme; wrote a Python program to clean it",
+    failExample: "Analysed survey data and organized the color-coded rota",
     citations: [STERKENS_2023],
   },
   {
@@ -256,12 +257,12 @@ export const GENERAL_RULES: CvRule[] = [
   // ---------- G. Education and grades (UK specifics) ----------
   {
     id: "G-32", sectors: "all", dimension: "uk", check: "code", checker: "uk_grades", severity: "major", evidence: "B",
-    statement: "Show your degree result or your current average or predicted grade, in your university's own format — including a 2:2, a Master's Merit or an international GPA (name the scale, e.g. \"GPA 3.7/4.0\"). One in five large UK employers accept a 2:2, and a missing grade is usually read as a low one. A higher grade earns no extra points here.",
+    statement: `Show your degree result or your current average or predicted grade, in your university's own format — including a 2:2, a Master's Merit or an international GPA (name the scale, e.g. \"GPA 3.7/4.0\"). One in five large UK employers accept a 2:2, and a missing grade is usually read as a low one. A higher grade earns no extra points here. ${GRADE_POLICY.cv.circumstances}`,
     llmGuidance: "Code: passes on any stated result or average (UK classification, Master's Distinction/Merit, GPA or CGPA with a scale, IB points, a year average). Never gives extra credit for a higher grade, and never fails an honest 2:2 or Third.",
     sectorAdjust: {
       finance_banking: {
         severity: "critical",
-        statement: "State your degree result or current average, or a predicted grade marked with an asterisk — application forms ask anyway, so leaving it off only looks like a gap. If your result was affected by circumstances, say so in the additional-information box, not on the CV. A First earns no extra points here, but strong module marks still help recruiters.",
+        statement: `State your degree result or current average, or a predicted grade marked with an asterisk — application forms ask anyway, so leaving it off only looks like a gap. ${GRADE_POLICY.cv.circumstances} A First earns no extra points here, but strong module marks still help recruiters.`,
         citations: [F_S1, F_S32],
       },
       consulting: {

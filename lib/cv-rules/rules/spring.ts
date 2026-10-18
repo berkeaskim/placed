@@ -1,3 +1,4 @@
+import { cvMaxPages } from "@/lib/conventions";
 import type { Citation, CvRule, RuleAdjust } from "../types";
 
 /**
@@ -69,7 +70,7 @@ export const SPRING_RULES: CvRule[] = [
  * the whole spring policy is visible in one place. Skipped rules are replaced by an SPR rule or don't apply.
  */
 export const SPRING_ADJUST: Record<string, RuleAdjust> = {
-  "G-11": { maxPages: 1 },                       // one page for every first-year CV
+  "G-11": { maxPages: cvMaxPages("software_eng", "spring") },                       // one page for every first-year CV
   "G-21": { severity: "minor" },                 // few outcomes yet; G-20 (action verbs) stays major
   "G-22": { threshold: 0.2, severity: "minor" },  // one quantification rule for every sector (audit 04#2)
   "G-30": { severity: "minor" },                 // spring adverts list almost no skills
