@@ -125,11 +125,12 @@ Secured £3k from 4 corporate sponsors for a 200-person hackathon`;
 });
 
 describe("redactCv: language labels", () => {
-  it("strips native / mother tongue labels but keeps the languages", () => {
-    expect(r(`x\nLanguages: English (native), French (B2)`)).toBe(`x\nLanguages: English, French (B2)`);
-    expect(r(`x\nLanguages: Urdu – native, English (fluent, IELTS 8.0)`)).toBe(`x\nLanguages: Urdu, English (fluent, IELTS 8.0)`);
-    expect(r(`x\nMother tongue: Polish; English C2`)).toBe(`x\nPolish; English C2`);
-    expect(r(`x\nLanguages: Native Mandarin speaker, English (C1)`)).toBe(`x\nLanguages: Mandarin, English (C1)`);
+  it("replaces native / mother tongue labels with a neutral [LEVEL], keeping the languages (audit 02#10)", () => {
+    expect(r(`x\nLanguages: English (native), French (B2)`)).toBe(`x\nLanguages: English ([LEVEL]), French (B2)`);
+    expect(r(`x\nLanguages: Urdu – native, English (fluent, IELTS 8.0)`)).toBe(`x\nLanguages: Urdu ([LEVEL]), English (fluent, IELTS 8.0)`);
+    expect(r(`x\nMother tongue: Polish; English C2`)).toBe(`x\n[LEVEL]: Polish; English C2`);
+    expect(r(`x\nLanguages: Native Mandarin speaker, English (C1)`)).toBe(`x\nLanguages: Mandarin ([LEVEL]), English (C1)`);
+    expect(r(`x\nTurkish (native), French (B2)`)).toBe(`x\nTurkish ([LEVEL]), French (B2)`);
   });
 
   it("does not touch React Native", () => {

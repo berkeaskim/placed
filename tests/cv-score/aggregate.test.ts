@@ -25,10 +25,10 @@ describe("aggregateCvScore", () => {
     const results = allRules.map((x) => res(x.id, x.dimension === "impact" ? "fail" : "pass"));
     const con = aggregateCvScore({ rules: allRules, results, sector: "consulting", year: "2nd", facts });
     const swe = aggregateCvScore({ rules: allRules, results, sector: "software_eng", year: "2nd", facts });
-    // Amended DIMENSION_WEIGHTS: consulting impact 30, software_eng impact 20 (brief had 35/25 → 65/75).
-    expect(con.total).toBe(70);
+    // Audit 04#7: rule weight = severity × sqrt(dimension weight / 20); consulting impact 30 vs software_eng 20.
+    expect(con.total).toBe(75);
     expect(swe.total).toBe(80);
-    expect(con.fixes[0]).toMatchObject({ ruleId: "R-impact", lostPoints: 30 });
+    expect(con.fixes[0]).toMatchObject({ ruleId: "R-impact", lostPoints: 25 });
   });
 
   it("not_applicable results are excluded; empty dimensions are renormalised", () => {
@@ -37,10 +37,11 @@ describe("aggregateCvScore", () => {
     expect(s.dimensions.impact).toBeNull();
   });
 
-  it("could_not_assess is excluded from the denominator and counted separately (A1)", () => {
+  it("could_not_assess counts at half credit (the midpoint of its range) and is counted separately (A1, audit 04#1)", () => {
     const rules = [r("A"), r("B"), r("C")];
     const s = aggregateCvScore({ rules, results: [res("A", "pass"), res("B", "could_not_assess"), res("C", "fail", "fix")], sector: "consulting", year: "2nd", facts });
-    expect(s.total).toBe(50); // 1 pass / 2 assessed, B dropped
+    expect(s.total).toBe(50); // (1 + 0.5 + 0) / 3
+    expect(s.range).toEqual({ low: 33, high: 67 });
     expect(s.couldNotAssess).toBe(1);
     expect(s.assessed).toBe(2);
     expect(s.fixes.map((f) => f.ruleId)).toEqual(["C"]);
@@ -70,8 +71,9 @@ describe("aggregateCvScore", () => {
   it("applies caps and reports them", () => {
     expect(aggregateCvScore({ rules: allRules, results: allPass, sector: "consulting", year: "2nd", facts: { ...facts, imageOnly: true } }))
       .toMatchObject({ total: 50, capsApplied: ["Image-only PDF: capped at 50"] });
+    // Audit 04#3: no spelling cap (the spelling rule carries a graded penalty instead).
     expect(aggregateCvScore({ rules: allRules, results: allPass, sector: "consulting", year: "2nd", facts: { ...facts, spellingErrors: 3 } }))
-      .toMatchObject({ total: 50, capsApplied: ["3+ spelling errors: capped at 50"] });
+      .toMatchObject({ total: 100, capsApplied: [] });
     expect(aggregateCvScore({ rules: allRules, results: allPass, sector: "consulting", year: "2nd", facts: { ...facts, spellingErrors: 2 } }).total).toBe(100);
     const noContact = aggregateCvScore({ rules: allRules, results: allPass, sector: "consulting", year: "2nd", facts: { ...facts, hasPhone: false, hasEmail: false } });
     expect(noContact.total).toBe(40);
@@ -79,11 +81,11 @@ describe("aggregateCvScore", () => {
     expect(aggregateCvScore({ rules: allRules, results: allPass, sector: "consulting", year: "2nd", facts: { ...facts, hasPhone: false } }).capsApplied).toEqual([]);
   });
 
-  it("weak-evidence rules weigh less and are marked as conventions", () => {
-    const rules = [r("A", { evidence: "A" }), r("D", { evidence: "D", citations: [] })];
+  it("weak evidence caps severity (no critical C/D rule) and is marked as a convention (audit 04#8)", () => {
+    const rules = [r("A", { evidence: "A", severity: "critical" }), r("D", { evidence: "D", severity: "critical", citations: [] })];
     const s = aggregateCvScore({ rules, results: [res("A", "pass"), res("D", "fail", "x")], sector: "consulting", year: "2nd", facts });
-    // ats = 1.0/(1.0+0.4) → 71.4; other dims null → total 71
-    expect(s.total).toBe(71);
+    // A critical (3) passes; D capped to major (2) fails → 3/5 = 60
+    expect(s.total).toBe(60);
     expect(s.fixes[0]).toMatchObject({ ruleId: "D", convention: true, citation: null });
   });
 

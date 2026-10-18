@@ -27,7 +27,10 @@ export type SafetyIssue = {
   page?: number;
   reason: string;
 };
-export type SafetyReport = { verdict: "clean" | "flag"; issues: SafetyIssue[] };
+/** A raster image drawn on a page, in PDF points (origin bottom-left). Used to spot a photo (CV rule G-39). */
+export type SafetyImage = { page: number; x: number; y: number; w: number; h: number; pageW: number; pageH: number };
+/** `images` is only present when the PDF itself was scanned (absent on older reports and text-only scans). */
+export type SafetyReport = { verdict: "clean" | "flag"; issues: SafetyIssue[]; images?: SafetyImage[] };
 
 export const SAFETY_WARNING =
   "We found text in your CV that a person can't see but software can read. Major ATSs now detect this, and some reject CVs that contain it. It won't help you, so we've left it out of your tailored CV.";
@@ -190,12 +193,54 @@ async function whiteTextSpans(page: { getOperatorList(): Promise<{ fnArray: numb
   return spans;
 }
 
-async function scanPdf(bytes: Uint8Array): Promise<SafetyIssue[]> {
+type Matrix = [number, number, number, number, number, number];
+const mul = (m: Matrix, n: Matrix): Matrix => [
+  m[0] * n[0] + m[1] * n[2], m[0] * n[1] + m[1] * n[3],
+  m[2] * n[0] + m[3] * n[2], m[2] * n[1] + m[3] * n[3],
+  m[4] * n[0] + m[5] * n[2] + n[4], m[4] * n[1] + m[5] * n[3] + n[5],
+];
+
+/**
+ * Raster images on a page with their bounding boxes: an image fills the unit square under the current transform,
+ * so tracking save/restore/transform is enough. Only used to spot a likely photo; vector shapes are ignored.
+ */
+async function pageImages(page: { view: number[]; getOperatorList(): Promise<{ fnArray: number[]; argsArray: unknown[][] }> }, n: number): Promise<SafetyImage[]> {
+  const { OPS } = await getResolvedPDFJS();
+  const imageOps = new Set<number>([OPS.paintImageXObject, OPS.paintInlineImageXObject, OPS.paintImageXObjectRepeat]);
+  const { fnArray, argsArray } = await page.getOperatorList();
+  const [vx0, vy0, vx1, vy1] = page.view;
+  const out: SafetyImage[] = [];
+  const stack: Matrix[] = [];
+  let ctm: Matrix = [1, 0, 0, 1, 0, 0];
+  fnArray.forEach((fn, i) => {
+    const args = argsArray[i] ?? [];
+    if (fn === OPS.save) stack.push(ctm);
+    else if (fn === OPS.restore) ctm = stack.pop() ?? ctm;
+    else if (fn === OPS.transform && args.length >= 6) ctm = mul(args.slice(0, 6).map(Number) as Matrix, ctm);
+    else if (fn === OPS.paintFormXObjectBegin && Array.isArray(args[0]) && args[0].length >= 6) {
+      stack.push(ctm);
+      ctm = mul(args[0].map(Number) as Matrix, ctm);
+    } else if (fn === OPS.paintFormXObjectEnd) ctm = stack.pop() ?? ctm;
+    else if (imageOps.has(fn)) {
+      const xs = [ctm[4], ctm[4] + ctm[0], ctm[4] + ctm[2], ctm[4] + ctm[0] + ctm[2]];
+      const ys = [ctm[5], ctm[5] + ctm[1], ctm[5] + ctm[3], ctm[5] + ctm[1] + ctm[3]];
+      const x = Math.min(...xs), y = Math.min(...ys);
+      out.push({ page: n, x: x - vx0, y: y - vy0, w: Math.max(...xs) - x, h: Math.max(...ys) - y, pageW: vx1 - vx0, pageH: vy1 - vy0 });
+    }
+  });
+  return out;
+}
+
+async function scanPdf(bytes: Uint8Array): Promise<{ issues: SafetyIssue[]; images: SafetyImage[] }> {
   // pdf.js may detach the buffer it is given; copy so the caller's bytes stay usable.
   const pdf = await getDocumentProxy(new Uint8Array(bytes));
   const issues: SafetyIssue[] = [];
+  const images: SafetyImage[] = [];
   for (let n = 1; n <= pdf.numPages; n++) {
     const page = await pdf.getPage(n);
+    if (n === 1) {
+      try { images.push(...(await pageImages(page, n))); } catch { /* image boxes are best-effort; never fail the scan */ }
+    }
     const { items } = await page.getTextContent();
     for (const it of items) {
       if (!("str" in it) || !it.str.trim()) continue;
@@ -210,7 +255,7 @@ async function scanPdf(bytes: Uint8Array): Promise<SafetyIssue[]> {
       issues.push({ ruleId: "ATS-HID-01", kind: "white-text", span, page: n, reason: "Text is white or near-white on a white page." });
     }
   }
-  return issues;
+  return { issues, images };
 }
 
 // ---------- public API ----------
@@ -230,8 +275,10 @@ export async function scanCvSafety(input: { text: string; pdfBytes?: Uint8Array 
   for (const [s, e] of injectionSentences(visible)) {
     issues.push({ ruleId: "ATS-INJ-01", kind: "injection", span: visible.slice(s, e), reason: "Reads like an instruction to an AI screener, not CV content." });
   }
-  if (input.pdfBytes) issues.push(...(await scanPdf(input.pdfBytes)));
-  return { verdict: issues.length ? "flag" : "clean", issues };
+  if (!input.pdfBytes) return { verdict: issues.length ? "flag" : "clean", issues };
+  const pdf = await scanPdf(input.pdfBytes);
+  issues.push(...pdf.issues);
+  return { verdict: issues.length ? "flag" : "clean", issues, images: pdf.images };
 }
 
 const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");

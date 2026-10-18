@@ -26,6 +26,14 @@ export type ClicheOptions = {
   allow?: string[];
   /** Minimum word basis for the density denominator. Defaults to CLICHE_MIN_WORDS. */
   minWords?: number;
+  /** Severity cut-offs in hits per 100 words (default CLICHE_MINOR_THRESHOLD / CLICHE_MAJOR_THRESHOLD). */
+  minor?: number;
+  major?: number;
+  /**
+   * Count em-dashes and "not only… but also" (default true). The CV score turns this off: no study shows they mark a
+   * CV as AI-written, and formal-register writers use them (audit 01#17). Tailoring output still warns on them.
+   */
+  structural?: boolean;
 };
 
 /**
@@ -135,14 +143,15 @@ export function clicheDensity(text: string, opts: ClicheOptions = {}): ClicheDen
   }
 
   let emDashes = 0;
-  for (const m of text.matchAll(/—/g)) {
+  const structural = opts.structural ?? true;
+  for (const m of structural ? text.matchAll(/—/g) : []) {
     if (!isProseDash(text, m.index)) continue;
     emDashes++;
     hits.push({ term: "em-dash", category: "structural", index: m.index, match: m[0] });
   }
 
   let notOnlyButAlso = 0;
-  for (const m of text.matchAll(/\bnot only\b[^.!?]{1,120}?\bbut also\b/gi)) {
+  for (const m of structural ? text.matchAll(/\bnot only\b[^.!?]{1,120}?\bbut also\b/gi) : []) {
     notOnlyButAlso++;
     hits.push({ term: "not only ... but also", category: "structural", index: m.index, match: m[0] });
   }
@@ -152,7 +161,7 @@ export function clicheDensity(text: string, opts: ClicheOptions = {}): ClicheDen
   const basis = Math.max(words, opts.minWords ?? CLICHE_MIN_WORDS, 1);
   const per100Words = words === 0 ? 0 : (hits.length / basis) * 100;
   const severity: ClicheSeverity =
-    per100Words >= CLICHE_MAJOR_THRESHOLD ? "major" : per100Words >= CLICHE_MINOR_THRESHOLD ? "minor" : "ok";
+    per100Words >= (opts.major ?? CLICHE_MAJOR_THRESHOLD) ? "major" : per100Words >= (opts.minor ?? CLICHE_MINOR_THRESHOLD) ? "minor" : "ok";
 
   return { per100Words, hits, severity, words, structural: { emDashes, notOnlyButAlso } };
 }
