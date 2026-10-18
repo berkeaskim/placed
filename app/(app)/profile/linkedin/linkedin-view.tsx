@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { ARCHETYPES, ARCHETYPE_LABELS, type Archetype } from "@/lib/types";
 import type { LiPanelData } from "@/lib/linkedin-score/run";
 import { LinkedInScorePanel } from "@/components/linkedin-score-panel";
-import { pollLinkedInCapture, startLinkedInCapture, uploadLinkedIn, type UploadLinkedInResult } from "./actions";
+import { pollLinkedInCapture, startLinkedInCapture, uploadLinkedIn, uploadLinkedInArchive, type UploadLinkedInResult } from "./actions";
 
 const STEPS = ["Opening your profile…", "Comparing it with your CV…", "Checking recruiter rules…", "Writing your fixes…"];
 const EXT_STEPS = ["Opening your profile in a new tab…", "Reading your profile…", "Reading your skills…", "Comparing it with your CV…", "Checking recruiter rules…", "Writing your fixes…"];
@@ -37,6 +37,7 @@ function SectorPicker({ value, onChange, disabled }: { value: Archetype; onChang
 export function LinkedInView({ initial, sector: initialSector }: { initial: LiPanelData | null; sector: Archetype }) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
+  const archiveRef = useRef<HTMLInputElement>(null);
   const [data, setData] = useState<LiPanelData | null>(initial);
   const [sector, setSector] = useState<Archetype>(initialSector);
   const [pending, start] = useTransition();
@@ -89,6 +90,7 @@ export function LinkedInView({ initial, sector: initialSector }: { initial: LiPa
     setError(null);
     const r = await act(fd);
     if (inputRef.current) inputRef.current.value = "";
+    if (archiveRef.current) archiveRef.current.value = "";
     if ("error" in r) { setError(r.error); if (r.offerPdf) setShowPdf(true); return; }
     setData(r.data);
     if (r.data.saved) router.refresh();
@@ -104,6 +106,23 @@ export function LinkedInView({ initial, sector: initialSector }: { initial: LiPa
       <div className="card-quest flex h-fit flex-col gap-4 p-6">
         <h1 className="text-xl font-extrabold">Score your LinkedIn</h1>
         <SectorPicker value={sector} onChange={setSector} disabled={busy} />
+        <details open={!hasExt} className="rounded-2xl border border-[#E6E6EF]">
+          <summary className="flex min-h-11 cursor-pointer items-center px-4 text-sm font-semibold">Upload your LinkedIn data (recommended)</summary>
+          <form action={(fd) => run(fd, uploadLinkedInArchive)} className="flex flex-col gap-3 px-4 pb-4">
+            <p className="text-xs text-[#5B5B6B]">LinkedIn&apos;s own copy of your profile. It includes your full skills list, and nothing reads your LinkedIn page.</p>
+            <ol className="flex list-decimal flex-col gap-1 pl-5 text-sm text-[#3F3F4C]">
+              <li>On a computer, open LinkedIn: <b>Me</b> → <b>Settings &amp; Privacy</b> → <b>Data privacy</b> → <b>Download your data</b>.</li>
+              <li>Choose just <b>Profile</b>, <b>Positions</b>, <b>Education</b> and <b>Skills</b> (add Projects and Certifications if you have them), then <b>Request archive</b>.</li>
+              <li>LinkedIn emails you a link, usually within minutes. Upload the .zip here without unzipping it.</li>
+            </ol>
+            <input type="hidden" name="sector" value={sector} />
+            <label className="flex min-h-20 cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-[#C9C2FF] bg-[#F8F7FF] p-4 text-center">
+              <span className="font-bold">Choose your LinkedIn .zip</span>
+              <input ref={archiveRef} type="file" name="archive" accept=".zip,application/zip" required disabled={busy} className="sr-only" onChange={(e) => e.currentTarget.form?.requestSubmit()} />
+            </label>
+            <p className="text-xs text-[#5B5B6B]">Only the profile files are read. Messages, connections and everything else in the zip are ignored, and the zip isn&apos;t kept.</p>
+          </form>
+        </details>
         {hasExt ? (
           <div className="flex flex-col gap-3">
             <button type="button" onClick={scoreWithExtension} disabled={busy} className="btn-quest flex min-h-12 items-center justify-center py-3 disabled:opacity-60">
@@ -113,11 +132,15 @@ export function LinkedInView({ initial, sector: initialSector }: { initial: LiPa
               Opens your own profile in a new tab, where the Placed extension reads it with your LinkedIn sign-in. It never edits anything,
               never reads your contact info, and your photo, connections and posts are never scored.
             </p>
+            <p className="text-xs text-[#7A4100]">
+              LinkedIn&apos;s User Agreement restricts browser add-ons that copy profile data, and it doesn&apos;t make an exception for your own
+              profile. Using the extension is your choice; the data download above avoids the question.
+            </p>
           </div>
         ) : (
           <div className="flex flex-col gap-1.5 rounded-2xl bg-[#F8F7FF] p-4 text-sm text-[#3F3F4C]">
             <p className="font-bold text-[#1A1A2E]">One-click scoring needs the Placed extension</p>
-            <p>LinkedIn doesn&apos;t show profiles to other sites, so the extension reads yours in your own browser. Add it from <code>chrome://extensions</code> (Load unpacked → the <code>extension</code> folder), then reload this page. Or upload the PDF below.</p>
+            <p>LinkedIn doesn&apos;t show profiles to other sites, so the extension reads yours in your own browser. Add it from <code>chrome://extensions</code> (Load unpacked → the <code>extension</code> folder), then reload this page. LinkedIn&apos;s User Agreement restricts browser add-ons that copy profile data, so the data download above is the safer route.</p>
           </div>
         )}
         {capturing && <p role="status" aria-live="polite" className="font-semibold text-[#3A20C4]">{EXT_STEPS[capStep]}</p>}
