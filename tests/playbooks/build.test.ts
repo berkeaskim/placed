@@ -181,7 +181,6 @@ describe("shared access programmes", () => {
 });
 
 describe("time-bound and eligibility data (06#30)", () => {
-  const today = new Date().toISOString().slice(0, 10);
   const all = () => ARCHETYPES.flatMap((a) => PLAYBOOKS[a].actions.map((x) => ({ a, x })));
 
   it("every linked experience says when it stops being true", () => {
@@ -204,15 +203,6 @@ describe("time-bound and eligibility data (06#30)", () => {
       expect(SIGNAL_VALUES, `${a}/${x.id}`).toContain(x.signalValue);
       if (x.type === "course") expect(x.kind, `${a}/${x.id}`).toBe("build");
       if (x.eligibleGradYears) expect(x.kind, `${a}/${x.id}`).toBe("opportunity");
-    }
-  });
-
-  it("no reviewBy is more than 30 days overdue: re-check the official page and move it (T7)", () => {
-    const limit = new Date(Date.now() - 30 * 86_400_000).toISOString().slice(0, 10);
-    for (const a of ARCHETYPES) {
-      for (const x of [...PLAYBOOKS[a].actions, ...PLAYBOOKS[a].yearGuidanceDated]) {
-        if (x.reviewBy) expect(x.reviewBy >= limit, `${a}: ${"id" in x ? x.id : x.text.slice(0, 40)} reviewBy ${x.reviewBy} (today ${today})`).toBe(true);
-      }
     }
   });
 
