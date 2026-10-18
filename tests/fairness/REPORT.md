@@ -59,13 +59,15 @@ not reward AI-sounding text. Δ > 3, so the "AI-assisted rewrite" label stays on
 ### T17 live half: how to run it
 
 ```bash
-npm run reliability            # 5 runs × 5 CVs (demo persona + 4 bases), cache bypassed
-RUNS=3 npm run reliability     # cheaper pass
+npm run reliability                                   # dry run: prints the plan, no AI calls
+npm run reliability -- --live                         # 10 runs × 5 CVs (demo persona + 4 bases), cache bypassed
+npm run reliability -- --live --gold <gold.json>      # add every CV in a gold file (docs/validation/GOLD_FORMAT.md)
 ```
 
-The command needs `ANTHROPIC_API_KEY` or `GEMINI_API_KEY` in `.env.local`, with `AI_MODE` empty. It prints the
-mean and SD of each total and every rule that flips in more than 10% of runs, and exits with code 2 if the gate
-fails. If a rule flips, rewrite its `llmGuidance`. Put the SD in the pitch.
+`--live` needs a live provider (an API key in `.env.local` or Ollama), with `AI_MODE` empty. It reports each CV's
+totals, SD and SEM, and every rule that flips. Across CVs it reports each rule's flip rate with a Wilson interval, Fleiss' κ
+across runs, and ICC(1,1) and SEM for the totals. It exits with code 2 if the gate fails. If a rule flips, rewrite its
+`llmGuidance`. Fewer than 10 runs can't gate.
 
 ## Decisions
 
