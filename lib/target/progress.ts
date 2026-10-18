@@ -5,9 +5,11 @@ import { confirmedFacts, playbookProgress, profiles } from "@/lib/db/schema";
 import { awardXP } from "@/lib/gamify/award";
 import type { AwardResult } from "@/lib/gamify/core";
 import { PLAYBOOKS, type Action } from "@/lib/playbooks";
-import { ARCHETYPES, type Archetype, type Year } from "@/lib/types";
+import { ARCHETYPES, type Archetype } from "@/lib/types";
 import { canonicalize } from "@/lib/skills/extract";
-import { openToYear } from "./actions";
+import { todayLondon } from "@/lib/scoring/dates";
+import { becomesFact, eligibleFor, type Student } from "./actions";
+
 import { targetFor } from "./view";
 
 const MIN_NOTE = 10;
@@ -23,14 +25,25 @@ export function findAction(id: string): Action | null {
   return null;
 }
 
-/** An action the student can actually see: in their target role's playbook and open to their year. */
-export function actionFor(id: string, sector: Archetype, year: Year): Action | null {
+/** An action the student can actually see: in their target role's playbook and open to their stage. */
+export function actionFor(id: string, sector: Archetype, student: Student, today = todayLondon()): Action | null {
   const a = PLAYBOOKS[sector].actions.find((x) => x.id === id);
-  return a && openToYear(a, year) ? a : null;
+  return a && eligibleFor(a, student, today) ? a : null;
+}
+
+/**
+ * Gaps the card said this step builds, kept only if the step really lists that skill (the client sends them).
+ * Opportunities never close a gap.
+ */
+export function gapsClosed(a: Pick<Action, "kind" | "skills">, covers: unknown): string[] {
+  if (a.kind !== "build" || !Array.isArray(covers)) return [];
+  const have = a.skills.map((s) => s.toLowerCase());
+  return covers.filter((c): c is string => typeof c === "string" && c.length <= 120)
+    .filter((c) => have.some((s) => c.toLowerCase().split(/\s+or\s+/).includes(s)));
 }
 
 function studentTarget(userId: string) {
-  const row = db.select({ target_archetype: profiles.target_archetype, archetypes: profiles.archetypes, year: profiles.year })
+  const row = db.select({ target_archetype: profiles.target_archetype, archetypes: profiles.archetypes, year: profiles.year, grad_year: profiles.grad_year })
     .from(profiles).where(eq(profiles.user_id, userId)).get();
   return targetFor(row ?? {});
 }
@@ -75,41 +88,49 @@ export function validateCompletion(note: unknown, url: unknown): { note: string;
 export async function planAction(userId: string, id: unknown) {
   if (typeof id !== "string" || !findAction(id)) return { error: "Unknown action." };
   const t = studentTarget(userId);
-  if (!actionFor(id, t.sector, t.year)) return { error: "That step isn't part of your target role." };
+  if (!actionFor(id, t.sector, t)) return { error: "That step isn't part of your target role." };
   if (progressOf(userId, id)?.status === "done") return { ok: true as const }; // never downgrade a done item
   const ok = tryWrite("plan", () => upsertProgress({ user_id: userId, action_id: id, status: "planned", updated_at: new Date().toISOString() }));
   return ok ? { ok: true as const } : { error: SAVE_FAILED };
 }
 
-export type CompleteResult = { error: string } | { award: AwardResult | null; firstTime: boolean };
+export type CompleteResult = { error: string } | { award: AwardResult | null; firstTime: boolean; usableInTailoring: boolean };
 
 /**
- * Marks an action done. The student's note (their words only, never our action title, which would smuggle the
- * playbook's skills into the corpus) becomes a confirmed fact: the only way a playbook item reaches tailoring.
+ * Marks an action done. For projects and real experience, the student's note (their words only, never our action
+ * title, which would smuggle the playbook's skills into the corpus) becomes a confirmed fact: the only way a
+ * playbook item reaches tailoring. Courses, simulations and practice keep the note on the step only (becomesFact).
  * Order: fact first, then done, so "done" always implies the fact exists and a retry can't skip it.
+ * XP scales with effort and signal; Gap Closer needs a step that built one of the student's gap skills.
  */
-export async function completeAction(userId: string, id: unknown, note: unknown, url: unknown): Promise<CompleteResult> {
+export async function completeAction(userId: string, id: unknown, note: unknown, url: unknown, covers?: unknown): Promise<CompleteResult> {
   if (typeof id !== "string" || !findAction(id)) return { error: "Unknown action." };
   const v = validateCompletion(note, url);
   if ("error" in v) return v;
   const t = studentTarget(userId);
-  if (!actionFor(id, t.sector, t.year)) return { error: "That step isn't part of your target role." };
+  const action = actionFor(id, t.sector, t);
+  if (!action) return { error: "That step isn't part of your target role." };
+  const usableInTailoring = becomesFact(action);
 
   const firstTime = progressOf(userId, id)?.status !== "done";
-  if (firstTime && !tryWrite("fact insert", () => db.insert(confirmedFacts).values({ user_id: userId, claim: v.note, source: "user-stated" }).run())) {
+  if (firstTime && usableInTailoring && !tryWrite("fact insert", () => db.insert(confirmedFacts).values({ user_id: userId, claim: v.note, source: "user-stated" }).run())) {
     return { error: SAVE_FAILED };
   }
   const up = tryWrite("complete", () => upsertProgress({
     user_id: userId, action_id: id, status: "done", evidence_note: v.note, evidence_url: v.url, updated_at: new Date().toISOString(),
   }));
   if (!up) return { error: SAVE_FAILED };
-  if (!firstTime) return { award: null, firstTime };
+  if (!firstTime) return { award: null, firstTime, usableInTailoring };
   try {
     // xp_events.ref makes this once per action even if two requests race
-    return { award: await awardXP(userId, { type: "playbook_done", ref: id }), firstTime };
+    const award = await awardXP(userId, {
+      type: "playbook_done", ref: id, effort: action.effort, signalValue: action.signalValue,
+      hasEvidence: v.url !== null, closesGap: gapsClosed(action, covers).length > 0,
+    });
+    return { award, firstTime, usableInTailoring };
   } catch (e) {
     console.error("completeAction: awardXP failed", e instanceof Error ? e.message : e);
-    return { award: null, firstTime }; // the action and the fact are saved; only the XP is missing
+    return { award: null, firstTime, usableInTailoring }; // the action and the fact are saved; only the XP is missing
   }
 }
 

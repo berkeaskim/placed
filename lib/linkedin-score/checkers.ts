@@ -1,5 +1,6 @@
 import type { LiResolvedRule } from "@/lib/linkedin-rules/types";
 import type { LiContext, RuleResult } from "./context";
+import { GRADE_RE, PLACEHOLDER_RE, RANKED_RE, hasPortfolioLink, headlineRepeats, headlineSegments, isCompetitionLine, isDefaultSlug, isUkLocation, mentionsRLanguage } from "./detectors";
 
 type Out = Omit<RuleResult, "ruleId">;
 const ok = (): Out => ({ status: "pass", evidenceLine: null, fix: null });
@@ -9,24 +10,26 @@ const fail = (evidenceLine: string | null, fix: string): Out => ({ status: "fail
 const threshold = (c: LiContext, r: LiResolvedRule, fallback: number) => r.yearAdjust?.[c.year]?.threshold ?? r.params?.threshold ?? fallback;
 
 const about = (c: LiContext) => c.li.about ?? "";
-/** The public profile page doesn't show the skills list: rules that read it can't be decided (not a fail). */
-const skillsHidden = (c: LiContext) => c.li.warnings.includes("public_view_no_skills");
+/** The input doesn't show the skills list (public page, archive without Skills.csv): rules that read it can't be decided (not a fail). */
+const skillsHidden = (c: LiContext) => c.li.skillsScope === "none" || c.li.warnings.includes("public_view_no_skills");
+/** The input carries the full skills list, not just the few LinkedIn shows first. */
+const fullSkills = (c: LiContext) => c.li.skillsScope === "all";
+/** Not assessable from this input: counted in the coverage meter, never a fail (08 #4). */
+const notFromInput = (why: string) => na(`input:${why}`);
 const expText = (c: LiContext) => c.li.experience.map((e) => `${e.title}\n${e.description}`).join("\n");
+const projText = (c: LiContext) => (c.li.projects ?? []).map((p) => `${p.title}\n${p.description}`).join("\n");
 const eduText = (c: LiContext) => c.li.education.map((e) => `${e.degree ?? ""}\n${e.details}`).join("\n");
 /** Everything a skill could be evidenced in: skills, headline, About, Experience, Education, certifications. */
-const allText = (c: LiContext) => [c.li.headline ?? "", c.li.topSkills.join("\n"), about(c), expText(c), eduText(c), c.li.certifications.join("\n"), c.li.honors.join("\n")].join("\n");
-const linkHay = (c: LiContext) => [...c.li.links, about(c)].join("\n");
+const allText = (c: LiContext) => [c.li.headline ?? "", c.li.topSkills.join("\n"), about(c), expText(c), projText(c), eduText(c), c.li.certifications.join("\n"), c.li.honors.join("\n")].join("\n");
+const linkText = (c: LiContext) => [about(c), projText(c)].join("\n");
+const linkHay = (c: LiContext) => [...c.li.links, linkText(c)].join("\n");
 
-const STOPWORDS = new Set(["and", "the", "for", "with", "student", "university"]);
 const EMOJI_RE = /\p{Extended_Pictographic}/u;
-const GRADE_RE = /\b(First(?:[- ]class)?|2:1|2\.1|Upper Second|2:2|Distinction|Merit|predicted|expected|average|GPA|\d{2}(?:\.\d)?\s?%)/i;
-const UK_PLACE_RE = /\b(United Kingdom|UK|England|Scotland|Wales|Northern Ireland|London|Manchester|Birmingham|Leeds|Bristol|Edinburgh|Glasgow|Cambridge|Oxford|Liverpool|Nottingham|Sheffield|Newcastle|Cardiff|Belfast|Coventry|Leicester|Southampton|Brighton|Bath|York|Durham|Warwick|Reading|Exeter|Lancaster|St Andrews|Aberdeen|Dundee|Surrey|Guildford|Canterbury|Norwich|Loughborough)\b/i;
 const NOISE_SKILL_RE = /^(Microsoft (Office|Word|Excel|PowerPoint|365)|MS Office|Word|Excel|PowerPoint|Communication|Teamwork|Team Work|Leadership|Social Media|Time Management|Customer Service|Hard[- ]working|Problem Solving|Public Speaking)$/i;
 const OFFICE_RE = /^(Microsoft (Office|Word|PowerPoint|Excel|365)|MS Office|Word|PowerPoint|Excel)$/i;
 const COMPLETION_CERT_RE = /\b(Coursera|Udemy|LinkedIn Learning|Forage|Job Simulation|Virtual Experience|edX|Codecademy|freeCodeCamp|DataCamp|Great Learning|Simplilearn|Certificate of Completion)\b/i;
 const VENDOR_CERT_RE = /\b(AWS|Amazon Web Services|Azure|AZ-\d{3}|DP-\d{3}|PL-300|Google Cloud|GCP|Tableau (Desktop )?(Specialist|Certified)|Databricks|Snowflake|Oracle Certified|CompTIA)\b/i;
 const MARKETING_CERT_RE = /\b(Google (Digital|Ads|Analytics)|GA4|Fundamentals of Digital Marketing|HubSpot|Meta (Blueprint|Certified)|Facebook Blueprint|CIM|Chartered Institute of Marketing|Semrush|Hootsuite|TikTok Academy)\b/i;
-const PLACEHOLDER_RE = /\b(lorem ipsum|lorem)\b|\[(company|employer|role|title|insert[^\]]*|your [^\]]*|x+)\]|\b(TBD|TBC)\b/i;
 const MOJIBAKE_RE = /Ã[\u0080-¿]|â€[™œ\u009d“”˜]|�/;
 
 function anyLine(text: string, re: RegExp): string | null {
@@ -40,11 +43,10 @@ export const LI_CHECKERS: Record<string, (c: LiContext, r: LiResolvedRule) => Ou
   "LI-GEN-08": (c, r) => {
     const h = c.li.headline;
     if (!h) return na("no headline");
-    const seps = (h.match(/[|·•/]/g) ?? []).length;
-    const words: string[] = h.toLowerCase().match(/[a-z][a-z+#.]{2,}/g) ?? [];
-    const repeats = words.filter((w, i) => words.indexOf(w) !== i && !STOPWORDS.has(w));
-    if (seps > threshold(c, r, 3)) return fail(h, "Cut the headline to one readable phrase with at most 3 separators. Keep the field or target first and one proof point.");
-    if (new Set(repeats).size >= 2) return fail(h, `The headline repeats "${[...new Set(repeats)].slice(0, 2).join('", "')}". Say each thing once.`);
+    const max = threshold(c, r, 4);
+    if (headlineSegments(h).length > max) return fail(h, `Cut the headline to at most ${max} parts separated by | . Keep the field or target first and one proof point; a short "SQL · Python" list inside one part is fine.`);
+    const repeats = headlineRepeats(h);
+    if (repeats.length) return fail(h, `The headline uses "${repeats[0]}" three or more times. Say each thing once.`);
     return ok();
   },
   "LI-GEN-09": (c) => {
@@ -58,15 +60,16 @@ export const LI_CHECKERS: Record<string, (c: LiContext, r: LiResolvedRule) => Ou
   },
   "LI-GEN-10": (c) => {
     const loc = c.li.location;
-    if (!loc) return fail(null, "Set your location to the UK city you want to work in (or where you study). Recruiters filter by location.");
-    if (!UK_PLACE_RE.test(loc)) return fail(loc, "If you are targeting UK roles, set your location to the UK city you want to work in or study in. If you aren't, ignore this.");
+    if (!loc) return fail(null, "Set your location to the city you want to work in (or where you study). Recruiters filter by location.");
+    // A non-UK location is the student's call (they may be targeting home): never a fail (08 #6, playbook §8.6).
+    if (!isUkLocation(loc)) return na("non-UK location");
     return ok();
   },
   "LI-GEN-11": (c) => {
     const url = c.li.profileUrl;
     if (!url) return na("no profile URL in export");
     const slug = url.replace(/\/$/, "").split("/in/")[1] ?? "";
-    if (/-[0-9a-f]{6,}$/i.test(slug) || /\d{4,}$/.test(slug)) return fail(url, "Claim a custom URL (Edit public profile & URL), e.g. linkedin.com/in/firstname-lastname, and put it on your CV.");
+    if (isDefaultSlug(slug)) return fail(url, "Claim a custom URL (Edit public profile & URL), e.g. linkedin.com/in/firstname-lastname, and put it on your CV.");
     return ok();
   },
   "LI-GEN-12": (c) => {
@@ -76,6 +79,7 @@ export const LI_CHECKERS: Record<string, (c: LiContext, r: LiResolvedRule) => Ou
     return ok();
   },
   "LI-GEN-15": (c) => {
+    // Experience only: projects have no required dates on LinkedIn (08 #7).
     const ex = c.li.experience;
     if (!ex.length) return na("no experience entries");
     const noMonth = ex.find((e) => !e.start?.month || (e.end && !e.end.month));
@@ -107,15 +111,17 @@ export const LI_CHECKERS: Record<string, (c: LiContext, r: LiResolvedRule) => Ou
 
   // --- software_eng ---
   "LI-SOFTWARE_ENG-01": (c) => {
-    if (/github\.com\/|gitlab\.com\/|devpost\.com\/|\.vercel\.app|\.netlify\.app|\.dev\b|\.io\b|portfolio/i.test(linkHay(c))) return ok();
+    if (hasPortfolioLink(c.li.links, linkText(c))) return ok();
     return fail(null, "Add your GitHub or portfolio under Contact info > Website (or in About) so a reader can see your code in one click.");
   },
   "LI-SOFTWARE_ENG-06": (c) => {
     if (skillsHidden(c)) return na("skills not public");
+    // A full list's order isn't known to match what the student shows first: not assessable (08 #4, #12).
+    if (fullSkills(c)) return notFromInput("top_skills_unknown");
     const top = c.li.topSkills.slice(0, 3);
     if (!top.length) return na("no Top Skills in export");
     const noise = top.find((s) => NOISE_SKILL_RE.test(s.trim()));
-    if (noise) return fail(noise, `Pin technical skills (languages, frameworks, CS fundamentals) as your top 3 instead of "${noise}".`);
+    if (noise) return fail(noise, `Put technical skills (languages, frameworks, CS fundamentals) first instead of "${noise}": add them to the Top skills in your About section and reorder your Skills list.`);
     return ok();
   },
   "LI-SOFTWARE_ENG-11": (c) => {
@@ -125,7 +131,7 @@ export const LI_CHECKERS: Record<string, (c: LiContext, r: LiResolvedRule) => Ou
     const t = `${cur.degree ?? ""}\n${cur.details}`;
     const modules = lexHits(t, ["Algorithms", "Data Structures", "Operating Systems", "Databases", "Distributed", "Compilers", "Machine Learning", "Software Engineering", "Networks", "Computer Architecture", "Security"]);
     if (!GRADE_RE.test(t) && modules.length === 0 && c.year !== "1st")
-      return fail(cur.degree, "Add your grade or year average (if 2:1 or above) and 3-6 relevant modules or your group project with its stack.");
+      return fail(cur.degree, "Add 3-6 relevant modules or your group project with its stack. Add your grade or year average too if it's 2:1 or above (optional otherwise).");
     return ok();
   },
   "LI-SOFTWARE_ENG-13": (c) => {
@@ -139,19 +145,22 @@ export const LI_CHECKERS: Record<string, (c: LiContext, r: LiResolvedRule) => Ou
   "LI-DATA_ANALYTICS-03": (c) => {
     if (skillsHidden(c)) return na("skills not public");
     const sql = /\b(SQL|PostgreSQL|MySQL|T-SQL|BigQuery|SQLite|Snowflake)\b/i;
-    if (c.li.topSkills.some((s) => sql.test(s))) return ok();
+    const listed = c.li.topSkills.some((s) => sql.test(s));
+    // Full list: absent means it's not among the top skills either; present can't show whether it comes first (08 #4).
+    if (listed) return fullSkills(c) ? notFromInput("top_skills_unknown") : ok();
     const where = anyLine(allText(c), sql);
-    return fail(where, where ? "You use SQL already. Pin it as one of your top 3 skills." : "Add SQL to your skills and pin it, if you can back it with a project or role.");
+    if (where) return fail(where, "You use SQL already. Add it to the Top skills in your About section (up to 5) and reorder your Skills list so it comes first.");
+    return fail(null, "Add SQL to your skills, if you can back it with a project or role, and to the Top skills in your About section.");
   },
   "LI-DATA_ANALYTICS-04": (c) => {
     const t = allText(c);
-    const lang = /\b(Python|R)\b|\bpandas\b/.test(t);
+    const lang = /\bPython\b|\bpandas\b/i.test(t) || mentionsRLanguage(t, c.li.topSkills);
     const viz = /\b(Power BI|Tableau|Looker|Excel|Data Studio|matplotlib|seaborn|Plotly)\b/i.test(t);
     if (lang && viz) return ok();
     return fail(null, `Show ${!lang ? "Python or R" : "a visualisation/BI tool (Power BI, Tableau, Looker)"} in your skills and in a project where you used it.`);
   },
   "LI-DATA_ANALYTICS-07": (c) => {
-    if (/github\.com\/|public\.tableau\.com|kaggle\.com\/|app\.powerbi\.com|observablehq\.com|streamlit\.app|\.github\.io|portfolio/i.test(linkHay(c))) return ok();
+    if (hasPortfolioLink(c.li.links, linkText(c))) return ok();
     return fail(null, "Add a portfolio link (GitHub, Tableau Public, Kaggle or a personal site) under Contact info > Website or in About.");
   },
   "LI-DATA_ANALYTICS-12": (c) => {
@@ -163,18 +172,16 @@ export const LI_CHECKERS: Record<string, (c: LiContext, r: LiResolvedRule) => Ou
 
   // --- quant_trading ---
   "LI-QUANT_TRADING-03": (c) => {
-    const t = [c.li.honors.join("\n"), about(c), expText(c)].join("\n");
-    const comp = /\b(olympiad|UKMT|IMO|BMO|MAT|STEP|Putnam|ICPC|Codeforces|AtCoder|Kaggle|competition|challenge|contest|hackathon)\b/i;
-    const lines = t.split("\n").filter((l) => comp.test(l));
+    const t = [c.li.honors.join("\n"), about(c), expText(c), projText(c)].join("\n");
+    const lines = t.split("\n").filter(isCompetitionLine);
     if (!lines.length) return na("no competitions listed");
-    const ranked = /top \d+%|\b\d+(st|nd|rd|th)\b|medal|distinction|merit|rating|\b\d{3,4}\b|finalist|winner|honourable mention|gold|silver|bronze|rank/i;
-    const unranked = lines.find((l) => !ranked.test(l));
+    const unranked = lines.find((l) => !RANKED_RE.test(l));
     if (unranked) return fail(unranked.trim(), "Add the rank, medal, percentile or rating, and the field size if you know it.");
     return ok();
   },
   "LI-QUANT_TRADING-04": (c) => {
-    if (/github\.com\/|gitlab\.com\/|\.github\.io|\.dev\b|\.io\b/i.test(linkHay(c))) return ok();
-    if (/\b(project|built|implemented|backtest|simulator|engine|bot)\b/i.test(`${about(c)}\n${expText(c)}`)) return fail(null, "You mention projects: link the code (GitHub or a personal site) under Contact info so it can be checked.");
+    if (hasPortfolioLink(c.li.links, linkText(c))) return ok();
+    if ((c.li.projects ?? []).length || /\b(project|built|implemented|backtest|simulator|engine|bot)\b/i.test(`${about(c)}\n${expText(c)}`)) return fail(null, "You mention projects: link the code (GitHub or a personal site) under Contact info so it can be checked.");
     return na("no projects claimed");
   },
   "LI-QUANT_TRADING-07": (c, r) => {
@@ -187,7 +194,8 @@ export const LI_CHECKERS: Record<string, (c: LiContext, r: LiResolvedRule) => Ou
     if (skillsHidden(c)) return na("skills not public");
     const office = c.li.topSkills.find((s) => OFFICE_RE.test(s.trim()));
     if (office) return fail(office, `Drop "${office}" from your skills; quant firms read office tools as padding.`);
-    return ok();
+    // From the PDF's few top skills, absence says nothing about the rest of the list (08 #4).
+    return fullSkills(c) ? ok() : notFromInput("full_skills_needed");
   },
   "LI-QUANT_TRADING-09": (c) => {
     const t = eduText(c);
@@ -215,7 +223,7 @@ export const LI_CHECKERS: Record<string, (c: LiContext, r: LiResolvedRule) => Ou
     if (!cur.endYear) return fail(cur.degree, "Add your expected graduation year.");
     const t = `${cur.degree ?? ""}\n${cur.details}`;
     if (c.year !== "1st" && !GRADE_RE.test(t) && lexHits(t, ["HCI", "Human-Computer", "Statistics", "Machine Learning", "Economics", "Entrepreneurship", "Design", "Marketing", "Data"]).length === 0)
-      return fail(cur.degree, "Add your grade or average (if 2:1+) and 2-4 relevant modules (HCI, statistics, ML, economics, entrepreneurship).");
+      return fail(cur.degree, "Add 2-4 relevant modules (HCI, statistics, ML, economics, entrepreneurship). Add your grade or average too if it's 2:1 or above (optional otherwise).");
     return ok();
   },
   "LI-PRODUCT-15": (c) => {
@@ -234,7 +242,7 @@ export const LI_CHECKERS: Record<string, (c: LiContext, r: LiResolvedRule) => Ou
     const t = [c.li.name ?? "", c.li.headline ?? "", about(c), c.li.certifications.join("\n")].join("\n");
     const bad = anyLine(t, /\bCFA\s+(Level|L)\s*(I{1,3}|[123])\b|\bCFA candidate\b|\bCFA\s*\(expected|\bLevel\s+(I{1,3}|[123])\s+CFA\b/i);
     if (bad && !/CFA Program candidate|Passed Level (I{1,3}|[123]) of the CFA Program/i.test(bad))
-      return fail(bad, "Use CFA Institute wording: 'CFA Program candidate' (if registered) or 'Passed Level I of the CFA Program'.");
+      return fail(bad, "Use CFA Institute wording: 'CFA Program candidate' (only while registered for an upcoming exam or awaiting results) or 'Passed Level I of the CFA Program'.");
     return ok();
   },
   "LI-FINANCE_BANKING-07": (c) => {
@@ -245,12 +253,42 @@ export const LI_CHECKERS: Record<string, (c: LiContext, r: LiResolvedRule) => Ou
     if (hype) return fail(hype, "Drop the slogan and state your degree, target division and one proof point.");
     return ok();
   },
+  // Same policy as CV rule G-32: state the grade if it's 2:1 or above; a missing grade is never a fail (08 #9).
   "LI-FINANCE_BANKING-11": (c) => {
     const cur = c.li.education[0];
-    if (!cur) return fail(null, "Add your degree to Education with your grade, current average or predicted grade.");
+    if (!cur) return na("no education");
     const t = `${cur.degree ?? ""}\n${cur.details}`;
-    if (GRADE_RE.test(t) || (c.year === "1st" && /A[- ]?levels?|IB|A\*/i.test(eduText(c)))) return ok();
-    return fail(cur.degree, "State your grade (classification, current average or predicted) on your current degree.");
+    if (GRADE_RE.test(t) || (c.year === "1st" && /A[- ]?levels?|\bIB\b|A\*/i.test(eduText(c)))) return ok();
+    return na("no grade stated (optional)");
+  },
+
+  // --- skills-count rules: only the full list can decide them (archive, or a capture of /details/skills) ---
+  "LI-CONSULTING-09": (c) => {
+    if (!fullSkills(c)) return notFromInput("full_skills_needed");
+    const sk = c.li.topSkills;
+    const stakes = sk.filter((s) => /\b(problem[- ]solving|data analysis|analytics|excel|powerpoint|presentation|communication|financial modell?ing|research|strategy)\b/i.test(s));
+    if (sk.length < 5) return fail(null, `You list ${sk.length} skill${sk.length === 1 ? "" : "s"}. Add 5-10 you can back up, including problem solving, data analysis, Excel and presentation.`);
+    if (sk.length > 10) return fail(null, `You list ${sk.length} skills. Keep the 5-10 most relevant to consulting.`);
+    if (stakes.length < 3) return fail(null, "Include at least 3 consulting basics you can back up: problem solving, data analysis, Excel, PowerPoint/presentation, communication.");
+    return ok();
+  },
+  "LI-PRODUCT-10": (c) => {
+    if (!fullSkills(c)) return notFromInput("full_skills_needed");
+    const sk = c.li.topSkills;
+    const filler = sk.find((s) => /^(Microsoft Office|MS Office|Hard[- ]working|Team ?work|Punctual|Motivated)$/i.test(s.trim()));
+    if (sk.length < 5) return fail(null, `You list ${sk.length} skill${sk.length === 1 ? "" : "s"}. Add at least 5 you can back up (user research, SQL, A/B testing, Figma...).`);
+    if (sk.length > 30) return fail(null, `You list ${sk.length} skills. Trim to the ~30 most relevant to product.`);
+    if (filler) return fail(filler, `Drop "${filler}": it reads as filler on a product profile.`);
+    return ok();
+  },
+  "LI-MARKETING_GROWTH-09": (c) => {
+    if (!fullSkills(c)) return notFromInput("full_skills_needed");
+    const sk = c.li.topSkills;
+    const bank = sk.filter((s) => /\b(marketing|brand|branding|content|copywriting|social media|SEO|SEM|PPC|Google Ads|Meta Ads|GA4|Google Analytics|analytics|email|CRM|HubSpot|campaign|growth|community|PR|public relations|Canva|Adobe|video|influencer)\b/i.test(s));
+    if (sk.length < 10) return fail(null, `You list ${sk.length} skills. Aim for 10-50, led by the marketing skills you can show.`);
+    if (sk.length > 50) return fail(null, `You list ${sk.length} skills. Trim to the 50 most relevant.`);
+    if (bank.length < 3) return fail(null, "Fewer than 3 of your skills are marketing ones. Add the channels and tools you've used (social media, GA4, copywriting...).");
+    return ok();
   },
 
   // --- marketing_growth ---
@@ -283,9 +321,9 @@ export const LI_CHECKERS: Record<string, (c: LiContext, r: LiResolvedRule) => Ou
 
   // --- research ---
   "LI-RESEARCH-08": (c) => {
-    const hasOutput = c.li.publications.length > 0 || /\b(paper|preprint|arXiv|poster|publication|dissertation|github|code)\b/i.test(`${about(c)}\n${expText(c)}`);
+    const hasOutput = c.li.publications.length > 0 || /\b(paper|preprint|arXiv|poster|publication|dissertation|github|code)\b/i.test(`${about(c)}\n${expText(c)}\n${projText(c)}`);
     if (!hasOutput) return na("no outputs or code mentioned");
-    if (/orcid\.org\/\d{4}-|scholar\.google|github\.com\/|\.github\.io|researchgate\.net/i.test(linkHay(c))) return ok();
+    if (/orcid\.org\/\d{4}-|scholar\.google|github\.com\/|\.github\.io|researchgate\.net/i.test(linkHay(c)) || hasPortfolioLink(c.li.links, linkText(c))) return ok();
     return fail(null, "Link your ORCID iD, GitHub or personal site under Contact info (or in About) so readers can check your work.");
   },
 };
@@ -301,13 +339,14 @@ function monthsSince(start: { year: number; month: number | null }, c: LiContext
   return (now.getFullYear() - start.year) * 12 + (now.getMonth() + 1 - (start.month ?? 1));
 }
 
-/** Rules the export can't decide (Skills count etc.) stay not_applicable until fixtures confirm the export carries them. */
+/** Code checks for the rules this input can carry. A rule with no checker is not_applicable with detail input:unimplemented. */
 export function runLiCodeChecks(rules: LiResolvedRule[], c: LiContext): RuleResult[] {
   return rules
     .filter((r) => r.check === "code" && !r.advisory)
     .map((r) => {
       const fn = LI_CHECKERS[r.id];
-      if (!fn) return { ruleId: r.id, ...na(r.pdfContested ? "needs full skills list (screenshot)" : "not checkable from the PDF export") };
+      // No checker yet: shown in the coverage meter (input:), never silently dropped (08 #20).
+    if (!fn) return { ruleId: r.id, ...na("input:unimplemented") };
       return { ruleId: r.id, ...fn(c, r) };
     });
 }

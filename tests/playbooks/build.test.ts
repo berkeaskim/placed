@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { normalise, crossCheck } from "@/scripts/build-playbooks";
+import { normalise, crossCheck, addShared, vocabCoverage, FROZEN_WORDS } from "@/scripts/build-playbooks";
+import { SIGNAL_VALUES } from "@/lib/playbooks/schema";
 import { PLAYBOOKS } from "@/lib/playbooks";
 import { ARCHETYPES } from "@/lib/types";
 import { SKILLS } from "@/lib/skills/vocab";
@@ -54,9 +55,9 @@ describe("normalise", () => {
   const raw = {
     finance_banking: {
       signals: [],
-      actions: [{ id: "X", type: "course", title: "t", description: "d", skills: [], signals: [], effort: "term", minYear: 2, evidence: "e", sources: [], timing: "Opens in January" }],
+      actions: [{ id: "X", type: "course", title: "t", description: "d", skills: [], signals: [], effort: "term", minYear: 2, evidence: "e", sources: [], timing: "Opens in January", kind: "build", signalValue: "test_prep", signalNote: "test prep only", cost: "free", free: true }],
       yearGuidance: { year1: "a", year2_penultimate: "b", final: "c", postgrad: "d", note: "n" },
-      yearGuidanceDated: [{ year: "year1", text: "dated", expiresOn: "2027-01-03", ref: "X" }],
+      yearGuidanceDated: [{ year: "year1", text: "dated", expiresOn: "2027-01-03", ref: "X" }, { year: "year1", text: "expected", reviewBy: "2026-11-30", gradYears: [2029] }],
     },
   };
 
@@ -66,6 +67,21 @@ describe("normalise", () => {
     expect(out.finance_banking.yearGuidance).toMatchObject({ "1st": "a", "2nd": "b", penultimate: "b", final: "c", masters: "d" });
     expect(out.finance_banking.note).toBe("n");
     expect(out.finance_banking.yearGuidanceDated[0]).toMatchObject({ year: "1st", expiresOn: "2027-01-03" });
+  });
+
+  it("keeps the honest signal labels, cost and kind through the build (06#3)", () => {
+    const a = normalise(raw, []).finance_banking.actions[0];
+    expect(a).toMatchObject({ kind: "build", signalValue: "test_prep", signalNote: "test prep only", cost: "Free" });
+  });
+
+  it("keeps reviewBy and gradYears on dated guidance (06#2, 06#30)", () => {
+    expect(normalise(raw, []).finance_banking.yearGuidanceDated[1]).toMatchObject({ year: "1st", reviewBy: "2026-11-30", gradYears: [2029] });
+  });
+
+  it("rejects an action without a signal value", () => {
+    const bad = structuredClone(raw);
+    delete (bad.finance_banking.actions[0] as Record<string, unknown>).signalValue;
+    expect(() => normalise(bad, [])).toThrow(/signalValue/);
   });
 
   it("appends timing to the description", () => {
@@ -93,7 +109,7 @@ describe("crossCheck", () => {
   const base = () => normalise({
     research: {
       signals: [{ id: "S1", text: "t", grade: "C", ruleIds: ["G-01"], sources: [{ quote: "q", accessed: "2026-10-13" }] }],
-      actions: [{ id: "A1", type: "course", title: "t", description: "d", skills: ["Python"], signals: ["S1"], effort: "term", minYear: "1st", evidence: "e", url: "https://example.org", verified: true, sources: [] }],
+      actions: [{ id: "A1", type: "course", title: "t", description: "d", skills: ["Python"], signals: ["S1"], effort: "term", minYear: "1st", evidence: "e", url: "https://example.org", verified: true, sources: [], kind: "build", signalValue: "cv_low" }],
       yearGuidance: { "1st": "a" },
     },
   }, []);
@@ -111,11 +127,102 @@ describe("crossCheck", () => {
     expect(errs).toMatch(/NOPE/);
     expect(errs).toMatch(/Underwater Basket Weaving/);
   });
+  it("flags frozen relative time words, undated linked experiences and mis-kinded items (06#17, 06#30)", () => {
+    const pb = base();
+    const a = pb.research.actions[0];
+    pb.research.actions.push(
+      { ...a, id: "A2", description: "GS 2027 EMEA is open now, reviewed on a rolling basis." },
+      { ...a, id: "A3", type: "experience", kind: "opportunity" },
+      { ...a, id: "A4", type: "course", kind: "opportunity" },
+      { ...a, id: "A5", type: "experience", kind: "opportunity", evergreen: true },
+      { ...a, id: "A6", type: "experience", kind: "opportunity", reviewBy: "2027-01-01" },
+    );
+    pb.research.yearGuidance["2nd"] = "Applications close next month.";
+    const errs = crossCheck(pb, { requireAll: false }).join("\n");
+    expect(errs).toMatch(/A2: relative time word in description: open now/);
+    expect(errs).toMatch(/A3: linked experience needs expiresOn, reviewBy or evergreen/);
+    expect(errs).toMatch(/A4: only experiences can be opportunities/);
+    expect(errs).not.toMatch(/A5|A6/);
+    expect(errs).toMatch(/research\/2nd: relative time word/);
+  });
+
   it("resolves sub-item rule ids to their base id and flags unknown ones", () => {
     const pb = base();
     pb.research.signals[0].ruleIds = ["G-01a", "ZZZ-99"];
     const errs = crossCheck(pb, { requireAll: false });
     expect(errs.join("\n")).toMatch(/ZZZ-99/);
     expect(errs.join("\n")).not.toMatch(/G-01a/);
+  });
+});
+
+describe("shared access programmes", () => {
+  it("copies a shared item into each listed archetype, dropping signal links it lacks", () => {
+    const pbs = normalise({
+      research: { signals: [{ id: "S1", text: "t", grade: "C", ruleIds: [], sources: [{ quote: "q", accessed: "2026-10-13" }] }], actions: [], yearGuidance: {} },
+      product: { signals: [], actions: [], yearGuidance: {} },
+    }, []);
+    addShared(pbs, { actions: [{ id: "PB-ALL-E99", archetypes: ["research", "product"], type: "experience", kind: "opportunity", title: "t", description: "d", skills: [], signals: ["S1"], effort: "weekend", minYear: "1st", evidence: "e", sources: [], signalValue: "cv_high" }] });
+    expect(pbs.research.actions[0]).toMatchObject({ id: "PB-ALL-E99", signals: ["S1"] });
+    expect(pbs.product.actions[0]).toMatchObject({ id: "PB-ALL-E99", signals: [] });
+    expect(crossCheck(pbs, { requireAll: false })).toEqual([]);
+    expect(() => addShared(pbs, { actions: [{ id: "X-1", archetypes: ["research"] }] })).toThrow(/PB-ALL-/);
+  });
+
+  it("ships at least five verified access programmes, shown to every finance and consulting student (06#11)", () => {
+    for (const a of ["finance_banking", "consulting"] as const) {
+      const ids = PLAYBOOKS[a].actions.filter((x) => x.id.startsWith("PB-ALL-")).map((x) => x.id);
+      expect(ids.length, a).toBeGreaterThanOrEqual(5);
+    }
+    for (const a of ARCHETYPES) for (const x of PLAYBOOKS[a].actions.filter((y) => y.id.startsWith("PB-ALL-"))) {
+      expect(x.kind).toBe("opportunity");
+      expect(x.description).toMatch(/Check eligibility yourself/);
+    }
+  });
+});
+
+describe("time-bound and eligibility data (06#30)", () => {
+  const all = () => ARCHETYPES.flatMap((a) => PLAYBOOKS[a].actions.map((x) => ({ a, x })));
+
+  it("every linked experience says when it stops being true", () => {
+    for (const { a, x } of all()) if (x.type === "experience" && x.url) {
+      expect(Boolean(x.expiresOn || x.reviewBy || x.evergreen), `${a}/${x.id}`).toBe(true);
+    }
+  });
+
+  it("no shipped text freezes a relative time word", () => {
+    for (const a of ARCHETYPES) {
+      const pb = PLAYBOOKS[a];
+      for (const x of pb.actions) expect(FROZEN_WORDS.test(x.description), `${a}/${x.id}`).toBe(false);
+      for (const [y, t] of Object.entries(pb.yearGuidance)) expect(FROZEN_WORDS.test(t ?? ""), `${a}/${y}`).toBe(false);
+      for (const d of pb.yearGuidanceDated) expect(FROZEN_WORDS.test(d.text), `${a} dated`).toBe(false);
+    }
+  });
+
+  it("every action has a signal value; courses and practice are never opportunities", () => {
+    for (const { a, x } of all()) {
+      expect(SIGNAL_VALUES, `${a}/${x.id}`).toContain(x.signalValue);
+      if (x.type === "course") expect(x.kind, `${a}/${x.id}`).toBe("build");
+      if (x.eligibleGradYears) expect(x.kind, `${a}/${x.id}`).toBe("opportunity");
+    }
+  });
+
+  it("first-year-only programmes declare an upper year bound or graduation year", () => {
+    for (const id of ["PB-QNT-E01", "PB-QNT-E06", "PB-FIN-E01", "PB-FIN-E04", "PB-FIN-E06", "PB-ALL-E05"]) {
+      const x = all().find((y) => y.x.id === id)?.x;
+      expect(x, id).toBeDefined();
+      expect(Boolean(x?.maxYear || x?.eligibleGradYears?.length), id).toBe(true);
+    }
+  });
+});
+
+describe("vocab coverage report (07#4)", () => {
+  it("counts vocab skills with no build action and the most demanded uncovered seed skills", () => {
+    const pbs = { software_eng: PLAYBOOKS.software_eng } as Parameters<typeof vocabCoverage>[0];
+    const jobs = [{ archetype: "software_eng", text_lines: ["Requirements", "Experience with Scala and Java"], requirements: [] }];
+    const [r] = vocabCoverage(pbs, jobs);
+    expect(r.archetype).toBe("software_eng");
+    expect(r.uncovered).not.toContain("Java");
+    expect(r.uncovered).toContain("Scala");
+    expect(r.demandedUncovered.map((d) => d.skill)).toEqual(["Scala"]);
   });
 });

@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import type { LiResolvedRule } from "@/lib/linkedin-rules/types";
-import { checkableFromPdf } from "@/lib/linkedin-rules";
+import { checkableFromPdf, liEffectiveSeverity, liJudgeQuestion, liThreshold, type LiInputSource } from "@/lib/linkedin-rules";
+import { ARCHETYPE_LABELS, type Archetype, type Year } from "@/lib/types";
 import type { ScoredRuleResult } from "@/lib/cv-score/context";
 import { cleanSpelling, mapVerdicts } from "./judgeCvRules";
 import { currentModelId } from "./models";
@@ -9,7 +10,7 @@ import { SYSTEM_LI_JUDGE } from "./prompts";
 import { JudgeOutput, type JudgeOutputT } from "./schemas";
 
 /** Cache-key part: bump on prompt/mapping changes; the prompt hash suffix invalidates automatically. */
-export const LI_PROMPT_VERSION = `li-judge-2026-10-14.1-${createHash("sha256").update(SYSTEM_LI_JUDGE).digest("hex").slice(0, 8)}`;
+export const LI_PROMPT_VERSION = `li-judge-2026-10-18.1-${createHash("sha256").update(SYSTEM_LI_JUDGE).digest("hex").slice(0, 8)}`;
 const FN = "judgeLinkedIn";
 const BATCH = 6;
 /**
@@ -31,23 +32,62 @@ export type LiJudgeInput = {
   /** Redacted CV rendering (lib/cv-score/pii.ts), or null when no CV is on file. */
   cvText: string | null;
   rules: LiResolvedRule[];
+  /** Year and target sector: the judge resolves year/sector thresholds and conditional rules with them (08 #3). */
+  sector: Archetype;
+  year: Year;
+  /** Which input the profile came from, so the judge knows which sections it can't see. */
+  source?: LiInputSource;
   fixtureKey?: string;
 };
 export type LiJudgeResult = { results: ScoredRuleResult[]; spellingErrors: string[] | null; modelId: string; cacheable: boolean; aiUnavailable?: boolean };
 
 const escapeData = (s: string) => s.replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
+const SOURCE_LABEL: Record<LiInputSource, string> = {
+  pdf: "LinkedIn 'Save to PDF' export (shows only the ~3 top skills; may omit Projects and Featured)",
+  archive: "LinkedIn 'Download your data' archive (full skills list; no Featured)",
+  extension: "the student's own profile page, read in their browser",
+  url: "the public profile page (no skills list)",
+};
+
+/** "(threshold for this student: 60)" for rules whose cut-off depends on year or sector; "" otherwise. */
+function thresholdNote(r: LiResolvedRule, year: Year): string {
+  const t = liThreshold(r, year);
+  if (t === undefined) return "";
+  const max = r.params?.majorThreshold;
+  return ` (threshold for this student: ${t}${max !== undefined ? `; upper bound ${max}` : ""}. Use these numbers over any in the wording.)`;
+}
+
 export function buildLiJudgePrompt(i: Omit<LiJudgeInput, "fixtureKey">): string {
   const judged = i.rules.filter(isJudged);
   const rules = judged
-    .map((r) => `- [${r.id}]${r.allowPartial ? " (PARTIAL ALLOWED)" : ""} ${r.llmGuidance ?? r.statement}\n  pass e.g.: ${r.passExample ?? "-"}\n  fail e.g.: ${r.failExample ?? "-"}`)
+    .map((r) => {
+      const critical = liEffectiveSeverity(r, i.sector, i.year) === "critical";
+      const tags = `${r.allowPartial ? " (PARTIAL ALLOWED)" : ""}${critical ? " (CRITICAL: a fail must quote the line)" : ""}`;
+      return `- [${r.id}]${tags} ${liJudgeQuestion(r)}${thresholdNote(r, i.year)}\n  pass e.g.: ${r.passExample ?? "-"}\n  fail e.g.: ${r.failExample ?? "-"}`;
+    })
     .join("\n");
   return (
-    `RULES (${judged.length}):\n${rules}\n\n` +
+    `STUDENT: year=${i.year}; target sector=${ARCHETYPE_LABELS[i.sector]}` +
+    (i.source ? `; profile read from: ${SOURCE_LABEL[i.source]}` : "") +
+    `\n\nRULES (${judged.length}):\n${rules}\n\n` +
     `<profile_structured>\n${escapeData(i.structuredText)}\n</profile_structured>\n\n` +
     `<profile_text>\n${escapeData(i.redactedText)}\n</profile_text>` +
     (i.cvText ? `\n\n<cv_structured>\n${escapeData(i.cvText)}\n</cv_structured>` : "\n\n(No CV on file: rules comparing the profile with the CV are not_applicable.)")
   );
+}
+
+/**
+ * A critical LinkedIn fail with no quoted line is not trusted (08 #2): the model can't prove an absence-of-integrity
+ * claim, and a critical fail moves the score a lot. It becomes could_not_assess and drops out of the denominator.
+ */
+export function requireQuoteForCritical(results: ScoredRuleResult[], rules: LiResolvedRule[], sector: Archetype, year: Year): ScoredRuleResult[] {
+  const byId = new Map(rules.map((r) => [r.id, r]));
+  return results.map((x) => {
+    const r = byId.get(x.ruleId);
+    if (!r || x.status !== "fail" || x.evidenceLine !== null || liEffectiveSeverity(r, sector, year) !== "critical") return x;
+    return { ruleId: x.ruleId, status: "could_not_assess", evidenceLine: null, fix: null, detail: "critical fail without a quoted line" };
+  });
 }
 
 /**
@@ -97,7 +137,7 @@ export async function judgeLinkedIn(i: LiJudgeInput): Promise<LiJudgeResult> {
   }
   if (!raw) return none();
   return {
-    results: mapVerdicts(raw, judged, i.redactedText, () => true),
+    results: requireQuoteForCritical(mapVerdicts(raw, judged, i.redactedText, () => true), judged, i.sector, i.year),
     spellingErrors: cleanSpelling(raw.spelling_errors, i.redactedText),
     modelId, cacheable: true, aiUnavailable: false,
   };

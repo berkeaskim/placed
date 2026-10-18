@@ -30,6 +30,7 @@
     "seed": "tsx --env-file-if-exists=.env.local scripts/setup.ts --no-ingest",
     "validate-slugs": "tsx scripts/validate-slugs.ts",
     "programmes:check": "tsx scripts/check-programmes.ts",
+    "playbooks:freshness": "tsx scripts/check-playbook-freshness.ts",
     "coverage": "tsx scripts/coverage.ts",
     "e2e": "playwright test",
     "build-playbooks": "tsx scripts/build-playbooks.ts",

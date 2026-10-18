@@ -148,7 +148,7 @@ export default async function TargetRolePage() {
   const [p, cv] = await Promise.all([getProfile(user.id), getActiveCv(user.id)]);
   const progress = loadProgress(user.id);
   const facts = db.select({ claim: confirmedFacts.claim }).from(confirmedFacts).where(eq(confirmedFacts.user_id, user.id)).all();
-  const { sector, year } = targetFor(p);
+  const { sector, year, yearKnown, gradYear } = targetFor(p);
   // The cached feed jobs already carry parsed JD skills; reading up to 1000 raw rows (with text_lines) and re-parsing them made every visit slow.
   const feedJobs = await getFeedJobs(today, lastIngestAt()).catch((e: unknown) => { console.error("target: jobs read failed", e); return []; });
   const score = cv
@@ -160,7 +160,7 @@ export default async function TargetRolePage() {
     .map((j) => ({ id: j.id, archetype: j.archetype, is_live: true, deadline: j.deadline, skills: j.jdSkills }));
 
   const v = buildTargetView({
-    sector, year, today, cv: cv?.parsed ?? null, profileSkills: p.skills ?? [], progress,
+    sector, year, gradYear, yearKnown, today, cv: cv?.parsed ?? null, profileSkills: p.skills ?? [], progress,
     jobs, confirmedClaims: facts.map((f) => f.claim),
   });
   const role = ARCHETYPE_LABELS[sector];
@@ -198,11 +198,15 @@ export default async function TargetRolePage() {
               <span aria-hidden="true">→</span>
             </Link>
           )}
-          {(v.guidance.line || v.guidance.dated.length > 0) && (
+          {(v.guidance.line || v.guidance.dated.length > 0 || v.guidance.setYear) && (
             <div className="rounded-[18px] border border-[#E6E6EF] bg-white p-4 text-sm">
               <h2 className="mb-1 font-bold">For your year</h2>
               {v.guidance.line && <p>{v.guidance.line}</p>}
+              {v.guidance.note && <p className="mt-1.5 text-[#5B5B6B]">{v.guidance.note}</p>}
               {v.guidance.dated.map((d) => <p key={d} className="mt-1.5">{d}</p>)}
+              {v.guidance.setYear && (
+                <p className="mt-1.5 text-[#5B5B6B]">{v.guidance.setYear} <Link href="/profile" className="font-semibold text-[#3A20C4] underline underline-offset-2">Edit profile</Link></p>
+              )}
             </div>
           )}
         </aside>
@@ -241,7 +245,12 @@ export default async function TargetRolePage() {
           </Section>
 
           <Section id="get-h" title={v.fallback ? "Strengthen your profile" : "Not yet? How to get it"}
-            sub="From our Role Playbook, filtered for your year. Marking one done asks what you did, in your own words.">
+            sub="From our Role Playbook, filtered for your year, strongest evidence first. Marking one done asks what you did, in your own words.">
+            {v.uncovered.length > 0 && (
+              <p className="rounded-[14px] border border-[#E6E6EF] bg-white p-3 text-sm text-[#5B5B6B]">
+                No playbook step yet for {v.uncovered.slice(0, 6).join(", ")}{v.uncovered.length > 6 ? ` and ${v.uncovered.length - 6} more` : ""}. Pick a project you care about that uses it, and keep a short note of what you built.
+              </p>
+            )}
             {v.actions.length > 0 && (
               <ul className="flex flex-col gap-3">
                 {v.actions.map((a) => <ActionCard key={a.id} action={a} builds={builds(v, a)} planned={v.planned.includes(a.id)} />)}
@@ -256,6 +265,15 @@ export default async function TargetRolePage() {
               </>
             )}
           </Section>
+
+          {v.opportunities.length > 0 && (
+            <Section id="apply-h" title="Programmes to apply to"
+              sub="Selective programmes open to your year, soonest deadline first. They're outcomes to aim for, not ways to learn a skill, so check eligibility and dates on the official page.">
+              <ul className="flex flex-col gap-3">
+                {v.opportunities.map((a) => <ActionCard key={a.id} action={a} builds={builds(v, a)} planned={v.planned.includes(a.id)} />)}
+              </ul>
+            </Section>
+          )}
 
           <Section id="signals-h" title="What employers look for" sub="Each with its evidence grade. Tap a source to read the exact quote.">
             <ul className="flex flex-col gap-2">{v.signals.map((s) => <SignalCard key={s.id} signal={s} />)}</ul>
