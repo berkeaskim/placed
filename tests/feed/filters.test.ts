@@ -5,7 +5,7 @@ import type { Ranked } from "@/lib/feed/rank";
 const r = (id: string, over: { location?: string; remote?: boolean; archetype?: string | null; deadline?: string | null; curated?: boolean } = {}) =>
   ({ job: { id, location: "London", remote: false, archetype: "data_analytics", deadline: null, ...over } }) as unknown as Ranked;
 const ids = (xs: Ranked[]) => xs.map((x) => x.job.id);
-const none: FeedFilters = { a: null, loc: null, soon: false };
+const none: FeedFilters = { a: null, loc: null, soon: false, mode: null };
 const today = "2026-10-13";
 
 describe("applyFilters", () => {
@@ -36,13 +36,13 @@ describe("applyFilters", () => {
   });
   it("combines filters", () => {
     const xs = [r("a", { location: "London", deadline: "2026-10-14" }), r("b", { location: "Paris, France", deadline: "2026-10-14" })];
-    expect(ids(applyFilters(xs, { a: "data_analytics", loc: "london", soon: true }, today))).toEqual(["a"]);
+    expect(ids(applyFilters(xs, { a: "data_analytics", loc: "london", soon: true, mode: null }, today))).toEqual(["a"]);
   });
 });
 
 describe("parseFilters", () => {
   it("accepts only known values", () => {
-    expect(parseFilters({ a: "consulting", loc: "uk", soon: "1" })).toEqual({ a: "consulting", loc: "uk", soon: true });
+    expect(parseFilters({ a: "consulting", loc: "uk", soon: "1" })).toEqual({ a: "consulting", loc: "uk", soon: true, mode: null });
     expect(parseFilters({ a: "bogus", loc: "mars", soon: "0" })).toEqual(none);
     expect(parseFilters({ a: ["consulting"], loc: undefined })).toEqual(none);
   });

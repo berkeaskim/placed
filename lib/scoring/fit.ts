@@ -2,6 +2,7 @@ import type { Archetype, FitLabel, JobForScoring, Region, StudentProfile, Year }
 import { classifyRegion } from "@/lib/ingest/filter";
 import type { CoverageResult } from "./coverage";
 import { daysUntil, isValidDate } from "./dates";
+import { springWeekGradYear } from "@/lib/profile/cycle";
 
 export const FIT_WEIGHTS = { archetype: 0.35, coverage: 0.25, location: 0.15, accessibility: 0.25 } as const;
 const GATE_CAP = 2.5;
@@ -76,13 +77,22 @@ function accessibilitySub(student: StudentProfile, job: JobForScoring, today: st
   return Math.min(5, Math.max(1, s));
 }
 
+/** Spring weeks recruit one graduating class; a known grad year settles it (a 2nd year may be penultimate or not). */
+function yearGate(student: StudentProfile, job: JobForScoring, today: string): Gate {
+  if (job.employmentType === "spring_week" && student.gradYear != null) {
+    const target = springWeekGradYear(today);
+    return student.gradYear === target ? { key: "year", passed: true } : { key: "year", passed: false, reason: `Spring weeks this cycle are for students graduating in ${target}` };
+  }
+  return job.yearEligibility.length > 0 && !job.yearEligibility.includes(student.year)
+    ? { key: "year", passed: false, reason: `Open to ${job.yearEligibility.map((y) => YEAR_LABEL[y]).join(" / ")} only` }
+    : { key: "year", passed: true };
+}
+
 export function scoreFit(student: StudentProfile, job: JobForScoring, coverage: CoverageResult, today: string): FitResult {
   const region = classifyRegion(job.location, job.remote);
   const loc = locationSub(region, job, student.locationPref);
   const gates: Gate[] = [
-    job.yearEligibility.length > 0 && !job.yearEligibility.includes(student.year)
-      ? { key: "year", passed: false, reason: `Open to ${job.yearEligibility.map((y) => YEAR_LABEL[y]).join(" / ")} only` }
-      : { key: "year", passed: true },
+    yearGate(student, job, today),
     job.employmentType === "permanent"
       ? { key: "permanent", passed: false, reason: "Permanent full-time role" }
       : { key: "permanent", passed: true },

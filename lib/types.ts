@@ -34,6 +34,8 @@ export interface RawJob {
   deadline?: string | null;
   /** YYYY-MM-DD the application window opens (curated programme cards). */
   opensOn?: string | null;
+  /** Authoritative type from a curated programme card's `kind`; overrides the tagger. */
+  employmentType?: JobForScoring["employmentType"] | null;
 }
 
 export type Importance = "critical" | "high" | "meaningful" | "preferred" | "low_signal";
@@ -73,6 +75,8 @@ export interface ArchetypeScore {
 
 export interface StudentProfile {
   year: Year;
+  /** Expected graduation year; null/absent when the student hasn't said (eligibility then falls back to `year`). */
+  gradYear?: number | null;
   locationPref: Region[];
   needsVisa: boolean;
   archetypes: ArchetypeScore[]; // sorted desc by score
@@ -120,7 +124,9 @@ export type TailorChangeType = "kept" | "reordered" | "rephrased" | "merged" | "
  * A bullet in the tailored CV. `sourceRefs` cite source bullet ids (ParsedCV bullet/detail ids).
  * `changeType` is optional: verifyTailoring infers it when absent. A `dropped` bullet is never rendered.
  */
-export type TailoredBullet = { id: string; text: string; sourceRefs: string[]; changeType?: TailorChangeType; dropReason?: string; qualifiersKept?: string[] };
+export type TailoredBullet = { id: string; text: string; sourceRefs: string[]; changeType?: TailorChangeType; dropReason?: string; qualifiersKept?: string[];
+  /** Added from the bank by a no-AI swap: the bank text as-is ("added, not tailored — Tailor again to polish"). */
+  untailored?: boolean };
 export type TailoredEntry = { id: string; org: string; title: string; dates: string; location: string; bullets: TailoredBullet[] };
 export type TailorChange = { bulletId: string; before: string; after: string; reason: string; jdRequirement: string | null; keywordsAdded: string[] };
 export type TailoredCV = {

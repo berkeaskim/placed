@@ -269,6 +269,26 @@ function bulletTexts(t: TailoredCV): Map<string, string> {
   return m;
 }
 
+export type CoverageSummary = Pick<TailorOutcome, "coverageBefore" | "coverageAfter" | "mustHaves" | "niceToHaves" | "tailoredFor">;
+
+/**
+ * Coverage of `cv` before and of the rendered `tailored` after, and what tailoring did about each requirement
+ * (covered / surfaced / missing). Shared by runTailoring and the no-AI bank swap.
+ */
+export function coverageSummary(cv: ParsedCV, job: JobListItem, tailored: TailoredCV, ctx: Ctx = context(cv, job)): CoverageSummary {
+  const after = computeCoverage(ctx.reqs, cvSkillSource(renderView(tailored, cv)));
+  const afterStatus = new Map(after.items.map((x) => [x.skill, x.status]));
+  const tailoredFor: TailoredFor[] = ctx.before.items.map((b) => ({
+    requirement: b.skill, skill: b.skill, section: b.section,
+    state: b.status === "gap" ? "missing" : b.status === "supportedByResume" && afterStatus.get(b.skill) === "existing" ? "surfaced" : "covered",
+  }));
+  return {
+    coverageBefore: ctx.before.weighted, coverageAfter: after.weighted,
+    mustHaves: { before: ctx.before.must, after: after.must }, niceToHaves: { before: ctx.before.nice, after: after.nice },
+    tailoredFor,
+  };
+}
+
 // ---------- public API ----------
 
 export async function runTailoring(i: GateInput & { tailor: TailorFn }): Promise<TailorOutcome> {
@@ -317,17 +337,10 @@ export async function runTailoring(i: GateInput & { tailor: TailorFn }): Promise
     }
   }
 
-  const after = computeCoverage(ctx.reqs, cvSkillSource(renderView(tailored, i.cv)));
-  const afterStatus = new Map(after.items.map((x) => [x.skill, x.status]));
-  const tailoredFor: TailoredFor[] = ctx.before.items.map((b) => ({
-    requirement: b.skill, skill: b.skill, section: b.section,
-    state: b.status === "gap" ? "missing" : b.status === "supportedByResume" && afterStatus.get(b.skill) === "existing" ? "surfaced" : "covered",
-  }));
   return {
     tailored, report,
-    coverageBefore: ctx.before.weighted, coverageAfter: after.weighted,
-    mustHaves: { before: ctx.before.must, after: after.must }, niceToHaves: { before: ctx.before.nice, after: after.nice },
-    tailoredFor, changes: buildChanges(i, ctx, tailored), reverted,
+    ...coverageSummary(i.cv, i.job, tailored, ctx),
+    changes: buildChanges(i, ctx, tailored), reverted,
     unconfirmedNumbers: [...invented], needsNumber: needsNumberOf(i.cv, tailored),
     attempts, fellBackToOriginal, usedFallback, ...(fallbackReason ? { fallbackReason } : {}),
   };

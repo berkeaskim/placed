@@ -277,7 +277,9 @@ describe("caught it after the student confirms (fix 1)", () => {
   it("badge copy names the student's confirmations", () => {
     expect(verificationCopy("traced", false)).toBe("Every claim traced to your original CV");
     expect(verificationCopy("caught", true)).toBe("Every claim traced to your CV or confirmed by you");
-    expect(verificationCopy("blocked", true)).toMatch(/aren't supported/);
+    expect(verificationCopy("traced", false, true)).toBe("Every claim traced to your CV or experience bank");
+    expect(verificationCopy("caught", true, true)).toBe("Every claim traced to your CV or experience bank, or confirmed by you");
+    expect(verificationCopy("blocked", true, true)).toMatch(/aren't supported/);
   });
 });
 

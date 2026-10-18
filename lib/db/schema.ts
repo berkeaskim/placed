@@ -22,6 +22,7 @@ export const ATS_VALUES = ["greenhouse", "lever", "ashby", "workday", "smartrecr
 /** Fetch transports other than plain fetch; null = plain. "stealth" routes through the opt-in recon sidecar. */
 export const TRANSPORT_VALUES = ["stealth"] as const;
 export const SPONSORS_VISA_VALUES = ["yes", "no", "unknown"] as const;
+export const TRACK_VALUES = ["standard", "spring"] as const;
 export const TAG_STATUS_VALUES = ["ok", "failed", "pending"] as const;
 export const DEADLINE_SOURCE_VALUES = ["ats", "text"] as const;
 export const PLAYBOOK_STATUS_VALUES = ["planned", "done"] as const;
@@ -37,6 +38,11 @@ export const CL_OUTPUT_STATUS_VALUES = ["draft", "ready"] as const;
 export const CL_STORY_KIND_VALUES = ["story", "why_firm"] as const;
 export const CL_RESEARCH_PROVIDER_VALUES = ["gemini", "serper", "none"] as const;
 
+export const BANK_SECTION_VALUES = ["experience", "projects", "leadership"] as const;
+export const BANK_SOURCE_KIND_VALUES = ["cv", "linkedin_capture", "linkedin_export", "linkedin_post", "manual"] as const;
+export const BANK_SUGGESTION_KIND_VALUES = ["new_entry", "merge_into", "new_bullet"] as const;
+export const BANK_SUGGESTION_STATUS_VALUES = ["pending", "accepted", "rejected"] as const;
+
 export type AtsKind = (typeof ATS_VALUES)[number];
 export type PackStatus = (typeof PACK_STATUS_VALUES)[number];
 export type OutreachTarget = (typeof OUTREACH_TARGET_VALUES)[number];
@@ -46,6 +52,8 @@ export const profiles = sqliteTable("profiles", {
   user_id: text("user_id").primaryKey(),
   display_name: text("display_name"),
   year: text("year", { enum: YEAR_VALUES }).$type<Year>(),
+  /** Expected graduation year (e.g. 2029). Spring weeks recruit by it; `year` alone is ambiguous on 4-year degrees. */
+  grad_year: integer("grad_year"),
   /** Broad field (one of FIELDS), derived from `course`; drives grouping and anywhere a category is enough. */
   field: text("field"),
   /** The course as the student named it ("BSc Economics and Statistics"); what AI prompts get. */
@@ -86,6 +94,8 @@ export const cvScores = sqliteTable("cv_scores", {
   cv_id: text("cv_id").notNull().references(() => cvs.id, { onDelete: "cascade" }),
   user_id: text("user_id").notNull(),
   sector: text("sector").notNull(),
+  /** Scoring track (lib/cv-rules TRACKS): a CV has one score per sector per track. */
+  track: text("track", { enum: TRACK_VALUES }).notNull().default("standard"),
   total: integer("total").notNull(),
   dimensions: json<unknown>("dimensions").notNull(),
   caps_applied: json<string[]>("caps_applied").notNull().default(sql`'[]'`),
@@ -97,10 +107,10 @@ export const cvScores = sqliteTable("cv_scores", {
   rules_version: text("rules_version"),
   created_at: now("created_at").notNull(),
 }, (t) => [
-  unique("cv_scores_cv_id_sector_key").on(t.cv_id, t.sector),
+  unique("cv_scores_cv_id_sector_track_key").on(t.cv_id, t.sector, t.track),
   index("cv_scores_user_idx").on(t.user_id),
   index("cv_scores_cv_idx").on(t.cv_id),
-  index("cv_scores_cache_idx").on(t.user_id, t.sector, t.text_hash, t.model_id, t.prompt_version, t.rules_version),
+  index("cv_scores_cache_idx").on(t.user_id, t.sector, t.track, t.text_hash, t.model_id, t.prompt_version, t.rules_version),
 ]);
 
 export const cvFeedback = sqliteTable("cv_feedback", {
@@ -405,6 +415,72 @@ export const companyResearch = sqliteTable("company_research", {
 }, (t) => [
   unique("company_research_company_key_key").on(t.company_key),
   check("company_research_provider_check", inList("provider", CL_RESEARCH_PROVIDER_VALUES)),
+]);
+
+/** Experience Bank: every experience/project/leadership entry a student has, with all bullets. */
+export const bankEntries = sqliteTable("bank_entries", {
+  id: uuid("id").primaryKey(),
+  user_id: text("user_id").notNull(),
+  section: text("section").notNull(),
+  org: text("org").notNull().default(""),
+  title: text("title").notNull().default(""),
+  dates: text("dates").notNull().default(""),
+  start_ym: text("start_ym"),
+  end_ym: text("end_ym"),
+  location: text("location").notNull().default(""),
+  pinned: bool("pinned").notNull().default(false),
+  hidden: bool("hidden").notNull().default(false),
+  source_ids: json<string[]>("source_ids").notNull().default(sql`'[]'`),
+  created_at: now("created_at").notNull(),
+  updated_at: now("updated_at").notNull(),
+}, (t) => [
+  index("bank_entries_user_section_idx").on(t.user_id, t.section),
+  check("bank_entries_section_check", inList("section", BANK_SECTION_VALUES)),
+]);
+
+export const bankBullets = sqliteTable("bank_bullets", {
+  id: uuid("id").primaryKey(),
+  entry_id: text("entry_id").notNull().references(() => bankEntries.id, { onDelete: "cascade" }),
+  user_id: text("user_id").notNull(),
+  text: text("text").notNull(),
+  position: integer("position").notNull().default(0),
+  pinned: bool("pinned").notNull().default(false),
+  hidden: bool("hidden").notNull().default(false),
+  source_ids: json<string[]>("source_ids").notNull().default(sql`'[]'`),
+  source_text: text("source_text"),
+  created_at: now("created_at").notNull(),
+  updated_at: now("updated_at").notNull(),
+}, (t) => [
+  index("bank_bullets_entry_idx").on(t.entry_id),
+  index("bank_bullets_user_idx").on(t.user_id),
+]);
+
+export const bankSources = sqliteTable("bank_sources", {
+  id: uuid("id").primaryKey(),
+  user_id: text("user_id").notNull(),
+  kind: text("kind").notNull(),
+  ref: text("ref"),
+  raw_text: text("raw_text").notNull().default(""),
+  imported_at: now("imported_at").notNull(),
+}, (t) => [
+  uniqueIndex("bank_sources_kind_ref").on(t.user_id, t.kind, t.ref).where(sql`ref is not null`),
+  check("bank_sources_kind_check", inList("kind", BANK_SOURCE_KIND_VALUES)),
+]);
+
+export const bankSuggestions = sqliteTable("bank_suggestions", {
+  id: uuid("id").primaryKey(),
+  user_id: text("user_id").notNull(),
+  source_id: text("source_id").notNull().references(() => bankSources.id, { onDelete: "cascade" }),
+  kind: text("kind").notNull(),
+  target_entry_id: text("target_entry_id"),
+  payload: json<unknown>("payload").notNull(),
+  status: text("status").notNull().default("pending"),
+  created_at: now("created_at").notNull(),
+  resolved_at: text("resolved_at"),
+}, (t) => [
+  index("bank_suggestions_user_status_idx").on(t.user_id, t.status),
+  check("bank_suggestions_kind_check", inList("kind", BANK_SUGGESTION_KIND_VALUES)),
+  check("bank_suggestions_status_check", inList("status", BANK_SUGGESTION_STATUS_VALUES)),
 ]);
 
 /** Local app settings (AI provider, model overrides, ...). Secrets live under `secret.<key>`, sealed (lib/settings/store.ts). */

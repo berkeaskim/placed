@@ -4,6 +4,7 @@ import { and, eq } from "drizzle-orm";
 import { requireUser } from "@/lib/auth/local-user";
 import { db } from "@/lib/db/client";
 import { confirmedFacts, cvScores, playbookProgress } from "@/lib/db/schema";
+import { scoreTrackFor } from "@/lib/profile/cycle";
 import { getActiveCv, getProfile } from "@/lib/db/queries";
 import { todayLondon } from "@/lib/scoring/dates";
 import { buildTargetView, targetFor, type ProgressRow, type TargetView } from "@/lib/target/view";
@@ -152,7 +153,8 @@ export default async function TargetRolePage() {
   const feedJobs = await getFeedJobs(today, lastIngestAt()).catch((e: unknown) => { console.error("target: jobs read failed", e); return []; });
   const score = cv
     ? db.select({ total: cvScores.total }).from(cvScores)
-      .where(and(eq(cvScores.user_id, user.id), eq(cvScores.cv_id, cv.id), eq(cvScores.sector, sector))).get() ?? null
+      .where(and(eq(cvScores.user_id, user.id), eq(cvScores.cv_id, cv.id), eq(cvScores.sector, sector),
+        eq(cvScores.track, scoreTrackFor({ year, gradYear: p.grad_year }, today)))).get() ?? null
     : null;
   const jobs: DemandJob[] = feedJobs.filter((j) => j.archetype === sector)
     .map((j) => ({ id: j.id, archetype: j.archetype, is_live: true, deadline: j.deadline, skills: j.jdSkills }));

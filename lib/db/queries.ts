@@ -4,7 +4,7 @@ import { db } from "@/lib/db/client";
 import { companies, cvs, jobs, profiles } from "@/lib/db/schema";
 
 export type ProfileRow = {
-  user_id: string; display_name: string | null; year: Year | null; field: string | null; location_pref: Region[];
+  user_id: string; display_name: string | null; year: Year | null; grad_year: number | null; field: string | null; location_pref: Region[];
   needs_visa: boolean; target_archetype: Archetype | null; archetypes: ArchetypeScore[]; skills: string[];
   onboarded: boolean; xp: number; level: number; streak_days: number; last_active_date: string | null;
 };
@@ -18,6 +18,7 @@ export async function getProfile(userId: string): Promise<ProfileRow> {
 export function toStudent(p: ProfileRow): StudentProfile {
   return {
     year: p.year ?? "2nd",
+    gradYear: p.grad_year ?? null,
     locationPref: p.location_pref ?? [],
     needsVisa: p.needs_visa,
     archetypes: [...(p.archetypes ?? [])].sort((a, b) => b.score - a.score),
@@ -60,9 +61,16 @@ export async function getLiveJobs(today: string): Promise<JobListItem[]> {
     .orderBy(sql`${jobs.posted_at} desc nulls last`, asc(jobs.id))
     .limit(LIVE_JOBS_MAX)
     .all();
-  // Curated cards are a stand-in for employers whose postings we can't read; hide them while the same employer has a live one.
-  const covered = new Set(rows.filter((r) => r.ats !== "curated" && r.employer).map((r) => r.employer));
-  return rows.filter((r) => !(r.ats === "curated" && r.employer && covered.has(r.employer))).map(toJob);
+  // Curated cards are a stand-in for employers whose postings we can't read; hide them while the same employer has a live
+  // one of the same kind. A live summer internship must not hide that employer's spring week card.
+  const coverKey = (employer: string, type: string) => `${employer}\u0000${programmeKind(type)}`;
+  const covered = new Set(rows.filter((r) => r.ats !== "curated" && r.employer).map((r) => coverKey(r.employer!, r.employment_type)));
+  return rows.filter((r) => !(r.ats === "curated" && r.employer && covered.has(coverKey(r.employer, r.employment_type)))).map(toJob);
+}
+
+/** Spring weeks and insight events are one kind of card; everything else (internships, graduate roles) another. */
+function programmeKind(type: string): "first_year" | "other" {
+  return type === "spring_week" || type === "insight" ? "first_year" : "other";
 }
 
 export async function getJob(id: string): Promise<JobListItem | null> {

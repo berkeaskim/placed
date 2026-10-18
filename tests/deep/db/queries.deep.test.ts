@@ -7,13 +7,13 @@ import { profiles } from "@/lib/db/schema";
 import { getProfile, toStudent, type ProfileRow } from "@/lib/db/queries";
 
 const row: ProfileRow = {
-  user_id: "u1", display_name: "Sam", year: null, field: null, location_pref: null as never, needs_visa: true,
+  user_id: "u1", display_name: "Sam", year: null, grad_year: null, field: null, location_pref: null as never, needs_visa: true,
   target_archetype: null, archetypes: null as never, skills: null as never, onboarded: false, xp: 0, level: 1, streak_days: 0, last_active_date: null,
 };
 
 describe("toStudent", () => {
   it("defaults nulls safely", () => {
-    expect(toStudent(row)).toEqual({ year: "2nd", locationPref: [], needsVisa: true, archetypes: [], skills: [] });
+    expect(toStudent(row)).toEqual({ year: "2nd", gradYear: null, locationPref: [], needsVisa: true, archetypes: [], skills: [] });
   });
   it("sorts archetypes by score desc without mutating the row", () => {
     const archetypes = [{ key: "research", score: 10, why: [] }, { key: "software_eng", score: 90, why: [] }, { key: "product", score: 50, why: [] }];
