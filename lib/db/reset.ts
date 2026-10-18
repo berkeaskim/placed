@@ -31,7 +31,7 @@ export async function resetUserData(userId: string): Promise<void> {
   db.transaction((tx) => {
     for (const t of TABLES) tx.delete(t).where(eq(t.user_id, userId)).run();
     tx.update(profiles).set({
-      year: null, grad_year: null, field: null, course: null, university: null, location_pref: [], needs_visa: false, target_archetype: null, archetypes: [], skills: [],
+      year: null, grad_year: null, work_auth: null, field: null, course: null, university: null, location_pref: [], needs_visa: false, target_archetype: null, archetypes: [], skills: [],
       onboarded: false, xp: 0, level: 1, streak_days: 0, last_active_date: null,
     }).where(eq(profiles.user_id, userId)).run();
   });

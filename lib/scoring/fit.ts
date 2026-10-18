@@ -1,4 +1,4 @@
-import type { Archetype, FitLabel, JobForScoring, Region, StudentProfile, Year } from "@/lib/types";
+import type { Archetype, FitLabel, JobForScoring, Region, StudentProfile, WorkAuth, Year } from "@/lib/types";
 import { classifyRegion } from "@/lib/ingest/filter";
 import { canonicalize } from "@/lib/skills/extract";
 import type { CoverageResult } from "./coverage";
@@ -68,6 +68,12 @@ const STUDENT_VISA_NOTE =
   "Says no visa sponsorship. On a Student visa you can usually still work full-time in vacations and on a placement that is part of your course: check the dates fall outside term.";
 const GRADUATE_VISA_NOTE =
   "Sponsorship isn't stated. The Graduate visa lasts 18 months if you apply from 1 January 2027 (2 years before), so ask whether they sponsor a Skilled Worker visa after that.";
+const GRADUATE_VISA_NO_SPONSOR_NOTE =
+  "Says no visa sponsorship. Your Graduate visa lets you start without it, but check the role can outlast your visa or will move you to a Skilled Worker visa.";
+const SPONSOR_UNKNOWN_NOTE = "Sponsorship isn't stated: ask the employer before you apply.";
+
+/** Older profiles only carry needsVisa; on means a Student visa (the migration backfills the same way). */
+const workAuthFor = (s: StudentProfile): WorkAuth => s.workAuth ?? (s.needsVisa ? "student_visa" : "uk_rtw");
 const EARLY_CAREERS: JobForScoring["employmentType"][] = ["internship", "spring_week", "insight", "placement", "graduate"];
 
 export function labelFor(g: number): FitLabel {
@@ -241,7 +247,10 @@ export function scoreFit(student: StudentProfile, job: FitJob, coverage: Coverag
   const year = yearCheck(student, job, sig, today);
   const perm = permanentCheck(student, job, sig, today);
   const exp = experienceCheck(student, sig, today);
-  const needsSponsor = student.needsVisa && job.sponsorsVisa === "no" && SPONSOR_NEEDED.includes(job.employmentType);
+  const auth = workAuthFor(student);
+  // Needs a visa for this role: always without UK right to work; on a Student visa only after the course (10#1)
+  const needsSponsor = job.sponsorsVisa === "no" &&
+    (auth === "needs_sponsorship" || (auth === "student_visa" && SPONSOR_NEEDED.includes(job.employmentType)));
   let gates: Gate[] = [
     year.gate,
     perm.gate,
@@ -259,8 +268,10 @@ export function scoreFit(student: StudentProfile, job: FitJob, coverage: Coverag
 
   const notes: string[] = [...year.notes, ...perm.notes, ...degree.notes, ...subject.notes];
   for (const l of sig.languages) notes.push(`Asks for ${l.lang}: "${l.quote}"`);
-  if (student.needsVisa && job.sponsorsVisa === "no" && !SPONSOR_NEEDED.includes(job.employmentType)) notes.push(STUDENT_VISA_NOTE);
-  if (student.needsVisa && job.sponsorsVisa === "unknown" && job.employmentType === "graduate") notes.push(GRADUATE_VISA_NOTE);
+  if (auth === "student_visa" && job.sponsorsVisa === "no" && !SPONSOR_NEEDED.includes(job.employmentType)) notes.push(STUDENT_VISA_NOTE);
+  if (auth === "graduate_visa" && job.sponsorsVisa === "no" && SPONSOR_NEEDED.includes(job.employmentType)) notes.push(GRADUATE_VISA_NO_SPONSOR_NOTE);
+  if ((auth === "student_visa" || auth === "graduate_visa") && job.sponsorsVisa === "unknown" && job.employmentType === "graduate") notes.push(GRADUATE_VISA_NOTE);
+  if (auth === "needs_sponsorship" && job.sponsorsVisa === "unknown") notes.push(SPONSOR_UNKNOWN_NOTE);
   // Posting age is no fit signal for early-careers roles: summer requisitions posted Jun–Aug stay open into Dec (10#9)
   if (!EARLY_CAREERS.includes(job.employmentType) && job.postedAt) {
     const age = daysUntil(today, job.postedAt.slice(0, 10));

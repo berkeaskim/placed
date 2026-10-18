@@ -13,7 +13,7 @@ const row: ProfileRow = {
 
 describe("toStudent", () => {
   it("defaults nulls safely", () => {
-    expect(toStudent(row)).toEqual({ year: "2nd", gradYear: null, locationPref: [], needsVisa: true, archetypes: [], skills: [] });
+    expect(toStudent(row)).toEqual({ year: "2nd", gradYear: null, locationPref: [], needsVisa: true, workAuth: "student_visa", archetypes: [], skills: [] });
   });
   it("sorts archetypes by score desc without mutating the row", () => {
     const archetypes = [{ key: "research", score: 10, why: [] }, { key: "software_eng", score: 90, why: [] }, { key: "product", score: 50, why: [] }];
