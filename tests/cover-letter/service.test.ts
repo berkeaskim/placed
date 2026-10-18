@@ -218,11 +218,12 @@ describe("edits and Ready", () => {
     expect(out.status).toBe("draft");
 
     for (const s of out.spans.filter((x) => x.kind === "ai" && x.flag)) {
-      out = view(await actions.confirmTrue(jobId, outputId, s.start)).outputs[0];
+      out = view(await actions.confirmTrue(jobId, outputId, s.start, "I ran the society's trading fund")).outputs[0];
     }
     expect(out.canReady).toEqual({ ok: true });
+    // 09 #4: the student's own words are saved, never the AI sentence
     const facts = db.select().from(confirmedFacts).where(eq(confirmedFacts.user_id, U)).all();
-    expect(facts.length).toBeGreaterThan(0);
+    expect(facts.map((f) => [f.claim, f.source])).toContainEqual(["I ran the society's trading fund", "cover_letter_confirm"]);
 
     const ready = view(await actions.markReady(jobId, outputId));
     expect(ready.outputs[0].status).toBe("ready");
@@ -265,7 +266,26 @@ describe("edits and Ready", () => {
     expect(facts()).toBe(n);
     const ok = view(await actions.confirmTrue(jobId, o.id, at("I ran a fund"))).outputs[0];
     expect(ok.spans.find((s) => s.start === at("I ran a fund"))?.kind).toBe("theirs");
-    expect(facts()).toBe(n + 1);
+    // 09 #4: with no words of the student's own, the AI sentence stays in this letter and is never saved as a fact
+    expect(facts()).toBe(n);
+  });
+
+  it("09 #4: 'would work for any firm' and an AI-inferred motivation can't be confirmed; three taps per letter at most", async () => {
+    const jobId = seedNorthbridgeJob();
+    await actions.openCoverLetter(jobId);
+    await researchSettled();
+    const letter = getOrCreateLetter(U, jobId);
+    const text = "Dear Hiring Manager,\n\nNorthbridge is a great firm. This taught me resilience. I ran a fund. I chaired a club. I wrote a blog. I sold tickets.\n\nYours faithfully,\nAlex Morgan";
+    const at = (t: string) => text.indexOf(t);
+    const ai = (t: string, flag: string): Span => ({ start: at(t), end: at(t) + t.length, kind: "ai", refs: [], flag });
+    const spans: Span[] = [ai("Northbridge is a great firm.", "would work for any firm"), ai("This taught me resilience.", "AI-inferred motivation: say it in your own words"),
+      ai("I ran a fund.", "unsupported number"), ai("I chaired a club.", "unsupported number"), ai("I wrote a blog.", "unsupported number"), ai("I sold tickets.", "unsupported number")];
+    const o = upsertOutput(letter.id, { kind: "upload" }, { text, spans, lint: [], status: "draft" });
+    for (const t of ["Northbridge is a great firm.", "This taught me resilience."]) {
+      expect((await actions.confirmTrue(jobId, o.id, at(t))) as { error?: string }).toHaveProperty("error");
+    }
+    for (const t of ["I ran a fund.", "I chaired a club.", "I wrote a blog."]) expect(await actions.confirmTrue(jobId, o.id, at(t))).not.toHaveProperty("error");
+    expect(((await actions.confirmTrue(jobId, o.id, at("I sold tickets."))) as { error?: string }).error).toMatch(/own words/);
   });
 
   it("confirmTrue on a firm sentence makes it theirs, shown as confirmed, without saving it as a fact about the student", async () => {
@@ -278,7 +298,7 @@ describe("edits and Ready", () => {
     const firm = "Northbridge is a great place to learn.";
     const me = "I ran a fund with 7 people.";
     const o = upsertOutput(letter.id, { kind: "upload" }, { text, status: "draft", lint: [], spans: [
-      { start: at(firm), end: at(firm) + firm.length, kind: "ai", refs: ["jd"], flag: "would work for any firm" },
+      { start: at(firm), end: at(firm) + firm.length, kind: "ai", refs: ["jd"], flag: "not in the job post" },
       { start: at(me), end: at(me) + me.length, kind: "ai", refs: ["x1-b0"], flag: "unsupported number" },
     ] });
     const facts = () => db.select().from(confirmedFacts).where(eq(confirmedFacts.user_id, U)).all().map((f) => f.claim);
@@ -286,10 +306,10 @@ describe("edits and Ready", () => {
     let out = view(await actions.confirmTrue(jobId, o.id, at(firm))).outputs[0];
     expect(out.spans.find((s) => s.start === at(firm))).toMatchObject({ kind: "theirs", confirmed: true });
     expect(facts()).toHaveLength(n);
-    out = view(await actions.confirmTrue(jobId, o.id, at(me))).outputs[0];
+    out = view(await actions.confirmTrue(jobId, o.id, at(me), "I ran a student fund with 7 members")).outputs[0];
     expect(out.spans.find((s) => s.start === at(me))).toMatchObject({ kind: "theirs", confirmed: true });
     expect(facts()).toHaveLength(n + 1);
-    expect(facts()).toContain(me);
+    expect(facts()).toContain("I ran a student fund with 7 members"); // the student's words, not the AI sentence
   });
 
   it("confirmTrue clears \"couldn't check this claim about the firm\" without saving it as a fact about the student", async () => {

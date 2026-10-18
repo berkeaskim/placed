@@ -178,3 +178,14 @@ describe("lintLetter", () => {
     expect(cl20.every((h) => h.scope === "letter")).toBe(true);
   });
 });
+
+// audit 09 #2: CL-21 names must be written as names
+describe("CL-21 capital initial", () => {
+  it("fires on 'Barclays' but not on the word 'next' or 'wise'", async () => {
+    const { lintLetter } = await import("@/lib/cover-letter/rules");
+    const opts = { mode: "field_answer" as const, limit: null, company: "Citi", role: "Analyst", otherEmployers: ["Barclays", "Next", "Wise"], ownSpans: [] };
+    const hits = (t: string) => lintLetter(t, opts).filter((h) => h.ruleId === "CL-21").map((h) => h.label);
+    expect(hits("At Citi I want to learn from Barclays alumni.")).toEqual(["Another employer named: Barclays"]);
+    expect(hits("At Citi I want to learn what comes next and choose wise trades.")).toEqual([]);
+  });
+});

@@ -18,7 +18,6 @@ type Counters = {
   paragraphCvMin: number;
   paragraphMaxWords: number;
   iStartRatioMax: number;
-  aiPolicy: string;
 };
 type ModeBand = { words?: [number, number] | null; hardMax?: number; defaultWords?: number; fillRatio?: [number, number] };
 type RulesFile = {
@@ -305,7 +304,8 @@ function otherEmployerHits(text: string, opts: LetterOpts): RawHit[] {
     const n = norm(name);
     if (!n || (company && (company.includes(n) || n.includes(company)))) continue;
     const re = new RegExp(`(?<![\\w])${escapeRe(name.trim())}(?![\\w])`, "gi");
-    for (const m of matches(re, text)) hits.push({ ruleId: "CL-21", severity: "block", label: `Another employer named: ${name}`, ...m });
+    // 09 #2: a name only counts written as a name (capital initial), so "next", "wise" or "three" in prose never fire
+    for (const m of matches(re, text)) if (/^[A-Z0-9]/.test(text[m.start])) hits.push({ ruleId: "CL-21", severity: "block", label: `Another employer named: ${name}`, ...m });
   }
   return hits;
 }

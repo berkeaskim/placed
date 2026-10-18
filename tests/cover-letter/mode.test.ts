@@ -29,6 +29,13 @@ describe("posting checks", () => {
     expect(aiPolicyBlocks("Please don't use AI assistants when applying")).toBe(true);
     expect(aiPolicyBlocks("We use AI to build products")).toBe(false);
   });
+  // 09 #1: the old regex missed every one of these
+  it.each(["Candidates must not use generative AI tools.", "Use of AI tools is not permitted.", "AI tools are not permitted.",
+    "We ask that you not use AI assistants during the application process."])("detects a ban: %s", (t) => expect(aiPolicyBlocks(t)).toBe(true));
+  it("does not read a spelling-only or assessment-only policy as a full ban", () => {
+    expect(aiPolicyBlocks("You may use AI for spelling and grammar only.")).toBe(false);
+    expect(aiPolicyBlocks("For the online assessment or virtual interviews, use of AI is not permitted.")).toBe(false);
+  });
   it("detects a no-letter notice", () => {
     expect(noLetterWanted("Cover letters are not required")).toBe(true);
     expect(noLetterWanted("Please attach a cover letter")).toBe(false);
@@ -44,4 +51,9 @@ describe("posting checks", () => {
     expect(isMotivationLabel("Describe your interest in the team")).toBe(true);
     expect(isMotivationLabel("Describe your interest in teamwork")).toBe(false);
   });
+  // 09 #11: the standard UK prompts the old regex missed
+  it.each(["Why are you applying to Goldman Sachs?", "What attracts you to this programme?", "Why have you chosen this business area?",
+    "Tell us why you want to join Barclays", "Why Anthropic?", "What interests you about this role?",
+    "Please explain your interest in this position (250 words)", "Why J.P. Morgan?", "Why our firm?"])("matches: %s", (l) => expect(isMotivationLabel(l)).toBe(true));
+  it.each(["Why did you leave your last job?", "Describe a challenge you overcame", "Which office are you applying to? (dropdown)"])("does not match: %s", (l) => expect(isMotivationLabel(l)).toBe(false));
 });

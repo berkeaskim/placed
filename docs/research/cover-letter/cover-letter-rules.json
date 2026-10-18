@@ -941,8 +941,7 @@
       "iStartRatioMax": 0.35,
       "jdCopyNgram": 8,
       "cvParaphraseRatioMax": 0.6,
-      "crossLetterOverlapMax": 0.4,
-      "aiPolicy": "(do not|don't|please don't) use (AI|generative AI|ChatGPT|AI assistants)|without (the use of )?AI|AI[- ]generated [^.]{0,40}(not permitted|prohibited|not allowed)"
+      "crossLetterOverlapMax": 0.4
     }
   }
 }

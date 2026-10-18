@@ -16,7 +16,7 @@ export type UserAction =
   | { kind: "draft"; outputId: string }
   | { kind: "edit"; outputId: string; edit: EditKind; instruction?: string }
   | { kind: "save"; outputId: string; text: string }
-  | { kind: "confirmTrue"; outputId: string; spanStart: number }
+  | { kind: "confirmTrue"; outputId: string; spanStart: number; ownWords?: string | null }
   /** `paragraph`: the paragraph the undone edit changed, so it can breathe while the server answers. */
   | { kind: "undo"; outputId: string; paragraph?: number | null }
   | { kind: "ready"; outputId: string }

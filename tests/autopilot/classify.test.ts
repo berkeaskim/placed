@@ -19,8 +19,10 @@ describe("classify", () => {
     ["Location", "location", { kind: "vault", key: "location" }],
     ["Resume/CV", "file", { kind: "file", which: "cv" }],
     ["Cover Letter (optional)", "file", { kind: "file", which: "cover" }],
-    ["Let us know why you're excited to work for Monzo? (250 word limit)", "textarea", { kind: "freeText" }],
-    ["Why Multiverse?", "textarea", { kind: "freeText" }],
+    // audit 09 #11: "why us" prompts go to the cover-letter writer (grounded, locked spans), not the generic drafter
+    ["Let us know why you're excited to work for Monzo? (250 word limit)", "textarea", { kind: "motivation" }],
+    ["Why Multiverse?", "textarea", { kind: "motivation" }],
+    ["Tell us about a project you're proud of", "textarea", { kind: "freeText" }],
     ["🔐 Keeping your data safe is really important to us. Please take a look at our Candidate Data Privacy Notice", "select", { kind: "consent" }],
     ["What is your gender?", "select", { kind: "eeo" }],
     ["Do you require any reasonable adjustments to be made throughout our hiring process?", "textarea", { kind: "yours" }],

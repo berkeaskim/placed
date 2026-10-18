@@ -3,7 +3,7 @@ import { and, eq } from "drizzle-orm";
 import { db } from "@/lib/db/client";
 import { aiMode } from "@/lib/ai/config";
 import {
-  autopilotPacks, companies, confirmedFacts, coverLetters, coverLetterStories, cvs, jobs,
+  applications, autopilotPacks, companies, confirmedFacts, coverLetters, coverLetterStories, cvs, jobs,
   type CL_DRAFT_STATE_VALUES, type CL_RESEARCH_STATE_VALUES, type LetterRow, type OutputRow,
 } from "@/lib/db/schema";
 import type { NormalizedForm } from "@/lib/autopilot/forms/types";
@@ -14,7 +14,7 @@ import type { DraftInput } from "./draft";
 import { buildEvidence, pickStoryEntry, type Evidence } from "./evidence";
 import { letterFilename, splitName } from "./filename";
 import { canMarkReady } from "./gate";
-import { aiPolicyBlocks, chooseMode } from "./mode";
+import { chooseMode } from "./mode";
 import { renderLetterPdf } from "./pdf";
 import { findPersons, maskPersons } from "./person";
 import { nextQuestion } from "./questions";
@@ -25,7 +25,9 @@ import {
   findStories, getOrCreateLetter, getResearch, listOutputs, popUndo, pushUndo, rememberStory, saveLetter, upsertOutput,
 } from "./store";
 import type { Answer, ChatMsg, Fact, Limit, LintHit, Mode, OutputStatus, OutputTarget, Span } from "./types";
-import { NO_VERDICT } from "./verify";
+import { INNER_STATE_FLAG, NO_VERDICT } from "./verify";
+import { otherEmployerNames } from "./employers";
+import { employerAiPolicy, type AiPolicyResult } from "@/lib/employer-policy";
 
 /** An error whose message is fit to show the student. */
 export class CardError extends Error {}
@@ -45,6 +47,8 @@ export type CardView = {
   letterId: string; company: string; role: string; chat: ChatMsg[]; next: ReturnType<typeof nextQuestion>;
   researchState: ResearchState; draftState: DraftState; facts: Fact[]; outputs: OutputView[];
   feedbackOnly: boolean; noLetter: boolean;
+  /** The employer's AI policy (lib/employer-policy), when it limits what the writer may do. */
+  aiPolicy: { notice: string; letterMode: AiPolicyResult["letterMode"]; sourceUrl: string | null } | null;
   /** A person named in an answer, waiting for the student to say they may be named. */
   confirmPerson: { name: string } | null;
   /** The saved answer for the story question's CV entry, for the "Use my saved answer" chip. */
@@ -90,7 +94,14 @@ export function jobRef(lines: string[]): string | null {
   }
   return null;
 }
-const feedbackOnly = (ctx: Ctx) => aiPolicyBlocks(jdText(ctx));
+/** 09 #1: curated employer table first, then the advert's own wording; the strictest applies. */
+const policyOf = (ctx: Ctx) => employerAiPolicy({ company: ctx.job.company, jdText: jdText(ctx) });
+/**
+ * No AI drafting when the employer bans AI, allows it only for spelling and grammar, or asks for the student's own
+ * first draft: the student writes, and the card checks their text against the playbook. (A spelling-only and an
+ * edit-your-own-draft mode are the planned refinement; until then the writer stays out of the way.)
+ */
+const feedbackOnly = (ctx: Ctx) => policyOf(ctx).letterMode !== "full";
 const storyEntry = (ctx: Ctx) => (ctx.cv ? pickStoryEntry(ctx.cv, ctx.job.jdLines) : null);
 
 function getOutput(letter: LetterRow, outputId: string): OutputRow {
@@ -143,7 +154,9 @@ function view(ctx: Ctx, row: LetterRow): CardView {
   return {
     letterId: letter.id, company: ctx.job.company, role: ctx.job.role, chat: letter.chat, next: questionFor(ctx, letter),
     researchState: letter.research_state as ResearchState, draftState: letter.draft_state as DraftState, facts: letter.facts, outputs,
-    feedbackOnly: feedbackOnly(ctx), noLetter: outputs.find((o) => o.target.kind === "upload")?.mode === "skip",
+    feedbackOnly: feedbackOnly(ctx),
+    aiPolicy: (() => { const p = policyOf(ctx); return p.notice ? { notice: p.notice, letterMode: p.letterMode, sourceUrl: p.entry?.url ?? null } : null; })(),
+    noLetter: outputs.find((o) => o.target.kind === "upload")?.mode === "skip",
     confirmPerson: pending ? { name: pending.name } : null, savedStory: savedStory(ctx),
   };
 }
@@ -224,7 +237,8 @@ function modeFor(ctx: Ctx, target: OutputTarget): ReturnType<typeof chooseMode> 
 
 function firstMessage(ctx: Ctx, m: ReturnType<typeof chooseMode>): ChatMsg {
   if (feedbackOnly(ctx)) {
-    return msg({ from: "bot", text: `${ctx.job.company} asks applicants not to use AI, so I won't write anything here. Paste or type your own letter and I'll check it against the playbook.` });
+    const p = policyOf(ctx);
+    return msg({ from: "bot", text: `${p.notice ?? `${ctx.job.company} asks applicants not to use AI.`} So I won't write anything here. Write your own letter on the right and I'll check it against the playbook.` });
   }
   if (m.mode === "skip") return msg({ from: "bot", text: `${m.reason} I can still help you write a short "why us" answer.` });
   return msg({ from: "bot", text: `${m.reason} I'll write ${lengthLine(m.mode, m.limit)}, built around your own words. First, a few quick questions.` });
@@ -327,6 +341,22 @@ export async function confirmPerson(userId: string, jobId: string, name: string,
 
 const rivalsFor = (ctx: Ctx) => getResearch(researchKey(ctx.job.company, null))?.rivals ?? [];
 
+/** Companies of the student's other tracked jobs and other cover letters (09 #2: the real copy-paste source). */
+function trackedCompanies(ctx: Ctx): string[] {
+  const viaApps = db.select({ name: companies.name }).from(applications).innerJoin(jobs, eq(jobs.id, applications.job_id))
+    .innerJoin(companies, eq(companies.id, jobs.company_id)).where(eq(applications.user_id, ctx.userId)).all();
+  const viaLetters = db.select({ name: companies.name }).from(coverLetters).innerJoin(jobs, eq(jobs.id, coverLetters.job_id))
+    .innerJoin(companies, eq(companies.id, jobs.company_id)).where(eq(coverLetters.user_id, ctx.userId)).all();
+  return [...new Set([...viaApps, ...viaLetters].map((r) => r.name))];
+}
+
+/** CL-21's list for this letter: tracked and lettered companies, research rivals, big UK employers (minus own, CV and advert names). */
+export function otherEmployersFor(ctx: Ctx, letter: LetterRow): string[] {
+  const cvOrgs = ctx.cv ? [...ctx.cv.experience, ...ctx.cv.projects, ...ctx.cv.leadership].map((e) => e.org) : [];
+  const rivals = (letter.evidence as Evidence | null)?.rivals ?? rivalsFor(ctx);
+  return otherEmployerNames({ company: ctx.job.company, cvOrgs, jdLines: ctx.job.jdLines, rivals, tracked: trackedCompanies(ctx) });
+}
+
 /** The evidence pack, built once per letter (may throw on an AI error). */
 export async function ensureEvidence(ctx: Ctx, letter: LetterRow): Promise<Evidence> {
   if (letter.evidence) return letter.evidence as Evidence;
@@ -351,6 +381,7 @@ export function draftInput(ctx: Ctx, letter: LetterRow, o: OutputRow, evidence: 
   return {
     mode: o.mode as Mode, limit: o.limit, company, role: ctx.job.role, ref: jobRef(ctx.job.jdLines), cv: ctx.cv, jdLines: ctx.job.jdLines,
     evidence, answers, facts: letter.facts, pickedFacts: letter.facts.filter((f) => pickedIds.has(f.id)), confirmedFacts: ctx.confirmed,
+    otherEmployers: otherEmployersFor(ctx, letter),
   };
 }
 
@@ -365,9 +396,7 @@ export async function draftInputFor(userId: string, jobId: string, outputId: str
 
 /** Lint for the current text, the student's own spans scoped "theirs". */
 function relint(ctx: Ctx, letter: LetterRow, o: OutputRow, text: string, spans: Span[]): LintHit[] {
-  const past = ctx.cv ? [...ctx.cv.experience, ...ctx.cv.projects, ...ctx.cv.leadership].map((e) => e.org.trim().toLowerCase()) : [];
-  const rivals = (letter.evidence as Evidence | null)?.rivals ?? rivalsFor(ctx);
-  const otherEmployers = [...new Set(rivals)].filter((r) => r.trim() && !past.includes(r.trim().toLowerCase()));
+  const otherEmployers = otherEmployersFor(ctx, letter);
   return lintLetter(text, {
     mode: o.mode as Mode, limit: o.limit, company: ctx.job.company, role: ctx.job.role, otherEmployers, ownSpans: spans.filter((s) => s.kind === "theirs"),
   });
@@ -408,28 +437,38 @@ export async function undoEdit(userId: string, jobId: string, outputId: string):
 /** Flags the ground-check gives a claim about the firm (see verify.ts). */
 const FIRM_FLAGS = new Set(["would work for any firm", "not in the job post", "not in the job post or your research", "not in the job post or your picked facts", "not a fact you picked", NO_VERDICT]);
 
-/** Flags "This is true" cannot clear: letter furniture and text with no source at all must be edited instead. (A firm sentence the judge could not check is clearable.) */
-const NOT_CONFIRMABLE = new Set(["check the greeting", "check the sign-off", "no source"]);
+/**
+ * Flags "This is true" cannot clear: letter furniture and text with no source must be edited instead. 09 #4: "would
+ * work for any firm" is not a truth question (only rewriting fixes it), and an AI-inferred motivation must be said in
+ * the student's own words. (A firm sentence the judge could not check is clearable.)
+ */
+const NOT_CONFIRMABLE = new Set(["check the greeting", "check the sign-off", "no source", "would work for any firm", INNER_STATE_FLAG]);
+/** 09 #4: after this many taps in one letter, ask for a rewrite instead. */
+const MAX_CONFIRMS = 3;
+const MAX_OWN_WORDS = 300;
 
 /**
- * "This is true": the span becomes theirs (shown as confirmed), and a claim about the student joins confirmed_facts,
- * grounding later letters and tailoring.
+ * "This is true": the span becomes theirs (shown as confirmed) in this letter. 09 #4: an AI sentence is never saved as
+ * a fact. Only `ownWords` (the student restating the claim themselves) joins confirmed_facts, tagged
+ * "cover_letter_confirm", and grounds later letters and tailoring.
  */
-export async function confirmTrue(userId: string, jobId: string, outputId: string, spanStart: number): Promise<CardView> {
+export async function confirmTrue(userId: string, jobId: string, outputId: string, spanStart: number, ownWords?: string | null): Promise<CardView> {
   const ctx = loadCtx(userId, jobId);
   const letter = getOrCreateLetter(userId, jobId);
   const o = getOutput(letter, outputId);
   const span = o.spans.find((s) => s.start === spanStart && s.kind === "ai");
   if (!span) throw new CardError("There is nothing to confirm there");
   if (span.flag && NOT_CONFIRMABLE.has(span.flag)) throw new CardError("This can't be confirmed as true. Edit it in your own words instead.");
+  if (o.spans.filter((s) => s.confirmed).length >= MAX_CONFIRMS) throw new CardError(`You've confirmed ${MAX_CONFIRMS} sentences in this letter. Consider rewriting the rest in your own words.`);
+  if (ownWords != null && (typeof ownWords !== "string" || ownWords.length > MAX_OWN_WORDS)) throw new CardError(`Keep it under ${MAX_OWN_WORDS} characters`);
   // A placeholder, another employer or a banned phrase inside the sentence would stop blocking once it is theirs.
   const blocked = relint(ctx, letter, o, o.text, o.spans).some((h) => h.severity === "block" && h.scope !== "letter" && h.start < span.end && h.end > span.start);
   if (blocked) throw new CardError("This sentence has something that has to change first. Edit it in your own words instead.");
   // A claim about the firm is not a fact about the student: it becomes theirs in this letter but grounds nothing else.
   const picked = new Set(letter.facts.map((f) => f.id.toLowerCase()));
   const aboutFirm = span.refs.some((r) => r === "jd" || picked.has(r)) || (!!span.flag && FIRM_FLAGS.has(span.flag));
-  const claim = o.text.slice(span.start, span.end).trim().slice(0, 500);
-  if (claim && !aboutFirm) db.insert(confirmedFacts).values({ user_id: userId, claim }).run();
+  const claim = ownWords?.trim() ?? "";
+  if (claim && !aboutFirm) db.insert(confirmedFacts).values({ user_id: userId, claim, source: "cover_letter_confirm" }).run();
   const spans = o.spans.map((s) => (s === span ? { start: s.start, end: s.end, kind: "theirs" as const, refs: s.refs, confirmed: true } : s));
   writeOutput(ctx, letter, o, o.text, spans);
   return view(ctx, letter);

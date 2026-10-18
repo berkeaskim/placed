@@ -25,6 +25,8 @@ export type DraftInput = {
   confirmedFacts: { id: string; claim: string }[];
   /** A named recipient ("Ms Priya Patel"), when the posting or the student gives one. */
   recipient?: string;
+  /** CL-21: companies that must not appear (the student's other tracked jobs and letters, rivals, big UK employers). */
+  otherEmployers?: string[];
 };
 
 const esc = escapeUntrusted;

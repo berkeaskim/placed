@@ -57,9 +57,9 @@ export async function confirmPersonAction(jobId: string, name: string, ok: boole
   return run(jobId, (u, j) => svc.confirmPerson(u, j, name, ok));
 }
 
-export async function confirmTrue(jobId: string, outputId: string, spanStart: number): Promise<CardResult> {
+export async function confirmTrue(jobId: string, outputId: string, spanStart: number, ownWords?: string | null): Promise<CardResult> {
   if (!idOk(outputId) || !Number.isInteger(spanStart) || spanStart < 0) return { error: "Unknown sentence" };
-  return run(jobId, (u, j) => svc.confirmTrue(u, j, outputId, spanStart));
+  return run(jobId, (u, j) => svc.confirmTrue(u, j, outputId, spanStart, ownWords));
 }
 
 export async function saveText(jobId: string, outputId: string, text: string): Promise<CardResult> {

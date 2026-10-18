@@ -1,12 +1,12 @@
 Dear Northbridge Graduate Recruitment Team,
 
-I am applying for the 2027 Summer Analyst Programme in Markets at Northbridge Capital (ref. SA-MKT-27). ⟦them:jd⟧ The risk ownership you give summer analysts from the first week is what drew me to Northbridge. ⟦you:a1⟧ Running the trading desk of a £50k student investment fund taught me that sizing a position matters as much as choosing it. ⟦me:x1-b0⟧
+I am applying for the 2027 Summer Analyst Programme in Markets at Northbridge Capital (ref. SA-MKT-27). ⟦them:jd⟧ The risk ownership you give summer analysts from the first week is what drew me to Northbridge. ⟦you:a1⟧ Running the trading desk of a £50k student investment fund, I sized positions across rates and FX. ⟦me:x1-b0⟧
 
 The role asks for analysis under time pressure. ⟦them:jd⟧ At the Warwick Trading Challenge I built our rates scenario model and presented the downside case that changed our position size. ⟦you:a3⟧ We placed 3rd of 62 teams. ⟦me:p1-b0⟧ For the fund itself I built a rates scenario model in Python, used in weekly investment committee meetings. ⟦me:x1-b1⟧ Presenting it each week meant the downside case had to be clear in a few minutes. ⟦me:x1-b1,p1-b0⟧
 
 At your Spring Insight Day a Markets associate told me analysts rotate across flow and structured desks. ⟦you:a4⟧ So far I have sized positions across rates and FX, so the structured side is where I would learn most. ⟦me:x1-b0⟧ Your new structured-finance desk in Frankfurt shows how much that side of the markets division matters to you. ⟦them:8843a74840⟧ A rotation across flow and structured trading desks would let me see both sides in one summer. ⟦them:jd⟧
 
-Away from markets, I trained 4 new staff on the till during weekend peak hours at Cafe Lune. ⟦me:x2-b0⟧ It taught me to explain a task simply when there is no time to repeat it. ⟦me:x2-b0⟧
+Away from markets, I trained 4 new staff on the till during weekend peak hours at Cafe Lune. ⟦me:x2-b0⟧ Each of them was trained during weekend peak hours, while the café was at its busiest.⟦me:x2-b0⟧
 
 I would bring the habit of sizing a position and checking its downside to your Markets team. ⟦me:x1-b0,p1-b0⟧ Thank you for considering my application, and I would welcome the chance to discuss it at interview. ⟦me:⟧
 

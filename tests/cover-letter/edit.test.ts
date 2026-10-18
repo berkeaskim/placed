@@ -112,13 +112,13 @@ describe("applyEdit", () => {
     const shifted = b.spans.map((s) => (s.start > b.text.indexOf(" Running the trading desk") ? { ...s, start: s.start + 1, end: s.end + 1 } : s));
     const a1 = FIXTURE_ANSWERS[0].text!;
     const from = text.indexOf(a1);
-    const to = text.indexOf("as much as choosing it.") + "as much as choosing it.".length;
+    const to = text.indexOf("I sized positions across rates and FX.") + "I sized positions across rates and FX.".length;
     // A hand edit made one span of theirs from the quoted answer across the break into the next paragraph.
     const spans: Span[] = [...shifted.filter((s) => s.end <= from || s.start >= to), { start: from, end: to, kind: "theirs" as const, refs: [] }].sort((x, y) => x.start - y.start);
     const { done } = await run("shorter", "Make the opening shorter", { text, spans });
     const own = theirsText(done.text, done.spans);
     expect(own).toContain(a1);
-    expect(own).toContain("Running the trading desk of a £50k student investment fund taught me that sizing a position matters as much as choosing it.");
+    expect(own).toContain("Running the trading desk of a £50k student investment fund, I sized positions across rates and FX.");
     expect(done.spans.some((s) => s.kind === "ai" && /Running the trading desk/.test(done.text.slice(s.start, s.end)))).toBe(false);
   });
 
