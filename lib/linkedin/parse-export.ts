@@ -40,6 +40,24 @@ export type LiEducation = {
   details: string;
 };
 
+/** A Projects entry. LinkedIn doesn't require dates on projects, so start/end are optional and never checked. */
+export type LiProject = {
+  title: string;
+  dates: string;
+  start: { year: number; month: number | null } | null;
+  end: { year: number; month: number | null } | null;
+  description: string;
+};
+
+/**
+ * What `topSkills` holds, which differs by input (08 #4):
+ * - "top": only the few skills LinkedIn lists first (PDF sidebar, or a capture whose full list didn't load);
+ * - "all": the full skills list (archive Skills.csv, capture of /details/skills). LinkedIn's order is not known to
+ *   reflect what the student chose to show first, so "top N" rules can't be judged from it;
+ * - "none": skills not visible (public page).
+ */
+export type LiSkillsScope = "top" | "all" | "none";
+
 export type ParsedLinkedIn = {
   name: string | null;
   headline: string | null;
@@ -55,7 +73,10 @@ export type ParsedLinkedIn = {
   publications: string[];
   about: string | null;
   experience: LiExperience[];
+  /** Projects, kept out of `experience` so date and experience rules don't read them (08 #7). */
+  projects: LiProject[];
   education: LiEducation[];
+  skillsScope: LiSkillsScope;
   /** Section headings that were present in the export. */
   sections: string[];
   warnings: string[];
@@ -264,7 +285,8 @@ export function parseLinkedInExport(input: LiLine[] | string, opts: { knownName?
   return {
     name: top.name, headline: top.headline, location: top.location, profileUrl, links, email,
     topSkills: get("Top Skills"), languages: get("Languages"), certifications: get("Certifications"), honors: get("Honors-Awards"),
-    publications: get("Publications"), about, experience, education,
+    publications: get("Publications"), about, experience, projects: [], education,
+    skillsScope: get("Top Skills").length ? "top" : "none",
     sections: [...new Set([...side.order, ...body.order])], warnings,
   };
 }

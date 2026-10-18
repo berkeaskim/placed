@@ -2,7 +2,7 @@
   "_meta": {
     "title": "Placed LinkedIn scoring rules (draft)",
     "version": "0.1.0-draft",
-    "compiled": "2026-10-14",
+    "compiled": "2026-10-18",
     "playbook": "docs/research/linkedin/00-playbook.md",
     "researchFiles": [
       "docs/research/linkedin/01-platform-mechanics.md",
@@ -16,7 +16,7 @@
       "docs/research/linkedin/09-marketing-growth.md",
       "docs/research/linkedin/10-research.md"
     ],
-    "status": "Research draft. Not wired into lib/. Calibrate weights on real profiles; build >=5 real Save-to-PDF fixtures before shipping any rule with pdfContested: true.",
+    "status": "Wired into lib/linkedin-score (v0.1.0-draft). Calibrate weights on real profiles; build >=5 real Save-to-PDF fixtures. Rules with pdfContested: true are not judged from the PDF until then.",
     "scoreMeaning": "LinkedIn readiness for archetype X at year Y: how the profile comes across when a recruiter or contact looks the student up or searches. Not a hiring or employability score, and not comparable with the CV score.",
     "engineFit": {
       "types": "Severity, Evidence, Citation, Archetype and Year match lib/cv-rules/types.ts and lib/types.ts. Dimension is a new LinkedIn-specific union: integrity | proof | findability | narrative | polish | presence.",
@@ -2135,7 +2135,7 @@
           "severity": "major"
         }
       },
-      "llmGuidance": "Code fuzzy-matches organisations and diffs dates first. Then ask: do the LinkedIn profile and the CV disagree on any employer, job title (beyond synonyms), date (by more than one month), degree, grade, competition rank or project metric? (yes = fail). Extra LinkedIn-only detail is not a contradiction. On fail, show both values and ask 'which is right?'.",
+      "llmGuidance": "Do the LinkedIn profile and the CV disagree on any employer, job title (beyond synonyms), date (by more than one month), degree, grade, competition rank or project metric? (yes = fail). Extra LinkedIn-only detail is not a contradiction. LinkedIn often splits one CV line into several roles (a promotion, two society terms): roles that sit inside the CV's dates for that organisation agree with it. On fail, show both values and ask 'which is right?'.",
       "passExample": "CV and LinkedIn both say 'Summer Analyst, Barclays, Jun-Aug 2026'.",
       "failExample": "CV: 'Spring Week participant, Apr 2026'; LinkedIn: 'Investment Banking Analyst, Apr-Jun 2026'. Or CV 'top 10%' vs LinkedIn 'top 1%'.",
       "origin": [
@@ -2155,7 +2155,7 @@
       "id": "LI-GEN-02",
       "sectors": "all",
       "dimension": "integrity",
-      "statement": "No inflated or misleading Experience titles: each title fits the real format, duration and work. Spring weeks, insight days, one-day events and virtual simulations are labelled as such; a solo side project is not shown as employment or as 'CEO/Managing Director'.",
+      "statement": "No inflated or misleading Experience titles: each title fits the real format, duration and work. Spring weeks, insight days, one-day events and virtual work experience or job simulations (e.g. Forage) are labelled as such; a solo side project is not shown as employment or as 'CEO/Managing Director'.",
       "check": "hybrid",
       "input": "pdf_export",
       "severity": "critical",
@@ -2168,7 +2168,7 @@
         "S132",
         "S143"
       ],
-      "llmGuidance": "Code pre-filter: duration under 3 weeks, or a 'Forage/virtual/job simulation' marker, with a title containing intern|analyst|trader|associate|engineer|manager at a named employer; or Founder/CEO/MD with a solo or zero-user description. Then ask: given the description, dates and format, is every Experience title a fair label for what the role actually was?",
+      "llmGuidance": "Given the description, dates and format, is every Experience title a fair label for what the role actually was? A spring week, insight day, one-day event or virtual work experience / job simulation (e.g. Forage) shown with an Intern, Analyst, Trader, Associate or Engineer title at a named employer, or Founder/CEO/MD on a solo project with no users, is not. (no = fail)",
       "passExample": "'Spring Insight Programme, J.P. Morgan (1 week)'; 'Founder, campus tutoring service (40 paying clients)'.",
       "failExample": "'Investment Banking Intern, J.P. Morgan' spanning 3 days; a Forage simulation listed as employment at Goldman Sachs; 'Trading Intern, Optiver' for a one-day insight event; 'Managing Director, Personal Investment Portfolio'.",
       "origin": [
@@ -2198,13 +2198,13 @@
       ],
       "severity": "critical",
       "evidence": "D",
-      "evidenceNote": "06: D (no firm policy retrieved); 08: D (banks' confidentiality culture, FCA context); 04: D (professional norm, GDPR context).",
+      "evidenceNote": "06: D (no firm policy retrieved); 08: D (banks' confidentiality culture, FCA context); 04: D (professional norm, GDPR context). Audit 2026-10-18 (docs/research/audit-2026-10-18/08-linkedin.md): question rewritten to be decidable; a fail must quote the line, and a D-graded LLM verdict never triggers the 59 cap.",
       "sourceIds": [
         "S55",
         "S103",
         "S135"
       ],
-      "llmGuidance": "Does any headline, About or Experience text, or any supplied Featured or post screenshot, disclose a non-public client or deal name, internal figures or data, offer or pay details, or case-interview/assessment content? (yes = fail)",
+      "llmGuidance": "Does any line state (a) a salary or offer amount, (b) an online-assessment or interview question, (c) revenue, P&L or deal value attributed to an employer or client, or (d) text the student labels internal or confidential? Naming an employer or client alone is NOT a fail, and you cannot know what is non-public, so do not guess. (yes = fail; quote the line)",
       "passExample": "'Built trading comps for a mid-cap industrials sell-side process.' / 'Pro-bono project for a London housing charity: built a volunteer-retention model.'",
       "failExample": "'Worked on Project Falcon, the confidential £1.2bn sale of [named company]'; a Featured screenshot titled 'Q3 internal sales dashboard - [Employer]'; 'helped [named client plc] plan 300 redundancies'.",
       "origin": [
@@ -2335,20 +2335,20 @@
       "id": "LI-GEN-08",
       "sectors": "all",
       "dimension": "findability",
-      "statement": "No keyword stuffing: the headline reads as a phrase a person wrote (at most 3 separators, no repeated terms) and the skills list is not padded with unrelated terms.",
+      "statement": "No keyword stuffing: the headline reads as a phrase a person wrote (at most 4 segments separated by | or •, no term repeated 3 or more times) and the skills list is not padded with unrelated terms. A middot (·) list inside one segment is fine.",
       "check": "code",
       "input": "pdf_export",
       "severity": "minor",
       "evidence": "D",
-      "evidenceNote": "02: B/D (skill lists add little for raters [Roulin & Levashina]; thresholds are synthesis). Lower grade used.",
+      "evidenceNote": "02: B/D (skill lists add little for raters [Roulin & Levashina]; thresholds are synthesis). Lower grade used. Audit 2026-10-18 (docs/research/audit-2026-10-18/08-linkedin.md): separator count loosened: the playbook's own Good headlines have 4 segments and middot lists.",
       "sourceIds": [
         "S46",
         "S62"
       ],
       "params": {
-        "threshold": 3
+        "threshold": 4
       },
-      "llmGuidance": "Code: count headline separators (| · • / ,), repeated-term density and headline token count. Coverage of relevant keywords earns credit elsewhere up to a cap; stuffing fails here.",
+      "llmGuidance": "Code: count headline segments (split on | and •; a middot list or a slash inside a segment stays one segment) and terms repeated 3+ times.",
       "origin": [
         "LI-REC-08 (stuffing part)"
       ]
@@ -2405,7 +2405,7 @@
           "severity": "minor"
         }
       },
-      "llmGuidance": "Code: location string present and matches a UK place list; compare with the user's Placed region preference.",
+      "llmGuidance": "Code: a blank location fails; a UK place passes; any other location is not applicable (never a fail: the student may not be targeting the UK).",
       "origin": [
         "LI-GEN-13",
         "LI-REC-05",
@@ -2511,7 +2511,7 @@
           "severity": "minor"
         }
       },
-      "llmGuidance": "Code flags entries with fewer than 15 words of description. Then ask per entry: does it say what the student personally did and at least one result or scope?",
+      "llmGuidance": "Does every Experience entry (including part-time, volunteering and society roles) say what the student personally did and give at least one result or scope? A title-only entry is a fail.",
       "passExample": "'Ran sign-ups for a 300-person careers fair; cut no-shows 25% with SMS reminders.'",
       "failExample": "'Volunteer.' / 'Various tasks in the office.'",
       "origin": [
@@ -2764,7 +2764,7 @@
       "id": "LI-GEN-22",
       "sectors": "all",
       "dimension": "polish",
-      "statement": "Spelling and grammar are clean (UK English) across headline, About and Experience, with consistent date formats and title capitalisation.",
+      "statement": "Spelling and grammar are clean across headline, About and Experience (British and American spellings are both fine), with consistent date formats and title capitalisation.",
       "check": "hybrid",
       "input": "pdf_export",
       "severity": "major",
@@ -2777,7 +2777,7 @@
         "S146",
         "S152"
       ],
-      "llmGuidance": "Spell-check with a UK dictionary plus a proper-noun allowlist (employers, universities, tools); LLM grammar pass. Consulting also checks date-format and capitalisation consistency.",
+      "llmGuidance": "Are there 3 or more clear spelling or grammar errors (not names, tools, or US/UK variants) in the headline, About and Experience? (yes = fail)",
       "origin": [
         "LI-GEN-23",
         "LI-REC-10",
@@ -3150,12 +3150,12 @@
         "software_eng"
       ],
       "dimension": "findability",
-      "statement": "Top 3 (pinned) skills are technical and relevant (languages, frameworks, CS fundamentals), not office tools or generic soft skills.",
+      "statement": "The top skills the export shows (the ~3 LinkedIn lists first) are technical and relevant (languages, frameworks, CS fundamentals), not office tools or generic soft skills.",
       "check": "code",
       "input": "pdf_export",
-      "severity": "major",
+      "severity": "minor",
       "evidence": "D",
-      "evidenceNote": "03: B/D. Lower used.",
+      "evidenceNote": "03: B/D. Lower used. Audit 2026-10-18 (docs/research/audit-2026-10-18/08-linkedin.md): minor/D until real exports confirm what the PDF Top Skills sidebar reflects; LinkedIn Help describes reordering and About 'Top skills', not pinning.",
       "sourceIds": [
         "S19",
         "S62"
@@ -3189,7 +3189,7 @@
         "threshold": 0.5
       },
       "allowPartial": true,
-      "llmGuidance": "Cross-reference after synonym normalisation (keyword bank). Unevidenced share > 50% = fail; 25-50% = partial."
+      "llmGuidance": "Is each listed language or framework shown in use in Experience, Projects, Education or About (synonyms count)? More than half unevidenced = fail; a quarter to a half = partial."
     },
     {
       "id": "LI-SOFTWARE_ENG-08",
@@ -3197,7 +3197,7 @@
         "software_eng"
       ],
       "dimension": "proof",
-      "statement": "Tech Experience entries use X-Y-Z content: action, stack and a measurable or concrete result, in first person. Not blank, not a duty list.",
+      "statement": "Tech Experience entries use X-Y-Z content: action, stack and a measurable or concrete result, with the student's own contribution clear. Not blank, not a duty list.",
       "check": "hybrid",
       "input": "pdf_export",
       "severity": "major",
@@ -3337,7 +3337,7 @@
       "severity": "minor",
       "evidence": "D",
       "sourceIds": [],
-      "llmGuidance": "Code detects leetcode|codeforces|hackerrank and \\d{3,} (problems|questions). LLM: is it stated as a result rather than a grind count?",
+      "llmGuidance": "If the profile mentions competitive programming or LeetCode, is it stated as a verifiable result (contest rank, rating, ICPC placing) rather than a problem count? Not applicable when it isn't mentioned.",
       "passExample": "'UKIEPC 2025: 14th of 90 teams'",
       "failExample": "Headline 'Solved 600+ LeetCode problems'"
     },
@@ -3417,14 +3417,14 @@
         "data_analytics"
       ],
       "dimension": "findability",
-      "statement": "SQL is listed as a skill and is among the pinned top skills for DA/BI targets.",
+      "statement": "SQL is listed as a skill and, for DA/BI targets, shows among the top skills LinkedIn lists first.",
       "check": "code",
       "input": "pdf_export",
       "altInputs": [
         "screenshot"
       ],
-      "severity": "major",
-      "evidence": "A",
+      "severity": "minor",
+      "evidence": "D",
       "sourceIds": [
         "S87",
         "S88",
@@ -3435,7 +3435,8 @@
           "severity": "minor"
         }
       },
-      "llmGuidance": "Code: 'SQL' or a dialect (PostgreSQL, MySQL, T-SQL, BigQuery) in Top Skills / Skills / About."
+      "llmGuidance": "Code: 'SQL' or a dialect (PostgreSQL, MySQL, T-SQL, BigQuery) in Top Skills / Skills / About.",
+      "evidenceNote": "Audit 2026-10-18 (docs/research/audit-2026-10-18/08-linkedin.md): minor/D until real exports confirm what the PDF Top Skills sidebar reflects."
     },
     {
       "id": "LI-DATA_ANALYTICS-04",
@@ -3515,7 +3516,7 @@
         "data_analytics"
       ],
       "dimension": "proof",
-      "statement": "Portfolio link present and reachable: at least one link to GitHub, Tableau Public, Kaggle, Power BI web, Observable/Streamlit or a personal site, in Contact websites, About, Projects or Featured.",
+      "statement": "Portfolio link present: at least one link to GitHub, Tableau Public, Kaggle, Power BI web, Observable/Streamlit or a personal site, in Contact websites, About, Projects or Featured.",
       "check": "code",
       "input": "pdf_export",
       "altInputs": [
@@ -3536,7 +3537,7 @@
           "severity": "minor"
         }
       },
-      "llmGuidance": "URL regex for known hosts in the PDF Contact block / About; Featured via screenshot or pasted URL. Optional HTTP 200 check of the user-supplied URL (never LinkedIn)."
+      "llmGuidance": "Code: a URL on a known portfolio host or a personal site in the Contact websites or About. Presence only: Placed does not check the link is reachable."
     },
     {
       "id": "LI-DATA_ANALYTICS-08",
@@ -3627,7 +3628,7 @@
         "data_analytics"
       ],
       "dimension": "proof",
-      "statement": "Education lists quantitative modules and/or a data-heavy dissertation, plus a grade or average if 2:1 or above.",
+      "statement": "Education lists quantitative modules and/or a data-heavy dissertation; a grade or average is a plus if 2:1 or above (optional: a missing grade is never a fail).",
       "check": "hybrid",
       "input": "pdf_export",
       "severity": "major",
@@ -3642,7 +3643,7 @@
         }
       },
       "allowPartial": true,
-      "llmGuidance": "Regex module lexicon (statistics, econometrics, machine learning, database, probability, operational research) + grade regex; LLM for non-UK grading systems. Researcher: major for non-quantitative degrees, minor when the degree title is itself quantitative (checker may pass a quantitative degree title with no modules as partial)."
+      "llmGuidance": "Does the Education entry list quantitative modules (statistics, econometrics, machine learning, databases, probability, operational research) or a data-heavy dissertation? A quantitative degree title with no modules is partial. A missing grade is never a fail; judge non-UK grading systems on their own terms."
     },
     {
       "id": "LI-DATA_ANALYTICS-12",
@@ -3921,11 +3922,12 @@
       "check": "code",
       "input": "pdf_export",
       "severity": "minor",
-      "evidence": "A",
+      "evidence": "D",
       "sourceIds": [
         "S97"
       ],
-      "llmGuidance": "Regex Microsoft (Office|Word|PowerPoint)|MS Office|\\bWord\\b|Excel as a standalone skill."
+      "llmGuidance": "Regex Microsoft (Office|Word|PowerPoint)|MS Office|\\bWord\\b|Excel as a standalone skill.",
+      "evidenceNote": "Audit 2026-10-18 (docs/research/audit-2026-10-18/08-linkedin.md): read from the full skills list when the input has it; from the PDF's ~3 top skills only a listed office tool can be seen, so absence there is not assessable."
     },
     {
       "id": "LI-QUANT_TRADING-09",
@@ -4153,7 +4155,7 @@
         "consulting"
       ],
       "dimension": "proof",
-      "statement": "Each Experience entry has at least one outcome line with personal contribution ('I') and a number or named result.",
+      "statement": "Each Experience entry has at least one outcome line where the student's own contribution is clear, with a number or named result.",
       "check": "hybrid",
       "input": "pdf_export",
       "severity": "major",
@@ -4317,7 +4319,7 @@
         "S74",
         "S110"
       ],
-      "llmGuidance": "Grade regex; LLM checks modules are relevant (statistics, econometrics, strategy, operations)."
+      "llmGuidance": "Does the Education entry list 2-4 relevant modules (statistics, econometrics, strategy, operations), and is any grade it shows stated plainly, not rounded up? A missing grade is never a fail."
     },
     {
       "id": "LI-CONSULTING-18",
@@ -4744,7 +4746,7 @@
         "finance_banking"
       ],
       "dimension": "integrity",
-      "statement": "CFA references follow CFA Institute wording. Allowed: 'CFA Program candidate' (only if registered), 'Passed Level I of the CFA Program'. Forbidden: 'CFA Level I', 'CFA candidate', 'CFA (expected 20xx)', 'Level I CFA' after the name.",
+      "statement": "CFA references follow CFA Institute wording. Allowed: 'CFA Program candidate' (only while registered for an upcoming exam or awaiting results), 'Passed Level I of the CFA Program'. Forbidden: 'CFA Level I', 'CFA candidate', 'CFA (expected 20xx)', 'Level I CFA' after the name.",
       "check": "code",
       "input": "pdf_export",
       "severity": "major",
@@ -4766,14 +4768,14 @@
       "altInputs": [
         "screenshot"
       ],
-      "severity": "critical",
+      "severity": "major",
       "evidence": "C",
-      "evidenceNote": "08: B/C. Lower used.",
+      "evidenceNote": "08: B/C. Lower used. Audit 2026-10-18 (docs/research/audit-2026-10-18/08-linkedin.md): critical -> major: FCA FG24/1 covers financial promotions, not student boasting. Only a code-detected affiliate/referral link, paid signals or paid-group promotion is treated as critical.",
       "sourceIds": [
         "S55",
         "S135"
       ],
-      "llmGuidance": "Lexicon signals|DM me|% returns|crypto|forex|NFT|affiliate, then: does the profile promote specific investments or trading returns? Evidence that comes only from post screenshots is reported via LI-FINANCE_BANKING-15 (advisory) instead.",
+      "llmGuidance": "Does the headline, About or Experience promote specific investments to others, or invite people to copy trades, buy signals or join a paid group? Describing a paper portfolio, a society fund or personal investing without inviting anyone in is not a fail. (yes = fail; quote the line)",
       "passExample": "'Run a paper portfolio for the society's research team; wrote 6 equity notes'",
       "failExample": "'Crypto trader | 300% returns | DM for signals'",
       "notes": "Critical only on profile text (headline/About/Experience); post-only evidence is an advisory risk finding."
@@ -4798,7 +4800,7 @@
         "finance_banking"
       ],
       "dimension": "narrative",
-      "statement": "About is 80-200 words, first person, opens with degree + target division, and includes at least 2 concrete finance-commitment items.",
+      "statement": "About is 80-200 words, opens with degree + target division, and includes at least 2 concrete finance-commitment items.",
       "check": "hybrid",
       "input": "pdf_export",
       "severity": "major",
@@ -4818,7 +4820,8 @@
       },
       "llmGuidance": "Do the first two sentences state who the student is and which finance area they target, and does the About cite at least two specific finance activities? 1st year: 60-120 words and one commitment item.",
       "passExample": "'I'm a second-year Economics student at UCL targeting 2027 M&A internships. I attended Barclays' spring week and lead the UCL Investment Society's equity research team...'",
-      "failExample": "'Passionate, driven individual with a keen interest in the world of finance and a strong work ethic.'"
+      "failExample": "'Passionate, driven individual with a keen interest in the world of finance and a strong work ethic.'",
+      "evidenceNote": "Audit 2026-10-18 (docs/research/audit-2026-10-18/08-linkedin.md): 'first person' removed: no source requires it, and the CV rules ban 'I'. LinkedIn may use 'I'; the rule judges whether the student's own contribution is clear."
     },
     {
       "id": "LI-FINANCE_BANKING-09",
@@ -4841,7 +4844,7 @@
           "severity": "minor"
         }
       },
-      "llmGuidance": "Keyword bank hits; LLM grades depth (member < committee < organiser). Final/masters: absence of any internship is major (researcher note)."
+      "llmGuidance": "Does the profile show commitment to finance (spring or insight week, society committee role, competition placing, student fund, modelling course, BMC) with the student's level of involvement clear (member < committee < organiser)? Final and masters years: no internship at all is a fail."
     },
     {
       "id": "LI-FINANCE_BANKING-10",
@@ -4849,7 +4852,7 @@
         "finance_banking"
       ],
       "dimension": "proof",
-      "statement": "Experience entries are outcome-led and quantified, first person, 2-4 bullets each, not duty lists.",
+      "statement": "Experience entries are outcome-led and quantified, 2-4 bullets each, not duty lists.",
       "check": "hybrid",
       "input": "pdf_export",
       "severity": "major",
@@ -4869,17 +4872,18 @@
         "finance_banking"
       ],
       "dimension": "findability",
-      "statement": "Grades stated in Education (classification, current average, or predicted) for at least the current degree.",
+      "statement": "If the grade (classification, current average or predicted grade) is 2:1 or above, it is stated in Education. Below that it is optional, and a missing grade is never a fail.",
       "check": "code",
       "input": "pdf_export",
-      "severity": "major",
+      "severity": "minor",
       "evidence": "A",
       "sourceIds": [
         "S102",
         "S129",
         "S141"
       ],
-      "llmGuidance": "Regex First|2:1|2.1|Upper Second|\\d{2}%|Distinction|Merit|predicted. 1st year: A-levels/predicted acceptable."
+      "llmGuidance": "Code: a stated grade passes; no grade is not applicable (never a fail). Same policy as CV rule G-32.",
+      "evidenceNote": "Audit 2026-10-18 (docs/research/audit-2026-10-18/08-linkedin.md): aligned with CV rule G-32; TARGETjobs' LinkedIn guide does not require grades."
     },
     {
       "id": "LI-FINANCE_BANKING-12",
@@ -4887,14 +4891,14 @@
         "finance_banking"
       ],
       "dimension": "findability",
-      "statement": "Top (pinned) skills are sector-relevant and evidenced: of the ~3 exported Top Skills at least 2 are from the sector list (Financial Modelling, Excel, Valuation, Financial Analysis, M&A, Equity Research, Python/VBA, PowerPoint, Bloomberg/CapIQ, languages), and each technical skill appears in an experience, course or certification.",
+      "statement": "Top skills are sector-relevant and evidenced: of the ~3 top skills the PDF export shows, at least 2 are from the sector list (Financial Modelling, Excel, Valuation, Financial Analysis, M&A, Equity Research, Python/VBA, PowerPoint, Bloomberg/CapIQ, languages), and each technical skill appears in an experience, course or certification.",
       "check": "hybrid",
       "input": "pdf_export",
       "altInputs": [
         "screenshot"
       ],
-      "severity": "major",
-      "evidence": "B",
+      "severity": "minor",
+      "evidence": "D",
       "sourceIds": [
         "S62",
         "S97"
@@ -4906,7 +4910,8 @@
       },
       "params": {
         "threshold": 2
-      }
+      },
+      "evidenceNote": "Audit 2026-10-18 (docs/research/audit-2026-10-18/08-linkedin.md): minor/D until real exports confirm what the PDF Top Skills sidebar reflects."
     },
     {
       "id": "LI-FINANCE_BANKING-13",
@@ -4922,7 +4927,7 @@
       "sourceIds": [
         "S56"
       ],
-      "llmGuidance": "Count + blocklist; LLM classifies unknown items."
+      "llmGuidance": "Are the certifications signal rather than noise: about 6 or fewer, no day-trading or crypto 'expert' products, and finance credentials (CFA Program, IMC, CISI, BMC, modelling courses, virtual work experience) listed as certifications rather than as jobs?"
     },
     {
       "id": "LI-FINANCE_BANKING-15",
@@ -5071,7 +5076,7 @@
           "severity": "minor"
         }
       },
-      "llmGuidance": "Detect Experience items with marketing keywords in title/description; LLM decides relevance for ambiguous titles."
+      "llmGuidance": "Does at least one Experience entry with a title (paid, society, freelance, own channel or brand, startup, competition) show marketing work? Judge relevance from the description when the title is ambiguous."
     },
     {
       "id": "LI-MARKETING_GROWTH-06",
@@ -5098,7 +5103,7 @@
       "params": {
         "threshold": 0.5
       },
-      "llmGuidance": "Digit/%/£/→ density per entry; LLM: is at least one result in this entry quantified with a baseline, timeframe or comparison, and attributed with 'I' not 'we'? Flag implausible student numbers ('managed £2m budget') as a soft 'can you defend this?' warning.",
+      "llmGuidance": "In at least half of the marketing-relevant entries, is a result quantified with a baseline, timeframe or comparison, with the student's own part clear? Flag implausible student numbers ('managed £2m budget') as a soft 'can you defend this?' note in the fix.",
       "passExample": "'Grew society Instagram from 1.2k to 4.8k followers in 6 months; Reels averaged 6.1% engagement'",
       "failExample": "'Managed social media and increased engagement significantly'"
     },
@@ -5512,7 +5517,7 @@
           "severity": "major"
         }
       },
-      "llmGuidance": "1st year: modules only."
+      "llmGuidance": "Does the Education entry include research-relevant detail: 3-5 relevant advanced modules and, for final-year and MSc students, a dissertation title? A grade is a plus if 2:1/First or equivalent; a missing grade is never a fail. 1st year: modules only."
     },
     {
       "id": "LI-RESEARCH-10",

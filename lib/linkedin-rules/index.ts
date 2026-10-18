@@ -1,6 +1,6 @@
-import type { Archetype } from "@/lib/types";
+import type { Archetype, Year } from "@/lib/types";
 import data from "./rules.json";
-import type { LiDimension, LiResolvedRule, LiRule, LiSource } from "./types";
+import type { LiDimension, LiResolvedRule, LiRule, LiSource, Severity } from "./types";
 
 export * from "./types";
 
@@ -59,4 +59,33 @@ const RULE_BY_ID = new Map(LI_RULES.map((r) => [r.id, r]));
 export function presenceTipFor(ruleId: string, saved: string): string {
   const r = RULE_BY_ID.get(ruleId);
   return r ? presenceTip(r) : saved;
+}
+
+/** Effective severity for one student: yearAdjust > sectorAdjust > base (playbook engineFit.severityPrecedence). */
+export function liEffectiveSeverity(rule: Pick<LiResolvedRule, "severity" | "yearAdjust" | "sectorAdjust">, sector: Archetype, year: Year): Severity {
+  return rule.yearAdjust?.[year]?.severity ?? rule.sectorAdjust?.[sector]?.severity ?? rule.severity;
+}
+
+/** The pass/fail cut-off for one student: yearAdjust threshold, else the (sector-resolved) param, else undefined. */
+export function liThreshold(rule: Pick<LiResolvedRule, "yearAdjust" | "params">, year: Year): number | undefined {
+  return rule.yearAdjust?.[year]?.threshold ?? rule.params?.threshold;
+}
+
+/** Markers that introduce the model's actual question after a description of a (possibly unimplemented) pre-filter. */
+const QUESTION_MARKER = /(?:^|[.;]\s+|\s)(?:Then ask(?: per entry)?:|Then:|LLM for paraphrase:|LLM checks|LLM:|Cliché regex \+ LLM:|If ambiguous:|Tie-break:|then:)\s*/;
+/** Sentences describing code, regexes or lexicons the judge never sees (08 #15), and severity notes meant for editors. */
+const IMPLEMENTATION_SENTENCE = /^(Code\b|Code:|Regex\b|Lexicon\b|Grade regex|Role-keyword regex|Leadership lexicon|Digit density|Spell-check|URL regex|Cross-reference|Researcher:)/i;
+
+/**
+ * The question the LLM judge is asked for a rule: llmGuidance minus any sentence that claims code already ran
+ * (no LinkedIn hybrid pre-filter is implemented), falling back to the statement.
+ */
+export function liJudgeQuestion(rule: Pick<LiRule, "llmGuidance" | "statement">): string {
+  let g = (rule.llmGuidance ?? "").trim();
+  const m = g.match(QUESTION_MARKER);
+  if (m && m.index !== undefined) g = g.slice(m.index + m[0].length);
+  const kept = g.split(/(?<=[.?)])\s+(?=[A-Z0-9'])/).filter((s) => s.trim() && !IMPLEMENTATION_SENTENCE.test(s.trim()));
+  const q = kept.join(" ").trim();
+  if (!q) return rule.statement;
+  return q.charAt(0).toUpperCase() + q.slice(1);
 }
