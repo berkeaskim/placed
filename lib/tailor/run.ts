@@ -15,7 +15,7 @@ import { computeCoverage, cvSkillSource, jdRequirementSkills, type CoverageResul
 import { extractSkills } from "@/lib/skills/extract";
 import { gapsStillOpen, revertBlocked, toTailored, verifyTailoring, type Issue, type VerifyReport } from "@/lib/verify/tailoring";
 import { NEEDS_NUMBER } from "@/lib/ai/prompts";
-import type { TailorInput } from "@/lib/ai/tailorCV";
+import type { TailorInput, TailorMode } from "@/lib/ai/tailorCV";
 
 export { NEEDS_NUMBER };
 
@@ -291,7 +291,8 @@ export function coverageSummary(cv: ParsedCV, job: JobListItem, tailored: Tailor
 
 // ---------- public API ----------
 
-export async function runTailoring(i: GateInput & { tailor: TailorFn }): Promise<TailorOutcome> {
+/** `mode` "grammar_only": the employer allows AI only for spelling and grammar (lib/employer-policy). */
+export async function runTailoring(i: GateInput & { tailor: TailorFn; mode?: TailorMode }): Promise<TailorOutcome> {
   const ctx = context(i.cv, i.job);
   const { allowed, supported } = buckets(i, ctx);
   const invented = new Set<string>();
@@ -301,7 +302,7 @@ export async function runTailoring(i: GateInput & { tailor: TailorFn }): Promise
   let fallbackReason: string | undefined;
   /** Strips the tailor's fallback flags so they never reach the stored/rendered CV. */
   const call = async (feedback: string[] | null): Promise<TailoredCV> => {
-    const { usedFallback: fb, fallbackReason: why, ...t } = await i.tailor({ cv: i.cv, job: i.job, allowed, supported, feedback });
+    const { usedFallback: fb, fallbackReason: why, ...t } = await i.tailor({ cv: i.cv, job: i.job, allowed, supported, feedback, ...(i.mode ? { mode: i.mode } : {}) });
     if (fb) { usedFallback = true; fallbackReason = why ?? fallbackReason; }
     return t;
   };
