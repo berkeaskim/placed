@@ -1,5 +1,6 @@
 import type { JobForScoring, Region } from "@/lib/types";
 import { escapeRegex } from "@/lib/text/regex";
+import { baseEmploymentType, classifySpringWeek, isProgrammeTitle } from "./spring-week";
 
 export const TITLE_POSITIVE = [
   "word:intern", "Internship", "Interns", "Vacation Scheme", "Summer Programme", "Summer Program",
@@ -40,7 +41,8 @@ export function matchKeyword(title: string, kw: string): boolean {
 const EXPERIENCED_GRADE = /\b(analyst|associate|engineer|developer|scientist|consultant|specialist|accountant|manager|designer|researcher)\s+(ii|iii|iv)\b/i;
 
 export function passesTitleFilter(title: string): boolean {
-  const pos = TITLE_POSITIVE.some((k) => matchKeyword(title, k));
+  // isProgrammeTitle: first-year programmes with no keyword ("Black Talent in Business – Audit", "FutureFocus", "Discover EY").
+  const pos = TITLE_POSITIVE.some((k) => matchKeyword(title, k)) || isProgrammeTitle(title);
   const neg = TITLE_NEGATIVE.some((k) => matchKeyword(title, k)) || EXPERIENCED_GRADE.test(title);
   return pos && !neg;
 }
@@ -113,12 +115,7 @@ export function detectSponsorship(jdText: string): "yes" | "no" | "unknown" {
   return "unknown";
 }
 
-export function detectEmploymentType(title: string): JobForScoring["employmentType"] {
-  const t = title.toLowerCase();
-  if (/spring (week|insight)/.test(t)) return "spring_week";
-  if (/insight|discovery|taster/.test(t)) return "insight";
-  if (/\bplacement|sandwich|year in industry/.test(t)) return "placement";
-  if (/graduate/.test(t)) return "graduate";
-  if (/\bintern|internship|summer (analyst|associate|programme|program|scheme|student)|off[- ]?cycle|working student|werkstudent|vacation scheme|co-op|externship/.test(t)) return "internship";
-  return "other";
+/** Pass the posting body when available: some first-year programmes are only recognisable from it. */
+export function detectEmploymentType(title: string, body = ""): JobForScoring["employmentType"] {
+  return classifySpringWeek(title, body).kind ?? baseEmploymentType(title);
 }

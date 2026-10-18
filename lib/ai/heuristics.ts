@@ -56,7 +56,7 @@ function yearsFrom(text: string, employmentType: TaggedJob["employmentType"]): Y
 
 export function heuristicTagJob(input: { title: string; textLines: string[] }): TaggedJob {
   const text = input.textLines.join("\n");
-  const employmentType = detectEmploymentType(input.title);
+  const employmentType = detectEmploymentType(input.title, text);
   const seen = new Set<string>();
   const requirements: Requirement[] = [];
   for (const line of tagSections(input.textLines)) {

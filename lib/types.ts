@@ -34,6 +34,8 @@ export interface RawJob {
   deadline?: string | null;
   /** YYYY-MM-DD the application window opens (curated programme cards). */
   opensOn?: string | null;
+  /** Authoritative type from a curated programme card's `kind`; overrides the tagger. */
+  employmentType?: JobForScoring["employmentType"] | null;
 }
 
 export type Importance = "critical" | "high" | "meaningful" | "preferred" | "low_signal";
