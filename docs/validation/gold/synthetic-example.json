@@ -1,0 +1,463 @@
+{
+  "format": "placed-gold/1",
+  "name": "synthetic-example",
+  "synthetic": true,
+  "description": "SYNTHETIC. Ten made-up CVs and made-up labels from three made-up raters, written by the Placed developers to test the validation harness in CI. No real person's CV or judgement is in this file. Do not quote any number computed from it as evidence about the CV score.",
+  "created": "2026-10-18",
+  "raters": [
+    {
+      "id": "SYN-A",
+      "role": "synthetic rater (stands in for a careers adviser)",
+      "synthetic": true
+    },
+    {
+      "id": "SYN-B",
+      "role": "synthetic rater (stands in for a careers adviser)",
+      "synthetic": true
+    },
+    {
+      "id": "SYN-C",
+      "role": "synthetic rater (stands in for an early-careers recruiter)",
+      "synthetic": true
+    }
+  ],
+  "cvs": [
+    {
+      "id": "syn-01",
+      "sector": "finance_banking",
+      "year": "2nd",
+      "track": "standard",
+      "text": "[NAME]\nalex.taylor@example.com | 07700 900456 | London\n\nEDUCATION\nUniversity of Westbridge — BSc Economics, Sep 2024 – Jun 2027\nYear 1 average: 68% (2:1). Modules: Econometrics (72), Microeconomics (70)\nRiverside Sixth Form — A-levels: Mathematics A*, Economics A, History A\n\nEXPERIENCE\nNorthgate Bank — Spring Week, Investment Banking, Apr 2025\n• Built a comparable-companies analysis of 8 UK retailers with a team of 4 and presented it to 2 VPs\nCorner Café — Barista (part-time), Sep 2023 – Present\n• Trained 3 new staff members and cut average order time from 6 to 4 minutes during peak hours\n\nLEADERSHIP & ACTIVITIES\nInvestment Society — Treasurer, Sep 2025 – Present\n• Managed a £3,500 budget across 14 events and reduced overspend from 18% to 2%\n\nSKILLS\nTechnical: Excel (pivot tables, INDEX/MATCH), PowerPoint, Python (basic)\nLanguages: English (native), French (B2)\nInterests: Long-distance running (2 half marathons), chess club captain\n",
+      "pageCount": 1,
+      "notes": "Clean 2nd-year finance CV: every labelled rule passes.",
+      "labels": {
+        "SYN-A": {
+          "G-16": "pass",
+          "G-17": "pass",
+          "G-22": "pass",
+          "G-32": "pass",
+          "G-05": "pass",
+          "FCQ-02": "pass",
+          "G-18": "pass",
+          "G-20": "pass",
+          "G-12": "pass"
+        },
+        "SYN-B": {
+          "G-16": "pass",
+          "G-17": "pass",
+          "G-22": "pass",
+          "G-32": "pass",
+          "G-05": "pass",
+          "FCQ-02": "pass",
+          "G-18": "pass",
+          "G-20": "pass",
+          "G-12": "pass"
+        },
+        "SYN-C": {
+          "G-16": "pass",
+          "G-17": "pass",
+          "G-22": "pass",
+          "G-32": "pass",
+          "G-05": "pass",
+          "FCQ-02": "pass",
+          "G-18": "pass",
+          "G-20": "pass",
+          "G-12": "pass"
+        }
+      }
+    },
+    {
+      "id": "syn-02",
+      "sector": "finance_banking",
+      "year": "penultimate",
+      "track": "standard",
+      "text": "[NAME]\nsam.rivers@example.com | 07700 900112\nDate of birth: 14/03/2004 | Nationality: British\n\nEDUCATION\nUniversity of Eastholme — BSc Economics and Finance, Sep 2023 – Jun 2027\n\nEXPERIENCE\nHigh Street Retail — Sales Assistant, Jun 2024 – Sep 2024\n• Responsible for serving customers and restocking shelves\n• Helped with the weekly stock count\nLocal Accountancy Practice — Work Shadowing, Jul 2023\n• Observed the audit team\n\nLEADERSHIP & ACTIVITIES\nFinance Society — Member, Oct 2023 – Present\n• Attended weekly talks from industry speakers\n\nSKILLS\nExcel, Word, PowerPoint\nReferences: [REFEREE NAME], Store Manager, referee.one@example.com, 07700 900999\n",
+      "pageCount": 1,
+      "notes": "Date of birth, no grade, duty bullets, referee contact details listed. Rater C reads two of four bullets as action-led.",
+      "labels": {
+        "SYN-A": {
+          "G-16": "pass",
+          "G-17": "fail",
+          "G-22": "fail",
+          "G-32": "fail",
+          "G-05": "pass",
+          "FCQ-02": "pass",
+          "G-18": "fail",
+          "G-20": "fail",
+          "G-12": "pass"
+        },
+        "SYN-B": {
+          "G-16": "pass",
+          "G-17": "fail",
+          "G-22": "fail",
+          "G-32": "fail",
+          "G-05": "pass",
+          "FCQ-02": "pass",
+          "G-18": "fail",
+          "G-20": "fail",
+          "G-12": "pass"
+        },
+        "SYN-C": {
+          "G-16": "pass",
+          "G-17": "fail",
+          "G-22": "fail",
+          "G-32": "fail",
+          "G-05": "pass",
+          "FCQ-02": "pass",
+          "G-18": "fail",
+          "G-20": "partial",
+          "G-12": "pass"
+        }
+      }
+    },
+    {
+      "id": "syn-03",
+      "sector": "consulting",
+      "year": "final",
+      "track": "standard",
+      "text": "Curriculum Vitae\n[NAME]\njordan.lee@example.com | 07700 900237 | Manchester\n\nEXPERIENCE\nBrightline Strategy — Summer Analyst, Jun 2025 – Aug 2025\n• Analysed 3 years of sales data for a regional grocer and recommended closing 2 loss-making stores\n• Interviewed 12 store managers and synthesised findings into a 20-slide deck for the partner\n\nEDUCATION\nUniversity of Northfield — BA Philosophy, Politics and Economics, Sep 2023 – Jun 2026\nOn track for a First (predicted)\n\nLEADERSHIP & ACTIVITIES\nConsulting Society — President, Sep 2025 – Present\n• Grew membership from 40 to 110 and ran 4 case competitions with 2 firms\n\nSKILLS\nExcel ★★★★☆ | PowerPoint ★★★★★ | Tableau ★★★☆☆\n",
+      "pageCount": 1,
+      "notes": "Star ratings, 'Curriculum Vitae' title, experience before education. Rater B accepts the substantial-experience exception.",
+      "labels": {
+        "SYN-A": {
+          "G-16": "pass",
+          "G-17": "pass",
+          "G-22": "pass",
+          "G-32": "pass",
+          "G-05": "fail",
+          "G-15": "fail",
+          "FCQ-02": "fail",
+          "G-18": "pass",
+          "G-20": "pass",
+          "G-12": "pass"
+        },
+        "SYN-B": {
+          "G-16": "pass",
+          "G-17": "pass",
+          "G-22": "pass",
+          "G-32": "pass",
+          "G-05": "fail",
+          "G-15": "fail",
+          "FCQ-02": "pass",
+          "G-18": "pass",
+          "G-20": "pass",
+          "G-12": "pass"
+        },
+        "SYN-C": {
+          "G-16": "pass",
+          "G-17": "pass",
+          "G-22": "pass",
+          "G-32": "pass",
+          "G-05": "fail",
+          "G-15": "fail",
+          "FCQ-02": "fail",
+          "G-18": "pass",
+          "G-20": "pass",
+          "G-12": "pass"
+        }
+      }
+    },
+    {
+      "id": "syn-04",
+      "sector": "software_eng",
+      "year": "2nd",
+      "track": "standard",
+      "text": "[NAME]\ncasey.morgan@example.com | 07700 900318 | github.com/example-casey\n\nEDUCATION\nUniversity of Southmere — BSc Computer Science, Sep 2024 – Jun 2027\nYear 1: First (74%). Modules: Algorithms (81), Databases (77)\n\nPROJECTS\nBus Times App — React Native, TypeScript, Firebase\n• Built a live bus-arrival app used by 300 students, with push alerts for 5 campus stops\nStudy Group Matcher — Python, FastAPI, PostgreSQL, Docker\n• Matched 120 students into study groups using a weighted scoring model; deployed on a free cloud tier\nHackathon: Food Waste Tracker — JavaScript, Node.js\n• Won 2nd place out of 30 teams at a 24-hour university hackathon\n\nEXPERIENCE\nCampus IT Help Desk — Student Assistant, Oct 2024 – Present\n• Resolved around 40 tickets a week and wrote 6 how-to guides that cut repeat queries by a third\n\nSKILLS\nLanguages: Python, TypeScript, Java, SQL\nTools: Git, Docker, GitHub Actions, PostgreSQL\n",
+      "pageCount": 1,
+      "notes": "Strong software CV.",
+      "labels": {
+        "SYN-A": {
+          "G-16": "pass",
+          "G-17": "pass",
+          "G-22": "pass",
+          "G-32": "pass",
+          "G-05": "pass",
+          "SWE-03": "pass",
+          "SWE-07": "pass",
+          "G-18": "pass",
+          "G-20": "pass",
+          "G-12": "pass"
+        },
+        "SYN-B": {
+          "G-16": "pass",
+          "G-17": "pass",
+          "G-22": "pass",
+          "G-32": "pass",
+          "G-05": "pass",
+          "SWE-03": "pass",
+          "SWE-07": "pass",
+          "G-18": "pass",
+          "G-20": "pass",
+          "G-12": "pass"
+        },
+        "SYN-C": {
+          "G-16": "pass",
+          "G-17": "pass",
+          "G-22": "pass",
+          "G-32": "pass",
+          "G-05": "pass",
+          "SWE-03": "pass",
+          "SWE-07": "pass",
+          "G-18": "pass",
+          "G-20": "pass",
+          "G-12": "pass"
+        }
+      }
+    },
+    {
+      "id": "syn-05",
+      "sector": "software_eng",
+      "year": "1st",
+      "track": "standard",
+      "text": "[NAME]\nriley.chen@example.com | 07700 900401\n\nEDUCATION\nUniversity of Westbridge — BSc Computer Science, Sep 2025 – Jun 2028\nRiverside College — A-levels: Computer Science A, Mathematics A, Physics B\n\nEXPERIENCE\nSupermarket — Customer Assistant, Jul 2024 – Present\n• Worked on the tills and helped customers\n• Restocked shelves\n\nSKILLS\nPython ████████░░ 80%\nJava ██████░░░░ 60%\nHTML/CSS ██████████ 100%\n",
+      "pageCount": 1,
+      "notes": "First-year: no university grade yet (na), skill bars, no projects. Raters split on G-32 (A-levels shown) and whether a missing GitHub link is a fail.",
+      "labels": {
+        "SYN-A": {
+          "G-16": "pass",
+          "G-17": "pass",
+          "G-22": "fail",
+          "G-32": "pass",
+          "G-05": "fail",
+          "SWE-03": "fail",
+          "SWE-07": "na",
+          "G-18": "pass",
+          "G-20": "fail",
+          "G-12": "pass"
+        },
+        "SYN-B": {
+          "G-16": "pass",
+          "G-17": "pass",
+          "G-22": "fail",
+          "G-32": "na",
+          "G-05": "fail",
+          "SWE-03": "fail",
+          "SWE-07": "na",
+          "G-18": "pass",
+          "G-20": "fail",
+          "G-12": "pass"
+        },
+        "SYN-C": {
+          "G-16": "pass",
+          "G-17": "pass",
+          "G-22": "fail",
+          "G-32": "na",
+          "G-05": "fail",
+          "SWE-03": "fail",
+          "SWE-07": "fail",
+          "G-18": "pass",
+          "G-20": "fail",
+          "G-12": "pass"
+        }
+      }
+    },
+    {
+      "id": "syn-06",
+      "sector": "data_analytics",
+      "year": "masters",
+      "track": "standard",
+      "text": "[NAME]\nmorgan.patel@example.com | 07700 900522 | kaggle.com/example-morgan\n\nEDUCATION\nUniversity of Eastholme — MSc Data Science, Sep 2025 – Sep 2026\nExpected: Distinction\nUniversity of Northfield — BSc Mathematics, Sep 2022 – Jun 2025, First Class Honours\n\nEXPERIENCE\nCity Council Analytics Team — Data Intern, Jun 2025 – Aug 2025\n• Cleaned a 2.3M-row parking dataset in pandas and built a Power BI dashboard used weekly by 9 officers\n• Forecast monthly demand with a seasonal ARIMA model (MAPE 7%), informing a £40k pricing review\n\nPROJECTS\nBike Share Demand — Python, scikit-learn\n• Trained a gradient-boosted model on 18 months of trip data (RMSE 11.2 trips/hour)\n\nSKILLS\nLanguages: Python, SQL, R\nLibraries: pandas, scikit-learn, PyTorch\nBI: Power BI, Tableau\n",
+      "pageCount": 1,
+      "notes": "Strong Master's data CV with a Kaggle link.",
+      "labels": {
+        "SYN-A": {
+          "G-16": "pass",
+          "G-17": "pass",
+          "G-22": "pass",
+          "G-32": "pass",
+          "G-05": "pass",
+          "DAT-06": "pass",
+          "G-18": "pass",
+          "G-20": "pass",
+          "G-12": "pass"
+        },
+        "SYN-B": {
+          "G-16": "pass",
+          "G-17": "pass",
+          "G-22": "pass",
+          "G-32": "pass",
+          "G-05": "pass",
+          "DAT-06": "pass",
+          "G-18": "pass",
+          "G-20": "pass",
+          "G-12": "pass"
+        },
+        "SYN-C": {
+          "G-16": "pass",
+          "G-17": "pass",
+          "G-22": "pass",
+          "G-32": "pass",
+          "G-05": "pass",
+          "DAT-06": "pass",
+          "G-18": "pass",
+          "G-20": "pass",
+          "G-12": "pass"
+        }
+      }
+    },
+    {
+      "id": "syn-07",
+      "sector": "marketing_growth",
+      "year": "penultimate",
+      "track": "standard",
+      "text": "[NAME]\ntaylor.brooks@example.com | 07700 900634\nMarital status: Single\n\nEXPERIENCE\nFashion Retailer — Social Media Assistant (part-time), Sep 2024 – Present\n• Created posts for Instagram and TikTok\n• Helped plan the summer campaign\n• Responded to customer comments\n\nEDUCATION\nUniversity of Southmere — BA Marketing, Sep 2023 – Jun 2027\nCurrent average: 64% (2:1)\n\nSKILLS\nCanva, Instagram, TikTok, Google Analytics\nInterests: Fashion, travel, music\n",
+      "pageCount": 1,
+      "notes": "Marital status, no numbers anywhere. Raters differ on whether 'Created / Responded' bullets are action-led enough.",
+      "labels": {
+        "SYN-A": {
+          "G-16": "pass",
+          "G-17": "fail",
+          "G-22": "fail",
+          "G-32": "pass",
+          "G-05": "pass",
+          "G-18": "pass",
+          "G-20": "fail",
+          "G-12": "pass"
+        },
+        "SYN-B": {
+          "G-16": "pass",
+          "G-17": "fail",
+          "G-22": "fail",
+          "G-32": "pass",
+          "G-05": "pass",
+          "G-18": "pass",
+          "G-20": "partial",
+          "G-12": "pass"
+        },
+        "SYN-C": {
+          "G-16": "pass",
+          "G-17": "fail",
+          "G-22": "fail",
+          "G-32": "pass",
+          "G-05": "pass",
+          "G-18": "pass",
+          "G-20": "partial",
+          "G-12": "pass"
+        }
+      }
+    },
+    {
+      "id": "syn-08",
+      "sector": "product",
+      "year": "final",
+      "track": "standard",
+      "text": "[NAME]\njamie.owen@example.com | 07700 900745\n\nEDUCATION\nUniversity of Northfield — BSc Management, Sep 2023 – Jun 2026\nPredicted 2:1\n\nEXPERIENCE\nStudent Union — Events Volunteer, Sep 2022 – Jun 2023\n• Ran ticketing for 5 events of 200+ attendees\nFintech Start-up — Product Intern, Jun 2025 – Aug 2025\n• Interviewed 15 users, wrote 3 feature specs and shipped an onboarding change that lifted activation from 31% to 38%\nBookshop — Sales Assistant, Jun 2024 – Aug 2024\n• Set up a click-and-collect shelf that handled about 60 orders a month\n\nSKILLS\nSQL, Figma, Jira, Excel\n",
+      "pageCount": 1,
+      "notes": "Experience is not in reverse chronological order (2022, 2025, 2024). Rater B missed it.",
+      "labels": {
+        "SYN-A": {
+          "G-16": "pass",
+          "G-17": "pass",
+          "G-22": "pass",
+          "G-32": "pass",
+          "G-05": "pass",
+          "G-18": "pass",
+          "G-20": "pass",
+          "G-12": "fail"
+        },
+        "SYN-B": {
+          "G-16": "pass",
+          "G-17": "pass",
+          "G-22": "pass",
+          "G-32": "pass",
+          "G-05": "pass",
+          "G-18": "pass",
+          "G-20": "pass",
+          "G-12": "pass"
+        },
+        "SYN-C": {
+          "G-16": "pass",
+          "G-17": "pass",
+          "G-22": "pass",
+          "G-32": "pass",
+          "G-05": "pass",
+          "G-18": "pass",
+          "G-20": "pass",
+          "G-12": "fail"
+        }
+      }
+    },
+    {
+      "id": "syn-09",
+      "sector": "research",
+      "year": "masters",
+      "track": "standard",
+      "text": "[NAME]\ndrew.santos@example.com | 07700 900856\n\nEDUCATION\nUniversity of Westbridge — MRes Neuroscience, Sep 2025 – Sep 2026\nUniversity of Eastholme — BSc Biology, Sep 2022 – Jun 2025, Upper Second Class (2:1)\nDissertation: Sleep and memory consolidation in zebrafish (mark: 78)\n\nRESEARCH EXPERIENCE\nZebrafish Behaviour Lab — Summer Research Assistant, Jun 2024 – Aug 2024\n• Ran 40 behavioural trials and analysed tracking data in Python; results included in a lab poster\n\nPUBLICATIONS\n[NAME], [AUTHOR] (2025). Sleep deprivation and recall in larval zebrafish. Poster, Student Neuroscience Meeting.\n\nSKILLS\nLab: microinjection, confocal imaging\nSoftware: Python, R, MATLAB\nReferences: [REFEREE NAME], Lab Supervisor, referee.two@example.com\n",
+      "pageCount": 1,
+      "notes": "Referee email listed. Rater B thinks one quantified bullet is too few.",
+      "labels": {
+        "SYN-A": {
+          "G-16": "pass",
+          "G-17": "pass",
+          "G-22": "pass",
+          "G-32": "pass",
+          "G-05": "pass",
+          "G-18": "fail",
+          "G-20": "pass",
+          "G-12": "pass"
+        },
+        "SYN-B": {
+          "G-16": "pass",
+          "G-17": "pass",
+          "G-22": "fail",
+          "G-32": "pass",
+          "G-05": "pass",
+          "G-18": "fail",
+          "G-20": "pass",
+          "G-12": "pass"
+        },
+        "SYN-C": {
+          "G-16": "pass",
+          "G-17": "pass",
+          "G-22": "pass",
+          "G-32": "pass",
+          "G-05": "pass",
+          "G-18": "fail",
+          "G-20": "pass",
+          "G-12": "pass"
+        }
+      }
+    },
+    {
+      "id": "syn-10",
+      "sector": "quant_trading",
+      "year": "2nd",
+      "track": "standard",
+      "text": "[NAME]\nquinn.adams@example.com | 07700 900967 | github.com/example-quinn\n\nEDUCATION\nUniversity of Southmere — BSc Mathematics, Sep 2024 – Jun 2027\nGPA equivalent: 3.9/4.0 (Year 1 average 82%)\nUK Mathematical Olympiad — Silver medal\n\nPROJECTS\nPairs Trading Back-test — Python, NumPy\n• Back-tested a cointegration strategy on 10 years of daily prices; Sharpe 1.1 out of sample\n\nEXPERIENCE\nMaths Tutor — Self-employed, Sep 2023 – Present\n• Tutor 6 GCSE students weekly; 5 of 6 improved by at least two grades\n\nSKILLS\nPython, C++, LaTeX, Git\nMental arithmetic and probability puzzles\n",
+      "pageCount": 1,
+      "notes": "Strong quant CV. Rater C reads 'Tutor 6 GCSE students' as a duty phrase.",
+      "labels": {
+        "SYN-A": {
+          "G-16": "pass",
+          "G-17": "pass",
+          "G-22": "pass",
+          "G-32": "pass",
+          "G-05": "pass",
+          "G-18": "pass",
+          "G-20": "pass",
+          "G-12": "pass"
+        },
+        "SYN-B": {
+          "G-16": "pass",
+          "G-17": "pass",
+          "G-22": "pass",
+          "G-32": "pass",
+          "G-05": "pass",
+          "G-18": "pass",
+          "G-20": "pass",
+          "G-12": "pass"
+        },
+        "SYN-C": {
+          "G-16": "pass",
+          "G-17": "pass",
+          "G-22": "pass",
+          "G-32": "pass",
+          "G-05": "pass",
+          "G-18": "pass",
+          "G-20": "partial",
+          "G-12": "pass"
+        }
+      }
+    }
+  ]
+}
