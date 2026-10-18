@@ -73,10 +73,34 @@ describe("buildTargetView", () => {
 });
 
 describe("targetFor", () => {
-  it("saved target, else top role, else consulting; year defaults to 2nd", () => {
-    expect(targetFor({ target_archetype: "product", year: "final" })).toEqual({ sector: "product", year: "final" });
+  it("saved target, else top role, else consulting; an unknown year is 2nd for picking but flagged unknown", () => {
+    expect(targetFor({ target_archetype: "product", year: "final", grad_year: 2027 })).toEqual({ sector: "product", year: "final", yearKnown: true, gradYear: 2027 });
     expect(targetFor({ target_archetype: null, archetypes: [{ key: "research", score: 40 }, { key: "data_analytics", score: 80 }] }))
-      .toEqual({ sector: "data_analytics", year: "2nd" });
-    expect(targetFor({ target_archetype: "nonsense", year: "7th" })).toEqual({ sector: "consulting", year: "2nd" });
+      .toEqual({ sector: "data_analytics", year: "2nd", yearKnown: false, gradYear: null });
+    expect(targetFor({ target_archetype: "nonsense", year: "7th", grad_year: "2028" })).toEqual({ sector: "consulting", year: "2nd", yearKnown: false, gradYear: null });
+  });
+});
+
+describe("year-specific guidance (06#6)", () => {
+  it("shows no year-specific guidance when the year is unknown, only a prompt to set it", () => {
+    const v = buildTargetView({ ...base, year: "2nd", yearKnown: false });
+    expect(v.guidance).toEqual({ line: null, dated: [], note: null, setYear: expect.stringMatching(/year of study/) });
+  });
+
+  it("asks for the graduation year when only the year label is known", () => {
+    expect(buildTargetView(base).guidance.setYear).toMatch(/graduation year/);
+    expect(buildTargetView({ ...base, gradYear: 2029 }).guidance.setYear).toBeNull();
+  });
+
+  it("uses graduation year for the stage: a 2nd year graduating in 2028 gets penultimate guidance", () => {
+    const v = buildTargetView({ ...base, year: "2nd", gradYear: 2028 });
+    expect(v.stage).toBe("penultimate");
+    expect(v.guidance.line).toMatch(/internships/);
+  });
+
+  it("separates selective programmes from gap-closing steps", () => {
+    const v = buildTargetView(base);
+    for (const a of [...v.actions, ...v.topUp]) expect(a.kind).toBe("build");
+    for (const a of v.opportunities) expect(a.kind).toBe("opportunity");
   });
 });
