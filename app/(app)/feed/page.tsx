@@ -33,7 +33,7 @@ export default async function Feed({ searchParams }: { searchParams: Promise<Rec
   const springEligible = isSpringWeekEligible({ year: profile.year ?? "2nd", gradYear: student.gradYear ?? null }, today);
   const filters = { ...parsed, mode: resolveMode(parsed.mode, springEligible) };
   const spring = filters.mode === "spring";
-  const all = rankJobs(student, cv?.parsed ?? null, jobs, today);
+  const all = rankJobs(student, cv?.parsed ?? null, jobs, today, { course: profile.course });
   const ranked = applyFilters(all, filters, today);
   const savedIds = new Set(apps.map((x) => x.job_id));
   const appliedIds = new Set(apps.filter((x) => isPastSaved(x.status)).map((x) => x.job_id));

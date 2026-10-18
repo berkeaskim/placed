@@ -4,14 +4,18 @@ import { eq, getTableName } from "drizzle-orm";
 import { db } from "./client";
 import { dataDir } from "./paths";
 import {
-  applications, autopilotPacks, autopilotVault, badges, confirmedFacts, cvFeedback, cvScores, cvs, linkedinScores, matches,
-  outreach, playbookProgress, profiles, xpEvents,
+  applications, autopilotPacks, autopilotVault, badges, bankBullets, bankEntries, bankSources, bankSuggestions, confirmedFacts,
+  cvFeedback, cvScores, cvs, eligibilityOverrides, linkedinScores, matches, outreach, playbookProgress, profiles, xpEvents,
 } from "./schema";
 
-/** Deleted in this order: cv_scores/cv_feedback reference cvs, outreach references applications. All have a user_id column. */
+/**
+ * Deleted in this order: cv_scores/cv_feedback reference cvs, outreach references applications, bank_bullets reference
+ * bank_entries and bank_suggestions reference bank_sources. All have a user_id column.
+ */
 const TABLES = [
   autopilotPacks, autopilotVault, cvScores, cvFeedback, cvs, confirmedFacts, matches, outreach,
   applications, xpEvents, badges, playbookProgress, linkedinScores,
+  bankBullets, bankSuggestions, bankEntries, bankSources, eligibilityOverrides,
 ] as const;
 export const USER_TABLES: readonly string[] = TABLES.map(getTableName);
 export const USER_BUCKETS = ["cvs", "tailored"] as const;
@@ -27,7 +31,7 @@ export async function resetUserData(userId: string): Promise<void> {
   db.transaction((tx) => {
     for (const t of TABLES) tx.delete(t).where(eq(t.user_id, userId)).run();
     tx.update(profiles).set({
-      year: null, field: null, course: null, university: null, location_pref: [], needs_visa: false, target_archetype: null, archetypes: [], skills: [],
+      year: null, grad_year: null, field: null, course: null, university: null, location_pref: [], needs_visa: false, target_archetype: null, archetypes: [], skills: [],
       onboarded: false, xp: 0, level: 1, streak_days: 0, last_active_date: null,
     }).where(eq(profiles.user_id, userId)).run();
   });

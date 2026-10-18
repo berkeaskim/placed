@@ -192,6 +192,16 @@ export const jobs = sqliteTable("jobs", {
   check("jobs_deadline_source_check", sql`deadline_source is null or ${inList("deadline_source", DEADLINE_SOURCE_VALUES)}`),
 ]);
 
+/**
+ * "This is wrong" on a job's eligibility check (audit 10#3): the gates rest on regex/LLM extraction, so the student
+ * can overrule them per job. The job is then scored as if eligible; the gate stays visible as overridden.
+ */
+export const eligibilityOverrides = sqliteTable("eligibility_overrides", {
+  user_id: text("user_id").notNull(),
+  job_id: text("job_id").notNull().references(() => jobs.id, { onDelete: "cascade" }),
+  created_at: now("created_at").notNull(),
+}, (t) => [primaryKey({ columns: [t.user_id, t.job_id] })]);
+
 export const matches = sqliteTable("matches", {
   user_id: text("user_id").notNull(),
   job_id: text("job_id").notNull().references(() => jobs.id, { onDelete: "cascade" }),

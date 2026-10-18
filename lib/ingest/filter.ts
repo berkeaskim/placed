@@ -110,6 +110,11 @@ export function passesLocationFilter(rawLocation: string, remote: boolean, jdTex
 const NO_SPONSOR = /(we (do not|don'?t|cannot|can'?t) (offer |provide )?(visa )?sponsor|unable to (provide |offer )?(visa )?sponsor|no (visa )?sponsorship(?!\s+(is\s+)?(required|needed))|not able to sponsor)/i;
 const YES_SPONSOR = /(visa sponsorship (is )?available|we (can |will |do )?sponsor|sponsorship (is )?(available|provided|offered))/i;
 
+/** The posting line that refuses sponsorship, for the "Check eligibility" quote; null when nothing refuses. */
+export function sponsorshipRefusalLine(lines: string[]): string | null {
+  return lines.find((l) => NO_SPONSOR.test(l)) ?? null;
+}
+
 export function detectSponsorship(jdText: string): "yes" | "no" | "unknown" {
   if (NO_SPONSOR.test(jdText)) return "no";
   if (YES_SPONSOR.test(jdText)) return "yes";

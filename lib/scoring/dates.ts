@@ -23,7 +23,7 @@ export function deadlineLabel(deadline: string | null, today: string): string {
   if (d < 0) return "Closed";
   if (d === 0) return "Closes today";
   if (d === 1) return "Closes tomorrow";
-  return `${d} days left`;
+  return `Closes in ${d} days`;
 }
 
 /**

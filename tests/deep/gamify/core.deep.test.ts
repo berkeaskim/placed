@@ -59,8 +59,9 @@ describe("xpFor — spec table", () => {
     expect(xpFor({ type: "interview" }, base)).toBe(100);
     expect(xpFor({ type: "rejected" }, base)).toBe(20);
     expect(xpFor({ type: "offer" }, base)).toBe(300);
-    expect(APPLY_XP).toEqual({ "Strong fit": 50, "Good fit": 50, Stretch: 25, "Not recommended": 10 });
-    expect(xpFor({ type: "applied" }, base)).toBe(25); // unknown fit → stretch-equivalent
+    // flat whatever the fit label (audit 10#3)
+    expect(APPLY_XP).toBe(50);
+    expect(xpFor({ type: "applied" }, base)).toBe(50);
   });
   it("save cap: the 10th save of the day still pays, the 11th does not", () => {
     expect(xpFor({ type: "job_saved" }, { ...base, savesToday: 9 })).toBe(5);
