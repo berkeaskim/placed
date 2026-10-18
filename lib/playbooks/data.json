@@ -60,7 +60,7 @@
         "note": "Graded B: the employer quote comes from Monzo's guide for experienced mobile hires, not its intern process.",
         "ruleIds": [
           "SWE-05",
-          "SWE-11"
+          "EV-03"
         ],
         "sources": [
           {
@@ -150,7 +150,7 @@
         "grade": "B",
         "basis": "evidence (employer recruiter quoted by careers publisher + careers publisher)",
         "ruleIds": [
-          "SWE-11"
+          "EV-03"
         ],
         "sources": [
           {
@@ -2602,7 +2602,7 @@
         "note": "Convention: one firm (IMC, APAC page) states it. No second independent source fetched.",
         "ruleIds": [
           "QNT-04",
-          "QNT-09",
+          "G-11",
           "FCQ-11"
         ],
         "sources": [
@@ -3509,8 +3509,7 @@
         "grade": "A",
         "note": "ISE data suggests fewer employers now demand a 2:1, and that trend may be plateauing. Below a 2:1 or with mitigating circumstances, look for firms using contextual recruitment and declare extenuating circumstances where the form allows.",
         "ruleIds": [
-          "CON-01",
-          "FCQ-04"
+          "G-32"
         ],
         "sources": [
           {
@@ -3627,7 +3626,7 @@
         "grade": "A",
         "ruleIds": [
           "CON-02",
-          "CON-04",
+          "G-22",
           "CON-05"
         ],
         "sources": [
@@ -5367,8 +5366,7 @@
         "grade": "A",
         "note": "The ISE figure covers all graduate employers (not banking specifically) and compares 2015/16 with 2024/25.",
         "ruleIds": [
-          "FCQ-04",
-          "FIN-02"
+          "G-32"
         ],
         "sources": [
           {
@@ -5535,7 +5533,7 @@
         "grade": "A",
         "ruleIds": [
           "FIN-05",
-          "FCQ-08"
+          "G-22"
         ],
         "sources": [
           {
@@ -5561,7 +5559,7 @@
         "text": "Tailored, error-free applications that use the job description's key words and name the division and role you want.",
         "grade": "A",
         "ruleIds": [
-          "FCQ-05",
+          "G-25",
           "FCQ-10"
         ],
         "sources": [
@@ -5595,7 +5593,7 @@
         "id": "PB-FIN-S08",
         "text": "Numerical and financial-modelling ability. Prospects lists it as a core skill of the job. No bank source we fetched requires modelling from first- or second-year applicants.",
         "grade": "C",
-        "note": "Convention: only one independent source states it. Modelling is taught on the job; treat it as a differentiator for penultimate-year IBD applicants, not a gate. CFA Level I is at most a minor bonus for asset-management or research roles and never a substitute for grades (convention, C); its fee is a real cost barrier, so we don't suggest it as a step.",
+        "note": "Convention: only one independent source states it. Modelling is taught on the job; treat it as a differentiator for penultimate-year IBD applicants, not a gate. Passing Level I of the CFA Program is at most a minor bonus for asset-management or research roles and never a substitute for grades (convention, C); its fee is a real cost barrier, so we don't suggest it as a step.",
         "ruleIds": [
           "FIN-07"
         ],
@@ -6584,7 +6582,7 @@
         "grade": "B",
         "basis": "evidence (two careers publishers)",
         "ruleIds": [
-          "MKT-07"
+          "G-25"
         ],
         "sources": [
           {
@@ -6609,8 +6607,7 @@
         "grade": "B",
         "basis": "evidence (careers publisher + professional body)",
         "ruleIds": [
-          "MKT-04",
-          "MKT-11"
+          "MKT-04"
         ],
         "sources": [
           {
