@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { WORK_AUTH, YEARS } from "@/lib/types";
+import { PLACEMENT_STATUSES, WORK_AUTH, YEARS } from "@/lib/types";
 
 export const FIELDS = ["Economics", "Computer Science", "Mathematics", "Engineering", "Physics", "Management", "Finance & Accounting", "Statistics & Data Science", "Law", "Psychology", "Politics & IR", "History", "Natural Sciences", "Other"] as const;
 
@@ -14,6 +14,8 @@ export const OnboardingInput = z.object({
   year: z.enum(YEARS),
   /** Expected graduation year; optional so older clients and tests still validate. */
   gradYear: GradYear.nullish(),
+  /** Whether the degree includes a placement year; null = not sure. */
+  placementStatus: z.enum(PLACEMENT_STATUSES).nullish(),
   locationPref: z.array(z.enum(["london", "uk", "europe", "remote"])).min(1).max(4),
   needsVisa: z.boolean(),
   /** Optional so older clients still validate; when present it decides needsVisa. */

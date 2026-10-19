@@ -241,6 +241,13 @@ function subjectCheck(sig: EligibilitySignals, course: string | null | undefined
     : { flags: [`Asks for a degree in ${want}.`], notes: [] };
 }
 
+/** Soft, never a gate: some employers take students on a year out, and course rules change (DECISIONS.md §1). */
+function placementFlags(s: StudentProfile): string[] {
+  if (s.placementStatus === "none") return ["Usually for students whose degree includes a placement year (or who take a year out)"];
+  if (s.placementStatus === "completed") return ["You've already done your placement year"];
+  return [];
+}
+
 export function scoreFit(student: StudentProfile, job: FitJob, coverage: CoverageResult, today: string, ctx: FitContext = {}): FitResult {
   const sig = ctx.signals ?? parseEligibility(job.title, job.textLines);
   const region = classifyRegion(job.location, job.remote);
@@ -263,6 +270,7 @@ export function scoreFit(student: StudentProfile, job: FitJob, coverage: Coverag
   const softFlags: string[] = [...year.flags];
   // Term-time cohorts clash with term, but a course placement is full-time in term by design (UKCISA) (10#31)
   if (job.cohortClash && job.employmentType !== "placement") softFlags.push("Term-time cohort (e.g. Winter)");
+  if (job.employmentType === "placement") softFlags.push(...placementFlags(student));
   const degree = degreeCheck(sig, ctx.cvGrade);
   const subject = subjectCheck(sig, ctx.course);
   softFlags.push(...degree.flags, ...subject.flags);

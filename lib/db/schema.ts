@@ -2,7 +2,7 @@ import { sql } from "drizzle-orm";
 import { check, index, integer, primaryKey, sqliteTable, text, unique, uniqueIndex } from "drizzle-orm/sqlite-core";
 import type { Answer, ChatMsg, Fact, Limit, LintHit, OutputStatus, OutputTarget, Span, UndoEntry } from "../cover-letter/types";
 import type { DraftResult } from "../autopilot/drafts";
-import type { Archetype, ArchetypeScore, ParsedCV, Region, Requirement, WorkAuth, Year } from "../types";
+import type { Archetype, ArchetypeScore, ParsedCV, PlacementStatus, Region, Requirement, WorkAuth, Year } from "../types";
 
 /**
  * SQLite port of supabase/migrations 0001–0015 (minus gmail_connections / inbox_events, and 0016's auth_attempts).
@@ -56,6 +56,8 @@ export const profiles = sqliteTable("profiles", {
   year: text("year", { enum: YEAR_VALUES }).$type<Year>(),
   /** Expected graduation year (e.g. 2029). Spring weeks recruit by it; `year` alone is ambiguous on 4-year degrees. */
   grad_year: integer("grad_year"),
+  /** PLACEMENT_STATUSES (lib/types.ts); validated in code, null = not asked yet. */
+  placement_status: text("placement_status").$type<PlacementStatus>(),
   /** Broad field (one of FIELDS), derived from `course`; drives grouping and anywhere a category is enough. */
   field: text("field"),
   /** The course as the student named it ("BSc Economics and Statistics"); what AI prompts get. */

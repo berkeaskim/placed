@@ -1,12 +1,17 @@
 "use client";
 import { useActionState } from "react";
 import { saveStudy, type StudyState } from "@/app/(app)/settings/actions";
-import { WORK_AUTH, YEARS, type WorkAuth, type Year } from "@/lib/types";
+import { PLACEMENT_STATUSES, WORK_AUTH, YEARS, type PlacementStatus, type WorkAuth, type Year } from "@/lib/types";
 import { WORK_AUTH_LABEL } from "@/lib/profile/work-auth";
 
+const PLACEMENT_LABEL: Record<PlacementStatus, string> = {
+  required: "Yes, it's compulsory", opted_in: "Yes, I'm doing one", considering: "Optional, not decided", none: "No", completed: "Already done it",
+};
 const YEAR_LABEL: Record<Year, string> = { "1st": "1st year", "2nd": "2nd year", penultimate: "Penultimate", final: "Final year", masters: "Master's" };
 
-export function StudyForm({ year, gradYear, workAuth, options }: { year: Year | null; gradYear: number | null; workAuth: WorkAuth | null; options: number[] }) {
+export function StudyForm({ year, gradYear, placement, workAuth, options }: {
+  year: Year | null; gradYear: number | null; placement: PlacementStatus | null; workAuth: WorkAuth | null; options: number[];
+}) {
   const [state, action, pending] = useActionState<StudyState, FormData>(saveStudy, null);
   const select = "min-h-11 min-w-0 flex-1 rounded-[12px] border bg-white px-3 text-sm";
   return (
@@ -26,6 +31,14 @@ export function StudyForm({ year, gradYear, workAuth, options }: { year: Year | 
         </label>
       </div>
       <div className="flex flex-wrap gap-2">
+        <label className="flex min-w-0 flex-1 basis-60 flex-col gap-1 text-sm font-semibold">Placement year in your degree
+          <select name="placement_status" defaultValue={placement ?? ""} className={select}>
+            <option value="">Not sure</option>
+            {PLACEMENT_STATUSES.map((p) => <option key={p} value={p}>{PLACEMENT_LABEL[p]}</option>)}
+          </select>
+        </label>
+      </div>
+      <div className="flex flex-wrap gap-2">
         <label className="flex min-w-0 flex-1 basis-60 flex-col gap-1 text-sm font-semibold">Right to work in the UK
           <select name="work_auth" defaultValue={workAuth ?? ""} className={select}>
             <option value="">Prefer not to say</option>
@@ -39,7 +52,7 @@ export function StudyForm({ year, gradYear, workAuth, options }: { year: Year | 
       <p className="text-xs text-muted-foreground" role="status">
         {state?.ok === false ? <span className="font-semibold text-[#B42318]">{state.error}</span>
           : state?.ok ? state.message
-          : "Spring weeks recruit by graduation year, so this decides whether your feed opens on spring weeks or internships."}
+          : "Spring weeks and placements recruit by graduation year, so these decide whether your feed opens on spring weeks, placements or internships."}
       </p>
     </form>
   );

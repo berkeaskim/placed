@@ -11,7 +11,7 @@ import { resetUserData } from "@/lib/db/reset";
 import { isDeleteConfirmed } from "@/lib/settings/confirm";
 import { fieldForCourse } from "@/lib/profile/courses";
 import { z } from "zod";
-import { WORK_AUTH, YEARS } from "@/lib/types";
+import { PLACEMENT_STATUSES, WORK_AUTH, YEARS } from "@/lib/types";
 import { needsVisaFor } from "@/lib/profile/work-auth";
 import { GradYear } from "@/lib/validation/onboarding";
 
@@ -83,7 +83,10 @@ export async function saveStudy(_prev: StudyState, formData: FormData): Promise<
   const auth = rawAuth ? z.enum(WORK_AUTH).safeParse(rawAuth) : null;
   if (auth && !auth.success) return { ok: false, error: "Pick your right to work." };
   const workAuth = auth?.data ?? null;
-  db.update(profiles).set({ year: year.data, grad_year: grad?.data ?? null, work_auth: workAuth, needs_visa: needsVisaFor(workAuth) })
+  const rawPlacement = String(formData.get("placement_status") ?? "");
+  const placement = rawPlacement ? z.enum(PLACEMENT_STATUSES).safeParse(rawPlacement) : null;
+  if (placement && !placement.success) return { ok: false, error: "Pick whether your degree has a placement year." };
+  db.update(profiles).set({ year: year.data, grad_year: grad?.data ?? null, placement_status: placement?.data ?? null, work_auth: workAuth, needs_visa: needsVisaFor(workAuth) })
     .where(eq(profiles.user_id, user.id)).run();
   revalidatePath("/", "layout");
   return { ok: true, message: grad ? `Saved. Graduating in ${grad.data}.` : "Saved." };
