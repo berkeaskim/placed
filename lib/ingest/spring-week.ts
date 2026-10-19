@@ -1,4 +1,5 @@
 import type { JobForScoring, Year } from "@/lib/types";
+import { placementType, type Region } from "./placement";
 
 /**
  * Spring week / insight programme detection for UK first-year students.
@@ -83,7 +84,7 @@ export function classifySpringWeek(title: string, body = ""): ProgrammeVerdict {
 /** Title rules for everything that is not a first-year programme. */
 export function baseEmploymentType(title: string): EmploymentType {
   const t = title.toLowerCase();
-  if (/\bplacement|sandwich|year in industry/.test(t)) return "placement";
+  // Placements are decided by lib/ingest/placement.ts (duration, vetoes); a bare "placement" word is not enough.
   if (/(?<!under)graduate/.test(t)) return "graduate"; // "Undergraduate Summer Internship" is not a graduate role
   if (/\bintern|internship|summer (analyst|associate|programme|program|scheme|student)|off[- ]?cycle|working student|werkstudent|vacation scheme|co-op|externship/.test(t)) return "internship";
   return "other";
@@ -95,17 +96,27 @@ type Tagged = { employmentType: EmploymentType; yearEligibility: Year[]; firstYe
  * Applied to every tagger result (LLM or heuristic) so programme typing is deterministic: the classifier promotes
  * spring weeks a tagger missed and demotes trap titles a tagger fell for. A curated card's kind always wins.
  */
-export function reconcileProgramme<T extends Tagged>(t: T, title: string, body: string, curatedType?: EmploymentType | null): T {
+export function reconcileProgramme<T extends Tagged>(t: T, title: string, body: string, curatedType?: EmploymentType | null, region: Region = "uk"): T {
   let type = t.employmentType;
   if (curatedType) {
     type = curatedType;
   } else {
     const v = classifySpringWeek(title, body);
+    const p = v.kind === "spring_week" ? null : placementType(title, body, region);
     if (v.kind === "spring_week") type = "spring_week";
+    // The placement classifier is sure (a 12-month placement, or a "placement" that is really a working-student job,
+    // an insurance broker or a graduate role): it wins over the tagger. Without a verdict the tagger stands.
+    else if (p && (p === "placement" || type === "placement")) type = p;
     // Demote trap titles, and a tagger's spring week whose body says otherwise. An insight event the tagger found is
     // kept even with penultimate wording: it is still an insight event, just not a first-year one.
     else if ((type === "spring_week" || type === "insight") && v.vetoed) type = baseEmploymentType(title);
     else if (type === "spring_week" && v.score < 0) type = v.kind ?? baseEmploymentType(title);
+  }
+  if (type === "placement") {
+    // Taggers call the year before a placement "penultimate"; on a sandwich degree that is the 2nd year too.
+    const years = new Set<Year>(t.yearEligibility);
+    if (years.size === 0 || years.has("penultimate") || years.has("2nd")) { years.add("2nd"); years.add("penultimate"); }
+    return { ...t, employmentType: type, yearEligibility: [...years] };
   }
   if (type !== "spring_week") return type === t.employmentType ? t : { ...t, employmentType: type };
   return {

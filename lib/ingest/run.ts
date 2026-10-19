@@ -1,7 +1,7 @@
 import type { RawJob, Requirement } from "@/lib/types";
 import type { Ats, CompanySeed } from "./providers";
 import { htmlToLines } from "@/lib/text/jd";
-import { passesTitleFilter, detectCohortClash, passesLocationFilter } from "./filter";
+import { passesTitleFilter, detectCohortClash, passesLocationFilter, placementRegion } from "./filter";
 import { normalizeUrl, jobFingerprint, contentHash } from "./fingerprint";
 import { heuristicTagJob } from "@/lib/ai/heuristics";
 import { reconcileProgramme } from "./spring-week";
@@ -44,7 +44,7 @@ export const MAX_TAGS_PER_COMPANY = 25;
  */
 export const EMPTY_RUNS_TO_CLOSE = 2;
 /** Bump to force every job to be re-processed once (e.g. after changing deterministic extraction). */
-export const HASH_VERSION = "v3"; // v3: deterministic spring-week classifier (lib/ingest/spring-week.ts)
+export const HASH_VERSION = "v4"; // v3: spring-week classifier; v4: placement classifier (lib/ingest/placement.ts)
 
 /**
  * Versioned, and includes the ATS close date: an extended deadline with an unchanged JD must still re-process.
@@ -90,7 +90,7 @@ export async function ingestCompany(c: CompanyRow, deps: IngestDeps) {
       tagged++;
       if (t.status === "failed") failed++;
     }
-    t = reconcileProgramme(t, j.title, text, j.employmentType);
+    t = reconcileProgramme(t, j.title, text, j.employmentType, placementRegion(j.location));
     // Dates are deterministic only; the tagger's (possibly LLM) deadline is ignored on purpose.
     // Curated `closes` is the inclusive last day from seed/programmes.yml: never shifted like an ATS end date, and the
     // description's prose dates (e.g. "the earliest falling on 19 October") are never read as the card's deadline.

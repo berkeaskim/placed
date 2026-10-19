@@ -175,8 +175,8 @@ describe("ingestCompany", () => {
     const { contentHash } = await import("@/lib/ingest/fingerprint");
     const j = { title: "Data Analyst Intern", deadline: "2026-11-01" };
     // Pre-branch formula: no opensOn segment at all. Changing it would re-tag every stored job on the next ingest.
-    expect(jobContentHash(j, "text")).toBe(contentHash(`v3\nData Analyst Intern\n2026-11-01\ntext`));
-    expect(jobContentHash({ ...j, opensOn: null }, "text")).toBe(contentHash(`v3\nData Analyst Intern\n2026-11-01\ntext`));
+    expect(jobContentHash(j, "text")).toBe(contentHash(`v4\nData Analyst Intern\n2026-11-01\ntext`));
+    expect(jobContentHash({ ...j, opensOn: null }, "text")).toBe(contentHash(`v4\nData Analyst Intern\n2026-11-01\ntext`));
     expect(jobContentHash({ ...j, opensOn: "2026-09-01" }, "text")).not.toBe(jobContentHash(j, "text"));
   });
 });

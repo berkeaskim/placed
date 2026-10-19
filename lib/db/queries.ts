@@ -70,9 +70,9 @@ export async function getLiveJobs(today: string): Promise<JobListItem[]> {
   return rows.filter((r) => !(r.ats === "curated" && r.employer && covered.has(coverKey(r.employer, r.employment_type)))).map(toJob);
 }
 
-/** Spring weeks and insight events are one kind of card; everything else (internships, graduate roles) another. */
-function programmeKind(type: string): "first_year" | "other" {
-  return type === "spring_week" || type === "insight" ? "first_year" : "other";
+/** Card kinds for hiding: spring weeks/insights, placement years, and everything else (internships, graduate roles). */
+function programmeKind(type: string): "first_year" | "placement" | "other" {
+  return type === "spring_week" || type === "insight" ? "first_year" : type === "placement" ? "placement" : "other";
 }
 
 export async function getJob(id: string): Promise<JobListItem | null> {

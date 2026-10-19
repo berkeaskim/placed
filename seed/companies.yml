@@ -125,13 +125,29 @@
 - { slug: lseg/Graduate_Careers, name: LSEG, ats: workday, apiHost: lseg.wd3.myworkdayjobs.com, enabled: true } # 13 / 3
 - { slug: wellington/Campus, name: Wellington Management, ats: workday, apiHost: wellington.wd5.myworkdayjobs.com, enabled: true } # 4 / 0
 - { slug: cgg/viridiengraduate, name: Viridien, ats: workday, apiHost: cgg.wd103.myworkdayjobs.com, enabled: true } # 7 / 0
+# Placement-year boards (research/placement-year/02-employer-ats.md §2), checked live 2026-10-18.
+# Counts: board size / Workday search hits for "placement" (fuzzy; the classifier decides what is a placement).
+- { slug: lbg/undergraduate_careers, name: Lloyds Banking Group, ats: workday, apiHost: lbg.wd3.myworkdayjobs.com, enabled: true } # 24 / 24 industrial placements
+- { slug: ag/Airbus, name: Airbus, ats: workday, apiHost: ag.wd3.myworkdayjobs.com, enabled: true } # 2000 / 338
+- { slug: geaerospace/GE_ExternalSite, name: GE Aerospace, ats: workday, apiHost: geaerospace.wd5.myworkdayjobs.com, enabled: true } # 607 / 62
+- { slug: boeing/EXTERNAL_CAREERS, name: Boeing, ats: workday, apiHost: boeing.wd1.myworkdayjobs.com, enabled: true } # 756 / 25
+- { slug: cat/CaterpillarCareers, name: Caterpillar, ats: workday, apiHost: cat.wd5.myworkdayjobs.com, enabled: true } # 920 / 12
+- { slug: ngc/Northrop_Grumman_External_Site, name: Northrop Grumman, ats: workday, apiHost: ngc.wd1.myworkdayjobs.com, enabled: true } # 3823 / 63; truncated at 3000
+- { slug: hp/ExternalCareerSite, name: HP, ats: workday, apiHost: hp.wd5.myworkdayjobs.com, enabled: true } # 836 / 26
+- { slug: hpe/Jobsathpe, name: Hewlett Packard Enterprise, ats: workday, apiHost: hpe.wd5.myworkdayjobs.com, enabled: true } # 1567 / 18
+- { slug: pfizer/PfizerCareers, name: Pfizer, ats: workday, apiHost: pfizer.wd1.myworkdayjobs.com, enabled: true } # 556 / 10
+- { slug: sanofi/SanofiCareers, name: Sanofi, ats: workday, apiHost: sanofi.wd3.myworkdayjobs.com, enabled: true } # 982 / 16
+- { slug: roche/roche-ext, name: Roche, ats: workday, apiHost: roche.wd3.myworkdayjobs.com, enabled: true } # 1212 / 7
+- { slug: msd/SearchJobs, name: MSD, ats: workday, apiHost: msd.wd5.myworkdayjobs.com, enabled: true } # 950 / 15
+- { slug: jj/JJ, name: Johnson & Johnson, ats: workday, apiHost: jj.wd5.myworkdayjobs.com, enabled: true } # 1921 / 33
+- { slug: unilever/Unilever_Early_Careers, name: Unilever, ats: workday, apiHost: unilever.wd3.myworkdayjobs.com, enabled: true } # 1 / 1
+- { slug: visa/Visa_Early_Careers, name: Visa, ats: workday, apiHost: visa.wd5.myworkdayjobs.com, enabled: true } # 31 / 1
 - { slug: gsk/GSKCareers, name: GSK, ats: workday, apiHost: gsk.wd5.myworkdayjobs.com, enabled: true } # 57 / 5
 - { slug: cw/External, name: Cushman & Wakefield, ats: workday, apiHost: cw.wd1.myworkdayjobs.com, enabled: true } # 18 / 0; 2000-posting board, ~60s
 - { slug: jll/jllcareers, name: JLL, ats: workday, apiHost: jll.wd1.myworkdayjobs.com, enabled: true } # 8 / 8; 2000-posting board, ~65s
 - { slug: fca/FCA_earlycareers, name: Financial Conduct Authority, ats: workday, apiHost: fca.wd3.myworkdayjobs.com, enabled: true } # 3 / 3
 # Added 2026-10-14 (coverage audit, docs/research/ingest-coverage-benchmark.md). Counts = UK/Europe early-career postings kept on 2026-10-14.
 - { slug: pwc/Global_Campus_Careers, name: PwC, ats: workday, apiHost: pwc.wd3.myworkdayjobs.com, employer: pwc, enabled: true } # 83; no overlap with Global_Experienced_Careers
-- { slug: lbg/undergraduate_careers, name: Lloyds Banking Group, ats: workday, apiHost: lbg.wd3.myworkdayjobs.com, enabled: true } # 24
 - { slug: lbg/graduate_careers, name: Lloyds Banking Group, ats: workday, apiHost: lbg.wd3.myworkdayjobs.com, enabled: true } # 33
 - { slug: rbs/Rbs, name: NatWest Group, ats: workday, apiHost: rbs.wd3.myworkdayjobs.com, enabled: true } # 10
 - { slug: santander/SantanderCareers, name: Santander, ats: workday, apiHost: santander.wd3.myworkdayjobs.com, enabled: true } # 2; 1000-posting board
@@ -142,7 +158,6 @@
 - { slug: mgpru/mandgprudential, name: M&G, ats: workday, apiHost: mgpru.wd3.myworkdayjobs.com, enabled: true } # 1
 - { slug: aviva/External, name: Aviva, ats: workday, apiHost: aviva.wd1.myworkdayjobs.com, enabled: true } # 2
 - { slug: mastercard/Campus, name: Mastercard, ats: workday, apiHost: mastercard.wd1.myworkdayjobs.com, enabled: true } # 13; CorporateCareers repeats the same campus roles
-- { slug: visa/Visa_Early_Careers, name: Visa, ats: workday, apiHost: visa.wd5.myworkdayjobs.com, enabled: true } # 1
 - { slug: accenture/AccentureCareers, name: Accenture, ats: workday, apiHost: accenture.wd103.myworkdayjobs.com, enabled: true } # 8; 2000-posting board, ~45s
 - { slug: mmc/Careers, name: Marsh McLennan, ats: workday, apiHost: mmc.wd1.myworkdayjobs.com, enabled: true } # 26; Oliver Wyman, Mercer, NERA, Marsh
 - { slug: linklaters/Linklaters, name: Linklaters, ats: workday, apiHost: linklaters.wd3.myworkdayjobs.com, enabled: true } # 7
