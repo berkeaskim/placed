@@ -21,7 +21,7 @@ export class AiError extends Error {}
 export const AI_REFUSAL = "The AI declined to process this request.";
 export const AI_BAD_FORMAT = "The AI returned an answer we couldn't read. Please try again.";
 export const AI_UNAVAILABLE = "The AI service is unavailable right now. Please try again shortly.";
-export const AI_NOT_SET_UP = "AI isn't set up yet. Choose Claude, Gemini or a local model in Settings → AI.";
+export const AI_NOT_SET_UP = "AI isn't set up yet. Choose Claude, Gemini, ChatGPT or a local model in Settings → AI.";
 export const isAiNotSetUp = (e: unknown): boolean => e instanceof AiError && e.message === AI_NOT_SET_UP;
 
 // One shared import promise per adapter: parallel first calls (judgeLinkedIn batches) must not race the module's
@@ -29,6 +29,7 @@ export const isAiNotSetUp = (e: unknown): boolean => e instanceof AiError && e.m
 let anthropicMod: Promise<typeof import("./anthropic")> | null = null;
 let geminiMod: Promise<typeof import("./gemini")> | null = null;
 let ollamaMod: Promise<typeof import("./ollama")> | null = null;
+let codexMod: Promise<typeof import("./codex")> | null = null;
 
 /** The only entry point business functions use to reach an LLM. Vendor SDKs load lazily, server-side. */
 export async function generateStructured<T>(req: StructuredRequest<T>): Promise<T> {
@@ -42,13 +43,17 @@ export async function generateStructured<T>(req: StructuredRequest<T>): Promise<
     const { ollamaStructured } = await (ollamaMod ??= import("./ollama"));
     return ollamaStructured(req);
   }
+  if (provider === "codex") {
+    const { codexStructured } = await (codexMod ??= import("./codex"));
+    return codexStructured(req);
+  }
   const { geminiStructured } = await (geminiMod ??= import("./gemini"));
   return geminiStructured(req);
 }
 
 /**
  * Free-text answer researched with web search. Gemini only (Google Search grounding); returns null for a provider
- * without search (Anthropic, Ollama), so callers fall back to an inferred, unsourced answer.
+ * without search (Anthropic, Ollama, Codex), so callers fall back to an inferred, unsourced answer.
  */
 export async function generateGrounded(req: GroundedRequest): Promise<GroundedResult | null> {
   const provider = aiProvider();
@@ -92,6 +97,9 @@ export async function* streamText(req: StreamRequest, o: { fn: string; fixtureKe
   } else if (provider === "ollama") {
     const { ollamaStream } = await (ollamaMod ??= import("./ollama"));
     yield* ollamaStream(req);
+  } else if (provider === "codex") {
+    const { codexStream } = await (codexMod ??= import("./codex"));
+    yield* codexStream(req);
   } else {
     const { geminiStream } = await (geminiMod ??= import("./gemini"));
     yield* geminiStream(req);

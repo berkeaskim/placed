@@ -1,8 +1,9 @@
 "use client";
 import { setProviderAction } from "@/app/(app)/settings/ai/actions";
+import type { AiProvider } from "@/lib/ai/config";
 import { ResultLine, useAction } from "./shared";
 
-type Option = { id: "anthropic" | "gemini" | "ollama"; label: string; hint: string; configured: boolean };
+type Option = { id: AiProvider; label: string; hint: string; configured: boolean };
 
 export function ProviderPicker({ options, chosen, active, envLocked }: { options: Option[]; chosen: string | null; active: string | null; envLocked: string | null }) {
   const { pending, result, run } = useAction();
@@ -10,7 +11,7 @@ export function ProviderPicker({ options, chosen, active, envLocked }: { options
   return (
     <fieldset className="flex flex-col gap-3" disabled={pending}>
       <legend className="sr-only">AI provider</legend>
-      <div className="grid gap-2 sm:grid-cols-3">
+      <div className="grid gap-2 sm:grid-cols-2">
         {options.map((o) => (
           <label
             key={o.id}

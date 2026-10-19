@@ -58,7 +58,8 @@ async function withSlot<T>(background: boolean, run: () => Promise<T>): Promise<
 
 type ChatChunk = { message?: { content?: string }; done?: boolean; done_reason?: string; error?: string };
 
-async function partsToText(parts: Part[]): Promise<string> {
+/** Parts as one prompt string for adapters that take no PDFs (Ollama, the Codex CLI). */
+export async function partsToText(parts: Part[]): Promise<string> {
   const out: string[] = [];
   for (const p of parts) {
     if (p.type === "text") {

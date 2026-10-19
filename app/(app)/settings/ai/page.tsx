@@ -5,10 +5,12 @@ import { AI_KEYS, aiProvider, isProviderConfigured } from "@/lib/ai/config";
 import { ANTHROPIC_MODELS, GEMINI_MODELS } from "@/lib/ai/models";
 import { LOCAL_MODELS, bytesToGb, recommendFor } from "@/lib/ai/local-models";
 import { isInstalled, ollamaStatus } from "@/lib/ai/ollama";
+import { codexStatus } from "@/lib/ai/codex";
 import { getSecret, getSetting } from "@/lib/settings/store";
 import { ProviderPicker } from "@/components/settings-ai/provider-picker";
 import { CloudProviderCard, type KeyState } from "@/components/settings-ai/cloud-provider-card";
 import { OllamaPanel } from "@/components/settings-ai/ollama-panel";
+import { CodexPanel } from "@/components/settings-ai/codex-panel";
 
 export const metadata = { title: "AI settings" };
 
@@ -24,7 +26,7 @@ const setting = (k: string) => getSetting(k) ?? "";
 
 export default async function AiSettings() {
   await connection(); // settings come from a synchronous DB and Ollama is probed live: always render at request time
-  const status = await ollamaStatus();
+  const [status, codex] = await Promise.all([ollamaStatus(), codexStatus()]);
   const ramGb = bytesToGb(os.totalmem());
   const rec = recommendFor(ramGb);
   const installed = status.running ? status.models : [];
@@ -35,6 +37,7 @@ export default async function AiSettings() {
     { id: "anthropic" as const, label: "Claude", hint: "Anthropic's models. Best quality; needs an API key.", configured: isProviderConfigured("anthropic") },
     { id: "gemini" as const, label: "Gemini", hint: "Google's models. Fast; has a free tier with an API key.", configured: isProviderConfigured("gemini") },
     { id: "ollama" as const, label: "Ollama (local)", hint: "Runs on this computer. Private and free, but slower.", configured: isProviderConfigured("ollama") },
+    { id: "codex" as const, label: "ChatGPT (Codex CLI)", hint: "Your ChatGPT plan through the Codex CLI. No API key.", configured: isProviderConfigured("codex") },
   ];
 
   return (
@@ -75,6 +78,20 @@ export default async function AiSettings() {
           keyState={keyState(process.env.GEMINI_API_KEY, AI_KEYS.geminiKey)}
           defaults={GEMINI_MODELS}
           overrides={{ fast: setting("ai.gemini.model.fast"), smart: setting("ai.gemini.model.smart") }}
+        />
+      </section>
+
+      <section className="card-quest flex flex-col gap-3 p-4 sm:p-5" id="chatgpt">
+        <h2 className="font-bold">ChatGPT (Codex CLI)</h2>
+        <CodexPanel
+          installed={codex.installed}
+          bin={codex.bin}
+          version={codex.installed ? codex.version : null}
+          loggedIn={codex.installed && codex.loggedIn}
+          account={codex.installed ? codex.account : null}
+          error={codex.installed ? null : codex.error}
+          enabled={getSetting(AI_KEYS.codexEnabled) === "1"}
+          overrides={{ fast: setting("ai.codex.model.fast"), smart: setting("ai.codex.model.smart") }}
         />
       </section>
 

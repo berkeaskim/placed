@@ -31,6 +31,7 @@ const CloudProvider = z.enum(["anthropic", "gemini"]);
 export async function setProviderAction(provider: string): Promise<ActionResult> {
   if (!(AI_PROVIDERS as readonly string[]).includes(provider)) return { ok: false, error: "Unknown provider." };
   setSetting(AI_KEYS.provider, provider as AiProvider);
+  if (provider === "codex") setSetting(AI_KEYS.codexEnabled, "1"); // nothing else to set up: picking it turns it on
   refresh();
   return { ok: true };
 }
@@ -54,11 +55,19 @@ export async function clearKeyAction(provider: string): Promise<ActionResult> {
   return { ok: true, message: "Key removed." };
 }
 
+/** Turns ChatGPT (Codex CLI) on or off. On: it also becomes the chosen provider when none was picked yet. */
+export async function setCodexEnabledAction(on: boolean): Promise<ActionResult> {
+  if (on) pinProvider("codex");
+  setSetting(AI_KEYS.codexEnabled, on ? "1" : null);
+  refresh();
+  return { ok: true, message: on ? "ChatGPT turned on." : "ChatGPT turned off." };
+}
+
 const ModelId = z.string().trim().max(200).regex(/^[\w.:\/-]*$/);
 
-/** Per-tier model overrides for Claude/Gemini; an empty value goes back to the built-in default. */
+/** Per-tier model overrides for Claude/Gemini/ChatGPT; an empty value goes back to the built-in default. */
 export async function setCloudModelsAction(provider: string, fast: string, smart: string): Promise<ActionResult> {
-  const p = CloudProvider.safeParse(provider);
+  const p = z.enum(["anthropic", "gemini", "codex"]).safeParse(provider);
   const f = ModelId.safeParse(fast);
   const s = ModelId.safeParse(smart);
   if (!p.success || !f.success || !s.success) return { ok: false, error: "Invalid model id." };
@@ -125,6 +134,7 @@ export async function testConnectionAction(provider: string): Promise<ActionResu
     let out: z.infer<typeof Ping>;
     if (provider === "anthropic") out = await (await import("@/lib/ai/anthropic")).anthropicStructured(req);
     else if (provider === "gemini") out = await (await import("@/lib/ai/gemini")).geminiStructured(req);
+    else if (provider === "codex") out = await (await import("@/lib/ai/codex")).codexStructured(req);
     else out = await (await import("@/lib/ai/ollama")).ollamaStructured(req);
     return { ok: true, message: `Connected: got a valid answer in ${((Date.now() - t0) / 1000).toFixed(1)} s${out.ok ? "" : " (model said ok=false)"}.` };
   } catch (e) {
