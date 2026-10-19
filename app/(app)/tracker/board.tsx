@@ -14,11 +14,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import type { Nudge } from "@/lib/outreach/nudges";
 import { updateStatus } from "./actions";
+import { AcceptOfferButton } from "@/components/tracker/placement-secured";
 
 export type Card = {
   id: string; jobId: string; title: string; company: string; status: AppStatus; updatedAt: string; lastEventAt: string | null;
   deadline: { date: string; label: string; url: string | null } | null;
   nudge: Nudge | null; outreach: { sent: number; replied: number };
+  employmentType?: string | null; acceptedAt?: string | null;
 };
 
 /** Critically damped: things settle without overshoot. Cards a user throws get a touch of bounce (see whileDrag release). */
@@ -172,6 +174,9 @@ function TrackerCard({ card: c, today, now, onHover, onMove }: {
       {!c.nudge && c.status !== "saved" && c.status !== "rejected" && (
         <Link href={`/jobs/${c.jobId}#inside-track`} draggable={false} className="text-xs font-semibold text-[#5B3DF5]">Inside Track: people to message →</Link>
       )}
+      {c.status === "offer" && c.employmentType === "placement" && (c.acceptedAt
+        ? <span className="text-xs font-bold text-[#1F7A47]">Accepted ✓</span>
+        : <AcceptOfferButton appId={c.id} />)}
       {c.status === "interview" && (
         <Link href={`/jobs/${c.jobId}#prep`} draggable={false} className="text-xs font-semibold text-[#5B3DF5]">Prep for this interview →</Link>
       )}

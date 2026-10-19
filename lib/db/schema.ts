@@ -228,6 +228,10 @@ export const applications = sqliteTable("applications", {
   updated_at: now("updated_at").notNull(),
   next_deadline: text("next_deadline"),
   last_event_at: text("last_event_at"),
+  /** The student accepted this offer (only meaningful while status is "offer"; cleared when the card moves off it). */
+  accepted_at: text("accepted_at"),
+  /** Steps after accepting a placement (lib/tracker/placement.ts PLACEMENT_CHECKLIST): key → done. */
+  checklist: json<Record<string, boolean>>("checklist"),
 }, (t) => [
   unique("applications_user_id_job_id_key").on(t.user_id, t.job_id),
   index("applications_job_idx").on(t.job_id),
