@@ -1,4 +1,5 @@
-import type { Year } from "@/lib/types";
+import { hasPlacementYear } from "@/lib/profile/cycle";
+import type { PlacementStatus, Year } from "@/lib/types";
 import { sponsorshipRefusalLine } from "@/lib/ingest/filter";
 
 /**
@@ -258,12 +259,14 @@ export function studentGradYears(s: { year: Year; gradYear?: number | null }, to
 }
 
 /** Year-of-study labels the grad year settles: 2nd + graduating next summer is penultimate; 2nd on a 4-year course is not. */
-export function studentYearLabels(s: { year: Year; gradYear?: number | null }, today: string): Set<Year> {
+export function studentYearLabels(s: { year: Year; gradYear?: number | null; placementStatus?: PlacementStatus | null }, today: string): Set<Year> {
   const labels = new Set<Year>([s.year]);
   if (s.gradYear == null) return labels;
   const left = s.gradYear - academicEndYear(today);
   if (left <= 0) labels.add("final"); else labels.delete("final");
-  if (left === 1) labels.add("penultimate"); else labels.delete("penultimate");
+  // On a sandwich degree the year before the placement is the penultimate *study* year: two calendar years from the end.
+  const penultimate = left === 1 || (left === 2 && hasPlacementYear(s.placementStatus));
+  if (penultimate) labels.add("penultimate"); else labels.delete("penultimate");
   if (s.year === "masters") labels.add("masters");
   return labels;
 }

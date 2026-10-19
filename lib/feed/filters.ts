@@ -8,7 +8,7 @@ export type LocationFilter = (typeof LOCATION_FILTERS)[number];
 export const LOCATION_LABELS: Record<LocationFilter, string> = { london: "London", uk: "UK", europe: "Europe", remote: "Remote" };
 
 /** "spring": spring weeks and insight events only. null: not chosen, so the student's eligibility decides (resolveMode). */
-export type FeedMode = "spring" | "all";
+export type FeedMode = "spring" | "placement" | "all";
 export type FeedFilters = { a: Archetype | null; loc: LocationFilter | null; soon: boolean; mode: FeedMode | null };
 
 const one = (v: string | string[] | undefined) => (typeof v === "string" ? v : undefined);
@@ -20,13 +20,16 @@ export function parseFilters(sp: Record<string, string | string[] | undefined>):
     a: a && (ARCHETYPES as readonly string[]).includes(a) ? (a as Archetype) : null,
     loc: loc && (LOCATION_FILTERS as readonly string[]).includes(loc) ? (loc as LocationFilter) : null,
     soon: one(sp.soon) === "1",
-    mode: mode === "spring" || mode === "all" ? mode : null,
+    mode: mode === "spring" || mode === "placement" || mode === "all" ? mode : null,
   };
 }
 
-/** Spring-week-eligible students land on spring weeks; everyone else on all roles. An explicit choice wins. */
-export function resolveMode(mode: FeedMode | null, springEligible: boolean): FeedMode {
-  return mode ?? (springEligible ? "spring" : "all");
+/**
+ * Where the feed opens: an explicit choice wins; then placements for a placement-year student applying this cycle
+ * (their next summer goes to the placement), then spring weeks for first-years, then all roles.
+ */
+export function resolveMode(mode: FeedMode | null, springEligible: boolean, placementEligible = false): FeedMode {
+  return mode ?? (placementEligible ? "placement" : springEligible ? "spring" : "all");
 }
 
 const isFirstYearProgramme = (t: string) => t === "spring_week" || t === "insight";
@@ -36,6 +39,7 @@ export const CLOSING_SOON_DAYS = 7;
 export function applyFilters(ranked: Ranked[], f: FeedFilters, today: string): Ranked[] {
   return ranked.filter(({ job }) =>
     (f.mode !== "spring" || isFirstYearProgramme(job.employmentType)) &&
+    (f.mode !== "placement" || job.employmentType === "placement") &&
     (!f.a || job.archetype === f.a) &&
     (!f.loc || classifyRegion(job.location, job.remote) === f.loc) &&
     (!f.soon || (!job.curated && isValidDate(job.deadline) && daysUntil(job.deadline, today) <= CLOSING_SOON_DAYS)));

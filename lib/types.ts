@@ -81,8 +81,17 @@ export interface ArchetypeScore {
 export const WORK_AUTH = ["uk_rtw", "student_visa", "graduate_visa", "needs_sponsorship"] as const;
 export type WorkAuth = (typeof WORK_AUTH)[number];
 
+/**
+ * Whether the degree includes a placement year: compulsory, chosen (on the placement version), optional and undecided,
+ * none, or already done. Many students only move onto the placement version once they have an offer.
+ */
+export const PLACEMENT_STATUSES = ["required", "opted_in", "considering", "none", "completed"] as const;
+export type PlacementStatus = (typeof PLACEMENT_STATUSES)[number];
+
 export interface StudentProfile {
   year: Year;
+  /** Null/absent = not asked yet. */
+  placementStatus?: PlacementStatus | null;
   /** Expected graduation year; null/absent when the student hasn't said (eligibility then falls back to `year`). */
   gradYear?: number | null;
   locationPref: Region[];

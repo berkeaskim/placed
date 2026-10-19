@@ -9,13 +9,18 @@ import { SuggestInput } from "@/components/onboarding/suggest-input";
 import { fieldForCourse, searchCourses } from "@/lib/profile/courses";
 import { searchUniversities } from "@/lib/profile/uk-universities";
 import { celebrate } from "@/components/reward-toast";
-import { gradYearOptions, guessGradYear } from "@/lib/profile/cycle";
+import { gradYearOptions, guessGradYear, placementHintFromCourse } from "@/lib/profile/cycle";
+import type { PlacementStatus } from "@/lib/types";
 import { todayLondon } from "@/lib/scoring/dates";
 import { saveOnboarding } from "./actions";
 
 const YEAR_LABEL: Record<Year, string> = { "1st": "1st year", "2nd": "2nd year", penultimate: "Penultimate", final: "Final year", masters: "Master's" };
 /** Index of the final step (university, course, year, locations). */
 const LAST = 3;
+const PLACEMENT_CHOICES: [PlacementStatus | null, string][] = [
+  ["required", "Yes, it's compulsory"], ["opted_in", "Yes, I'm doing one"], ["considering", "It's optional, not decided"],
+  ["none", "No"], ["completed", "I've already done it"], [null, "Not sure"],
+];
 const LOCATIONS = [["london", "London"], ["uk", "Anywhere in the UK"], ["europe", "Europe"], ["remote", "Remote"]] as const;
 
 function Choice({ selected, onClick, children }: { selected: boolean; onClick: () => void; children: React.ReactNode }) {
@@ -34,6 +39,10 @@ export default function Onboarding() {
   const [course, setCourse] = useState("");
   const [year, setYear] = useState<Year | null>(null);
   const [gradYear, setGradYear] = useState<number | null>(null);
+  const [gradTouched, setGradTouched] = useState(false);
+  // undefined = not answered yet: the course name may already say ("with Placement Year").
+  const [placement, setPlacement] = useState<PlacementStatus | null | undefined>(undefined);
+  const placementShown = placement === undefined ? placementHintFromCourse(course) : placement;
   const today = todayLondon();
   const [loc, setLoc] = useState<string[]>([]);
   const [workAuth, setWorkAuth] = useState<WorkAuth | null>(null);
@@ -46,7 +55,7 @@ export default function Onboarding() {
   function finish() {
     setError(null);
     start(async () => {
-      const r = await saveOnboarding({ university, course, year: year!, gradYear, locationPref: loc, needsVisa: needsVisaFor(workAuth), workAuth } as OnboardingInputT);
+      const r = await saveOnboarding({ university, course, year: year!, gradYear, placementStatus: placementShown, locationPref: loc, needsVisa: needsVisaFor(workAuth), workAuth } as OnboardingInputT);
       if ("error" in r) { setError(r.error ?? "Something went wrong"); return; }
       celebrate(r.award);
       router.push("/profile/build");
@@ -65,12 +74,19 @@ export default function Onboarding() {
           hint={courseField ? `Placed will read this as ${courseField}.` : "Your course as it's called at your university. The AI works out the rest."} /></section>)}
       {step === 2 && (<section className="flex flex-col gap-3"><h1 className="text-3xl font-extrabold">What year are you in?</h1>
         <div className="grid grid-cols-2 gap-3">{YEARS.map((y) => (
-          <Choice key={y} selected={year === y} onClick={() => { setYear(y); setGradYear(guessGradYear(y, today)); }}>{YEAR_LABEL[y]}</Choice>))}</div>
+          <Choice key={y} selected={year === y} onClick={() => { setYear(y); if (!gradTouched) setGradYear(guessGradYear(y, today, placementShown)); }}>{YEAR_LABEL[y]}</Choice>))}</div>
         {year && (<>
           <h2 className="mt-3 text-xl font-extrabold">When do you graduate?</h2>
           <p className="-mt-1 text-sm text-muted-foreground">Spring weeks and internships recruit by graduation year. Change it if your degree is 4 years or has a placement year.</p>
           <div className="grid grid-cols-3 gap-3">{gradYearOptions(today).map((g) => (
-            <Choice key={g} selected={gradYear === g} onClick={() => setGradYear(g)}>{g}</Choice>))}</div>
+            <Choice key={g} selected={gradYear === g} onClick={() => { setGradYear(g); setGradTouched(true); }}>{g}</Choice>))}</div>
+          <h2 className="mt-3 text-xl font-extrabold">Does your degree include a placement year?</h2>
+          <p className="-mt-1 text-sm text-muted-foreground">A year working in industry between your 2nd and final year. Placed shows placements first when you&apos;re applying for one.</p>
+          <div className="grid grid-cols-2 gap-3">{PLACEMENT_CHOICES.map(([k, label]) => (
+            <Choice key={label} selected={placementShown === k} onClick={() => {
+              setPlacement(k);
+              if (!gradTouched && year) setGradYear(guessGradYear(year, today, k));
+            }}>{label}</Choice>))}</div>
         </>)}</section>)}
       {step === LAST && (<section className="flex flex-col gap-3"><h1 className="text-3xl font-extrabold">Where do you want to work?</h1>
         <div className="grid grid-cols-2 gap-3">{LOCATIONS.map(([k, label]) => (

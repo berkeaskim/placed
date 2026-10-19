@@ -7,7 +7,7 @@ import { getActiveCv, getProfile, toStudent } from "@/lib/db/queries";
 import { getFeedJobs } from "@/lib/feed/jobs-cache";
 import { rankJobs } from "@/lib/feed/rank";
 import { applyFilters, feedHref, LOCATION_FILTERS, LOCATION_LABELS, parseFilters, resolveMode } from "@/lib/feed/filters";
-import { isSpringWeekEligible, springCycleYear, springWeekGradYear } from "@/lib/profile/cycle";
+import { isPlacementEligible, isSpringWeekEligible, placementGradYear, placementStartYear, springCycleYear, springWeekGradYear } from "@/lib/profile/cycle";
 import { todayLondon } from "@/lib/scoring/dates";
 import { ARCHETYPE_LABELS, type Archetype } from "@/lib/types";
 import { JobCard } from "@/components/job-card";
@@ -31,8 +31,11 @@ export default async function Feed({ searchParams }: { searchParams: Promise<Rec
   const student = toStudent(profile);
   // A known grad year decides; without one, only a stated 1st year counts (a missing year reads as "2nd").
   const springEligible = isSpringWeekEligible({ year: profile.year ?? "2nd", gradYear: student.gradYear ?? null }, today);
-  const filters = { ...parsed, mode: resolveMode(parsed.mode, springEligible) };
+  const placementEligible = isPlacementEligible({ year: profile.year ?? "2nd", gradYear: student.gradYear ?? null, placementStatus: student.placementStatus }, today);
+  const filters = { ...parsed, mode: resolveMode(parsed.mode, springEligible, placementEligible) };
   const spring = filters.mode === "spring";
+  const placement = filters.mode === "placement";
+  const start = placementStartYear(today);
   const all = rankJobs(student, cv?.parsed ?? null, jobs, today, { course: profile.course });
   const ranked = applyFilters(all, filters, today);
   const savedIds = new Set(apps.map((x) => x.job_id));
@@ -44,14 +47,23 @@ export default async function Feed({ searchParams }: { searchParams: Promise<Rec
   return (
     <div className="flex flex-col gap-3.5">
       <div>
-        <h1 className="text-[28px] font-extrabold tracking-tight">{spring ? "Spring weeks for you" : "Internships for you"}</h1>
+        <h1 className="text-[28px] font-extrabold tracking-tight">{spring ? "Spring weeks for you" : placement ? "Placement years for you" : "Internships for you"}</h1>
         <p className="text-sm text-muted-foreground">
           {spring
             ? `${ranked.length} spring weeks and insight events for spring ${springCycleYear(today)}, ranked by how well they fit you.`
-            : `${ranked.length} live roles, ranked by how well they fit you.`}
+            : placement
+              ? `${ranked.length} placements starting in ${start}, usually 9–15 months, ranked by how well they fit you.`
+              : `${ranked.length} live roles, ranked by how well they fit you.`}
         </p>
       </div>
-      {springEligible && (
+      {placementEligible && (
+        <p className="card-quest p-4 text-sm">
+          Your degree has a placement year and you graduate in {placementGradYear(today)}, so {start}/{String(start + 1).slice(2)} placements are open to you.
+          Banks and pharma close first (September–October) and many others fill on a rolling basis, so apply early.
+          {springEligible && " Spring weeks are open to you too: switch above."}
+        </p>
+      )}
+      {springEligible && !placementEligible && (
         <p className="card-quest p-4 text-sm">
           You&apos;re graduating in {springWeekGradYear(today)}, so spring weeks are your way in: short programmes that often fast-track you to a summer internship.
           Many fill on a rolling basis, so apply early.
@@ -65,7 +77,8 @@ export default async function Feed({ searchParams }: { searchParams: Promise<Rec
       <RefreshJobs running={ingestRunning()} lastRun={last ? ago(last.finishedAt) : null} next={next ? inTime(next) : null} lastNew={last?.newJobs ?? 0} />
       <nav className="flex flex-wrap gap-2" aria-label="Programme type">
         <Link href={feedHref(filters, { mode: "spring" })} aria-current={spring ? "true" : undefined} className={chipClass(spring)}>Spring weeks &amp; insights</Link>
-        <Link href={feedHref(filters, { mode: "all" })} aria-current={!spring ? "true" : undefined} className={chipClass(!spring)}>Internships &amp; more</Link>
+        <Link href={feedHref(filters, { mode: "placement" })} aria-current={placement ? "true" : undefined} className={chipClass(placement)}>Placement years</Link>
+        <Link href={feedHref(filters, { mode: "all" })} aria-current={filters.mode === "all" ? "true" : undefined} className={chipClass(filters.mode === "all")}>Internships &amp; more</Link>
       </nav>
       <nav className="flex flex-wrap gap-2" aria-label="Role filters">
         <Link href={feedHref(filters, { a: null })} aria-current={!filters.a ? "true" : undefined} className={chipClass(!filters.a)}>All roles</Link>
@@ -80,7 +93,9 @@ export default async function Feed({ searchParams }: { searchParams: Promise<Rec
         ))}
         <Link href={feedHref(filters, { soon: !filters.soon })} aria-current={filters.soon ? "true" : undefined} className={chipClass(filters.soon)}>Closing soon</Link>
       </nav>
-      {ranked.length === 0 && <p className="card-quest p-6 text-center font-semibold">{spring ? "No spring weeks match these filters right now. Many open from late October; try clearing a filter or check back after the next refresh." : "No live roles match these filters right now. Try clearing a filter."}</p>}
+      {ranked.length === 0 && <p className="card-quest p-6 text-center font-semibold">{spring ? "No spring weeks match these filters right now. Many open from late October; try clearing a filter or check back after the next refresh."
+        : placement ? "No placements match these filters right now. Try clearing a filter; smaller firms keep recruiting into the summer."
+        : "No live roles match these filters right now. Try clearing a filter."}</p>}
       {ranked.slice(0, 60).map((r) => <JobCard key={r.job.id} r={r} today={today} saved={savedIds.has(r.job.id)} applied={appliedIds.has(r.job.id)} />)}
     </div>
   );
