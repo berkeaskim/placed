@@ -83,7 +83,7 @@ export function judgeLabel(scoredBy: string | null): string | null {
   if (!scoredBy || scoredBy === "fixture" || scoredBy === "off") return null;
   const [provider, ...rest] = scoredBy.split(":");
   const model = rest.join(":") || "unknown model";
-  const name = provider === "anthropic" ? "Claude" : provider === "gemini" ? "Gemini" : provider === "ollama" ? "local model" : provider;
+  const name = provider === "anthropic" ? "Claude" : provider === "gemini" ? "Gemini" : provider === "ollama" ? "local model" : provider === "codex" ? "ChatGPT" : provider;
   return provider === "ollama" ? `Judged by ${model} (${name}, experimental)` : `Judged by ${name} (${model})`;
 }
 

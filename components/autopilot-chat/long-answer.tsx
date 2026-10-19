@@ -62,7 +62,7 @@ function LogEntry({ e }: { e: Entry }) {
     return (
       <div className="msg bot err" role="alert">
         {/* AI_NOT_SET_UP (lib/ai/provider is server-side), with the Settings link the ai-off banner uses. */}
-        <span>AI isn&apos;t set up yet. Choose Claude, Gemini or a local model in <Link href="/settings/ai" className="underline">Settings → AI</Link>.</span>
+        <span>AI isn&apos;t set up yet. Choose Claude, Gemini, ChatGPT or a local model in <Link href="/settings/ai" className="underline">Settings → AI</Link>.</span>
       </div>
     );
   }

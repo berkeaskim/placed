@@ -14,7 +14,7 @@ Tailor your CV to a job without inventing a single claim. Let Autopilot fill the
 Track every application, prep for the interview, and get a dated plan for who to message and when.
 
 **Runs on your own computer.** No account, no cloud database: your CV and applications stay in a folder on your machine.
-Bring a Claude or Gemini key, or run a model locally with Ollama.
+Bring a Claude or Gemini key, use your ChatGPT plan through the Codex CLI, or run a model locally with Ollama.
 
 <p>
   <img alt="3rd place, Claude Hackathon" src="https://img.shields.io/badge/%F0%9F%A5%89%203rd%20place-Claude%20Hackathon-D97757">
@@ -166,7 +166,7 @@ flowchart LR
     UI["Next.js UI<br/>(App Router)"] --> SA["Server Actions<br/>& Route Handlers"]
     EXT["Chrome extension<br/>Autopilot fill · LinkedIn capture"] --> SA
     SA --> DB[("./data<br/>SQLite (Drizzle) · files · secret.key")]
-    SA --> AI["lib/ai<br/>Claude, Gemini or Ollama<br/>(Zod-validated JSON)"]
+    SA --> AI["lib/ai<br/>Claude, Gemini, ChatGPT (Codex CLI) or Ollama<br/>(Zod-validated JSON)"]
     SA --> DET["Deterministic core<br/>cv-rules · cv-score · scoring<br/>verify · outreach guard · strategy plan<br/>gamify · pdf"]
     SA --> FORMS["Greenhouse · Ashby · Lever<br/>application forms"]
     BTN["Refresh jobs button<br/>or npm run ingest"] --> ING["Ingest"]
@@ -212,15 +212,17 @@ model under **Settings → AI** (next section) before you score your own CV.
 
 ## Choosing an AI backend
 
-Open **Settings → AI** in the app and pick one of three backends. You can switch at any time.
+Open **Settings → AI** in the app and pick one of four backends. You can switch at any time.
 
 | Backend | What you need | Notes |
 |---|---|---|
 | **Claude** | An Anthropic API key ([console.anthropic.com](https://console.anthropic.com)) | Best quality. Paid per use. |
 | **Gemini** | A Google AI Studio key ([aistudio.google.com/apikey](https://aistudio.google.com/apikey)) | Google offers a rate-limited free tier. Also powers search-grounded interview prep. |
+| **ChatGPT (Codex CLI)** | OpenAI's [Codex CLI](https://github.com/openai/codex) (`npm install -g @openai/codex`), signed in with `codex login` | Uses your ChatGPT plan, no API key. Each call starts the CLI, so it takes a few seconds longer than Claude or Gemini. |
 | **Ollama** | [Ollama](https://ollama.com) installed and running | Fully offline and free. Your CV never leaves your computer. Slower, and quality depends on your hardware. |
 
-Paste a key and press **Test connection**. Keys are stored encrypted in `data/`. If you prefer environment
+Paste a key and press **Test connection**. For ChatGPT there is no key: press **Use ChatGPT**, then **Test connection**
+(set `CODEX_BIN` if the `codex` binary isn't on your PATH). Keys are stored encrypted in `data/`. If you prefer environment
 variables, copy `.env.example` to `.env.local` and fill in what you need; a value there overrides the one in Settings.
 
 ### Running models locally with Ollama
@@ -343,7 +345,7 @@ answers with `curl http://127.0.0.1:11434/api/tags`. If it runs on another machi
 Settings → AI or `OLLAMA_HOST` in `.env.local`.
 
 **A local model is slow or returns errors.** Pick a smaller model from the recommendations, close other heavy apps, or
-switch to a Claude or Gemini key for scoring and tailoring.
+switch to a Claude or Gemini key, or ChatGPT, for scoring and tailoring.
 
 **Something looks broken after pulling new code.** Run `npm install` and `npm run setup` again: setup applies any new
 database migrations and keeps your data.
@@ -356,7 +358,7 @@ Contributions are welcome: see [CONTRIBUTING.md](CONTRIBUTING.md).
 app/                 Pages: feed, jobs/[id], profile (score · quiz · target · linkedin), tracker, strategy, outreach, autopilot, settings
 extension/           Chrome MV3 extension: Autopilot form filler + LinkedIn capture
 lib/
-  ai/                Model calls (Claude · Gemini · Ollama): parseCV, tagJob, judgeCvRules, explainMatch, tailorCV …
+  ai/                Model calls (Claude · Gemini · ChatGPT via Codex CLI · Ollama): parseCV, tagJob, judgeCvRules, explainMatch, tailorCV …
   db/                SQLite client, Drizzle schema, migrations runner
   autopilot/         Form readers (Greenhouse · Ashby · Lever), answer vault, remembered answers
   linkedin-score/    LinkedIn rules + scoring
@@ -384,7 +386,7 @@ docs/research/       Sources behind every CV rule and Role Playbook
 - [x] Interview prep grounded in real candidate reports
 - [x] LinkedIn score and networking
 - [x] Strategy tab: reach map and a dated outreach plan per role
-- [x] Local-first: SQLite, no account, Claude / Gemini / Ollama
+- [x] Local-first: SQLite, no account, Claude / Gemini / ChatGPT (Codex CLI) / Ollama
 - [ ] Autopilot on the Chrome Web Store
 - [x] More employer coverage: 19 of the 21 top employers are live (13) or have a curated programme card (still missing: Meta, Bain)
 - [ ] Cover letters that follow the same no-fabrication rules
