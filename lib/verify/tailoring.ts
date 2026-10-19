@@ -653,6 +653,9 @@ export const KNOWN_EMPLOYERS: KnownEmployer[] = [
   E("Procter & Gamble", ["P&G"]), E("Mars", [], true), E("Mondelez", ["Mondelez International"]), E("Diageo"), E("NVIDIA"),
   E("Intel", [], true), E("Cisco"), E("Adobe", [], true), E("Sky", [], true), E("AstraZeneca"), E("BP", [], true), E("Rolls-Royce"),
   E("Clifford Chance"), E("PA Consulting", [], true), E("Legal & General"), E("ASOS"),
+  // placement-year boards (2026-10-18) and the EDT curated card
+  E("Airbus"), E("GE Aerospace"), E("Caterpillar"), E("Northrop Grumman"), E("HP", [], true), E("Hewlett Packard Enterprise", ["HPE"]),
+  E("Pfizer"), E("Sanofi"), E("Roche"), E("MSD", [], true), E("Johnson & Johnson", ["J&J"]), E("Year in Industry (EDT)", ["Engineering Development Trust"]),
 ];
 /** Single-word employer names/aliases, lowercased: never an ordinary affiliation head (fix round 1, ruling 3). */
 const EMPLOYER_WORDS = new Set(KNOWN_EMPLOYERS.flatMap((k) => [k.name, ...(k.aliases ?? [])]).filter((n) => /^[A-Za-z0-9.]+$/.test(n)).map((n) => n.toLowerCase()));

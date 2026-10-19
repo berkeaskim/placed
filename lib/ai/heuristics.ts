@@ -58,6 +58,8 @@ function yearsFrom(text: string, employmentType: TaggedJob["employmentType"]): Y
   if (/second[- ]year|2nd[- ]year/.test(t)) out.add("2nd");
   if (out.size === 0 && (employmentType === "spring_week" || employmentType === "insight")) { out.add("1st"); out.add("2nd"); }
   if (out.size === 0 && employmentType === "graduate") { out.add("final"); out.add("masters"); }
+  // A placement is applied for the year before it: the 2nd year of a sandwich degree ("penultimate" in most adverts).
+  if (employmentType === "placement" && (out.size === 0 || out.has("penultimate"))) { out.add("2nd"); out.add("penultimate"); }
   return [...out];
 }
 

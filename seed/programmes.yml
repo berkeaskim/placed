@@ -12,7 +12,7 @@
 #   opens:       YYYY-MM (month applications open)
 #   closes:      optional YYYY-MM-DD; without it the card hides from ${season}-06-01
 #   season:      year the programme starts
-#   kind:        spring-week | internship | graduate
+#   kind:        spring-week | internship | placement | graduate
 #   description: two to four sentences, in our own words
 #
 # - employer: deloitte
@@ -361,3 +361,15 @@
   season: 2027
   kind: graduate
   description: BCG calls this graduate entry role Associate; it is full time in BCG's UK offices, mostly working at client sites. The process is an online application and CV, a short numerical test, then case interviews. Applications opened on 9 September 2026 and close on 18 October 2026.
+
+# --- Placement years ---
+# Read on 2026-10-18 (research/placement-year/01-aggregators.md §7).
+- employer: edt
+  name: Year in Industry (EDT)
+  title: Year in Industry Placement
+  url: https://www.etrust.org.uk/placements
+  location: Across the UK
+  opens: 2026-10
+  season: 2027
+  kind: placement
+  description: The Engineering Development Trust matches undergraduates with partner employers for a paid year in industry, mostly in engineering, science and technology. There are no individual vacancies to apply to yet for 2027/28; you register your interest with EDT and it puts you forward to partner firms as placements come in.

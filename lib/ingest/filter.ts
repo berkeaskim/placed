@@ -1,6 +1,7 @@
 import type { JobForScoring, Region } from "@/lib/types";
 import { escapeRegex } from "@/lib/text/regex";
 import { baseEmploymentType, classifySpringWeek, isProgrammeTitle } from "./spring-week";
+import { placementType, type Region as PlacementRegion } from "./placement";
 
 export const TITLE_POSITIVE = [
   "word:intern", "Internship", "Interns", "Vacation Scheme", "Summer Programme", "Summer Program",
@@ -37,14 +38,27 @@ export function matchKeyword(title: string, kw: string): boolean {
   return t.includes(kw.toLowerCase());
 }
 
+/**
+ * Negatives describing a job *area* rather than seniority. A clear placement-year title overrides them: Boeing's
+ * "Talent Acquisition Intern – 12 Month Placement" is a student placement in talent acquisition, not a recruiter job.
+ */
+const AREA_NEGATIVES = new Set(["Sales Representative", "Account Executive", "Recruiter", "Recruitment Consultant", "Talent Acquisition",
+  "Customer Care", "Customer Support", "Call Center", "Call Centre", "Warehouse", "Driver"]);
+
+/** Whole-word match, so "Director" never drops "Directorate" and "Principal" never drops "Principality". */
+function matchNegative(title: string, kw: string): boolean {
+  return new RegExp(`(?<![\\p{L}\\p{N}])${escapeRegex(kw.trim())}(?![\\p{L}\\p{N}])`, "iu").test(title);
+}
+
 /** Experienced grades ("Analyst II", "Software Engineer III"); a bare numeral ("Intern II", "Phase II") is fine. */
 const EXPERIENCED_GRADE = /\b(analyst|associate|engineer|developer|scientist|consultant|specialist|accountant|manager|designer|researcher)\s+(ii|iii|iv)\b/i;
 
 export function passesTitleFilter(title: string): boolean {
   // isProgrammeTitle: first-year programmes with no keyword ("Black Talent in Business – Audit", "FutureFocus", "Discover EY").
   const pos = TITLE_POSITIVE.some((k) => matchKeyword(title, k)) || isProgrammeTitle(title);
-  const neg = TITLE_NEGATIVE.some((k) => matchKeyword(title, k)) || EXPERIENCED_GRADE.test(title);
-  return pos && !neg;
+  const placement = placementType(title) === "placement";
+  const neg = TITLE_NEGATIVE.some((k) => !(placement && AREA_NEGATIVES.has(k)) && matchNegative(title, k)) || EXPERIENCED_GRADE.test(title);
+  return (pos || placement) && !neg;
 }
 
 export function detectCohortClash(title: string): boolean {
@@ -122,6 +136,16 @@ export function detectSponsorship(jdText: string): "yes" | "no" | "unknown" {
 }
 
 /** Pass the posting body when available: some first-year programmes are only recognisable from it. */
-export function detectEmploymentType(title: string, body = ""): JobForScoring["employmentType"] {
-  return classifySpringWeek(title, body).kind ?? baseEmploymentType(title);
+/** Pass the posting body (and region) when available: some programmes are only recognisable from them. */
+export function detectEmploymentType(title: string, body = "", region: PlacementRegion = "uk"): JobForScoring["employmentType"] {
+  return classifySpringWeek(title, body).kind ?? placementType(title, body, region) ?? baseEmploymentType(title);
+}
+
+/** Region for placement typing: outside the UK/Ireland a 12-month role is a long internship unless it says sandwich. */
+export function placementRegion(location: string): PlacementRegion {
+  if (/\b(ireland|dublin|cork|galway|limerick)\b/i.test(location) && !/northern ireland/i.test(location)) return "ie";
+  const r = classifyRegion(location, false);
+  if (r === "europe") return "europe";
+  // UK, London, remote or unstated: the location filter already limits ingest to UK/Europe/remote.
+  return r === "other" && location.trim() && !REMOTE.test(location) ? "other" : "uk";
 }

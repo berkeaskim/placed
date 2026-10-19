@@ -2,7 +2,7 @@ import YAML from "yaml";
 import type { RawJob } from "@/lib/types";
 import { isValidDate } from "@/lib/scoring/dates";
 
-export type ProgrammeKind = "spring-week" | "internship" | "graduate";
+export type ProgrammeKind = "spring-week" | "internship" | "placement" | "graduate";
 
 export type Programme = {
   employer: string;
@@ -17,7 +17,7 @@ export type Programme = {
   description: string;
 };
 
-const KINDS: readonly string[] = ["spring-week", "internship", "graduate"];
+const KINDS: readonly string[] = ["spring-week", "internship", "placement", "graduate"];
 const OPENS_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
 const CLOSES_RE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -97,7 +97,7 @@ function escapeHtml(s: string): string {
 }
 
 const KIND_TYPE: Record<ProgrammeKind, NonNullable<RawJob["employmentType"]>> = {
-  "spring-week": "spring_week", internship: "internship", graduate: "graduate",
+  "spring-week": "spring_week", internship: "internship", placement: "placement", graduate: "graduate",
 };
 
 export function programmeToRawJob(p: Programme): RawJob {
