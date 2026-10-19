@@ -201,6 +201,14 @@
 # Goldman Sachs campus GraphQL (api-higher.gs.com); slug = country key.
 - { slug: uk, name: Goldman Sachs, ats: goldmansachs, employer: goldmansachs, enabled: true }
 
+# Oleeo (*.tal.net) campus boards (lib/ingest/providers/oleeo.ts), checked live 2026-10-20; slug = tenant/list.
+# Morgan Stanley and Bank of America campus also use Oleeo but already have their own providers below, so they're left out.
+- { slug: nomuracampus/1, name: Nomura, ats: oleeo, enabled: true } # 28 campus postings: Discover Nomura, IT Industrial Placement, summer
+- { slug: rothschildandco/2, name: Rothschild, ats: oleeo, enabled: true } # 32: UK Global Advisory Spring Insight, Women's Horizon
+- { slug: jefferies/2, name: Jefferies, ats: oleeo, enabled: true } # 50+ (paged): IB/ER Spring Week, 1 Year Placement
+- { slug: blackrock/1, name: BlackRock, ats: oleeo, enabled: true } # 13: 2027 Spring Insight Event EMEA (campus is not on Workday)
+- { slug: evercore/1, name: Evercore, ats: oleeo, enabled: true } # 28, mostly US events; UK rows pass the location filter
+
 # Morgan Stanley students & graduates resultset.json, UK rows only. Workday ms/External (above) has no campus roles.
 - { slug: uk, name: Morgan Stanley, ats: morganstanley, employer: morganstanley, enabled: true }
 

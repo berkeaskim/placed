@@ -18,7 +18,7 @@ const inList = (col: string, values: readonly string[]) => sql.raw(`${col} in ($
 
 export const YEAR_VALUES = ["1st", "2nd", "penultimate", "final", "masters"] as const;
 export const APP_STATUS_VALUES = ["saved", "applied", "interview", "offer", "rejected"] as const;
-export const ATS_VALUES = ["greenhouse", "lever", "ashby", "workday", "smartrecruiters", "oracle", "amazon", "goldmansachs", "morganstanley", "bankofamerica", "deutschebank", "eightfold", "phenom", "apple", "mckinsey", "curated", "targetjobs"] as const;
+export const ATS_VALUES = ["greenhouse", "lever", "ashby", "workday", "smartrecruiters", "oracle", "amazon", "goldmansachs", "morganstanley", "bankofamerica", "deutschebank", "eightfold", "phenom", "apple", "mckinsey", "curated", "targetjobs", "oleeo"] as const;
 /** Multi-employer listings: a board whose jobs each name their own employer (jobs.employer_name). */
 export const AGGREGATOR_ATS: readonly AtsKind[] = ["targetjobs"];
 /** Fetch transports other than plain fetch; null = plain. "stealth" routes through the opt-in recon sidecar. */

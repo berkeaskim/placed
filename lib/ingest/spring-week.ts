@@ -100,13 +100,14 @@ type Tagged = { employmentType: EmploymentType; yearEligibility: Year[]; firstYe
  */
 export function reconcileProgramme<T extends Tagged>(
   t: T, title: string, body: string, curatedType?: EmploymentType | null, region: Region = "uk", sourceType?: "placement" | null,
+  programme?: string | null,
 ): T {
   let type = t.employmentType;
   if (curatedType) {
     type = curatedType;
   } else {
     const v = classifySpringWeek(title, body);
-    const p = v.kind === "spring_week" ? null : placementType(title, body, region);
+    const p = v.kind === "spring_week" ? null : placementType(title, body, region, { programme });
     if (v.kind === "spring_week") type = "spring_week";
     // The placement classifier is sure (a 12-month placement, or a "placement" that is really a working-student job,
     // an insurance broker or a graduate role): it wins over the tagger. Without a verdict the tagger stands.
