@@ -18,8 +18,7 @@ const SPRING = { type: "spring", bounce: 0, duration: 0.4 } as const;
  */
 export function SpringPrepPanel({ ctx, stories, bankEmpty }: { ctx: SpringContext; stories: StorySuggestion[]; bankEmpty: boolean }) {
   const [seed, setSeed] = useState(0);
-  const [technicals, setTechnicals] = useState(false);
-  const set = useMemo(() => practiceSet(ctx, { seed, technicals }), [ctx, seed, technicals]);
+  const set = useMemo(() => practiceSet(ctx, { seed }), [ctx, seed]);
   const all = useMemo(() => springQuestions(ctx), [ctx]);
 
   return (
@@ -46,11 +45,7 @@ export function SpringPrepPanel({ ctx, stories, bankEmpty }: { ctx: SpringContex
       <div className="flex flex-col gap-3">
         <SectionTitle icon={Video}>Practise the video interview</SectionTitle>
         <p className="text-[14px] leading-[1.43] text-[#6E6E73]">{ctx.preset.note}</p>
-        <label className="flex min-h-9 cursor-pointer items-center gap-2 self-start text-[14px] text-[#3C3C43]">
-          <input type="checkbox" checked={technicals} onChange={(e) => setTechnicals(e.target.checked)} className="h-4 w-4 accent-[#5B3DF5]" />
-          Include a light technical question <span className="text-[#8E8E93]">(final rounds only, rare on video)</span>
-        </label>
-        <VideoPractice key={`${seed}-${technicals}`} questions={set} prepSeconds={ctx.preset.prepSeconds} answerSeconds={ctx.preset.answerSeconds} onRestart={() => setSeed((s) => s + 1)} />
+        <VideoPractice key={seed} questions={set} prepSeconds={ctx.preset.prepSeconds} answerSeconds={ctx.preset.answerSeconds} onRestart={() => setSeed((s) => s + 1)} />
       </div>
 
       <Stories stories={stories} bankEmpty={bankEmpty} />

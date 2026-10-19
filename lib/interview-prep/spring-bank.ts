@@ -1,11 +1,12 @@
 /**
  * Spring week interview prep: a fixed 30-question bank, firm video-interview presets and the motivation-first framing.
+ * A separate experience from internship prep: no technicals, no superday, nothing from the generic web-researched pack.
  * Deterministic on purpose: spring week interviews are short and motivational, the questions barely vary by firm, and
  * a student should be able to practise with AI turned off. Source: research/spring-weeks/05-application-content.md
  * (§2 per-firm reports, §5 differentiators, §6e question bank). Firm reports are student accounts [R], not official.
  */
 
-export type SpringGroup = "motivation" | "competency" | "commercial" | "technical" | "curveball";
+export type SpringGroup = "motivation" | "competency" | "commercial" | "curveball";
 /** Competency themes the STAR matcher looks for in the Experience Bank. */
 export type StoryTheme =
   | "lead" | "team" | "failure" | "challenge" | "influence" | "learn" | "data" | "conflict" | "pressure" | "achievement" | "unique";
@@ -26,7 +27,6 @@ export const SPRING_GROUPS: { key: SpringGroup; label: string }[] = [
   { key: "motivation", label: "Motivation" },
   { key: "competency", label: "Competency" },
   { key: "commercial", label: "Commercial" },
-  { key: "technical", label: "Light technicals" },
   { key: "curveball", label: "Curveball" },
 ];
 
@@ -115,16 +115,16 @@ export const SPRING_QUESTIONS: SpringQuestionDef[] = [
     whyTheyAsk: "Connects the news to the business, which is what the job is.",
     prepTip: "Pick one development and trace it to one {firm} business line: revenue, costs or clients." },
 
-  // Light technicals (opt-in)
-  { id: 27, group: "technical", text: "What are the three financial statements, and how do they link?",
-    whyTheyAsk: "Occasionally asked at final rounds or assessment centres (Citi, GS, MS). Rare at the video stage.",
-    prepTip: "Income statement, balance sheet, cash flow statement. Net income flows into retained earnings and starts the cash flow statement." },
-  { id: 28, group: "technical", text: "What is a DCF, and why use it? What is EV/EBITDA?",
-    whyTheyAsk: "A light technical to see if you've read beyond the basics.",
-    prepTip: "A DCF values a company by discounting its future cash flows. EV/EBITDA compares a company's value with its operating profit." },
-  { id: 29, group: "technical", text: "Some quick mental maths, or a brain teaser.",
-    whyTheyAsk: "Reported at Nomura and Barclays, mostly for Markets.",
-    prepTip: "Talk through your working out loud; a clear method matters more than speed." },
+  // Curiosity and first-year experience
+  { id: 27, group: "motivation", text: "What have you done so far to find out whether finance is for you?",
+    whyTheyAsk: "Spring weeks reward curiosity you've acted on, not experience you can't have yet.",
+    prepTip: "List what you've actually done: a society talk, an insight evening, a virtual experience, a book, a conversation with someone in the industry. Pick the one that changed your mind about something." },
+  { id: 28, group: "competency", theme: "learn", text: "How has your first term at university gone, and what has it taught you about how you work?",
+    whyTheyAsk: "They're hiring first-years: settling in, juggling new commitments and reflecting on it is the evidence they have.",
+    prepTip: "One honest adjustment you had to make (workload, independence, a new society role), what you changed, and what it says about how you'll handle the week." },
+  { id: 29, group: "motivation", text: "If you could ask an analyst at {firm} one question on day one, what would it be?",
+    whyTheyAsk: "A good question shows genuine curiosity and that you've thought about the job, not just the logo.",
+    prepTip: "Ask about something you've read or heard about {firm} or {division}, and say briefly why you want to know." },
 
   // Curveball
   { id: 30, group: "curveball", text: "What makes a great spring week intern? Or: if you were a company, which would you be?",
@@ -219,27 +219,25 @@ export function springQuestions(c: SpringContext): SpringQuestion[] {
 const CORE_ORDER = [1, 2, 10, 4, 20, 8, 3, 16, 12, 13, 21, 7];
 
 /**
- * The questions for one timed practice run: the firm's reported questions first, then the core mix, never technicals
- * unless asked for. Each `seed` pages on through that list, so "practise again" is a different interview.
+ * The questions for one timed practice run: the firm's reported questions first, then the core mix. Each `seed` pages
+ * on through that list, so "practise again" is a different interview.
  */
-export function practiceSet(c: SpringContext, opts: { technicals?: boolean; seed?: number } = {}): SpringQuestion[] {
-  const n = Math.min(7, Math.max(3, c.preset.questions));
-  const take = opts.technicals ? n - 1 : n;
+export function practiceSet(c: SpringContext, opts: { seed?: number } = {}): SpringQuestion[] {
+  const take = Math.min(7, Math.max(3, c.preset.questions));
   const pool = [...new Set([...c.preset.reported, ...CORE_ORDER])];
   const start = (Math.abs(opts.seed ?? 0) * take) % pool.length;
   const ids = Array.from({ length: take }, (_, i) => pool[(start + i) % pool.length]);
-  if (opts.technicals) ids.push(27);
   return ids.map((id) => renderQuestion(SPRING_QUESTIONS.find((q) => q.id === id)!, c));
 }
 
 /** The short, motivation-first framing shown instead of the generic process and tips. */
 export const SPRING_FRAMING = {
-  lead: "Spring week interviews test motivation, not technicals. They want to know why this firm, why this division, and what you've already done about your interest.",
+  lead: "Spring week interviews are short and about motivation: why this firm, why this division, and what you've already done about your curiosity as a first-year.",
   process: [
     { stage: "Online form and CV", note: "Plus one to five short answers. Rarely a cover letter." },
     { stage: "Online tests", note: "Numerical, verbal or a situational judgement test. Invites often expire in 3 to 5 days." },
     { stage: "Recorded video interview", note: "3 to 7 questions, about 30 seconds to prepare and 90 to 120 seconds to answer, usually one take." },
-    { stage: "Final interview or assessment centre", note: "Only some firms (for example Goldman Sachs, Morgan Stanley, Citi). Competency, motivation and light technicals." },
+    { stage: "Offer, then the week itself", note: "Places fill on a rolling basis. The week is talks, shadowing and a group task, and can lead to a fast-track summer interview." },
   ],
   tips: [
     "Pass the substitution test: three reasons only true of this firm (a deal, a business line, a person you spoke to).",

@@ -6,8 +6,9 @@ import { DAILY_CAP } from "@/lib/interview-prep/service";
 import { seedJob, U, withTempDb } from "../gamify/temp-db";
 
 const generatePrepPack = vi.fn();
+const mockJob = vi.hoisted(() => ({ employmentType: "internship" }));
 vi.mock("@/lib/db/queries", () => ({
-  getJob: async () => ({ id: "j", title: "Summer Analyst", company: "Goldman Sachs", archetype: "investment_banking", employmentType: "internship", textLines: ["x"], extId: "e" }),
+  getJob: async () => ({ id: "j", title: "Summer Analyst", company: "Goldman Sachs", archetype: "investment_banking", employmentType: mockJob.employmentType, textLines: ["x"], extId: "e" }),
   getActiveCv: async () => null,
 }));
 vi.mock("@/lib/ai/interviewPrep", async (importOriginal) => {
@@ -61,6 +62,18 @@ describe("getInterviewPrep", () => {
     }
     expect(await getInterviewPrep(ID)).toEqual({ error: expect.stringContaining(String(DAILY_CAP)) });
     expect(generatePrepPack).not.toHaveBeenCalled();
+  });
+
+  it("never builds or caches a generic pack for a spring week: those have their own prep", async () => {
+    track("applied");
+    mockJob.employmentType = "spring_week";
+    try {
+      expect(await getInterviewPrep(ID)).toEqual({ error: expect.stringContaining("Spring weeks") });
+      expect(generatePrepPack).not.toHaveBeenCalled();
+      expect(db.select().from(interviewPreps).all()).toEqual([]);
+    } finally {
+      mockJob.employmentType = "internship";
+    }
   });
 
   it("rejects a non-uuid", async () => {

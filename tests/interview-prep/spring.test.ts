@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { LOCAL_USER_ID } from "@/lib/auth/local-user";
 import { insertEntry } from "@/lib/bank/store";
 import type { Bank, BankEntry } from "@/lib/bank/types";
-import { DEFAULT_PRESET, practiceSet, SPRING_QUESTIONS, springContext, springQuestions } from "@/lib/interview-prep/spring-bank";
+import { DEFAULT_PRESET, practiceSet, SPRING_FRAMING, SPRING_QUESTIONS, springContext, springQuestions } from "@/lib/interview-prep/spring-bank";
 import { suggestStories } from "@/lib/interview-prep/spring-stories";
 import { withTempDb } from "../cv/temp-db";
 
@@ -24,7 +24,9 @@ const entry = (over: Partial<Omit<BankEntry, "bullets">> & { bullets?: string[] 
 describe("spring question bank", () => {
   it("has the 30 questions from the research, numbered 1 to 30", () => {
     expect(SPRING_QUESTIONS.map((q) => q.id)).toEqual(Array.from({ length: 30 }, (_, i) => i + 1));
-    expect(SPRING_QUESTIONS.filter((q) => q.group === "technical").map((q) => q.id)).toEqual([27, 28, 29]);
+    // Spring prep is its own experience: no technicals, no assessment-centre or superday framing.
+    const text = JSON.stringify(SPRING_QUESTIONS) + JSON.stringify(SPRING_FRAMING);
+    expect(text).not.toMatch(/DCF|EBITDA|financial statements|brain teaser|assessment centre|superday/i);
   });
 
   it("fills firm, rival and division, and leaves no placeholder behind", () => {
@@ -54,14 +56,6 @@ describe("practiceSet", () => {
     const set = practiceSet(c);
     expect(set).toHaveLength(4);
     expect(set.map((q) => q.id)).toEqual([1, 11, 12, 22]);
-  });
-
-  it("never includes technicals unless asked, and then exactly one", () => {
-    const c = springContext("Acme", "Spring Week");
-    for (let seed = 0; seed < 12; seed++) expect(practiceSet(c, { seed }).some((q) => q.group === "technical")).toBe(false);
-    const withTech = practiceSet(c, { technicals: true });
-    expect(withTech).toHaveLength(5);
-    expect(withTech.filter((q) => q.group === "technical")).toHaveLength(1);
   });
 
   it("gives a different interview on the next seed, with no duplicates, even when reported questions fill the run", () => {
