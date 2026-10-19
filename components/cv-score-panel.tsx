@@ -192,7 +192,8 @@ function Sparkline({ history }: { history: number[] }) {
 
 export function CvScorePanel({ data }: { data: CvScorePanelData }) {
   const { total, dimensions, sector, cvId } = data;
-  const label = data.track === "spring" ? `${ARCHETYPE_LABELS[sector]} spring weeks` : ARCHETYPE_LABELS[sector];
+  const label = data.track === "spring" ? `${ARCHETYPE_LABELS[sector]} spring weeks`
+    : data.track === "placement" ? `${ARCHETYPE_LABELS[sector]} placements` : ARCHETYPE_LABELS[sector];
   const provisional = data.provisional;
   const band = provisional ? null : scoreBand(total);
   const { next, rest } = splitFixes(data.fixes, 4);

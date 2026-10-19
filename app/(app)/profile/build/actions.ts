@@ -17,7 +17,7 @@ import { contentHash } from "@/lib/ingest/fingerprint";
 import { scanCvSafety, stripFlaggedSpans, type SafetyReport } from "@/lib/cv/safety";
 import { SAFETY_WARNING_COPY } from "@/lib/cv/safety-copy";
 import { dropFlaggedContent } from "@/lib/cv/strip-parsed";
-import { ARCHETYPES, YEARS, type Archetype, type ParsedCV, type Year } from "@/lib/types";
+import { ARCHETYPES, YEARS, type Archetype, type ParsedCV, type PlacementStatus, type Year } from "@/lib/types";
 import { scoreCv } from "@/lib/cv-score/run";
 import { canonicalize, extractSkills } from "@/lib/skills/extract";
 import { cvSizeError } from "@/lib/cv/upload-limits";
@@ -89,8 +89,8 @@ export async function uploadCv(formData: FormData): Promise<UploadCvResult> {
 
   const skills = [...new Set([...parsed.skills.flatMap((g) => g.items.map((i) => canonicalize(i) ?? i)), ...extractSkills(cleanText)])];
   const scored = parsed.archetypes.filter((a) => a.score > 0);
-  let prof: { year: Year | null; grad_year: number | null; target_archetype: Archetype | null } | undefined;
-  try { prof = db.select({ year: profiles.year, grad_year: profiles.grad_year, target_archetype: profiles.target_archetype }).from(profiles).where(eq(profiles.user_id, user.id)).get(); }
+  let prof: { year: Year | null; grad_year: number | null; placement_status: PlacementStatus | null; target_archetype: Archetype | null } | undefined;
+  try { prof = db.select({ year: profiles.year, grad_year: profiles.grad_year, placement_status: profiles.placement_status, target_archetype: profiles.target_archetype }).from(profiles).where(eq(profiles.user_id, user.id)).get(); }
   catch { prof = undefined; }
   // An unreadable (image-only) or empty parse must not wipe archetypes/skills from e.g. the quiz.
   const hasSignal = !imageOnly && (skills.length > 0 || scored.length > 0);
@@ -115,7 +115,7 @@ export async function uploadCv(formData: FormData): Promise<UploadCvResult> {
     try {
       after(async () => {
         try {
-          await scoreCv({ userId: user.id, cvId, sector: target as Archetype, year: y, track: scoreTrackFor({ year: y, gradYear: prof?.grad_year ?? null }, todayLondon()) });
+          await scoreCv({ userId: user.id, cvId, sector: target as Archetype, year: y, gradYear: prof?.grad_year ?? null, track: scoreTrackFor({ year: y, gradYear: prof?.grad_year ?? null, placementStatus: prof?.placement_status ?? null }, todayLondon()) });
         } catch (e) {
           console.error("scoreCv failed after CV upload; retried on the profile page", e);
         }

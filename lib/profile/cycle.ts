@@ -66,8 +66,18 @@ export function isSpringWeekEligible(s: { year: Year; gradYear: number | null },
 }
 
 /** CV scoring track for the profile panel: spring-week-eligible students are scored as spring applicants. */
-export function scoreTrackFor(s: { year: Year; gradYear: number | null }, today: string): Track {
+export function scoreTrackFor(s: { year: Year; gradYear: number | null; placementStatus?: PlacementStatus | null }, today: string): Track {
+  // A placement-year student applying this cycle is scored as a placement applicant first (their next summer is the placement).
+  if (isPlacementEligible(s, today)) return "placement";
   return isSpringWeekEligible(s, today) ? "spring" : "standard";
+}
+
+/** The tracks a student can switch between on the profile: the ones they're eligible for, then internships. */
+export function scoreTracksFor(s: { year: Year; gradYear: number | null; placementStatus?: PlacementStatus | null }, today: string): Track[] {
+  const out: Track[] = [];
+  if (isPlacementEligible(s, today)) out.push("placement");
+  if (isSpringWeekEligible(s, today)) out.push("spring");
+  return [...out, "standard"];
 }
 
 /** "BSc Economics with Placement Year", "MEng Mechanical Engineering (Year in Industry)", "sandwich": the course says so. */

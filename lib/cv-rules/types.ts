@@ -15,6 +15,8 @@ export const CHECKER_IDS = [
   "experience_present", "skills_evidenced", "cliche_density", "read_time", "hidden_text", "prompt_injection",
   // Spring-week track (research/spring-weeks/07-cv-rules-design.md).
   "pre_uni_grades", "gcse_summarised",
+  // Placement track (research/placement-year/05-application-content.md §4a).
+  "first_year_marks", "placement_grad_date",
   // Audit 2026-10-18: photo detection from the upload scan; a "Curriculum Vitae" title line.
   "photo_present", "cv_title",
 ] as const;
@@ -26,7 +28,7 @@ export type Citation = { title: string; publisher: string; year: string; url: st
  * What the CV is being scored for. "spring": spring weeks and insight programmes (first-years), where academics and
  * activities carry the CV and no internship is expected. "standard": everything else.
  */
-export const TRACKS = ["standard", "spring"] as const;
+export const TRACKS = ["standard", "spring", "placement"] as const;
 export type Track = (typeof TRACKS)[number];
 
 export type RuleAdjust = { severity?: Severity; threshold?: number; skip?: boolean; maxPages?: number };

@@ -11,7 +11,7 @@ import { ARCHETYPES } from "@/lib/types";
  */
 const EXPECTED_PER_PREFIX: Record<string, number> = {
   G: 32, FCQ: 7, FIN: 12, QNT: 10, CON: 11, SWE: 11, DAT: 12, PRD: 8, MKT: 9, RES: 10,
-  EV: 3, AU: 3, ATS: 2, SPR: 7,
+  EV: 3, AU: 3, ATS: 2, SPR: 7, PLC: 5,
 };
 
 const prefixOf = (id: string) => id.split("-")[0];
@@ -20,8 +20,8 @@ describe("CV rule library", () => {
   it("has the transcribed research rules with unique ids", () => {
     expect(new Set(RULES.map((r) => r.id)).size).toBe(RULES.length);
   });
-  it("has exactly the 137 rules left after the audit merge", () => {
-    expect(RULES.length).toBe(137);
+  it("has exactly the 142 rules: 137 after the audit merge + 5 placement-year", () => {
+    expect(RULES.length).toBe(142);
   });
   it("one detector, one rule: no two scored code rules share a checker in any sector or track (audit 04#2)", () => {
     for (const a of ARCHETYPES) for (const t of TRACKS) {

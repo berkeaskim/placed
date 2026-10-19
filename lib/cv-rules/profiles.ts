@@ -49,10 +49,21 @@ export const SPRING_WEIGHTS: Partial<Record<Archetype, Record<Dimension, number>
 export const SPRING_CAVEAT =
   "Spring weeks and insight programmes screen mainly on the application form, online tests and your motivation answers. Most portals ask for your A-levels separately. Your CV is one input, so keep it clean and one page.";
 
+/** Placement years (research/placement-year/05 §4a): first-year marks and modules up, outcome-heavy bullets down. Grade D. */
+function placementWeights(sector: Archetype): Record<Dimension, number> {
+  const w = DIMENSION_WEIGHTS[sector];
+  return { ...w, impact: w.impact - 5, uk: w.uk + 5 };
+}
+
+export const PLACEMENT_CAVEAT =
+  "Many placement schemes (Big 4, some engineering consultancies) screen on the application form, a strengths or situational test and a video interview, and some don't ask for a CV at all. Where a CV is read, recruiters look for your first-year marks, relevant modules and one project you can talk about.";
+
 export function weightsFor(sector: Archetype, track: Track = "standard"): Record<Dimension, number> {
+  if (track === "placement") return placementWeights(sector);
   return track === "spring" ? SPRING_WEIGHTS[sector] ?? SPRING_DEFAULT : DIMENSION_WEIGHTS[sector];
 }
 
 export function caveatFor(sector: Archetype, track: Track = "standard"): string | undefined {
+  if (track === "placement") return PLACEMENT_CAVEAT;
   return track === "spring" ? SPRING_CAVEAT : SECTOR_CAVEATS[sector];
 }

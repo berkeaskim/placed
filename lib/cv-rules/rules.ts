@@ -4,11 +4,23 @@ import { FINANCE_RULES } from "./rules/finance";
 import { TECH_RULES } from "./rules/tech";
 import { AMENDMENT_RULES } from "./rules/amendments";
 import { SPRING_ADJUST, SPRING_RULES } from "./rules/spring";
+import { PLACEMENT_ADJUST, PLACEMENT_RULES, SHARED_WITH_SPRING } from "./rules/placement";
+import type { RuleAdjust, Track } from "./types";
 
-export { SPRING_ADJUST };
+export { SPRING_ADJUST, PLACEMENT_ADJUST };
 
-const withSpring = (r: CvRule): CvRule =>
-  SPRING_ADJUST[r.id] ? { ...r, trackAdjust: { ...r.trackAdjust, spring: SPRING_ADJUST[r.id] } } : r;
+/** Per-track adjustments of existing rules, each kept in its track's file so the whole policy reads in one place. */
+const TRACK_ADJUST: Partial<Record<Track, Record<string, RuleAdjust>>> = { spring: SPRING_ADJUST, placement: PLACEMENT_ADJUST };
+
+const withTracks = (r: CvRule): CvRule => {
+  let out = r;
+  for (const [track, adjust] of Object.entries(TRACK_ADJUST) as [Track, Record<string, RuleAdjust>][]) {
+    if (adjust[r.id]) out = { ...out, trackAdjust: { ...out.trackAdjust, [track]: adjust[r.id] } };
+  }
+  return out;
+};
+const shareWithPlacement = (r: CvRule): CvRule =>
+  (SHARED_WITH_SPRING as readonly string[]).includes(r.id) ? { ...r, tracks: [...(r.tracks ?? []), "placement"] } : r;
 
 /**
  * An llm rule may return not_applicable only when its question says when (audit 04#1): "Not applicable if…" or
@@ -17,4 +29,5 @@ const withSpring = (r: CvRule): CvRule =>
 const NA_WORDING = /not[ _]applicable/i;
 const withNa = (r: CvRule): CvRule => (r.check === "llm" && !r.naAllowed && NA_WORDING.test(r.llmGuidance) ? { ...r, naAllowed: true } : r);
 
-export const RULES: CvRule[] = [...GENERAL_RULES, ...FINANCE_RULES, ...TECH_RULES, ...AMENDMENT_RULES].map(withSpring).concat(SPRING_RULES).map(withNa);
+export const RULES: CvRule[] = [...GENERAL_RULES, ...FINANCE_RULES, ...TECH_RULES, ...AMENDMENT_RULES].map(withTracks)
+  .concat(SPRING_RULES.map(shareWithPlacement), PLACEMENT_RULES).map(withNa);
