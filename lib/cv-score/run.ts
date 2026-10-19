@@ -88,7 +88,7 @@ function findDeltaBase(i: {
  * The CV read is scoped to `userId`, and the score is never written unless it returns the row.
  */
 export async function scoreCv(
-  i: { userId: string; cvId: string; sector: Archetype; year: Year; track?: Track },
+  i: { userId: string; cvId: string; sector: Archetype; year: Year; track?: Track; gradYear?: number | null },
 ): Promise<CvScore & { aiUnavailable: boolean; scoredBy: string; madeByPlaced: boolean; delta: StoredRuleResults["delta"] | null }> {
   const track: Track = i.track ?? "standard";
   const cv = db.select({ storage_path: cvs.storage_path, raw_text: cvs.raw_text, page_texts: cvs.page_texts, page_count: cvs.page_count, file_size: cvs.file_size, parsed_json: cvs.parsed_json })
@@ -138,7 +138,7 @@ export async function scoreCv(
   }
 
   const code = runCodeChecks(rules, {
-    text: rawText, pageTexts, pageCount: cv.page_count, fileSize: cv.file_size, cv: parsed, year: i.year, track, sector: i.sector,
+    text: rawText, pageTexts, pageCount: cv.page_count, fileSize: cv.file_size, cv: parsed, year: i.year, track, gradYear: i.gradYear ?? null, sector: i.sector,
     spellingErrors: llm.spellingErrors, safety: parsed.safety,
   });
   const textLayerFailed = code.some((r) => r.status === "fail" && rules.find((x) => x.id === r.ruleId)?.checker === "text_layer");

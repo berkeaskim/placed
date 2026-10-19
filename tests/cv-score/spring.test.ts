@@ -111,7 +111,7 @@ describe("rulesFor by track", () => {
     const spr = RULES.filter((r) => r.id.startsWith("SPR-"));
     expect(spr).toHaveLength(7);
     for (const r of spr) {
-      expect(r.tracks, r.id).toEqual(["spring"]);
+      expect(r.tracks, r.id).toEqual(["SPR-02", "SPR-06"].includes(r.id) ? ["spring", "placement"] : ["spring"]);
       expect(r.citations.length, r.id).toBeGreaterThan(0);
     }
   });

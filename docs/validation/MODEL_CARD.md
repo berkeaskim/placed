@@ -1,6 +1,6 @@
 # Model card: Placed CV Score
 
-Last updated: 18 October 2026 · rules: 137 · prompt version `judge-2026-10-18.1-…` (the exact value is in `lib/ai/judgeCvRules.ts`)
+Last updated: 18 October 2026 · rules: 142 · prompt version `judge-2026-10-18.1-…` (the exact value is in `lib/ai/judgeCvRules.ts`)
 
 The UK government's *Responsible AI in Recruitment* guide (DSIT, 25 March 2024) says developers should publish model cards for AI tools used in hiring. Placed's CV Score is a self-help tool for students, not a hiring tool. We publish this card anyway, so you can judge how far to trust the number.
 
@@ -19,7 +19,7 @@ The UK government's *Responsible AI in Recruitment* guide (DSIT, 25 March 2024) 
 
 ## How the number is made
 
-1. **Rules.** There are 137 rules in total: 35 are checked by code, and 102 are judged by an AI model. Each sector uses 48–59 of them (51–61 on the spring-week track). Each rule has a severity: 5 critical, 74 major and 58 minor. Each also has an evidence grade, shown on its fix card:
+1. **Rules.** There are 142 rules in total: 37 are checked by code, and 105 are judged by an AI model. Each sector uses 48–59 of them (52–61 on the spring-week track, 54–65 on the placement-year track). Each rule has a severity: 5 critical, 78 major and 59 minor. Each also has an evidence grade, shown on its fix card:
    - **A** (39 rules): peer-reviewed studies, field experiments, official employer or regulator pages, or large surveys.
    - **B** (63 rules): reputable careers services and recruiter guidance.
    - **C** (14) and **D** (21): common practice or synthesis. These are tagged "Convention" on the card, and a C or D rule can be at most "major".

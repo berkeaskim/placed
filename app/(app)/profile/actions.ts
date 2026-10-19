@@ -7,7 +7,7 @@ import { db } from "@/lib/db/client";
 import { cvs, profiles } from "@/lib/db/schema";
 import { scoreCv } from "@/lib/cv-score/run";
 import { ARCHETYPES, YEARS, type Archetype, type Year } from "@/lib/types";
-import type { Track } from "@/lib/cv-rules/types";
+import { TRACKS, type Track } from "@/lib/cv-rules/types";
 import { scoreTrackFor } from "@/lib/profile/cycle";
 import { todayLondon } from "@/lib/scoring/dates";
 
@@ -21,10 +21,11 @@ const toYear = (y: unknown): Year => ((YEARS as readonly string[]).includes(y as
 async function scoreActiveCv(sector: Archetype, track?: Track): Promise<boolean> {
   const { user } = await requireUser();
   const cv = db.select({ id: cvs.id }).from(cvs).where(and(eq(cvs.user_id, user.id), eq(cvs.is_active, true))).get();
-  const p = db.select({ year: profiles.year, grad: profiles.grad_year }).from(profiles).where(eq(profiles.user_id, user.id)).get();
+  const p = db.select({ year: profiles.year, grad: profiles.grad_year, placement: profiles.placement_status }).from(profiles).where(eq(profiles.user_id, user.id)).get();
   if (!cv) return false;
   const year = toYear(p?.year);
-  await scoreCv({ userId: user.id, cvId: cv.id, sector, year, track: track ?? scoreTrackFor({ year, gradYear: p?.grad ?? null }, todayLondon()) });
+  const gradYear = p?.grad ?? null;
+  await scoreCv({ userId: user.id, cvId: cv.id, sector, year, gradYear, track: track ?? scoreTrackFor({ year, gradYear, placementStatus: p?.placement ?? null }, todayLondon()) });
   return true;
 }
 
@@ -52,7 +53,7 @@ export async function scoreMyCv(formData: FormData): Promise<void> {
   const sector = formData.get("sector");
   if (!isArchetype(sector)) redirect("/profile");
   const t = formData.get("track");
-  const track: Track | undefined = t === "spring" || t === "standard" ? t : undefined;
+  const track: Track | undefined = (TRACKS as readonly unknown[]).includes(t) ? (t as Track) : undefined;
   let failed = false;
   try { await scoreActiveCv(sector, track); } catch (e) {
     console.error("scoreMyCv: scoreCv failed", e);

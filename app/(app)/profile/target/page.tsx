@@ -154,7 +154,7 @@ export default async function TargetRolePage() {
   const score = cv
     ? db.select({ total: cvScores.total }).from(cvScores)
       .where(and(eq(cvScores.user_id, user.id), eq(cvScores.cv_id, cv.id), eq(cvScores.sector, sector),
-        eq(cvScores.track, scoreTrackFor({ year, gradYear: p.grad_year }, today)))).get() ?? null
+        eq(cvScores.track, scoreTrackFor({ year, gradYear: p.grad_year, placementStatus: p.placement_status ?? null }, today)))).get() ?? null
     : null;
   const jobs: DemandJob[] = feedJobs.filter((j) => j.archetype === sector)
     .map((j) => ({ id: j.id, archetype: j.archetype, is_live: true, deadline: j.deadline, skills: j.jdSkills }));

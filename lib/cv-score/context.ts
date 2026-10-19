@@ -12,6 +12,8 @@ export type CvContext = {
   year: Year;
   /** Scoring track (absent = "standard"). */
   track?: Track;
+  /** The student's expected graduation year (profile), for the placement track's graduation-date check. */
+  gradYear?: number | null;
   /** Target sector: picks the sector's page limit and thresholds (sectorAdjust). Absent = the rule's defaults. */
   sector?: Archetype;
   spellingErrors: string[] | null;

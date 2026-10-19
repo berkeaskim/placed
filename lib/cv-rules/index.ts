@@ -1,8 +1,8 @@
 import type { Archetype } from "@/lib/types";
-import { RULES, SPRING_ADJUST } from "./rules";
+import { PLACEMENT_ADJUST, RULES, SPRING_ADJUST } from "./rules";
 import type { CvRule, Track } from "./types";
 export { adjustFor } from "./adjust";
-export { RULES, SPRING_ADJUST };
+export { RULES, SPRING_ADJUST, PLACEMENT_ADJUST };
 export { DIMENSION_WEIGHTS, BASE_WEIGHTS, weightsFor, caveatFor } from "./profiles";
 export { MYTHS } from "./myths";
 export * from "./types";

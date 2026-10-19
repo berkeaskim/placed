@@ -25,6 +25,10 @@ export function thresholdFor(rule: CvRule, year: Year, fallback: number, track: 
 
 /** Education text: degree, grade and detail lines (where A-levels and GCSEs are parsed to). */
 const eduText = (c: CvContext) => c.cv.education.map((e) => [e.degree, e.grade ?? "", ...e.details.map((d) => d.text)].join("\n")).join("\n");
+const Y1 = /\b(year\s*1|first[- ]year|1st[- ]year|stage\s*1|level\s*4)\b/i;
+const Y1_MARK = /\b\d{2}(?:\.\d)?\s*%|\b(First|1st|2[:.]1|2[:.]2|Upper Second|Lower Second)\b/;
+const MODULE_MARK = /[A-Z][A-Za-z&,\s]{3,40}[:(–-]\s*\d{2}(?:\.\d)?\s*%?\)?/g;
+const PLACEMENT_MARK = /(with\s+(an?\s+)?(industrial\s+|professional\s+)?placement|sandwich|year in industry|industrial (training|experience)|professional (training|experience) year|placement year)/i;
 const PRE_UNI = /\bA[\s-]?levels?\b|\bIB\b|International Baccalaureate|\bHighers?\b|\bBTEC\b|\bPre-U\b|\bAbitur\b|\bBaccalaur[ée]at\b|\bCBSE\b|\bISC\b|\bWAEC\b|\bLeaving Cert/i;
 const PRE_UNI_GRADE = /A\*|\b[A-E]\b(?!-level)|\bD\*|\bDistinction\*?|\bMerit\b|\b\d{2}\s*\/\s*45\b|\b\d{2,3}(?:\.\d)?%|\b[1-7]\b|\b[1-4][.,]\d\b/;
 
@@ -365,6 +369,25 @@ export const CHECKERS: Record<CheckerId, (ctx: CvContext, rule: CvRule) => Out> 
     if (!lines.length) return bad("fail", null, "Add your A-levels (or equivalent) with grades, on one line: 'A-levels: Mathematics (A*), Economics (A), History (A)'.");
     return lines.some((l) => PRE_UNI_GRADE.test(l.replace(PRE_UNI, " "))) ? ok()
       : bad("partial", lines[0], "Add the grade after each subject: 'Mathematics (A*), Economics (A)'.");
+  },
+  first_year_marks: (c) => {
+    const t = eduText(c);
+    // An average or class next to a year marker, or two or more "Module: 72%" pairs.
+    if (t.split("\n").some((l) => Y1.test(l) && Y1_MARK.test(l))) return ok();
+    if ((t.match(MODULE_MARK) ?? []).length >= 2) return ok();
+    return /predicted|expected|on track/i.test(`${t} ${c.cv.education.map((e) => e.grade ?? "").join(" ")}`)
+      ? bad("partial", null, "You've given a predicted class. Add your actual first-year average or 2–4 module marks: 'Year 1: 68% average (First)'.")
+      : bad("fail", null, "Add your first-year result: 'Year 1: 68% average (First)'.");
+  },
+  placement_grad_date: (c) => {
+    const text = `${eduText(c)}\n${c.cv.education.map((e) => e.dates).join("\n")}`;
+    const years = [...text.matchAll(/\b(20\d{2})\b/g)].map((m) => Number(m[1]));
+    const cvGrad = years.length ? Math.max(...years) : null;
+    if (c.gradYear && cvGrad && cvGrad !== c.gradYear) {
+      return bad("fail", String(cvGrad), `Your profile says you graduate in ${c.gradYear}, but your CV says ${cvGrad}. Update it to include your placement year.`);
+    }
+    return PLACEMENT_MARK.test(text) || (c.gradYear && cvGrad === c.gradYear) ? ok()
+      : bad("partial", null, "Say your course includes a placement year, e.g. '… with Industrial Placement' or 'Placement year: 2027–28'.");
   },
   gcse_summarised: (c) => {
     const t = eduText(c);
