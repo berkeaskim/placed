@@ -9,7 +9,7 @@ import { FitBadge } from "./fit-badge";
 import { SaveButton } from "./save-button";
 import { MarkAppliedButton } from "./mark-applied";
 
-const PROGRAMME_LABEL: Partial<Record<Ranked["job"]["employmentType"], string>> = { spring_week: "Spring week", insight: "Insight event" };
+const PROGRAMME_LABEL: Partial<Record<Ranked["job"]["employmentType"], string>> = { spring_week: "Spring week", insight: "Insight event", placement: "Placement year" };
 
 /** "0/0 must-haves" read like a bug: with no must-haves listed, count the nice-to-haves instead. */
 function mustLabel(c: Ranked["coverage"]): string {
@@ -27,6 +27,7 @@ export function JobCard({ r, today, saved, applied }: { r: Ranked; today: string
       <div className="flex min-w-0 flex-1 basis-64 flex-col gap-1.5">
         <div className="flex flex-wrap items-center gap-2">
           <CompanyMark company={r.job.company} url={r.job.url} />
+          {r.job.via && <span className="text-[11px] font-semibold text-muted-foreground">via {r.job.via}</span>}
           {r.job.curated && <CuratedChip />}
           {PROGRAMME_LABEL[r.job.employmentType] && (
             <span className="rounded-full bg-[#E8F6EE] px-2 py-0.5 text-[11px] font-bold text-[#1F7A47]">{PROGRAMME_LABEL[r.job.employmentType]}</span>

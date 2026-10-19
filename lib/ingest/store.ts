@@ -5,7 +5,7 @@ import type { IngestStore, JobRow } from "./run";
 
 /** Every JobRow column is overwritten on conflict; id and first_seen are kept. */
 const UPDATE_COLS = [
-  "title", "url", "location", "remote", "deadline", "deadline_source", "rolling", "closed_at", "posted_at", "opens_on", "archetype", "field_tags",
+  "title", "employer_name", "url", "location", "remote", "deadline", "deadline_source", "rolling", "closed_at", "posted_at", "opens_on", "archetype", "field_tags",
   "year_eligibility", "sponsors_visa", "employment_type", "first_year_friendly", "cohort_clash", "requirements", "skills", "summary",
   "raw_html", "text_lines", "fingerprint", "content_hash", "tag_status", "is_live", "last_seen",
 ] as const satisfies readonly (keyof JobRow & keyof NewJob)[];

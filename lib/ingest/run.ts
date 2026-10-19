@@ -11,7 +11,7 @@ import { resolveDeadline, extractDeadline, type DeadlineSource } from "./deadlin
 export type CompanyRow = { id: number; slug: string; name: string; ats: Ats; api_host: string | null; employer: string | null; transport: "stealth" | null; enabled: boolean };
 
 export type JobRow = {
-  company_id: number; ext_id: string; title: string; url: string; location: string; remote: boolean;
+  company_id: number; ext_id: string; title: string; employer_name: string | null; url: string; location: string; remote: boolean;
   deadline: string | null; deadline_source: DeadlineSource | null; rolling: boolean; closed_at: null; posted_at: string | null; opens_on: string | null; archetype: string; field_tags: string[];
   year_eligibility: string[]; sponsors_visa: string; employment_type: string; first_year_friendly: boolean; cohort_clash: boolean;
   requirements: Requirement[]; skills: string[]; summary: string; raw_html: string; text_lines: string[];
@@ -66,11 +66,12 @@ export async function ingestCompany(c: CompanyRow, deps: IngestDeps) {
   const maxTags = deps.maxTags ?? MAX_TAGS_PER_COMPANY;
 
   for (const j of raw) {
-    if (!passesTitleFilter(j.title)) continue;
+    // A listing that already labels the role (TargetJobs "Placement") skips the keyword filter; the classifier still types it.
+    if (!j.sourceType && !passesTitleFilter(j.title)) continue;
     const cohortClash = detectCohortClash(j.title);
     const lines = htmlToLines(j.html);
     const text = lines.join("\n");
-    if (!passesLocationFilter(j.location, j.remote, text).pass) continue;
+    if (!passesLocationFilter(j.location, j.remote, text, j.sourceType != null).pass) continue;
     keptIds.push(j.extId);
     const hash = jobContentHash(j, text);
     const prev = existing.get(j.extId);
@@ -90,7 +91,7 @@ export async function ingestCompany(c: CompanyRow, deps: IngestDeps) {
       tagged++;
       if (t.status === "failed") failed++;
     }
-    t = reconcileProgramme(t, j.title, text, j.employmentType, placementRegion(j.location));
+    t = reconcileProgramme(t, j.title, text, j.employmentType, placementRegion(j.location), j.sourceType);
     // Dates are deterministic only; the tagger's (possibly LLM) deadline is ignored on purpose.
     // Curated `closes` is the inclusive last day from seed/programmes.yml: never shifted like an ATS end date, and the
     // description's prose dates (e.g. "the earliest falling on 19 October") are never read as the card's deadline.
@@ -98,7 +99,7 @@ export async function ingestCompany(c: CompanyRow, deps: IngestDeps) {
       ? { deadline: j.deadline ?? null, source: j.deadline ? ("ats" as const) : null, rolling: extractDeadline(text, new Date(now)).rolling }
       : resolveDeadline(j.deadline, text, j.postedAt ? new Date(j.postedAt) : new Date(now));
     rows.push({
-      company_id: c.id, ext_id: j.extId, title: j.title, url: normalizeUrl(j.url), location: j.location, remote: j.remote,
+      company_id: c.id, ext_id: j.extId, title: j.title, employer_name: j.employerName ?? null, url: normalizeUrl(j.url), location: j.location, remote: j.remote,
       deadline: dl.deadline, deadline_source: dl.source, rolling: dl.rolling, closed_at: null, posted_at: j.postedAt, opens_on: j.opensOn ?? null, archetype: t.archetype, field_tags: t.fieldTags,
       year_eligibility: t.yearEligibility, sponsors_visa: t.sponsorsVisa, employment_type: t.employmentType,
       first_year_friendly: t.firstYearFriendly, cohort_clash: cohortClash, requirements: t.requirements,

@@ -78,3 +78,28 @@ describe("curated overlap hiding in getLiveJobs", () => {
     expect(titles).not.toContain("HSBC Spring Week");
   });
 });
+
+describe("multi-employer listings (TargetJobs)", () => {
+  const tj = () => db.insert(companies).values({ slug: "placement", name: "TargetJobs", ats: "targetjobs" }).returning().get();
+  it("shows the posting's employer, via the board", async () => {
+    const t = tj();
+    addJob(t.id, "Year Out Placement", { employer_name: "Willmott Dixon", url: "https://willmottdixon.co.uk/careers/1" });
+    const j = (await getLiveJobs(TODAY)).find((x) => x.title === "Year Out Placement")!;
+    expect(j).toMatchObject({ company: "Willmott Dixon", via: "TargetJobs" });
+  });
+  it("hides a listing the employer's own board already has (same link, or same employer and title)", async () => {
+    const wd = db.insert(companies).values({ slug: "lbg/undergraduate_careers", name: "Lloyds Banking Group", ats: "workday", api_host: "lbg.wd3.myworkdayjobs.com" }).returning().get();
+    const t = db.select().from(companies).where(eq(companies.ats, "targetjobs")).get()!;
+    addJob(wd.id, "Risk Industrial Placement (Leeds)", { url: "https://lbg.wd3.myworkdayjobs.com/en-US/undergraduate_careers/job/Leeds/Risk_1" });
+    addJob(wd.id, "Software Engineering Industrial Placement (Bristol)", { url: "https://lbg.wd3.myworkdayjobs.com/en-US/undergraduate_careers/job/Bristol/SE_2" });
+    addJob(t.id, "Risk Industrial Placement (Leeds)", { employer_name: "Lloyds Banking Group", url: "https://lbg.wd3.myworkdayjobs.com/en-US/undergraduate_careers/job/Leeds/Risk_1?utm_source=targetjobs" });
+    addJob(t.id, "Software Engineering Industrial Placement (Bristol)", { employer_name: "Lloyds Banking Group", url: "https://targetjobs.co.uk/jobs/lbg-se-2" });
+    addJob(t.id, "Data Industrial Placement (Leeds)", { employer_name: "Lloyds Banking Group", url: "https://targetjobs.co.uk/jobs/lbg-data-3" });
+    const out = (await getLiveJobs(TODAY)).filter((j) => j.company === "Lloyds Banking Group");
+    expect(out.map((j) => `${j.title}|${j.via ?? "direct"}`).sort()).toEqual([
+      "Data Industrial Placement (Leeds)|TargetJobs",
+      "Risk Industrial Placement (Leeds)|direct",
+      "Software Engineering Industrial Placement (Bristol)|direct",
+    ]);
+  });
+});

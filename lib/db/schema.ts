@@ -18,7 +18,9 @@ const inList = (col: string, values: readonly string[]) => sql.raw(`${col} in ($
 
 export const YEAR_VALUES = ["1st", "2nd", "penultimate", "final", "masters"] as const;
 export const APP_STATUS_VALUES = ["saved", "applied", "interview", "offer", "rejected"] as const;
-export const ATS_VALUES = ["greenhouse", "lever", "ashby", "workday", "smartrecruiters", "oracle", "amazon", "goldmansachs", "morganstanley", "bankofamerica", "deutschebank", "eightfold", "phenom", "apple", "mckinsey", "curated"] as const;
+export const ATS_VALUES = ["greenhouse", "lever", "ashby", "workday", "smartrecruiters", "oracle", "amazon", "goldmansachs", "morganstanley", "bankofamerica", "deutschebank", "eightfold", "phenom", "apple", "mckinsey", "curated", "targetjobs"] as const;
+/** Multi-employer listings: a board whose jobs each name their own employer (jobs.employer_name). */
+export const AGGREGATOR_ATS: readonly AtsKind[] = ["targetjobs"];
 /** Fetch transports other than plain fetch; null = plain. "stealth" routes through the opt-in recon sidecar. */
 export const TRANSPORT_VALUES = ["stealth"] as const;
 export const SPONSORS_VISA_VALUES = ["yes", "no", "unknown"] as const;
@@ -158,6 +160,8 @@ export const jobs = sqliteTable("jobs", {
   company_id: integer("company_id").notNull().references(() => companies.id, { onDelete: "cascade" }),
   ext_id: text("ext_id").notNull(),
   title: text("title").notNull(),
+  /** Set for multi-employer boards (AGGREGATOR_ATS): the employer of this posting; the card shows it "via" the board. */
+  employer_name: text("employer_name"),
   url: text("url").notNull(),
   location: text("location").notNull().default(""),
   remote: bool("remote").notNull().default(false),

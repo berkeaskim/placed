@@ -104,7 +104,8 @@ const EXCLUSIONARY = [
 ];
 const INCLUSIVE = ["united kingdom", "uk-based", "london", "europe", "emea", "visa sponsorship available", "we sponsor"];
 
-export function passesLocationFilter(rawLocation: string, remote: boolean, jdText: string): { pass: boolean; reason?: string } {
+/** `ukBoard`: the listing is from a UK-only board (TargetJobs), so a place we don't recognise ("Stevenage") is in the UK. */
+export function passesLocationFilter(rawLocation: string, remote: boolean, jdText: string, ukBoard = false): { pass: boolean; reason?: string } {
   const location = withoutLondonOntario(rawLocation);
   const text = jdText.toLowerCase();
   const usOnly = EXCLUSIONARY.some((p) => text.includes(p)) && !INCLUSIVE.some((p) => text.includes(p));
@@ -117,6 +118,7 @@ export function passesLocationFilter(rawLocation: string, remote: boolean, jdTex
   // not open to UK students. Unnamed places ("Hybrid", "Multiple Locations", "Remote - International") still pass.
   if (BLOCK.test(location)) return { pass: false, reason: `Location outside UK/Europe: ${location}` };
   if (remote || REMOTE.test(location)) return { pass: true };
+  if (ukBoard) return { pass: true };
   return { pass: false, reason: `Location not in UK/Europe/remote: ${location}` };
 }
 
@@ -146,6 +148,7 @@ export function placementRegion(location: string): PlacementRegion {
   if (/\b(ireland|dublin|cork|galway|limerick)\b/i.test(location) && !/northern ireland/i.test(location)) return "ie";
   const r = classifyRegion(location, false);
   if (r === "europe") return "europe";
-  // UK, London, remote or unstated: the location filter already limits ingest to UK/Europe/remote.
-  return r === "other" && location.trim() && !REMOTE.test(location) ? "other" : "uk";
+  // An unrecognised place ("Ayr", "Gloucester") is in the UK unless it names somewhere outside Europe: the location
+  // filter already limits ingest to UK/Europe/remote, and our UK town list is far from complete.
+  return r === "other" && BLOCK.test(location) ? "other" : "uk";
 }
