@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { eq } from "drizzle-orm";
+import { and, eq, isNotNull } from "drizzle-orm";
 import { requireUser } from "@/lib/auth/local-user";
 import { db } from "@/lib/db/client";
-import { applications } from "@/lib/db/schema";
+import { applications, companies, jobs as jobsTable } from "@/lib/db/schema";
 import { getActiveCv, getProfile, toStudent } from "@/lib/db/queries";
 import { getFeedJobs } from "@/lib/feed/jobs-cache";
 import { rankJobs } from "@/lib/feed/rank";
@@ -31,13 +31,19 @@ export default async function Feed({ searchParams }: { searchParams: Promise<Rec
   const student = toStudent(profile);
   // A known grad year decides; without one, only a stated 1st year counts (a missing year reads as "2nd").
   const springEligible = isSpringWeekEligible({ year: profile.year ?? "2nd", gradYear: student.gradYear ?? null }, today);
-  const placementEligible = isPlacementEligible({ year: profile.year ?? "2nd", gradYear: student.gradYear ?? null, placementStatus: student.placementStatus }, today);
-  const filters = { ...parsed, mode: resolveMode(parsed.mode, springEligible, placementEligible) };
+  // An accepted placement offer (tracker): stop suggesting placements and say what comes next (DECISIONS.md §2).
+  const secured = db.select({ company: companies.name, employer: jobsTable.employer_name }).from(applications)
+    .innerJoin(jobsTable, eq(jobsTable.id, applications.job_id)).leftJoin(companies, eq(companies.id, jobsTable.company_id))
+    .where(and(eq(applications.user_id, user.id), eq(applications.status, "offer"), isNotNull(applications.accepted_at), eq(jobsTable.employment_type, "placement")))
+    .get();
+  const placementEligible = !secured && isPlacementEligible({ year: profile.year ?? "2nd", gradYear: student.gradYear ?? null, placementStatus: student.placementStatus }, today);
+  // With a placement secured the next step is graduate schemes: open on all roles (spring weeks stay one click away).
+  const filters = { ...parsed, mode: resolveMode(parsed.mode, springEligible && !secured, placementEligible) };
   const spring = filters.mode === "spring";
   const placement = filters.mode === "placement";
   const start = placementStartYear(today);
   const all = rankJobs(student, cv?.parsed ?? null, jobs, today, { course: profile.course });
-  const ranked = applyFilters(all, filters, today);
+  const ranked = applyFilters(secured ? all.filter((r) => r.job.employmentType !== "placement") : all, filters, today);
   const savedIds = new Set(apps.map((x) => x.job_id));
   const appliedIds = new Set(apps.filter((x) => isPastSaved(x.status)).map((x) => x.job_id));
 
@@ -56,6 +62,13 @@ export default async function Feed({ searchParams }: { searchParams: Promise<Rec
               : `${ranked.length} live roles, ranked by how well they fit you.`}
         </p>
       </div>
+      {secured && (
+        <p className="card-quest p-4 text-sm">
+          You&apos;ve accepted your placement at {secured.employer ?? secured.company}, so Placed has stopped showing placements.
+          Graduate schemes for after your placement open from September of your placement year.{" "}
+          <Link href="/tracker" className="font-semibold underline">See your next steps</Link>
+        </p>
+      )}
       {placementEligible && (
         <p className="card-quest p-4 text-sm">
           Your degree has a placement year and you graduate in {placementGradYear(today)}, so {start}/{String(start + 1).slice(2)} placements are open to you.
@@ -63,7 +76,7 @@ export default async function Feed({ searchParams }: { searchParams: Promise<Rec
           {springEligible && " Spring weeks are open to you too: switch above."}
         </p>
       )}
-      {springEligible && !placementEligible && (
+      {springEligible && !placementEligible && !secured && (
         <p className="card-quest p-4 text-sm">
           You&apos;re graduating in {springWeekGradYear(today)}, so spring weeks are your way in: short programmes that often fast-track you to a summer internship.
           Many fill on a rolling basis, so apply early.
@@ -77,7 +90,7 @@ export default async function Feed({ searchParams }: { searchParams: Promise<Rec
       <RefreshJobs running={ingestRunning()} lastRun={last ? ago(last.finishedAt) : null} next={next ? inTime(next) : null} lastNew={last?.newJobs ?? 0} />
       <nav className="flex flex-wrap gap-2" aria-label="Programme type">
         <Link href={feedHref(filters, { mode: "spring" })} aria-current={spring ? "true" : undefined} className={chipClass(spring)}>Spring weeks &amp; insights</Link>
-        <Link href={feedHref(filters, { mode: "placement" })} aria-current={placement ? "true" : undefined} className={chipClass(placement)}>Placement years</Link>
+        {!secured && <Link href={feedHref(filters, { mode: "placement" })} aria-current={placement ? "true" : undefined} className={chipClass(placement)}>Placement years</Link>}
         <Link href={feedHref(filters, { mode: "all" })} aria-current={filters.mode === "all" ? "true" : undefined} className={chipClass(filters.mode === "all")}>Internships &amp; more</Link>
       </nav>
       <nav className="flex flex-wrap gap-2" aria-label="Role filters">

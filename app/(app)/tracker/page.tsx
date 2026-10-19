@@ -12,12 +12,15 @@ import { showDeadline } from "@/components/tracker/deadline-chip";
 import { needsAttention, summarize } from "@/lib/tracker/summary";
 import { NeedsAttention, TrackerSummaryPanel } from "@/components/tracker/summary";
 import { Board, type Card } from "./board";
+import { PlacementSecured } from "@/components/tracker/placement-secured";
+import { otherOpenPlacements, securedPlacement } from "@/lib/tracker/placement";
 
 function loadApplications(userId: string) {
   try {
     return db.select({
       id: applications.id, job_id: applications.job_id, status: applications.status, last_event_at: applications.last_event_at,
       updated_at: applications.updated_at, title: jobs.title, deadline: jobs.deadline, company: companies.name,
+      employer_name: jobs.employer_name, employment_type: jobs.employment_type, accepted_at: applications.accepted_at, checklist: applications.checklist,
     }).from(applications)
       .leftJoin(jobs, eq(jobs.id, applications.job_id)).leftJoin(companies, eq(companies.id, jobs.company_id))
       .where(eq(applications.user_id, userId)).orderBy(desc(applications.updated_at)).all();
@@ -52,7 +55,8 @@ export default async function Tracker() {
     sentTargets.set(o.job_id, set);
   }
   const cards: Card[] = (apps ?? []).filter((a) => isAppStatus(a.status)).map((a) => ({
-    id: a.id, jobId: a.job_id, status: a.status, title: a.title ?? "Role", company: a.company ?? "",
+    id: a.id, jobId: a.job_id, status: a.status, title: a.title ?? "Role", company: a.employer_name ?? a.company ?? "",
+    employmentType: a.employment_type, acceptedAt: a.accepted_at,
     updatedAt: a.updated_at, lastEventAt: a.last_event_at,
     nudge: a.title !== null ? nudgeFor({ status: a.status, company: a.company ?? "this company", lastEventAt: a.last_event_at, updatedAt: a.updated_at }, new Date(),
       sentTargets.get(a.job_id), school) : null,
@@ -64,6 +68,8 @@ export default async function Tracker() {
     deadline: a.status === "saved" && a.deadline && showDeadline(a.deadline, today, a.status) ? { date: a.deadline, label: "Closes", url: null } : null,
   }));
   const now = new Date();
+  const secured = securedPlacement(cards);
+  const securedChecklist = secured ? (apps ?? []).find((a) => a.id === secured.id)?.checklist ?? null : null;
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-col gap-1">
@@ -83,6 +89,10 @@ export default async function Tracker() {
         )
         : (
           <>
+            {secured && (
+              <PlacementSecured appId={secured.id} company={secured.company} title={secured.title} checklist={securedChecklist}
+                othersOpen={otherOpenPlacements(cards, secured.id).map((o) => ({ id: o.id, company: o.company, title: o.title }))} />
+            )}
             <TrackerSummaryPanel summary={summarize(cards, now)} />
             <NeedsAttention items={needsAttention(cards, today)} />
             <Board cards={cards} today={today} now={now.toISOString()} />
