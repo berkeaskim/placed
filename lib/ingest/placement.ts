@@ -27,7 +27,7 @@ const isMixed = ([a, b]: [number, number]) => a <= 8 && b >= 9;
 
 // --- Title rules -------------------------------------------------------------------------------------------------
 /** Strong: one is enough. */
-export const PL_TITLE = /\b(industrial|industry)\s+placements?\b|\bplacement\s+(year|student|scheme|programme|program)\b|\bstudent\s+placement\b|\bplacement\s+(analyst\s+)?intern(ship)?\b|\byear\s+in\s+industry\b|\bsandwich\s+(year|placement|student|degree|course)\b|\bundergraduate\s+(work\s+)?placement\b|\b(work|year[- ]long|professional)\s+placement\b|\bprofessional\s+training\s+year\b|\bintegrated\s+placement\b|\bindustrial\s+(trainee(ship)?|year)\b|\bplacement\s+(scheme|programme)\b|\bplacement\s*[,\-–]?\s*20(27|28)\b/i;
+export const PL_TITLE = /\b(industrial|industry)\s+placements?\b|\bplacement\s+(year|student|scheme|programme|program)\b|\bstudent\s+placement\b|\bplacement\s+(analyst\s+)?intern(ship)?\b|\byear\s+in\s+industry\b|\bsandwich\s+(year|placement|student|degree|course)\b|\bundergraduate\s+(work\s+)?placement\b|\byear[- ]out\s+placement\b|\b(work|year[- ]long|professional)\s+placement\b|\bprofessional\s+training\s+year\b|\bintegrated\s+placement\b|\bindustrial\s+(trainee(ship)?|year)\b|\bplacement\s+(scheme|programme)\b|\bplacement\s*[,\-–]?\s*20(27|28)\b/i;
 /** Weak: a programme word that needs a 9-15 month duration (title or body) or sandwich wording in the body. */
 export const PL_WEAK = /\bplacements?\b|\bundergraduate\b|\boff[- ]?cycle\b|\bintern(ship)?s?\b|\bstudent\b|\btrainee\b/i;
 
@@ -37,7 +37,7 @@ export const PL_VETO_OTHER = new RegExp([
   String.raw`(early\s+careers|industrial|student|careers)\s+placements?\s+(co-?ordinator|manager|officer|lead|administrator|advisor)`,
   String.raw`\b(private|debt\s+private|equity|product|media|ad|advert|brand|data|chip|cell|component)[- ]placements?\b`,
   String.raw`placement\s+de\b|\bcourtier\b`,
-  String.raw`\(\s*placement\s*:|\(\s*(?!industrial|industry|student|year|work|summer|sandwich|\d)[A-Z][a-z]+\s+placement\s*\)|placement\s+(yogyakarta|jakarta|surabaya)\b|placement\s+\w+\s+office\b`,
+  String.raw`\(\s*placement\s*:|\(\s*(?!industrial|industry|student|year|work|summer|sandwich|undergraduate|paid|professional|\d)[A-Z][a-z]+\s+placement\s*\)|placement\s+(yogyakarta|jakarta|surabaya)\b|placement\s+\w+\s+office\b`,
   String.raw`(analyst|associate)\s+(i{2,3}|iv)\s*-\s*placement`,
   String.raw`\bteacher\s+training\b|\b(clinical|practice|nursing|midwifery|teaching|teacher|school\s+direct|pgce|foster(ing)?|residential|care|social\s+work|supported\s+living)\s+placements?\b|\bstudent\s+(nurse|midwife|paramedic|social\s+worker)\b`,
   String.raw`\bsandwich\s+(artist|maker|shop|bar|production|assistant|chef|operative|packer)\b|\bsubway\b`,
@@ -94,7 +94,7 @@ export type Verdict = { kind: Kind; score: number; months: [number, number] | nu
 export function classifyPlacement(title: string, body = "", structured?: { programme?: string | null }, region: Region = "uk"): Verdict {
   const why: string[] = [];
   if (PL_VETO_OTHER.test(title)) return { kind: "not_student", score: -9, months: null, needsBody: false, why: ["veto:other-sense"] };
-  if (PL_VETO_CONTRACT.test(title)) {
+  if (PL_VETO_CONTRACT.test(title) && !PL_TITLE.test(title)) {
     return /\bintern(ship)?s?\b/i.test(title)
       ? { kind: "internship", score: -9, months: null, needsBody: false, why: ["veto:contract-intern"] }
       : { kind: "not_student", score: -9, months: null, needsBody: false, why: ["veto:contract"] };
@@ -114,6 +114,9 @@ export function classifyPlacement(title: string, body = "", structured?: { progr
   if (PL_SHORT_KIND.test(title) && !tLong) return { kind: "internship", score: -4, months: null, needsBody: false, why: [...why, "title:short-kind"] };
 
   let months: [number, number] | null = td.find(isLong) ?? td[0] ?? null;
+  // A 9–15 month length in the title ("One Year Management Placement / Internship") outweighs body mentions of other
+  // schemes the employer also runs (a summer internship on the same page). Only the UK/Ireland rule can still demote it.
+  const titleSettles = tLong && !tMixed && (strong || weak);
   let bodyMixed = false;
   if (body) {
     const bd = bodyDurations(body);
@@ -138,6 +141,7 @@ export function classifyPlacement(title: string, body = "", structured?: { progr
   if (bodyMixed && !strong && !tLong) return { kind: null, score, months, needsBody: false, why };
   // Outside the UK/Ireland a 12-month role is a long internship unless the body ties it to a sandwich degree.
   if (score >= THRESH && region !== "uk" && region !== "ie" && !(body && B_SANDWICH.test(body))) return { kind: "internship", score, months, needsBody: false, why: [...why, "region:non-UK"] };
+  if (titleSettles && !B_NEG_CONTRACT.test(body)) return { kind: "placement", score, months, needsBody: false, why: [...why, "title:settles"] };
   if (score >= THRESH && !tMixed) return { kind: "placement", score, months, needsBody: false, why };
   if (score >= THRESH + 2 && tMixed) return { kind: "placement", score, months, needsBody: false, why };
   // Weak-only titles ("Finance Undergraduate", "Placement Analyst") wait for a body; without one they stay unlabelled.

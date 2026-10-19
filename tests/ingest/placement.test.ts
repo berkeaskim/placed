@@ -158,3 +158,43 @@ describe("dry-run regressions (local DB, 2026-10-18)", () => {
     expect(classifyPlacement("2027 Investment Management Off-cycle Internship - Emerging Markets Debt (London)", "The internship will commence in January 2027 and typically lasts twelve months.").kind).toBe("placement");
   });
 });
+
+describe("TargetJobs listings (sourceType)", () => {
+  const base = heuristicTagJob({ title: "x", textLines: [] });
+  it("a listing typed Placement stays a placement when the classifier has no say", () => {
+    expect(reconcileProgramme({ ...base, employmentType: "other" }, "Food Technology Industrial Placement", "Mixed: 6 or 12 months.", null, "uk", "placement").employmentType).toBe("placement");
+    expect(reconcileProgramme({ ...base, employmentType: "other" }, "Placement Student - Compliance Project Support", "", null, "uk", "placement").employmentType).toBe("placement");
+  });
+  it("but the classifier still overrules it (summer placements, coordinators)", () => {
+    expect(reconcileProgramme({ ...base, employmentType: "other" }, "Engineering Summer Placement", "", null, "uk", "placement").employmentType).toBe("internship");
+    expect(reconcileProgramme({ ...base, employmentType: "other" }, "Placement Coordinator", "", null, "uk", "placement").employmentType).not.toBe("placement");
+  });
+  it("UK-only boards keep unrecognised UK towns", () => {
+    expect(passesTitleFilter("Industrial Placement - Systems Engineering")).toBe(true);
+  });
+});
+
+describe("title length settles it (Enterprise, live 2026-10-19)", () => {
+  it("a one-year title stays a placement even when the page also mentions a summer internship", () => {
+    expect(classifyPlacement("One Year Management Placement / Internship - Ayr", "We also run a 10-week summer internship. This role lasts 12 months.").kind).toBe("placement");
+  });
+  it("'Temporary Industrial Placement' is a placement, not a contract job", () => {
+    expect(classifyPlacement("Temporary Industrial Placement – Design Engineer").kind).not.toBe("not_student");
+  });
+});
+
+describe("placementRegion for towns we don't list", () => {
+  it.each([["Ayr", "uk"], ["Gloucester", "uk"], ["Barrow-in-Furness, Portsmouth", "uk"], ["Bangalore, India", "other"]] as const)("%s → %s", (loc, r) => {
+    expect(placementRegion(loc)).toBe(r);
+  });
+});
+
+describe("more TargetJobs titles (live 2026-10-19)", () => {
+  it.each([
+    "Quality Improvement Technician (undergraduate placement)",
+    "GRAHAM academy - Student Planner (Year Out Placement)",
+    "Junior Finance Officer (Undergraduate Placement Year 2027-28)",
+  ])("%s is a placement", (title) => {
+    expect(classifyPlacement(title).kind).toBe("placement");
+  });
+});

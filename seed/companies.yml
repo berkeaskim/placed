@@ -125,6 +125,10 @@
 - { slug: lseg/Graduate_Careers, name: LSEG, ats: workday, apiHost: lseg.wd3.myworkdayjobs.com, enabled: true } # 13 / 3
 - { slug: wellington/Campus, name: Wellington Management, ats: workday, apiHost: wellington.wd5.myworkdayjobs.com, enabled: true } # 4 / 0
 - { slug: cgg/viridiengraduate, name: Viridien, ats: workday, apiHost: cgg.wd103.myworkdayjobs.com, enabled: true } # 7 / 0
+# Multi-employer listing (lib/ingest/providers/targetjobs.ts): every open TargetJobs "Placement" (~1,000 across ~200
+# employers). Local, per-user use only (GTI terms ban commercial reproduction); duplicates of direct boards are hidden.
+- { slug: placement, name: TargetJobs, ats: targetjobs, enabled: true }
+
 # Placement-year boards (research/placement-year/02-employer-ats.md §2), checked live 2026-10-18.
 # Counts: board size / Workday search hits for "placement" (fuzzy; the classifier decides what is a placement).
 - { slug: lbg/undergraduate_careers, name: Lloyds Banking Group, ats: workday, apiHost: lbg.wd3.myworkdayjobs.com, enabled: true } # 24 / 24 industrial placements

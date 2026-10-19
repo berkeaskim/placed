@@ -34,6 +34,10 @@ export interface RawJob {
   deadline?: string | null;
   /** YYYY-MM-DD the application window opens (curated programme cards). */
   opensOn?: string | null;
+  /** Multi-employer listings (TargetJobs): the employer this posting is for. Null = the board's own company. */
+  employerName?: string | null;
+  /** The listing already says what this is (TargetJobs' "Placement" type): it skips the title keyword filter. */
+  sourceType?: "placement" | null;
   /** Authoritative type from a curated programme card's `kind`; overrides the tagger. */
   employmentType?: JobForScoring["employmentType"] | null;
 }

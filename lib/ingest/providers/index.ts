@@ -14,6 +14,7 @@ import { fetchEightfold, eightfoldSearchUrl } from "./eightfold";
 import { fetchPhenom, phenomUrl } from "./phenom";
 import { fetchApple, appleSearchUrl } from "./apple";
 import { fetchMckinsey, mckinseySearchUrl } from "./mckinsey";
+import { fetchTargetJobs, TARGETJOBS_URL } from "./targetjobs";
 import type { AtsKind } from "@/lib/db/schema";
 import { passesTitleFilter } from "../filter";
 import { loadProgrammes, programmeToRawJob, visibleProgrammes } from "../curated";
@@ -64,6 +65,8 @@ export function endpointFor(c: CompanySeed): string {
       return oracleListUrl(c.slug, c.apiHost, 0);
     case "curated":
       return PROGRAMMES_PATH_LABEL;
+    case "targetjobs":
+      return TARGETJOBS_URL;
     case "goldmansachs":
       return goldmanEndpoint();
     case "morganstanley":
@@ -113,6 +116,13 @@ export function endpointFor(c: CompanySeed): string {
 
 export async function fetchJobs(c: CompanySeed, plainFetch: typeof fetch = fetch): Promise<RawJob[]> {
   if (c.ats === "curated") return fetchCurated(c.slug);
+  if (c.ats === "targetjobs") {
+    try {
+      return await fetchTargetJobs(c.slug, plainFetch);
+    } catch (e) {
+      throw new ProviderError(`targetjobs/${c.slug}: ${(e as Error).message}`);
+    }
+  }
   // Boards that reject a plain Node fetch go through the optional sidecar (lib/ingest/stealth.ts); it never solves challenges.
   const fetchImpl = c.transport === "stealth" ? stealthFetch : plainFetch;
   const url = endpointFor(c);
