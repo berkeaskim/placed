@@ -95,10 +95,12 @@ describe("10#2: graduation-year windows", () => {
     expect(gate(scoreFit(student({ year: "2nd", gradYear: 2028 }), job({ employmentType: "graduate" }), cov([]), today), "year").passed).toBe(false);
     expect(scoreFit(student({ year: "final", gradYear: 2027 }), job({ employmentType: "graduate" }), cov([]), today).capped).toBe(false);
   });
-  it("internship default (graduating the year after) is a soft flag, never a gate", () => {
+  it("internship default (graduating the year after) is a note with no score effect, never a gate", () => {
     const r = scoreFit(student({ year: "1st", gradYear: 2029 }), job(), cov([]), today);
     expect(r.capped).toBe(false);
-    expect(r.softFlags).toEqual(["2027 summer internships usually recruit students graduating in 2028: check this one takes your year"]);
+    expect(r.softFlags).toEqual([]);
+    expect(r.notes).toContain("2027 summer internships usually recruit students graduating in 2028: check this one takes your year");
+    expect(r.global).toBe(scoreFit(student({ year: "2nd", gradYear: 2028 }), job(), cov([]), today).global);
   });
 });
 

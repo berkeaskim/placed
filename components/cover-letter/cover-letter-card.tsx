@@ -221,13 +221,7 @@ export function CoverLetterCard({ jobId, target, autopilot = false, onClose }: {
     onSelect: (outputId) => dispatch({ type: "select", outputId }),
     onSave: (text) => output && void run({ kind: "save", outputId: output.id, text }),
     // 09 #4: only the student's own words are saved for future letters and tailoring; skipping keeps it to this letter
-    onConfirmTrue: (spanStart) => {
-      if (!output) return;
-      const ownWords = typeof window !== "undefined"
-        ? window.prompt("It stays in this letter. To use it in future letters and CV tailoring too, say what's true in your own words (optional):")
-        : null;
-      void run({ kind: "confirmTrue", outputId: output.id, spanStart, ownWords });
-    },
+    onConfirmTrue: (spanStart, ownWords) => output && void run({ kind: "confirmTrue", outputId: output.id, spanStart, ownWords }),
     onReady: () => output && void run({ kind: "ready", outputId: output.id }),
     onRestored: () => dispatch({ type: "restored" }),
     onWhyUs: () => void run({ kind: "addField", label: `Why ${view.company}?`, limit: { unit: "words", max: 150 } }),

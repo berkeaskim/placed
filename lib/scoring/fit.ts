@@ -186,7 +186,8 @@ function yearCheck(student: StudentProfile, job: JobForScoring, sig: Eligibility
     const expected = job.employmentType === "internship" ? start + 1 : start + 2;
     if (student.gradYear !== expected) {
       const kind = job.employmentType === "internship" ? `${start} summer internships` : `Placements starting in ${start}`;
-      return pass("year", [], [`${kind} usually recruit students graduating in ${expected}: check this one takes your year`]);
+      // a note, not a penalty: postings often take other years, and the gate already covers stated windows
+      return pass("year", [`${kind} usually recruit students graduating in ${expected}: check this one takes your year`]);
     }
   }
   return pass("year");

@@ -6,8 +6,6 @@ import { cvs, linkedinScores } from "@/lib/db/schema";
 import type { Archetype, ParsedCV, Year } from "@/lib/types";
 import { extractLinkedInLines } from "@/lib/linkedin/extract";
 import { parseLinkedInExport, type ParsedLinkedIn } from "@/lib/linkedin/parse-export";
-import { fetchPublicProfile, normalizeProfileUrl } from "@/lib/linkedin/fetch-public";
-import { parsePublicProfile } from "@/lib/linkedin/parse-public";
 import { parseCapturedProfile, type CapturePayload } from "@/lib/linkedin/parse-capture";
 import { parseLinkedInArchive } from "@/lib/linkedin/parse-archive";
 import { judgeLinkedIn } from "@/lib/ai/judgeLinkedIn";
@@ -63,22 +61,6 @@ export function sameName(a: string, b: string): boolean {
 function activeCv(userId: string): ParsedCV | null {
   const row = db.select({ parsed_json: cvs.parsed_json }).from(cvs).where(and(eq(cvs.user_id, userId), eq(cvs.is_active, true))).get();
   return (row?.parsed_json as ParsedCV | undefined) ?? null;
-}
-
-/**
- * Pasted profile link → public page → score. Refuses a profile whose name doesn't match the CV on file, so a
- * student can't run someone else's profile through the AI. Throws LinkedInFetchError when LinkedIn blocks the read.
- */
-export async function scoreLinkedInUrl(
-  i: { userId: string; url: string; sector: Archetype; year: Year; today?: Date },
-): Promise<LiPanelData> {
-  const cv = activeCv(i.userId);
-  const canonical = normalizeProfileUrl(i.url);
-  const html = await fetchPublicProfile(canonical);
-  const { li, text } = parsePublicProfile(html, canonical);
-  const cvName = cv?.name?.trim();
-  if (cvName && li.name && !sameName(li.name, cvName)) throw new NotYourProfileError("profile name does not match the CV");
-  return scoreParsed({ ...i, li, text, cv, source: "url" });
 }
 
 /** The extension posted a ticket that was already used. */
