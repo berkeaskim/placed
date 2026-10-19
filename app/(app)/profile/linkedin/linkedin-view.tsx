@@ -33,7 +33,7 @@ function SectorPicker({ value, onChange, disabled }: { value: Archetype; onChang
   );
 }
 
-/** One-click extension read (main path) + PDF fallback + result. Results come straight from the action, so they show even before migration 0013 is applied. */
+/** LinkedIn data archive (recommended path), optional one-click extension read, PDF fallback, and the result. Results come straight from the action, so they show even before migration 0013 is applied. */
 export function LinkedInView({ initial, sector: initialSector }: { initial: LiPanelData | null; sector: Archetype }) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -106,7 +106,7 @@ export function LinkedInView({ initial, sector: initialSector }: { initial: LiPa
       <div className="card-quest flex h-fit flex-col gap-4 p-6">
         <h1 className="text-xl font-extrabold">Score your LinkedIn</h1>
         <SectorPicker value={sector} onChange={setSector} disabled={busy} />
-        <details open={!hasExt} className="rounded-2xl border border-[#E6E6EF]">
+        <details open className="rounded-2xl border border-[#E6E6EF]">
           <summary className="flex min-h-11 cursor-pointer items-center px-4 text-sm font-semibold">Upload your LinkedIn data (recommended)</summary>
           <form action={(fd) => run(fd, uploadLinkedInArchive)} className="flex flex-col gap-3 px-4 pb-4">
             <p className="text-xs text-[#5B5B6B]">LinkedIn&apos;s own copy of your profile. It includes your full skills list, and nothing reads your LinkedIn page.</p>
@@ -125,8 +125,8 @@ export function LinkedInView({ initial, sector: initialSector }: { initial: LiPa
         </details>
         {hasExt ? (
           <div className="flex flex-col gap-3">
-            <button type="button" onClick={scoreWithExtension} disabled={busy} className="btn-quest flex min-h-12 items-center justify-center py-3 disabled:opacity-60">
-              Score my LinkedIn in one click
+            <button type="button" onClick={scoreWithExtension} disabled={busy} className="flex min-h-12 items-center justify-center rounded-[14px] border-2 border-border bg-white py-3 font-bold transition-colors hover:bg-muted disabled:opacity-60">
+              Or score in one click with the extension
             </button>
             <p className="text-xs text-[#5B5B6B]">
               Opens your own profile in a new tab, where the Placed extension reads it with your LinkedIn sign-in. It never edits anything,

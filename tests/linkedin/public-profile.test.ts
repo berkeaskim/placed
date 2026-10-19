@@ -3,7 +3,6 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import type { ParsedCV } from "@/lib/types";
 import { parsePublicProfile } from "@/lib/linkedin/parse-public";
-import { fetchPublicProfile, LinkedInFetchError, normalizeProfileUrl } from "@/lib/linkedin/fetch-public";
 import { sameName } from "@/lib/linkedin-score/run";
 import { scoreLinkedIn } from "@/lib/linkedin-score/score";
 import type { LiJudgeInput, LiJudgeResult } from "@/lib/ai/judgeLinkedIn";
@@ -12,33 +11,6 @@ import type { LiJudgeInput, LiJudgeResult } from "@/lib/ai/judgeLinkedIn";
 const HTML = readFileSync(path.join(__dirname, "fixtures", "ayse-synthetic-public.html"), "utf8");
 const AYSE_CV = JSON.parse(readFileSync(path.join(process.cwd(), "seed", "demo", "ayse.json"), "utf8")) as ParsedCV;
 const URL_ = "https://www.linkedin.com/in/ayse-demir-4b7a91c2";
-
-describe("normalizeProfileUrl", () => {
-  it("accepts the common shapes and rebuilds the canonical URL", () => {
-    expect(normalizeProfileUrl("linkedin.com/in/ayse-demir-4b7a91c2/")).toBe(URL_);
-    expect(normalizeProfileUrl("https://uk.linkedin.com/in/ayse-demir-4b7a91c2?utm_source=share")).toBe(URL_);
-    expect(normalizeProfileUrl(" www.linkedin.com/in/ayse-demir-4b7a91c2/details/experience ")).toBe(URL_);
-  });
-  it("rejects anything that isn't a linkedin.com/in profile", () => {
-    for (const bad of ["https://evil.com/in/x", "https://linkedin.com.evil.com/in/abc", "linkedin.com/company/ucl", "not a url", "https://www.linkedin.com/in/"]) {
-      expect(() => normalizeProfileUrl(bad), bad).toThrow(LinkedInFetchError);
-    }
-  });
-});
-
-describe("fetchPublicProfile", () => {
-  const fake = (status: number, body: string, url = URL_) => (async () => ({ status, ok: status >= 200 && status < 300, url, text: async () => body })) as unknown as typeof fetch;
-  it("returns the page when it is a public profile", async () => {
-    await expect(fetchPublicProfile(URL_, fake(200, HTML))).resolves.toContain("top-card-layout__title");
-  });
-  it("reports blocks, auth walls, private profiles and 404s distinctly", async () => {
-    const kind = (f: typeof fetch) => fetchPublicProfile(URL_, f).catch((e: LinkedInFetchError) => e.kind);
-    expect(await kind(fake(999, ""))).toBe("blocked");
-    expect(await kind(fake(200, "<html>join</html>", "https://www.linkedin.com/authwall?trk=x"))).toBe("blocked");
-    expect(await kind(fake(200, "<html><body>nothing here</body></html>"))).toBe("private");
-    expect(await kind(fake(404, ""))).toBe("not_found");
-  });
-});
 
 describe("parsePublicProfile", () => {
   const { li, text } = parsePublicProfile(HTML, URL_);
@@ -75,16 +47,5 @@ describe("sameName", () => {
     expect(sameName("Ayşe Nur Demir", "Ayşe Demir")).toBe(true);
     expect(sameName("Bill Gates", "Ayşe Demir")).toBe(false);
     expect(sameName("Ayşe Yılmaz", "Ayşe Demir")).toBe(false);
-  });
-});
-
-describe("fetchPublicProfile retry", () => {
-  it("retries once after a network failure, then gives up with a network error", async () => {
-    let calls = 0;
-    const flaky = (async () => { calls++; if (calls === 1) throw new Error("timeout"); return { status: 200, ok: true, url: URL_, text: async () => HTML }; }) as unknown as typeof fetch;
-    await expect(fetchPublicProfile(URL_, flaky)).resolves.toContain("top-card-layout__title");
-    expect(calls).toBe(2);
-    const dead = (async () => { throw new Error("timeout"); }) as unknown as typeof fetch;
-    await expect(fetchPublicProfile(URL_, dead).catch((e: LinkedInFetchError) => e.kind)).resolves.toBe("network");
   });
 });

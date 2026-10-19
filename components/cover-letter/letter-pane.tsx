@@ -164,7 +164,8 @@ const tabLabel = (o: OutputView) => (o.target.kind === "upload" ? "Cover letter"
 export type LetterHandlers = {
   onSelect: (outputId: string) => void;
   onSave: (text: string) => void;
-  onConfirmTrue: (spanStart: number) => void;
+  /** `ownWords`: the student's own sentence, saved for future letters and tailoring; null keeps it to this letter (09 #4). */
+  onConfirmTrue: (spanStart: number, ownWords: string | null) => void;
   onReady: () => void;
   onWhyUs: () => void;
   /** The undo animation has played. */
@@ -178,6 +179,9 @@ export function LetterPane({ s, view, output, autopilot, h }: { s: CardState; vi
   const paperRef = useRef<HTMLDivElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const [pop, setPop] = useState<{ start: number; flag: string; top: number } | null>(null);
+  // "This is true" asks for the student's own words inline, in the same check panel
+  const [ownWords, setOwnWords] = useState<string | null>(null);
+  const closePop = () => { setPop(null); setOwnWords(null); };
   const [typed, setTyped] = useState(false);
   const [copied, setCopied] = useState(false);
   const [scanStyle, setScanStyle] = useState<{ top: number; h: number } | null>(null);
@@ -204,7 +208,7 @@ export function LetterPane({ s, view, output, autopilot, h }: { s: CardState; vi
     if (!pop) return;
     const close = (e: KeyboardEvent | PointerEvent) => {
       if (e instanceof KeyboardEvent ? e.key !== "Escape" : (e.target as HTMLElement).closest?.(".pop, [data-flag], [data-check]")) return;
-      setPop(null);
+      setPop(null); setOwnWords(null);
       if (e instanceof KeyboardEvent) paperRef.current?.querySelector<HTMLElement>(`[data-check="${pop.start}"], [data-flag][data-start="${pop.start}"]`)?.focus();
     };
     window.addEventListener("keydown", close);
@@ -225,7 +229,7 @@ export function LetterPane({ s, view, output, autopilot, h }: { s: CardState; vi
   }
   const editFlag = () => {
     const el = paperRef.current?.querySelector<HTMLElement>(`[data-flag][data-start="${pop?.start}"]`);
-    setPop(null);
+    setPop(null); setOwnWords(null);
     if (!el) return;
     paperRef.current!.focus();
     const r = document.createRange();
@@ -343,10 +347,23 @@ export function LetterPane({ s, view, output, autopilot, h }: { s: CardState; vi
         {pop && (
           <div className="pop" role="dialog" aria-label="Something to check" style={{ top: pop.top }}>
             <p>{pop.flag}</p>
-            <div className="row">
-              <button ref={popRef} type="button" className="act" onClick={editFlag}>Edit</button>
-              <button type="button" className="act" disabled={busy} onClick={() => { setPop(null); h.onConfirmTrue(pop.start); }}>This is true</button>
-            </div>
+            {ownWords === null ? (
+              <div className="row">
+                <button ref={popRef} type="button" className="act" onClick={editFlag}>Edit</button>
+                <button type="button" className="act" disabled={busy} onClick={() => setOwnWords("")}>This is true</button>
+              </div>
+            ) : (
+              <form className="own" onSubmit={(e) => { e.preventDefault(); const w = ownWords.trim(); closePop(); h.onConfirmTrue(pop.start, w || null); }}>
+                <label>
+                  <span>To use it in future letters and CV tailoring too, say what&apos;s true in your own words (optional).</span>
+                  <textarea autoFocus rows={2} maxLength={300} value={ownWords} onChange={(e) => setOwnWords(e.target.value)} />
+                </label>
+                <div className="row">
+                  <button type="submit" className="act" disabled={busy || !ownWords.trim()}>Save</button>
+                  <button type="button" className="act quiet" disabled={busy} onClick={() => { closePop(); h.onConfirmTrue(pop.start, null); }}>Just this letter</button>
+                </div>
+              </form>
+            )}
           </div>
         )}
       </div>

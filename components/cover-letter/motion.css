@@ -114,6 +114,8 @@
 .cl .pop { position: absolute; z-index: 5; left: 20px; right: 20px; max-width: 420px; background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; font-size: 13px; box-shadow: 0 8px 28px rgba(22,22,29,.14); animation: cl-pop .3s var(--spring) both; transform-origin: 0% 0%; }
 .cl .pop p { margin: 0 0 8px; color: var(--amber); font-weight: 600; }
 .cl .pop .row { display: flex; gap: 6px; flex-wrap: wrap; }
+.cl .pop .own label { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; color: var(--ink, #1a1a2e); }
+.cl .pop .own textarea { width: 100%; min-height: 44px; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; font: inherit; resize: vertical; }
 
 /* lint pass: a light scan line, then chips */
 .cl .scan { position: absolute; left: 0; right: 0; height: 60px; top: 0; pointer-events: none; opacity: 0; background: linear-gradient(180deg, rgba(91,61,245,0), rgba(91,61,245,.08), rgba(91,61,245,0)); }

@@ -238,6 +238,8 @@ test.describe("cover letter writer", () => {
       await expect(pop.getByRole("button", { name: "Edit" })).toBeVisible();
       if (first) await shot(page, "flag-check");
       await pop.getByRole("button", { name: "This is true" }).click();
+      // the inline own-words step: skip it, so the claim stays in this letter only
+      await pop.getByRole("button", { name: "Just this letter" }).click();
       await expect(flags).toHaveCount(n - 1);
     }
     await expect(ready).toBeEnabled();

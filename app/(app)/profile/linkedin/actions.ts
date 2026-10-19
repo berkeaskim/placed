@@ -5,11 +5,10 @@ import { db } from "@/lib/db/client";
 import { profiles } from "@/lib/db/schema";
 import { cvSizeError } from "@/lib/cv/upload-limits";
 import { ARCHETYPES, YEARS, type Archetype, type Year } from "@/lib/types";
-import { loadLatestLinkedInScore, NotLinkedInExportError, NotYourProfileError, scoreLinkedInArchive, scoreLinkedInPdf, scoreLinkedInUrl, type LiPanelData } from "@/lib/linkedin-score/run";
+import { loadLatestLinkedInScore, NotLinkedInExportError, NotYourProfileError, scoreLinkedInArchive, scoreLinkedInPdf, type LiPanelData } from "@/lib/linkedin-score/run";
 import { NotLinkedInArchiveError } from "@/lib/linkedin/parse-archive";
 import { mintCaptureToken } from "@/lib/linkedin/capture-token";
 import { LI_SECTOR_IMPORTANCE } from "@/lib/linkedin-rules";
-import { LinkedInFetchError } from "@/lib/linkedin/fetch-public";
 
 /** `offerPdf`: LinkedIn wouldn't show the profile to us, so the page opens the PDF fallback. */
 export type UploadLinkedInResult = { ok: true; data: LiPanelData } | { error: string; offerPdf?: boolean };
@@ -21,23 +20,6 @@ async function sectorAndYear(formData: FormData): Promise<{ sector: Archetype; y
   const prof = db.select({ year: profiles.year }).from(profiles).where(eq(profiles.user_id, user.id)).get();
   const year: Year = prof?.year && (YEARS as readonly string[]).includes(prof.year) ? (prof.year as Year) : "2nd";
   return { sector: s as Archetype, year };
-}
-
-/** Score the student's own public profile from a pasted linkedin.com/in/… link. */
-export async function scoreLinkedInLink(formData: FormData): Promise<UploadLinkedInResult> {
-  const { user } = await requireUser();
-  const url = String(formData.get("url") ?? "").trim();
-  if (!url) return { error: "Paste your LinkedIn profile link first." };
-  const sy = await sectorAndYear(formData);
-  if ("error" in sy) return sy;
-  try {
-    return { ok: true, data: await scoreLinkedInUrl({ userId: user.id, url, ...sy }) };
-  } catch (e) {
-    if (e instanceof LinkedInFetchError) return { error: e.message, offerPdf: e.kind !== "invalid_url" && e.kind !== "not_found" };
-    if (e instanceof NotYourProfileError) return { error: "The name on that profile doesn't match your CV. Paste your own profile link." };
-    console.error("scoreLinkedInLink failed", e);
-    return { error: "We couldn't score this profile right now. Try again in a minute." };
-  }
 }
 
 /**
