@@ -2,7 +2,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, LayoutGroup, motion, useReducedMotion } from "motion/react";
-import { BookOpenText, ChevronDown, Lightbulb, MessagesSquare, Quote, Route, ShieldCheck, Video } from "lucide-react";
+import { BookOpenText, ChevronDown, Lightbulb, MessagesSquare, Quote, Route, ShieldAlert, ShieldCheck, Video } from "lucide-react";
 import {
   practiceSet, SPRING_FRAMING, SPRING_GROUPS, springQuestions,
   type SpringContext, type SpringGroup, type SpringQuestion,
@@ -16,7 +16,7 @@ const SPRING = { type: "spring", bounce: 0, duration: 0.4 } as const;
  * Interview prep for a spring week: replaces the generic web-researched pack. Motivation-first framing, a timed video
  * practice, the 30-question spring bank and STAR stories from the Experience Bank. All local, no AI call.
  */
-export function SpringPrepPanel({ ctx, stories, bankEmpty }: { ctx: SpringContext; stories: StorySuggestion[]; bankEmpty: boolean }) {
+export function SpringPrepPanel({ ctx, stories, bankEmpty, coachOnly }: { ctx: SpringContext; stories: StorySuggestion[]; bankEmpty: boolean; coachOnly?: string | null }) {
   const [seed, setSeed] = useState(0);
   const set = useMemo(() => practiceSet(ctx, { seed }), [ctx, seed]);
   const all = useMemo(() => springQuestions(ctx), [ctx]);
@@ -27,6 +27,12 @@ export function SpringPrepPanel({ ctx, stories, bankEmpty }: { ctx: SpringContex
         <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#5B3DF5]">{ctx.firm} · Spring week</p>
         <h2 className="text-[26px] font-bold leading-[1.1] tracking-[-0.022em] text-[#1C1C1E]">Interview prep</h2>
         <p className="max-w-[62ch] text-[17px] leading-[1.47] tracking-[-0.01em] text-[#3C3C43]">{SPRING_FRAMING.lead}</p>
+        {coachOnly && (
+          <p role="note" className="flex gap-2 rounded-[14px] bg-[#FFF4E5] px-4 py-3 text-[14px] leading-snug text-[#7A4100]">
+            <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+            <span><span className="font-semibold">Coach-only. </span>{coachOnly}</span>
+          </p>
+        )}
       </header>
 
       <div className="flex flex-col gap-3">

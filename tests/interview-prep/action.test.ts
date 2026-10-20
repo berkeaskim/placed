@@ -76,6 +76,22 @@ describe("getInterviewPrep", () => {
     }
   });
 
+  it("adds the coach-only placement bank for a placement, even when the AI pack can't be built", async () => {
+    mockJob.employmentType = "placement";
+    try {
+      track("applied");
+      const r = await getInterviewPrep(ID);
+      expect(r).toMatchObject({ bank: { track: "placement", coachOnly: true } });
+      expect(generatePrepPack).toHaveBeenCalledWith(expect.objectContaining({ track: "placement" }));
+      generatePrepPack.mockRejectedValueOnce(new Error("boom"));
+      db.delete(interviewPreps).run();
+      const failed = await getInterviewPrep(ID);
+      expect(failed).toMatchObject({ error: expect.any(String), bank: { track: "placement" } });
+    } finally {
+      mockJob.employmentType = "internship";
+    }
+  });
+
   it("rejects a non-uuid", async () => {
     expect(await getInterviewPrep("1; drop")).toEqual({ error: expect.any(String) });
   });

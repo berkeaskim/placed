@@ -1,12 +1,13 @@
 "use client";
 import { useState } from "react";
 import { AnimatePresence, LayoutGroup, motion, useReducedMotion } from "motion/react";
-import { BookOpenText, ChevronDown, ExternalLink, Lightbulb, MessagesSquare, Quote, Route, Sparkles } from "lucide-react";
+import { BookOpenText, ChevronDown, ClipboardCheck, ExternalLink, Lightbulb, MessagesSquare, Quote, Route, ShieldAlert, Sparkles } from "lucide-react";
 import { AgentSteps, useAgentSteps } from "@/components/agent/agent-steps";
 import { AiWrittenTag } from "@/components/ai-written-tag";
 import type { PrepView } from "@/lib/interview-prep/service";
+import { THEME_LABELS, type BankTheme, type TrackBank } from "@/lib/interview-prep/banks";
 
-type State = { status: "idle" } | { status: "loading" } | { status: "error"; message: string } | { status: "ready"; p: PrepView };
+type State = { status: "idle" } | { status: "loading" } | { status: "error"; message: string; bank?: TrackBank | null } | { status: "ready"; p: PrepView };
 type Cat = (typeof CATS)[number][0];
 const CATS = [["all", "All"], ["behavioural", "Behavioural"], ["technical", "Technical"], ["motivational", "Motivation"], ["case", "Case"]] as const;
 // Real stages of getInterviewPrep: grounded web search, structuring with sources, CV story match.
@@ -27,8 +28,8 @@ export function InterviewPrepPanel({ jobId, company, hasCv }: { jobId: string; c
     try {
       // A route, not a server action: a ~40 s first build must not queue the page's other actions behind it.
       const res = await fetch(`/api/interview-prep/${encodeURIComponent(jobId)}`, { method: "POST", cache: "no-store" });
-      const r = (await res.json()) as PrepView | { error: string };
-      setState("error" in r ? { status: "error", message: r.error } : { status: "ready", p: r });
+      const r = (await res.json()) as PrepView | { error: string; bank?: TrackBank | null };
+      setState("error" in r ? { status: "error", message: r.error, bank: r.bank } : { status: "ready", p: r });
     } catch {
       setState({ status: "error", message: "We couldn't build your interview prep right now. Try again in a moment." });
     }
@@ -60,6 +61,7 @@ export function InterviewPrepPanel({ jobId, company, hasCv }: { jobId: string; c
           <button type="button" onClick={run} className={`min-h-11 self-start rounded-full bg-white px-5 text-[15px] font-semibold text-[#7A4100] shadow-[0_0_0_1px_rgba(122,65,0,0.2)] ${PRESS}`}>Try again</button>
         </div>
       )}
+      {state.status === "error" && state.bank && <PracticeBank bank={state.bank} />}
 
       {ready && <Pack p={state.p} company={company} hasCv={hasCv} />}
     </section>
@@ -149,6 +151,8 @@ function Pack({ p, company, hasCv }: { p: PrepView; company: string; hasCv: bool
       )}
 
       <motion.div {...enter(2)}><Questions p={p} /></motion.div>
+
+      {p.bank && <motion.div {...enter(2)}><PracticeBank bank={p.bank} /></motion.div>}
 
       <motion.div {...enter(3)} className="flex flex-col gap-3">
         <SectionTitle icon={BookOpenText}>Your stories</SectionTitle>
@@ -280,6 +284,45 @@ function Questions({ p }: { p: PrepView }) {
         })}
       </ul>
     </div>
+  );
+}
+
+/** The curated placement bank: practice-only notice, format presets, questions by theme and the coach's rubric. */
+function PracticeBank({ bank }: { bank: TrackBank }) {
+  const themes = [...new Set(bank.questions.map((q) => q.theme))] as BankTheme[];
+  return (
+    <section aria-label="Placement practice bank" className="flex flex-col gap-3">
+      <SectionTitle icon={ClipboardCheck}>Placement practice bank <span className="text-[13px] font-medium tabular-nums text-[#8E8E93]">{bank.questions.length}</span></SectionTitle>
+      <p role="note" className={`flex gap-2 rounded-[14px] px-4 py-3 text-[14px] leading-snug ${bank.coachOnly ? "bg-[#FFF4E5] text-[#7A4100]" : "bg-[#F6F5FB] text-[#3C3C43]"}`}>
+        <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+        <span>{bank.coachOnly && <span className="font-semibold">Coach-only. </span>}{bank.practiceNotice}</span>
+      </p>
+      <ul className="flex flex-col gap-1 text-[14px] leading-snug text-[#3C3C43]">
+        {bank.presets.map((p) => <li key={p} className="flex gap-2"><span aria-hidden="true" className="mt-[8px] h-1.5 w-1.5 shrink-0 rounded-full bg-[#5B3DF5]" />{p}</li>)}
+      </ul>
+      <div className="flex flex-col overflow-hidden rounded-[18px] bg-white shadow-[inset_0_0_0_1px_rgba(0,0,0,0.07)]">
+        {themes.map((t) => {
+          const qs = bank.questions.filter((q) => q.theme === t);
+          return (
+            <details key={t} className="group border-black/[0.06] [&+&]:border-t">
+              <summary className="flex min-h-11 cursor-pointer items-center justify-between px-4 py-3 text-[15px] font-semibold text-[#1C1C1E]">
+                <span>{THEME_LABELS[t]}</span>
+                <span className="text-[13px] tabular-nums text-[#8E8E93]">{qs.length}</span>
+              </summary>
+              <ol className="flex list-decimal flex-col gap-2 pb-4 pl-9 pr-4 text-[14px] leading-[1.43] text-[#3C3C43]">
+                {qs.map((q) => <li key={q.question}>{q.question}</li>)}
+              </ol>
+            </details>
+          );
+        })}
+      </div>
+      <details className="rounded-[18px] bg-[#F6F5FB] px-4">
+        <summary className="flex min-h-11 cursor-pointer items-center text-[14px] font-semibold text-[#3A20C4]">How to judge your own answers</summary>
+        <ul className="flex flex-col gap-1.5 pb-4 text-[14px] leading-snug text-[#3C3C43]">
+          {bank.rubric.map((r) => <li key={r}>{r}</li>)}
+        </ul>
+      </details>
+    </section>
   );
 }
 
