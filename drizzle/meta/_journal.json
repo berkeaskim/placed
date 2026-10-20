@@ -127,6 +127,13 @@
       "when": 1792432186201,
       "tag": "0017_curious_hex",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "6",
+      "when": 1792454194845,
+      "tag": "0018_true_major_mapleleaf",
+      "breakpoints": true
     }
   ]
 }

@@ -15,6 +15,7 @@ import { fetchPhenom, phenomUrl } from "./phenom";
 import { fetchApple, appleSearchUrl } from "./apple";
 import { fetchMckinsey, mckinseySearchUrl } from "./mckinsey";
 import { fetchTargetJobs, TARGETJOBS_URL } from "./targetjobs";
+import { fetchOleeo, oleeoBoardUrl } from "./oleeo";
 import type { AtsKind } from "@/lib/db/schema";
 import { passesTitleFilter } from "../filter";
 import { loadProgrammes, programmeToRawJob, visibleProgrammes } from "../curated";
@@ -67,6 +68,12 @@ export function endpointFor(c: CompanySeed): string {
       return PROGRAMMES_PATH_LABEL;
     case "targetjobs":
       return TARGETJOBS_URL;
+    case "oleeo":
+      try {
+        return oleeoBoardUrl(c.slug);
+      } catch (e) {
+        throw new ProviderError(`oleeo/${c.slug}: ${(e as Error).message}`);
+      }
     case "goldmansachs":
       return goldmanEndpoint();
     case "morganstanley":
@@ -116,6 +123,14 @@ export function endpointFor(c: CompanySeed): string {
 
 export async function fetchJobs(c: CompanySeed, plainFetch: typeof fetch = fetch): Promise<RawJob[]> {
   if (c.ats === "curated") return fetchCurated(c.slug);
+  if (c.ats === "oleeo") {
+    // Board list, then detail pages only for titles the keyword filter keeps (like Workday).
+    try {
+      return await fetchOleeo(c.slug, passesTitleFilter, plainFetch);
+    } catch (e) {
+      throw new ProviderError(`oleeo/${c.slug}: ${(e as Error).message}`);
+    }
+  }
   if (c.ats === "targetjobs") {
     try {
       return await fetchTargetJobs(c.slug, plainFetch);

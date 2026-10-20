@@ -91,7 +91,7 @@ export async function ingestCompany(c: CompanyRow, deps: IngestDeps) {
       tagged++;
       if (t.status === "failed") failed++;
     }
-    t = reconcileProgramme(t, j.title, text, j.employmentType, placementRegion(j.location), j.sourceType);
+    t = reconcileProgramme(t, j.title, text, j.employmentType, placementRegion(j.location), j.sourceType, j.programme);
     // Dates are deterministic only; the tagger's (possibly LLM) deadline is ignored on purpose.
     // Curated `closes` is the inclusive last day from seed/programmes.yml: never shifted like an ATS end date, and the
     // description's prose dates (e.g. "the earliest falling on 19 October") are never read as the card's deadline.

@@ -38,6 +38,8 @@ export interface RawJob {
   employerName?: string | null;
   /** The listing already says what this is (TargetJobs' "Placement" type): it skips the title keyword filter. */
   sourceType?: "placement" | null;
+  /** The board's own programme label (Oleeo "Program type": "Industrial Placement", "1 Year Placement"…), when it has one. */
+  programme?: string | null;
   /** Authoritative type from a curated programme card's `kind`; overrides the tagger. */
   employmentType?: JobForScoring["employmentType"] | null;
 }
