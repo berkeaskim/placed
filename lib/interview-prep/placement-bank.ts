@@ -200,7 +200,10 @@ export function placementContext(job: { company: string; title: string; archetyp
 export function placementQuestions(c: PlacementContext): PrepQuestion[] {
   return PLACEMENT_QUESTIONS
     .filter((q) => !q.stream || !c.stream || q.stream === c.stream)
-    .map(({ stream: _stream, ...q }) => ({ ...q, text: q.text.replace(/\{firm\}/g, c.firm), whyTheyAsk: q.whyTheyAsk.replace(/\{firm\}/g, c.firm), prepTip: q.prepTip.replace(/\{firm\}/g, c.firm) }));
+    .map((q) => ({
+      id: q.id, group: q.group, theme: q.theme,
+      text: q.text.replace(/\{firm\}/g, c.firm), whyTheyAsk: q.whyTheyAsk.replace(/\{firm\}/g, c.firm), prepTip: q.prepTip.replace(/\{firm\}/g, c.firm),
+    }));
 }
 
 // A practice run mixes why-a-placement, why-us and competencies, like the real thing.
