@@ -129,6 +129,8 @@ describe("SECTOR_CAVEATS", () => {
         "Big 4 firms screen mainly via application forms and online tests — your CV matters less at that stage. MBB firms still screen on the CV.",
       finance_banking:
         "Big 4 and many insight or spring-week schemes screen mainly via application forms and online tests — your CV matters less at that stage. Banks still screen on the CV.",
+      engineering:
+        "Some engineering employers don't read a CV at first: Mott MacDonald's UK placements use an application form and a strengths test instead. Defence and nuclear roles also need security vetting, which is an eligibility check, not part of this score.",
     });
   });
 });

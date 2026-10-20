@@ -15,6 +15,7 @@ export const QUESTIONS: QuizQuestion[] = [
     { id: "business", label: "Cracking a company's big problem", weights: { consulting: 3, finance_banking: 1 } },
     { id: "markets", label: "Following the markets", weights: { finance_banking: 3, quant_trading: 1 } },
     { id: "audience", label: "Growing an audience", weights: { marketing_growth: 3, product: 1 } },
+    { id: "make", label: "Designing something physical that works", weights: { engineering: 3, product: 1 } },
   ] },
   { id: "tuesday", prompt: "Your ideal Tuesday at work", options: [
     { id: "flow", label: "Deep in code, headphones on", weights: { software_eng: 3 } },
@@ -23,6 +24,7 @@ export const QUESTIONS: QuizQuestion[] = [
     { id: "client", label: "Running a client workshop", weights: { consulting: 3 } },
     { id: "users", label: "Talking to users about what they need", weights: { product: 2, marketing_growth: 2 } },
     { id: "lab", label: "Reading papers and running experiments", weights: { research: 3 } },
+    { id: "bench", label: "At the lab bench running samples", weights: { science_pharma: 3, research: 1 } },
   ] },
   { id: "power", prompt: "Pick a superpower", options: [
     { id: "logic", label: "Flawless logic", weights: { software_eng: 2, quant_trading: 2 } },
@@ -39,6 +41,7 @@ export const QUESTIONS: QuizQuestion[] = [
     { id: "presenter", label: "Presenter", weights: { consulting: 2, marketing_growth: 2 } },
     { id: "researcher", label: "Researcher", weights: { research: 3 } },
     { id: "treasurer", label: "Money person", weights: { finance_banking: 3 } },
+    { id: "maker", label: "Maker, building the prototype", weights: { engineering: 3 } },
   ] },
   { id: "module", prompt: "Which module would you pick?", options: [
     { id: "algo", label: "Algorithms", weights: { software_eng: 2, quant_trading: 2 } },
@@ -47,6 +50,8 @@ export const QUESTIONS: QuizQuestion[] = [
     { id: "mkt", label: "Marketing strategy", weights: { marketing_growth: 3 } },
     { id: "game", label: "Game theory", weights: { quant_trading: 2, consulting: 2 } },
     { id: "design", label: "Design thinking", weights: { product: 3 } },
+    { id: "mech", label: "Mechanics and thermodynamics", weights: { engineering: 3 } },
+    { id: "pharm", label: "Pharmacology or organic chemistry", weights: { science_pharma: 3 } },
   ] },
   { id: "matters", prompt: "What matters most in your first internship?", options: [
     { id: "ship", label: "Shipping real code", weights: { software_eng: 3 } },
@@ -56,6 +61,8 @@ export const QUESTIONS: QuizQuestion[] = [
     { id: "own", label: "Owning a feature end to end", weights: { product: 3 } },
     { id: "creative", label: "Creative freedom", weights: { marketing_growth: 3 } },
     { id: "depth", label: "Going deep on one topic", weights: { research: 3 } },
+    { id: "built", label: "Seeing my design built and tested", weights: { engineering: 3 } },
+    { id: "patients", label: "Work that gets medicines to patients", weights: { science_pharma: 3 } },
   ] },
 ];
 

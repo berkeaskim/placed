@@ -1,6 +1,7 @@
 export const ARCHETYPES = [
   "software_eng", "data_analytics", "quant_trading", "consulting",
   "product", "finance_banking", "marketing_growth", "research",
+  "engineering", "science_pharma",
 ] as const;
 export type Archetype = (typeof ARCHETYPES)[number];
 
@@ -13,6 +14,8 @@ export const ARCHETYPE_LABELS: Record<Archetype, string> = {
   finance_banking: "Finance & Banking",
   marketing_growth: "Marketing & Growth",
   research: "Research",
+  engineering: "Engineering",
+  science_pharma: "Science & Pharma",
 };
 
 export const YEARS = ["1st", "2nd", "penultimate", "final", "masters"] as const;

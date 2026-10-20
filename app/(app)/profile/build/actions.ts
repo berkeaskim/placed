@@ -21,6 +21,7 @@ import { ARCHETYPES, YEARS, type Archetype, type ParsedCV, type PlacementStatus,
 import { scoreCv } from "@/lib/cv-score/run";
 import { canonicalize, extractSkills } from "@/lib/skills/extract";
 import { cvSizeError } from "@/lib/cv/upload-limits";
+import { withFieldPrior } from "@/lib/profile/field-prior";
 
 export type UploadCvResult =
   | { ok: true; award: AwardResult | null; imageOnly: boolean; cvId: string; safetyWarning: string | null }
@@ -88,10 +89,11 @@ export async function uploadCv(formData: FormData): Promise<UploadCvResult> {
   }
 
   const skills = [...new Set([...parsed.skills.flatMap((g) => g.items.map((i) => canonicalize(i) ?? i)), ...extractSkills(cleanText)])];
-  const scored = parsed.archetypes.filter((a) => a.score > 0);
-  let prof: { year: Year | null; grad_year: number | null; placement_status: PlacementStatus | null; target_archetype: Archetype | null } | undefined;
-  try { prof = db.select({ year: profiles.year, grad_year: profiles.grad_year, placement_status: profiles.placement_status, target_archetype: profiles.target_archetype }).from(profiles).where(eq(profiles.user_id, user.id)).get(); }
+  let prof: { year: Year | null; grad_year: number | null; placement_status: PlacementStatus | null; target_archetype: Archetype | null; field: string | null } | undefined;
+  try { prof = db.select({ year: profiles.year, grad_year: profiles.grad_year, placement_status: profiles.placement_status, target_archetype: profiles.target_archetype, field: profiles.field }).from(profiles).where(eq(profiles.user_id, user.id)).get(); }
   catch { prof = undefined; }
+  // A thin or tied CV signal leans on the degree field (Engineering → engineering), never on a sector the student picked.
+  const scored = withFieldPrior(parsed.archetypes.filter((a) => a.score > 0), prof?.field);
   // An unreadable (image-only) or empty parse must not wipe archetypes/skills from e.g. the quiz.
   const hasSignal = !imageOnly && (skills.length > 0 || scored.length > 0);
   const target = prof?.target_archetype ?? (hasSignal ? scored[0]?.key : null) ?? null;

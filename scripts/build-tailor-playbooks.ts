@@ -9,7 +9,7 @@ import { TailorPlaybook } from "@/lib/tailor/playbooks";
 import { ARCHETYPES } from "@/lib/types";
 
 const ROOT = path.resolve(__dirname, "..");
-const FILES = ["docs/research/tailor-playbooks-tech-product.json", "docs/research/tailor-playbooks-finance-consulting.json"];
+const FILES = ["docs/research/tailor-playbooks-tech-product.json", "docs/research/tailor-playbooks-finance-consulting.json", "docs/research/tailor-playbooks-stem.json"];
 
 const out: Record<string, unknown> = {};
 for (const f of FILES) {

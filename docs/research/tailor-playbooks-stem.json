@@ -1,0 +1,381 @@
+{
+  "_meta": {
+    "compiled": "2026-10-20",
+    "notes": "Tailoring playbooks for engineering and science_pharma (research/placement-year/07 §6), same contract as tailor-playbooks-tech-product.json: guidance for reordering, emphasis and equivalent-term substitution only; never add facts, numbers, tools, employers or escalate authorship. Quotes were checked against the page or PDF text on the accessed date."
+  },
+  "sources": [
+    {
+      "id": "ST1",
+      "title": "How to write the perfect engineering CV and cover letter",
+      "publisher": "TARGETjobs",
+      "url": "https://targetjobs.co.uk/careers-advice/engineering/cvs-and-covering-letters-convince-engineering-recruiters-youre-perfect-their-graduate-job",
+      "accessed": "2026-10-20"
+    },
+    {
+      "id": "ST2",
+      "title": "STEM Placements and Internships CV Example",
+      "publisher": "University of Brighton",
+      "url": "https://blogs.brighton.ac.uk/stemplacements/files/2022/09/CV-EXAMPLE-GUIDE-STEM.pdf",
+      "accessed": "2026-10-20"
+    },
+    {
+      "id": "ST3",
+      "title": "Skills-based CV examples",
+      "publisher": "Oxford Brookes University",
+      "url": "https://www.brookes.ac.uk/getmedia/e485d0d7-6d11-4f5a-8fd4-6711643ebd52/skills-based-cv-examples.pdf",
+      "accessed": "2026-10-20"
+    },
+    {
+      "id": "ST4",
+      "title": "The Formula Student challenge",
+      "publisher": "Institution of Mechanical Engineers",
+      "url": "https://imeche.org/events/formula-student/about-formula-student/the-challenge",
+      "accessed": "2026-10-20"
+    },
+    {
+      "id": "ST5",
+      "title": "Fraudulent claims",
+      "publisher": "Engineering Council",
+      "url": "https://www.engc.org.uk/professional-registration/fraudulent-claims/",
+      "accessed": "2026-10-20"
+    },
+    {
+      "id": "ST6",
+      "title": "Example technical skills CV",
+      "publisher": "University of Nottingham Careers",
+      "url": "https://www.nottingham.ac.uk/careers/documents/students/example-cvs-cls/technicalskills2025.pdf",
+      "accessed": "2026-10-20"
+    },
+    {
+      "id": "ST7",
+      "title": "Sample CV: Biomedical Sciences with Industrial Placement",
+      "publisher": "University of Aberdeen Careers",
+      "url": "https://abdn.ac.uk/uploads/careers/resources/documents/4185.pdf",
+      "accessed": "2026-10-20"
+    },
+    {
+      "id": "ST8",
+      "title": "12 Month University Industrial Placement Student (UIPS): Analytical Chemistry",
+      "publisher": "AstraZeneca (WORK180 listing)",
+      "url": "https://work180.com/en-gb/for-women/employer/astrazeneca-uk/job/646218/12-month-university-industrial-placement-stud",
+      "accessed": "2026-10-20"
+    }
+  ],
+  "engineering": {
+    "recruiterScan": [
+      "Technical skills block: are the advert's CAD, analysis and programming tools visible and grouped?",
+      "One design, build or test project with the student's own role, the method and a technical result.",
+      "Relevant modules with marks.",
+      "Hands-on or practical work.",
+      "Teamwork shown inside engineering work."
+    ],
+    "leadWith": [
+      "The bullet naming the advert's tool or method (SolidWorks, FEA, MATLAB, PLC).",
+      "Test, simulation or performance results already on the CV, with units.",
+      "The component or subsystem the student owned.",
+      "Safety, standards or quality actions already shown."
+    ],
+    "summaryFormula": "Only when the CV already has a profile: shorten it to at most two lines of facts it already states (degree, year, discipline, and the tools or projects the bullets already show). Leave out any job title the student is applying for and the grade. If the CV has no profile, leave it out: never write one.",
+    "verbs": {
+      "prefer": [
+        "Designed",
+        "Modelled",
+        "Analysed",
+        "Simulated",
+        "Tested",
+        "Prototyped",
+        "Machined",
+        "Validated",
+        "Optimised",
+        "Commissioned"
+      ],
+      "avoid": [
+        "Responsible for",
+        "Helped with",
+        "Exposure to",
+        "Led (for a team member's role)"
+      ]
+    },
+    "reframes": [
+      {
+        "from": "did the CAD for the project",
+        "to": "modelled [component] in [CAD tool]",
+        "onlyIf": "the component and the tool are named in the CV"
+      },
+      {
+        "from": "ran some simulations",
+        "to": "finite element analysis of [part] in [tool]",
+        "onlyIf": "the CV says it was FEA and names the part"
+      },
+      {
+        "from": "Year 2 group project",
+        "to": "group design project ([team size]): [own part]",
+        "onlyIf": "the student's own part is stated"
+      },
+      {
+        "from": "helped build the car",
+        "to": "[sub-team] member, Formula Student: [task]",
+        "onlyIf": "the sub-team and task are stated; keep member, never upgrade to lead"
+      },
+      {
+        "from": "used the workshop",
+        "to": "machined [part] on a [lathe/mill]",
+        "onlyIf": "the part and the machine are named"
+      },
+      {
+        "from": "IMechE member",
+        "to": "Student member, Institution of Mechanical Engineers",
+        "onlyIf": "always: never write MIMechE or CEng for a student"
+      }
+    ],
+    "competencyThemes": [
+      "Engineering design",
+      "Analysis and simulation",
+      "Practical and manufacturing skills",
+      "Testing and validation",
+      "Teamwork in technical projects",
+      "Health, safety and quality"
+    ],
+    "sectionOrder": [
+      "Header",
+      "Profile (optional, 1-2 lines)",
+      "Education (degree, relevant modules with marks, design project)",
+      "Technical Skills",
+      "Engineering Projects",
+      "Work Experience",
+      "Positions of Responsibility and Activities",
+      "Professional Membership",
+      "Interests"
+    ],
+    "pitfalls": [
+      "Software-style framing (tech stack, GitHub) for a mechanical role.",
+      "Tool lists with no project context.",
+      "Claiming CEng or member grades.",
+      "Jargon without a plain-English purpose line."
+    ],
+    "evidence": [
+      {
+        "claim": "recruiterScan: modules most relevant to the role",
+        "grade": "B",
+        "sourceIds": [
+          "ST1"
+        ],
+        "quote": "list the modules you have taken that are most relevant to the role you are applying to."
+      },
+      {
+        "claim": "recruiterScan: group projects and dissertation in Education",
+        "grade": "B",
+        "sourceIds": [
+          "ST1"
+        ],
+        "quote": "information on group projects and your dissertation, any modules relevant to the job, and relevant academic awards"
+      },
+      {
+        "claim": "recruiterScan/leadWith: named tools and practical skills",
+        "grade": "B",
+        "sourceIds": [
+          "ST2"
+        ],
+        "quote": "Subject specific technical knowledge: SolidWorks, AutoCAD, SolidCam, CNC Machining; milling, facing, drilling, and turning"
+      },
+      {
+        "claim": "leadWith/reframes: tool and method named in the project bullet",
+        "grade": "B",
+        "sourceIds": [
+          "ST3"
+        ],
+        "quote": "Carried out FEA (Finite Element Analysis) in SolidWorks to analyse the stresses"
+      },
+      {
+        "claim": "competencyThemes: Formula Student skills",
+        "grade": "B",
+        "sourceIds": [
+          "ST4"
+        ],
+        "quote": "demonstrate your technical, engineering design, and manufacturing skills"
+      },
+      {
+        "claim": "recruiterScan: teamwork inside technical work",
+        "grade": "B",
+        "sourceIds": [
+          "ST4"
+        ],
+        "quote": "important lessons on team working, time management, project management, budgeting and presentation"
+      },
+      {
+        "claim": "pitfalls/reframes: protected titles",
+        "grade": "A",
+        "sourceIds": [
+          "ST5"
+        ],
+        "quote": "These titles may only be used by individuals with current Engineering Council registration."
+      },
+      {
+        "claim": "pitfalls: plain-English purpose line",
+        "grade": "B",
+        "sourceIds": [
+          "ST1"
+        ],
+        "quote": "explaining technical information to non-technical colleagues"
+      }
+    ]
+  },
+  "science_pharma": {
+    "recruiterScan": [
+      "Named lab techniques matching the advert, with where they were used.",
+      "A lab project with its aim, method, result or mark.",
+      "Protocol and data discipline (SOPs, lab notebook, GLP or GMP if real).",
+      "Modules with marks.",
+      "Lab safety."
+    ],
+    "leadWith": [
+      "The bullet naming the advert's technique (HPLC, PCR, cell culture).",
+      "Lab results already on the CV (yield, purity, samples run).",
+      "SOP or GxP work.",
+      "Data-analysis software use."
+    ],
+    "summaryFormula": "Only when the CV already has a profile: shorten it to at most two lines of facts it already states (degree, year, subject, and the techniques the bullets already show). Leave out any job title the student is applying for and the grade. If the CV has no profile, leave it out: never write one.",
+    "verbs": {
+      "prefer": [
+        "Performed",
+        "Prepared",
+        "Synthesised",
+        "Characterised",
+        "Analysed",
+        "Validated",
+        "Optimised",
+        "Recorded",
+        "Quantified"
+      ],
+      "avoid": [
+        "Exposure to",
+        "Assisted with (unless the original says so)",
+        "Familiar with GMP",
+        "Discovered (unless it was a genuine finding)"
+      ]
+    },
+    "reframes": [
+      {
+        "from": "did the lab work",
+        "to": "laboratory techniques: [X, Y]",
+        "onlyIf": "the techniques are named in the CV"
+      },
+      {
+        "from": "used HPLC in labs",
+        "to": "HPLC: [what was run], [module or project]",
+        "onlyIf": "where it was used is stated"
+      },
+      {
+        "from": "final year project in organic chemistry",
+        "to": "final-year project: [aim]; [techniques]; [result or mark]",
+        "onlyIf": "the aim and at least one technique are stated"
+      },
+      {
+        "from": "followed the lab script",
+        "to": "followed written SOPs and kept a lab notebook",
+        "onlyIf": "the CV says protocols or a notebook were used; never write GLP or GMP for a teaching lab"
+      },
+      {
+        "from": "made a poster",
+        "to": "poster presentation, [event, year]",
+        "onlyIf": "the poster was presented at a named event"
+      },
+      {
+        "from": "RSC member",
+        "to": "Student member, Royal Society of Chemistry",
+        "onlyIf": "always: never write MRSC or CChem for a student"
+      }
+    ],
+    "competencyThemes": [
+      "Laboratory techniques",
+      "Experimental work and protocols",
+      "Data analysis",
+      "Accurate recording",
+      "Lab safety",
+      "Science communication"
+    ],
+    "sectionOrder": [
+      "Header",
+      "Profile (optional, 1-2 lines)",
+      "Education (degree, relevant modules with marks, lab project)",
+      "Laboratory Skills",
+      "Lab and Research Experience",
+      "Work Experience",
+      "Positions of Responsibility and Activities",
+      "Professional Membership",
+      "Interests"
+    ],
+    "pitfalls": [
+      "Inflated technique lists.",
+      "GMP claimed from teaching labs.",
+      "Acronym walls with no expansion.",
+      "Academic-CV framing (publications first) for an industry placement."
+    ],
+    "evidence": [
+      {
+        "claim": "recruiterScan/leadWith: named techniques that match the advert",
+        "grade": "B",
+        "sourceIds": [
+          "ST8"
+        ],
+        "quote": "chromatographic (HPLC, GC, CE, SFC), spectroscopic (NMR UV, FTIR)"
+      },
+      {
+        "claim": "recruiterScan: GxP named in adverts",
+        "grade": "B",
+        "sourceIds": [
+          "ST8"
+        ],
+        "quote": "Good Manufacturing Practice (GMP), Good Laboratory Practice (GLP)"
+      },
+      {
+        "claim": "recruiterScan: techniques grouped in a lab skills line",
+        "grade": "B",
+        "sourceIds": [
+          "ST7"
+        ],
+        "quote": "Developed practical lab skills including DNA extraction, PCR, ELISA & Gel electrophoresis."
+      },
+      {
+        "claim": "recruiterScan: modules with marks",
+        "grade": "B",
+        "sourceIds": [
+          "ST6"
+        ],
+        "quote": "Molecular biology, 62%"
+      },
+      {
+        "claim": "leadWith: project result or mark",
+        "grade": "B",
+        "sourceIds": [
+          "ST6"
+        ],
+        "quote": "The report received a grade of 64%."
+      },
+      {
+        "claim": "recruiterScan: lab safety",
+        "grade": "B",
+        "sourceIds": [
+          "ST7"
+        ],
+        "quote": "consistently follow laboratory safety procedures."
+      },
+      {
+        "claim": "reframes: poster at a named module or event",
+        "grade": "B",
+        "sourceIds": [
+          "ST7"
+        ],
+        "quote": "Produced an academic poster communicating research findings from the Energy for Life module."
+      },
+      {
+        "claim": "leadWith: analysis software named",
+        "grade": "B",
+        "sourceIds": [
+          "ST6"
+        ],
+        "quote": "IT skills – competent user of Microsoft Office, Matlab and SPSS"
+      }
+    ]
+  }
+}

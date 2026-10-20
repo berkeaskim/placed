@@ -12,6 +12,7 @@ import { ARCHETYPES } from "@/lib/types";
 const EXPECTED_PER_PREFIX: Record<string, number> = {
   G: 32, FCQ: 7, FIN: 12, QNT: 10, CON: 11, SWE: 11, DAT: 12, PRD: 8, MKT: 9, RES: 10,
   EV: 3, AU: 3, ATS: 2, SPR: 7, PLC: 5,
+  ENG: 7, SCI: 8, STM: 3,
 };
 
 const prefixOf = (id: string) => id.split("-")[0];
@@ -20,8 +21,8 @@ describe("CV rule library", () => {
   it("has the transcribed research rules with unique ids", () => {
     expect(new Set(RULES.map((r) => r.id)).size).toBe(RULES.length);
   });
-  it("has exactly the 142 rules: 137 after the audit merge + 5 placement-year", () => {
-    expect(RULES.length).toBe(142);
+  it("has exactly the 160 rules: 137 after the audit merge + 5 placement-year + 18 engineering and science", () => {
+    expect(RULES.length).toBe(160);
   });
   it("one detector, one rule: no two scored code rules share a checker in any sector or track (audit 04#2)", () => {
     for (const a of ARCHETYPES) for (const t of TRACKS) {
@@ -37,7 +38,7 @@ describe("CV rule library", () => {
   it("page length: one page for finance, consulting and quant; one or two full pages elsewhere, incl. software (03#1)", () => {
     const g11 = RULES_BY_ID.get("G-11")!;
     for (const a of ["finance_banking", "consulting", "quant_trading"] as const) expect(resolvedMaxPages(g11, a, "2nd"), a).toBe(1);
-    for (const a of ["software_eng", "data_analytics", "product", "marketing_growth", "research"] as const) expect(resolvedMaxPages(g11, a, "2nd"), a).toBe(2);
+    for (const a of ["software_eng", "data_analytics", "product", "marketing_growth", "research", "engineering", "science_pharma"] as const) expect(resolvedMaxPages(g11, a, "2nd"), a).toBe(2);
     expect(resolvedMaxPages(g11, "software_eng", "1st", "spring")).toBe(1);
   });
   it("first-years get the relaxed quantification threshold in every sector (01#3, 03#7)", () => {
@@ -99,6 +100,8 @@ describe("CV rule library", () => {
       finance_banking: row(10, 20, 25, 25, 20),
       marketing_growth: row(10, 25, 30, 25, 10),
       research: row(10, 15, 25, 40, 10),
+      engineering: row(15, 20, 20, 35, 10),
+      science_pharma: row(15, 15, 25, 35, 10),
     });
   });
   it("uses the amended base weights", () => {

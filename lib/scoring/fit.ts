@@ -26,6 +26,9 @@ const ADJACENT: [Archetype, Archetype][] = [
   ["software_eng", "data_analytics"], ["data_analytics", "quant_trading"], ["quant_trading", "finance_banking"],
   ["finance_banking", "consulting"], ["consulting", "product"], ["product", "software_eng"],
   ["marketing_growth", "product"], ["research", "data_analytics"], ["research", "quant_trading"],
+  // research/placement-year/07 §1.2 row 16: embedded/controls, chemical/process and biomedical, biometrics and QC data.
+  ["engineering", "software_eng"], ["engineering", "science_pharma"], ["engineering", "research"],
+  ["science_pharma", "research"], ["science_pharma", "data_analytics"],
 ];
 const isAdjacent = (a: Archetype, b: Archetype) => ADJACENT.some(([x, y]) => (x === a && y === b) || (x === b && y === a));
 

@@ -166,7 +166,8 @@ function main() {
   const read = (f: string) => JSON.parse(readFileSync(path.join(root, "docs/research", f), "utf8")) as Raw;
   const tech = read("role-playbooks-tech-product.json");
   const fin = read("role-playbooks-finance-consulting.json");
-  const pbs = addShared({ ...normalise(tech, tech.sources as TechSource[]), ...normalise(fin, []) }, fin.shared);
+  const stem = read("role-playbooks-stem.json");
+  const pbs = addShared({ ...normalise(tech, tech.sources as TechSource[]), ...normalise(fin, []), ...normalise(stem, []) }, fin.shared);
   const errs = crossCheck(pbs, { requireAll: true });
   if (errs.length) {
     console.error(`build-playbooks: ${errs.length} integrity error(s)\n${errs.join("\n")}`);

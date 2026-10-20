@@ -54,7 +54,10 @@ describe("rulesFor on the placement track", () => {
   it("adds the PLC rules and the two shared spring rules, and nothing else from spring", () => {
     for (const s of ARCHETYPES) {
       const ids = rulesFor(s, "placement").map((r) => r.id);
-      for (const id of ["PLC-01", "PLC-02", "PLC-03", "PLC-04", "SPR-02", "SPR-06"]) expect(ids, `${s} ${id}`).toContain(id);
+      // engineering and science get STM-01 / ENG-02 / SCI-03 instead of PLC-03 / PLC-04 (placement-year/07 §1.3)
+      const stem = s === "engineering" || s === "science_pharma";
+      for (const id of ["PLC-01", "PLC-02", ...(stem ? [] : ["PLC-03", "PLC-04"]), "SPR-02", "SPR-06"]) expect(ids, `${s} ${id}`).toContain(id);
+      if (stem) for (const id of ["PLC-03", "PLC-04"]) expect(ids, `${s} ${id}`).not.toContain(id);
       for (const id of ["SPR-01", "SPR-03", "SPR-04", "SPR-05", "SPR-07"]) expect(ids, `${s} ${id}`).not.toContain(id);
     }
     expect(rulesFor("software_eng", "placement").map((r) => r.id)).toContain("PLC-05");

@@ -8023,5 +8023,1201 @@
         "ref": "PB-RES-E05"
       }
     ]
+  },
+  "engineering": {
+    "signals": [
+      {
+        "id": "PB-ENG-S01",
+        "text": "Lists the engineering software and tools they use in a technical skills section.",
+        "grade": "B",
+        "basis": "evidence (two university careers services)",
+        "ruleIds": [
+          "ENG-01"
+        ],
+        "sources": [
+          {
+            "title": "STEM Placements and Internships CV Example",
+            "publisher": "University of Brighton",
+            "url": "https://blogs.brighton.ac.uk/stemplacements/files/2022/09/CV-EXAMPLE-GUIDE-STEM.pdf",
+            "quote": "Subject specific technical knowledge: SolidWorks, AutoCAD, SolidCam, CNC Machining; milling, facing, drilling, and turning",
+            "accessed": "2026-10-20"
+          },
+          {
+            "title": "Skills-based CV examples",
+            "publisher": "Oxford Brookes University",
+            "url": "https://www.brookes.ac.uk/getmedia/e485d0d7-6d11-4f5a-8fd4-6711643ebd52/skills-based-cv-examples.pdf",
+            "quote": "Carried out FEA (Finite Element Analysis) in SolidWorks to analyse the stresses",
+            "accessed": "2026-10-20"
+          }
+        ]
+      },
+      {
+        "id": "PB-ENG-S02",
+        "text": "Has a design, build or test project with their own part, the method and a technical result.",
+        "grade": "B",
+        "basis": "evidence (careers publisher + careers service + professional body)",
+        "ruleIds": [
+          "ENG-02"
+        ],
+        "sources": [
+          {
+            "title": "How to write the perfect engineering CV and cover letter",
+            "publisher": "TARGETjobs",
+            "url": "https://targetjobs.co.uk/careers-advice/engineering/cvs-and-covering-letters-convince-engineering-recruiters-youre-perfect-their-graduate-job",
+            "quote": "information on group projects and your dissertation, any modules relevant to the job, and relevant academic awards",
+            "accessed": "2026-10-20"
+          },
+          {
+            "title": "Skills-based CV examples",
+            "publisher": "Oxford Brookes University",
+            "url": "https://www.brookes.ac.uk/getmedia/e485d0d7-6d11-4f5a-8fd4-6711643ebd52/skills-based-cv-examples.pdf",
+            "quote": "Carried out FEA (Finite Element Analysis) in SolidWorks to analyse the stresses",
+            "accessed": "2026-10-20"
+          },
+          {
+            "title": "The Formula Student challenge",
+            "publisher": "Institution of Mechanical Engineers",
+            "url": "https://imeche.org/events/formula-student/about-formula-student/the-challenge",
+            "quote": "demonstrate your technical, engineering design, and manufacturing skills",
+            "accessed": "2026-10-20"
+          }
+        ]
+      },
+      {
+        "id": "PB-ENG-S03",
+        "text": "Lists relevant modules, with marks where they are strong.",
+        "grade": "B",
+        "basis": "evidence (careers publisher + careers service)",
+        "ruleIds": [
+          "STM-01"
+        ],
+        "sources": [
+          {
+            "title": "How to write the perfect engineering CV and cover letter",
+            "publisher": "TARGETjobs",
+            "url": "https://targetjobs.co.uk/careers-advice/engineering/cvs-and-covering-letters-convince-engineering-recruiters-youre-perfect-their-graduate-job",
+            "quote": "list the modules you have taken that are most relevant to the role you are applying to.",
+            "accessed": "2026-10-20"
+          },
+          {
+            "title": "STEM Placements and Internships CV Example",
+            "publisher": "University of Brighton",
+            "url": "https://blogs.brighton.ac.uk/stemplacements/files/2022/09/CV-EXAMPLE-GUIDE-STEM.pdf",
+            "quote": "Include your module marks as far as possible",
+            "accessed": "2026-10-20"
+          }
+        ]
+      },
+      {
+        "id": "PB-ENG-S04",
+        "text": "Does engineering outside the syllabus: Formula Student, a competition team or an engineering society.",
+        "grade": "B",
+        "basis": "evidence (professional body + careers service)",
+        "ruleIds": [
+          "ENG-05"
+        ],
+        "sources": [
+          {
+            "title": "The Formula Student challenge",
+            "publisher": "Institution of Mechanical Engineers",
+            "url": "https://imeche.org/events/formula-student/about-formula-student/the-challenge",
+            "quote": "demonstrate your technical, engineering design, and manufacturing skills",
+            "accessed": "2026-10-20"
+          },
+          {
+            "title": "Skills-based CV examples",
+            "publisher": "Oxford Brookes University",
+            "url": "https://www.brookes.ac.uk/getmedia/e485d0d7-6d11-4f5a-8fd4-6711643ebd52/skills-based-cv-examples.pdf",
+            "quote": "Participating in Formula Student, I learnt how to work in groups through listening to",
+            "accessed": "2026-10-20"
+          }
+        ]
+      },
+      {
+        "id": "PB-ENG-S05",
+        "text": "Shows teamwork and explaining technical work to non-specialists through real examples.",
+        "grade": "B",
+        "basis": "evidence (careers publisher + professional body)",
+        "ruleIds": [
+          "ENG-06"
+        ],
+        "sources": [
+          {
+            "title": "How to write the perfect engineering CV and cover letter",
+            "publisher": "TARGETjobs",
+            "url": "https://targetjobs.co.uk/careers-advice/engineering/cvs-and-covering-letters-convince-engineering-recruiters-youre-perfect-their-graduate-job",
+            "quote": "explaining technical information to non-technical colleagues",
+            "accessed": "2026-10-20"
+          },
+          {
+            "title": "The Formula Student challenge",
+            "publisher": "Institution of Mechanical Engineers",
+            "url": "https://imeche.org/events/formula-student/about-formula-student/the-challenge",
+            "quote": "important lessons on team working, time management, project management, budgeting and presentation",
+            "accessed": "2026-10-20"
+          }
+        ]
+      },
+      {
+        "id": "PB-ENG-S06",
+        "text": "Names a professional body student membership with its grade.",
+        "grade": "C",
+        "basis": "careers-service template + professional body",
+        "ruleIds": [
+          "STM-03"
+        ],
+        "sources": [
+          {
+            "title": "STEM Placements and Internships CV Example",
+            "publisher": "University of Brighton",
+            "url": "https://blogs.brighton.ac.uk/stemplacements/files/2022/09/CV-EXAMPLE-GUIDE-STEM.pdf",
+            "quote": "Society Memberships: Institute of Chartered Engineering – Student Member",
+            "accessed": "2026-10-20"
+          },
+          {
+            "title": "Free Affiliate Membership for Formula Student participants",
+            "publisher": "Institution of Mechanical Engineers",
+            "url": "https://imeche.org/news/news-article/free-affiliate-membership-for-fs-challenge-participants",
+            "quote": "Affiliate membership also brings many benefits to undergraduate engineering students",
+            "accessed": "2026-10-20"
+          }
+        ]
+      },
+      {
+        "id": "PB-ENG-S07",
+        "text": "Shows health and safety training or a safety action in technical work.",
+        "grade": "C",
+        "basis": "careers-service template",
+        "ruleIds": [
+          "ENG-04"
+        ],
+        "sources": [
+          {
+            "title": "STEM Placements and Internships CV Example",
+            "publisher": "University of Brighton",
+            "url": "https://blogs.brighton.ac.uk/stemplacements/files/2022/09/CV-EXAMPLE-GUIDE-STEM.pdf",
+            "quote": "Received training in health and safety working with food and in an airport",
+            "accessed": "2026-10-20"
+          }
+        ]
+      },
+      {
+        "id": "PB-ENG-S08",
+        "text": "Shows hands-on workshop, manufacturing or build skills tied to where they were used.",
+        "grade": "B",
+        "basis": "evidence (two university careers services)",
+        "ruleIds": [
+          "ENG-03"
+        ],
+        "sources": [
+          {
+            "title": "STEM Placements and Internships CV Example",
+            "publisher": "University of Brighton",
+            "url": "https://blogs.brighton.ac.uk/stemplacements/files/2022/09/CV-EXAMPLE-GUIDE-STEM.pdf",
+            "quote": "Subject specific technical knowledge: SolidWorks, AutoCAD, SolidCam, CNC Machining; milling, facing, drilling, and turning",
+            "accessed": "2026-10-20"
+          },
+          {
+            "title": "Skills-based CV examples",
+            "publisher": "Oxford Brookes University",
+            "url": "https://www.brookes.ac.uk/getmedia/e485d0d7-6d11-4f5a-8fd4-6711643ebd52/skills-based-cv-examples.pdf",
+            "quote": "Made and installed the wiring looms and sensors for both class 1 and 1A cars.",
+            "accessed": "2026-10-20"
+          }
+        ]
+      }
+    ],
+    "actions": [
+      {
+        "id": "PB-ENG-P01",
+        "type": "project",
+        "title": "Model and draw a real part in CAD",
+        "description": "Pick an object you own (a bracket, a hinge, a bike part), measure it, model it in CAD and produce a dimensioned engineering drawing.",
+        "skills": [
+          "SolidWorks",
+          "Fusion 360",
+          "GD&T"
+        ],
+        "signals": [
+          "PB-ENG-S01",
+          "PB-ENG-S02"
+        ],
+        "effort": "weekend",
+        "minYear": "1st",
+        "kind": "build",
+        "signalValue": "cv_medium",
+        "evidence": "Drawing PDF and renders; one CV line naming the tool and the part.",
+        "sources": [
+          {
+            "title": "STEM Placements and Internships CV Example",
+            "publisher": "University of Brighton",
+            "url": "https://blogs.brighton.ac.uk/stemplacements/files/2022/09/CV-EXAMPLE-GUIDE-STEM.pdf",
+            "quote": "Subject specific technical knowledge: SolidWorks, AutoCAD, SolidCam, CNC Machining; milling, facing, drilling, and turning",
+            "accessed": "2026-10-20"
+          }
+        ]
+      },
+      {
+        "id": "PB-ENG-P02",
+        "type": "project",
+        "title": "Run an FEA or CFD check on a design-project part",
+        "description": "Take a part from your group design project, run a simple finite element (or CFD) study, compare it with a hand calculation, and write down what you changed because of it.",
+        "skills": [
+          "FEA",
+          "ANSYS",
+          "SolidWorks"
+        ],
+        "signals": [
+          "PB-ENG-S02",
+          "PB-ENG-S01"
+        ],
+        "effort": "2-4 weeks",
+        "minYear": "2nd",
+        "kind": "build",
+        "signalValue": "cv_high",
+        "evidence": "A one-page summary with the load case, the result and the design change (ENG-02).",
+        "sources": [
+          {
+            "title": "Skills-based CV examples",
+            "publisher": "Oxford Brookes University",
+            "url": "https://www.brookes.ac.uk/getmedia/e485d0d7-6d11-4f5a-8fd4-6711643ebd52/skills-based-cv-examples.pdf",
+            "quote": "Carried out FEA (Finite Element Analysis) in SolidWorks to analyse the stresses",
+            "accessed": "2026-10-20"
+          }
+        ]
+      },
+      {
+        "id": "PB-ENG-P03",
+        "type": "project",
+        "title": "Build and test an Arduino project",
+        "description": "Build something small that senses and acts (a data logger, a line follower, a plant-watering rig), test it, and note what failed and how you fixed it.",
+        "skills": [
+          "Arduino",
+          "C"
+        ],
+        "signals": [
+          "PB-ENG-S04",
+          "PB-ENG-S08"
+        ],
+        "effort": "2-4 weeks",
+        "minYear": "1st",
+        "kind": "build",
+        "signalValue": "cv_medium",
+        "cost": "Hardware costs only",
+        "evidence": "Photo or short video, wiring diagram and code; a CV line with what it does and one test result.",
+        "url": "https://docs.arduino.cc/learn/starting-guide/getting-started-arduino/",
+        "verified": true,
+        "sources": [
+          {
+            "title": "Getting started with Arduino",
+            "publisher": "Arduino",
+            "url": "https://docs.arduino.cc/learn/starting-guide/getting-started-arduino/",
+            "quote": "An introduction to hardware, software tools, and the Arduino API.",
+            "accessed": "2026-10-20"
+          }
+        ]
+      },
+      {
+        "id": "PB-ENG-P04",
+        "type": "project",
+        "title": "Write up your group design project as a CV entry",
+        "description": "Turn your group design project into a CV entry: your own part or component, the tools or method, and a technical outcome such as a test result, a spec met or the mark.",
+        "skills": [],
+        "signals": [
+          "PB-ENG-S02",
+          "PB-ENG-S05"
+        ],
+        "effort": "weekend",
+        "minYear": "1st",
+        "kind": "build",
+        "signalValue": "cv_medium",
+        "evidence": "Three bullets that pass ENG-02 and ENG-06.",
+        "sources": [
+          {
+            "title": "How to write the perfect engineering CV and cover letter",
+            "publisher": "TARGETjobs",
+            "url": "https://targetjobs.co.uk/careers-advice/engineering/cvs-and-covering-letters-convince-engineering-recruiters-youre-perfect-their-graduate-job",
+            "quote": "information on group projects and your dissertation, any modules relevant to the job, and relevant academic awards",
+            "accessed": "2026-10-20"
+          }
+        ]
+      },
+      {
+        "id": "PB-ENG-P05",
+        "type": "project",
+        "title": "Write the risk assessment for a test or build",
+        "description": "Next time your team tests or builds something, offer to write the risk assessment and brief the team on it.",
+        "skills": [],
+        "signals": [
+          "PB-ENG-S07"
+        ],
+        "effort": "weekend",
+        "minYear": "2nd",
+        "kind": "build",
+        "signalValue": "cv_low",
+        "evidence": "A CV line saying what you assessed and what happened (ENG-04).",
+        "sources": [
+          {
+            "title": "STEM Placements and Internships CV Example",
+            "publisher": "University of Brighton",
+            "url": "https://blogs.brighton.ac.uk/stemplacements/files/2022/09/CV-EXAMPLE-GUIDE-STEM.pdf",
+            "quote": "Received training in health and safety working with food and in an airport",
+            "accessed": "2026-10-20"
+          }
+        ]
+      },
+      {
+        "id": "PB-ENG-P06",
+        "type": "project",
+        "title": "Analyse lab or test data in MATLAB or Python",
+        "description": "Take the data from a lab or rig test, plot and fit it in MATLAB or Python, and compare it with the theory from the module.",
+        "skills": [
+          "MATLAB",
+          "Python"
+        ],
+        "signals": [
+          "PB-ENG-S01"
+        ],
+        "effort": "2-4 weeks",
+        "minYear": "1st",
+        "kind": "build",
+        "signalValue": "cv_medium",
+        "evidence": "Script and plots; a CV line naming the tool and what you found.",
+        "sources": [
+          {
+            "title": "STEM Placements and Internships CV Example",
+            "publisher": "University of Brighton",
+            "url": "https://blogs.brighton.ac.uk/stemplacements/files/2022/09/CV-EXAMPLE-GUIDE-STEM.pdf",
+            "quote": "Subject specific technical knowledge: SolidWorks, AutoCAD, SolidCam, CNC Machining; milling, facing, drilling, and turning",
+            "accessed": "2026-10-20"
+          }
+        ]
+      },
+      {
+        "id": "PB-ENG-C01",
+        "type": "course",
+        "title": "MATLAB Onramp",
+        "description": "MathWorks' introductory MATLAB tutorial. Learning value high; no CV signal by itself.",
+        "skills": [
+          "MATLAB"
+        ],
+        "signals": [
+          "PB-ENG-S01"
+        ],
+        "effort": "weekend",
+        "minYear": "1st",
+        "kind": "build",
+        "signalValue": "cv_low",
+        "evidence": "Supports PB-ENG-P06",
+        "url": "https://matlabacademy.mathworks.com/details/matlab-onramp/gettingstarted",
+        "verified": true,
+        "sources": [
+          {
+            "title": "MATLAB Onramp",
+            "publisher": "MathWorks",
+            "url": "https://matlabacademy.mathworks.com/details/matlab-onramp/gettingstarted",
+            "quote": "Learn the basics of MATLAB® through this introductory tutorial on commonly used features and workflows.",
+            "accessed": "2026-10-20"
+          }
+        ]
+      },
+      {
+        "id": "PB-ENG-C02",
+        "type": "course",
+        "title": "Simulink Onramp",
+        "description": "MathWorks' introductory Simulink tutorial on building and simulating models. Learning only.",
+        "skills": [
+          "Simulink",
+          "MATLAB"
+        ],
+        "signals": [
+          "PB-ENG-S01"
+        ],
+        "effort": "weekend",
+        "minYear": "1st",
+        "kind": "build",
+        "signalValue": "cv_low",
+        "evidence": "Supports a controls or dynamics project",
+        "url": "https://matlabacademy.mathworks.com/details/simulink-onramp/simulink",
+        "verified": true,
+        "sources": [
+          {
+            "title": "Simulink Onramp",
+            "publisher": "MathWorks",
+            "url": "https://matlabacademy.mathworks.com/details/simulink-onramp/simulink",
+            "quote": "Learn the basics of how to create, edit, and simulate models in Simulink®.",
+            "accessed": "2026-10-20"
+          }
+        ]
+      },
+      {
+        "id": "PB-ENG-C03",
+        "type": "course",
+        "title": "SOLIDWORKS Design Associate (CSWA) exam",
+        "description": "A three-hour practical CAD exam. Worth it only once you can already model parts; list it as 'CSWA' next to SolidWorks.",
+        "skills": [
+          "SolidWorks"
+        ],
+        "signals": [
+          "PB-ENG-S01"
+        ],
+        "effort": "2-4 weeks",
+        "minYear": "1st",
+        "kind": "build",
+        "signalValue": "cv_medium",
+        "cost": "Paid exam (one credit per attempt)",
+        "evidence": "Certificate ID on your CV next to SolidWorks (ENG-01).",
+        "url": "https://www.solidworks.com/certifications/cswa-design-associate",
+        "verified": true,
+        "sources": [
+          {
+            "title": "SOLIDWORKS Design Associate (CSWA)",
+            "publisher": "Dassault Systèmes SOLIDWORKS",
+            "url": "https://www.solidworks.com/certifications/cswa-design-associate",
+            "quote": "The CSWA certification is proof of your SOLIDWORKS® expertise with cutting-edge skills that businesses seek out and reward.",
+            "accessed": "2026-10-20"
+          }
+        ]
+      },
+      {
+        "id": "PB-ENG-C04",
+        "type": "course",
+        "title": "Learn Fusion with Autodesk's free education access",
+        "description": "Students get free educational access to Autodesk software, including Fusion, for CAD and CAM practice.",
+        "skills": [
+          "Fusion 360"
+        ],
+        "signals": [
+          "PB-ENG-S01"
+        ],
+        "effort": "weekend",
+        "minYear": "1st",
+        "kind": "build",
+        "signalValue": "cv_low",
+        "cost": "Free",
+        "evidence": "Supports PB-ENG-P01",
+        "url": "https://www.autodesk.com/education/edu-software/overview",
+        "verified": true,
+        "sources": [
+          {
+            "title": "Free educational access to Autodesk products",
+            "publisher": "Autodesk",
+            "url": "https://www.autodesk.com/education/edu-software/overview",
+            "quote": "We offer students, educators, and school IT administrators free educational access to Autodesk products and services.",
+            "accessed": "2026-10-20"
+          }
+        ]
+      },
+      {
+        "id": "PB-ENG-E01",
+        "type": "experience",
+        "title": "Join Formula Student or another engineering competition team",
+        "description": "Join your university's Formula Student (or rocketry, robotics or solar car) team and own one component or task.",
+        "skills": [],
+        "signals": [
+          "PB-ENG-S04",
+          "PB-ENG-S02",
+          "PB-ENG-S05"
+        ],
+        "effort": "term",
+        "minYear": "1st",
+        "kind": "build",
+        "signalValue": "cv_high",
+        "evergreen": true,
+        "evidence": "A CV entry with your sub-team, your component and a result (ENG-02, ENG-05).",
+        "url": "https://imeche.org/events/formula-student/about-formula-student/the-challenge",
+        "verified": true,
+        "sources": [
+          {
+            "title": "The Formula Student challenge",
+            "publisher": "Institution of Mechanical Engineers",
+            "url": "https://imeche.org/events/formula-student/about-formula-student/the-challenge",
+            "quote": "demonstrate your technical, engineering design, and manufacturing skills",
+            "accessed": "2026-10-20"
+          },
+          {
+            "title": "The Formula Student challenge",
+            "publisher": "Institution of Mechanical Engineers",
+            "url": "https://imeche.org/events/formula-student/about-formula-student/the-challenge",
+            "quote": "important lessons on team working, time management, project management, budgeting and presentation",
+            "accessed": "2026-10-20"
+          }
+        ]
+      },
+      {
+        "id": "PB-ENG-E02",
+        "type": "experience",
+        "title": "Join or start an Engineers Without Borders UK chapter",
+        "description": "Take part in your chapter's projects or the design challenge it runs.",
+        "skills": [],
+        "signals": [
+          "PB-ENG-S04",
+          "PB-ENG-S05"
+        ],
+        "effort": "term",
+        "minYear": "1st",
+        "kind": "build",
+        "signalValue": "cv_medium",
+        "evergreen": true,
+        "evidence": "A CV entry with your role and what the team delivered.",
+        "url": "https://www.ewb-uk.org/student-chapters/",
+        "verified": true,
+        "sources": [
+          {
+            "title": "Student chapters",
+            "publisher": "Engineers Without Borders UK",
+            "url": "https://www.ewb-uk.org/student-chapters/",
+            "quote": "University student Chapters are advocating for globally responsible practice through extra curricular activities.",
+            "accessed": "2026-10-20"
+          }
+        ]
+      },
+      {
+        "id": "PB-ENG-E03",
+        "type": "experience",
+        "title": "Volunteer as a STEM Ambassador",
+        "description": "Explain engineering to school pupils at events. Good evidence for explaining technical ideas to non-specialists.",
+        "skills": [],
+        "signals": [
+          "PB-ENG-S05"
+        ],
+        "effort": "term",
+        "minYear": "1st",
+        "kind": "build",
+        "signalValue": "cv_low",
+        "cost": "Free",
+        "evergreen": true,
+        "evidence": "A line with what you ran and for whom (ENG-06).",
+        "url": "https://www.stem.org.uk/stem-ambassadors",
+        "verified": true,
+        "sources": [
+          {
+            "title": "STEM Ambassadors",
+            "publisher": "STEM Learning",
+            "url": "https://www.stem.org.uk/stem-ambassadors",
+            "quote": "Our STEM Ambassador programme supports a network of thousands of amazing volunteers to bring real-life examples of STEM careers into schools, colleges, and universities across the UK.",
+            "accessed": "2026-10-20"
+          }
+        ]
+      },
+      {
+        "id": "PB-ENG-E04",
+        "type": "experience",
+        "title": "Join your discipline's institution as a student member",
+        "description": "Join IMechE, the IET, ICE or IChemE as a student and go to one local event. Write the grade in full on your CV, never 'MIMechE'.",
+        "skills": [],
+        "signals": [
+          "PB-ENG-S06"
+        ],
+        "effort": "weekend",
+        "minYear": "1st",
+        "kind": "build",
+        "signalValue": "cv_low",
+        "cost": "IET: £36 for the length of your course; IMechE affiliate membership is offered to students",
+        "evergreen": true,
+        "evidence": "'Student member, Institution of Engineering and Technology' (STM-02, STM-03).",
+        "url": "https://www.theiet.org/membership/become-a-member/student-membership",
+        "verified": true,
+        "sources": [
+          {
+            "title": "Student membership",
+            "publisher": "The IET",
+            "url": "https://www.theiet.org/membership/become-a-member/student-membership",
+            "quote": "Student membership is £36 for the duration of your course.",
+            "accessed": "2026-10-20"
+          },
+          {
+            "title": "Free Affiliate Membership for Formula Student participants",
+            "publisher": "Institution of Mechanical Engineers",
+            "url": "https://imeche.org/news/news-article/free-affiliate-membership-for-fs-challenge-participants",
+            "quote": "Affiliate membership also brings many benefits to undergraduate engineering students",
+            "accessed": "2026-10-20"
+          }
+        ]
+      },
+      {
+        "id": "PB-ENG-E05",
+        "type": "experience",
+        "title": "EDT placements with STEM employers",
+        "description": "The Engineering Development Trust places students with UK STEM companies, paid by the employer.",
+        "skills": [],
+        "signals": [
+          "PB-ENG-S02",
+          "PB-ENG-S08"
+        ],
+        "effort": "term",
+        "minYear": "2nd",
+        "kind": "opportunity",
+        "signalValue": "cv_high",
+        "commitment": "Application and interview; placements usually start in the summer.",
+        "eligibility": "Mainly school and college leavers; a limited number of places for undergraduates looking for a placement year.",
+        "evergreen": true,
+        "evidence": "A placement entry with your project and a result.",
+        "url": "https://www.etrust.org.uk/programmes-platinum-placements",
+        "verified": true,
+        "sources": [
+          {
+            "title": "Platinum Placements (The Year in Industry)",
+            "publisher": "Engineering Development Trust",
+            "url": "https://www.etrust.org.uk/programmes-platinum-placements",
+            "quote": "We work with STEM companies across the UK to provide placement opportunities for school and college leavers.",
+            "accessed": "2026-10-20"
+          }
+        ]
+      }
+    ],
+    "yearGuidance": {
+      "1st": "Learn one CAD tool properly and join an engineering society or competition team. Keep your first-year module marks; placement screeners ask for them.",
+      "2nd": "Placement-year applications open early in your second year. Write up your group design project with your part, the method and a result, and list relevant modules with marks.",
+      "penultimate": "Aim for a summer internship or a placement. Lead with your best design, build or test project, then your technical skills section.",
+      "final": "Graduate schemes look for one project you can explain in depth: your dissertation or final-year design project, with your part, the method and the result.",
+      "masters": "Put your MEng or MSc project first, with the tools and the technical result, and say if your degree is accredited (for example 'MEng, IMechE-accredited')."
+    },
+    "yearGuidanceDated": []
+  },
+  "science_pharma": {
+    "signals": [
+      {
+        "id": "PB-SCI-S01",
+        "text": "Names specific lab techniques and instruments in a labelled section.",
+        "grade": "B",
+        "basis": "evidence (employer advert + careers service)",
+        "ruleIds": [
+          "SCI-01"
+        ],
+        "sources": [
+          {
+            "title": "12 Month University Industrial Placement Student (UIPS): Analytical Chemistry",
+            "publisher": "AstraZeneca (WORK180 listing)",
+            "url": "https://work180.com/en-gb/for-women/employer/astrazeneca-uk/job/646218/12-month-university-industrial-placement-stud",
+            "quote": "chromatographic (HPLC, GC, CE, SFC), spectroscopic (NMR UV, FTIR)",
+            "accessed": "2026-10-20"
+          },
+          {
+            "title": "Sample CV: Biomedical Sciences with Industrial Placement",
+            "publisher": "University of Aberdeen Careers",
+            "url": "https://abdn.ac.uk/uploads/careers/resources/documents/4185.pdf",
+            "quote": "Developed practical lab skills including DNA extraction, PCR, ELISA & Gel electrophoresis.",
+            "accessed": "2026-10-20"
+          }
+        ]
+      },
+      {
+        "id": "PB-SCI-S02",
+        "text": "Says where each technique was used and how independently.",
+        "grade": "B",
+        "basis": "evidence (two university careers services)",
+        "ruleIds": [
+          "SCI-02"
+        ],
+        "sources": [
+          {
+            "title": "Example technical skills CV",
+            "publisher": "University of Nottingham Careers",
+            "url": "https://www.nottingham.ac.uk/careers/documents/students/example-cvs-cls/technicalskills2025.pdf",
+            "quote": "Experienced in carrying out procedures including:",
+            "accessed": "2026-10-20"
+          },
+          {
+            "title": "Sample CV: Biomedical Sciences with Industrial Placement",
+            "publisher": "University of Aberdeen Careers",
+            "url": "https://abdn.ac.uk/uploads/careers/resources/documents/4185.pdf",
+            "quote": "Competent in laboratory techniques such as pipetting, microscopy, staining and colorimetry.",
+            "accessed": "2026-10-20"
+          }
+        ]
+      },
+      {
+        "id": "PB-SCI-S03",
+        "text": "Writes up a lab or research project with its result or mark.",
+        "grade": "C",
+        "basis": "careers-service example CV",
+        "ruleIds": [
+          "SCI-03"
+        ],
+        "sources": [
+          {
+            "title": "Example technical skills CV",
+            "publisher": "University of Nottingham Careers",
+            "url": "https://www.nottingham.ac.uk/careers/documents/students/example-cvs-cls/technicalskills2025.pdf",
+            "quote": "The report received a grade of 64%.",
+            "accessed": "2026-10-20"
+          }
+        ]
+      },
+      {
+        "id": "PB-SCI-S04",
+        "text": "Shows GLP or GMP exposure, or work to written protocols.",
+        "grade": "C",
+        "basis": "employer advert",
+        "ruleIds": [
+          "SCI-04"
+        ],
+        "sources": [
+          {
+            "title": "12 Month University Industrial Placement Student (UIPS): Analytical Chemistry",
+            "publisher": "AstraZeneca (WORK180 listing)",
+            "url": "https://work180.com/en-gb/for-women/employer/astrazeneca-uk/job/646218/12-month-university-industrial-placement-stud",
+            "quote": "Good Manufacturing Practice (GMP), Good Laboratory Practice (GLP)",
+            "accessed": "2026-10-20"
+          }
+        ]
+      },
+      {
+        "id": "PB-SCI-S05",
+        "text": "Lists relevant modules with marks.",
+        "grade": "B",
+        "basis": "evidence (two university careers services)",
+        "ruleIds": [
+          "STM-01"
+        ],
+        "sources": [
+          {
+            "title": "Example technical skills CV",
+            "publisher": "University of Nottingham Careers",
+            "url": "https://www.nottingham.ac.uk/careers/documents/students/example-cvs-cls/technicalskills2025.pdf",
+            "quote": "Molecular biology, 62%",
+            "accessed": "2026-10-20"
+          },
+          {
+            "title": "STEM Placements and Internships CV Example",
+            "publisher": "University of Brighton",
+            "url": "https://blogs.brighton.ac.uk/stemplacements/files/2022/09/CV-EXAMPLE-GUIDE-STEM.pdf",
+            "quote": "Include your module marks as far as possible",
+            "accessed": "2026-10-20"
+          }
+        ]
+      },
+      {
+        "id": "PB-SCI-S06",
+        "text": "Follows lab safety procedures and can show it.",
+        "grade": "C",
+        "basis": "careers-service example CV",
+        "ruleIds": [
+          "SCI-05"
+        ],
+        "sources": [
+          {
+            "title": "Sample CV: Biomedical Sciences with Industrial Placement",
+            "publisher": "University of Aberdeen Careers",
+            "url": "https://abdn.ac.uk/uploads/careers/resources/documents/4185.pdf",
+            "quote": "consistently follow laboratory safety procedures.",
+            "accessed": "2026-10-20"
+          }
+        ]
+      },
+      {
+        "id": "PB-SCI-S07",
+        "text": "Communicates science: posters, talks or outreach.",
+        "grade": "C",
+        "basis": "careers-service example CV",
+        "ruleIds": [
+          "SCI-07"
+        ],
+        "sources": [
+          {
+            "title": "Sample CV: Biomedical Sciences with Industrial Placement",
+            "publisher": "University of Aberdeen Careers",
+            "url": "https://abdn.ac.uk/uploads/careers/resources/documents/4185.pdf",
+            "quote": "Produced an academic poster communicating research findings from the Energy for Life module.",
+            "accessed": "2026-10-20"
+          }
+        ]
+      },
+      {
+        "id": "PB-SCI-S08",
+        "text": "Names the software used to analyse results.",
+        "grade": "C",
+        "basis": "careers-service example CV",
+        "ruleIds": [
+          "SCI-06"
+        ],
+        "sources": [
+          {
+            "title": "Example technical skills CV",
+            "publisher": "University of Nottingham Careers",
+            "url": "https://www.nottingham.ac.uk/careers/documents/students/example-cvs-cls/technicalskills2025.pdf",
+            "quote": "IT skills – competent user of Microsoft Office, Matlab and SPSS",
+            "accessed": "2026-10-20"
+          }
+        ]
+      },
+      {
+        "id": "PB-SCI-S09",
+        "text": "Names a professional body student membership with its grade.",
+        "grade": "B",
+        "basis": "evidence (careers service + professional body)",
+        "ruleIds": [
+          "STM-03"
+        ],
+        "sources": [
+          {
+            "title": "Sample CV: Biomedical Sciences with Industrial Placement",
+            "publisher": "University of Aberdeen Careers",
+            "url": "https://abdn.ac.uk/uploads/careers/resources/documents/4185.pdf",
+            "quote": "Student member of The Physiological Society",
+            "accessed": "2026-10-20"
+          },
+          {
+            "title": "Student member",
+            "publisher": "Royal Society of Chemistry",
+            "url": "https://www.rsc.org/membership/membership-categories/student-member",
+            "quote": "Student membership costs are waived for all undergraduate students in the UK and Ireland and at all RSC-accredited institutions internationally.",
+            "accessed": "2026-10-20"
+          }
+        ]
+      }
+    ],
+    "actions": [
+      {
+        "id": "PB-SCI-P01",
+        "type": "project",
+        "title": "Write up your lab project like a job",
+        "description": "Turn your best practical or project into a CV entry: the aim, the techniques you used, your own part and the result (yield, purity, assay result or mark).",
+        "skills": [],
+        "signals": [
+          "PB-SCI-S03",
+          "PB-SCI-S01"
+        ],
+        "effort": "weekend",
+        "minYear": "1st",
+        "kind": "build",
+        "signalValue": "cv_medium",
+        "evidence": "Two or three bullets that pass SCI-03.",
+        "sources": [
+          {
+            "title": "Example technical skills CV",
+            "publisher": "University of Nottingham Careers",
+            "url": "https://www.nottingham.ac.uk/careers/documents/students/example-cvs-cls/technicalskills2025.pdf",
+            "quote": "The report received a grade of 64%.",
+            "accessed": "2026-10-20"
+          }
+        ]
+      },
+      {
+        "id": "PB-SCI-P02",
+        "type": "project",
+        "title": "Make a technique table: where and how independently",
+        "description": "List every technique on your CV next to where you used it and whether you ran it yourself or watched. Keep only the ones you could explain at interview.",
+        "skills": [],
+        "signals": [
+          "PB-SCI-S02",
+          "PB-SCI-S01"
+        ],
+        "effort": "weekend",
+        "minYear": "1st",
+        "kind": "build",
+        "signalValue": "cv_low",
+        "evidence": "A Laboratory Skills section that passes SCI-01 and SCI-02.",
+        "sources": [
+          {
+            "title": "Example technical skills CV",
+            "publisher": "University of Nottingham Careers",
+            "url": "https://www.nottingham.ac.uk/careers/documents/students/example-cvs-cls/technicalskills2025.pdf",
+            "quote": "Experienced in carrying out procedures including:",
+            "accessed": "2026-10-20"
+          },
+          {
+            "title": "Sample CV: Biomedical Sciences with Industrial Placement",
+            "publisher": "University of Aberdeen Careers",
+            "url": "https://abdn.ac.uk/uploads/careers/resources/documents/4185.pdf",
+            "quote": "Competent in laboratory techniques such as pipetting, microscopy, staining and colorimetry.",
+            "accessed": "2026-10-20"
+          }
+        ]
+      },
+      {
+        "id": "PB-SCI-P03",
+        "type": "project",
+        "title": "Analyse a practical's data in R or Python",
+        "description": "Take the raw data from a practical, redo the analysis in R or Python with a clear plot and the right statistical test, and compare it with your write-up.",
+        "skills": [
+          "R",
+          "Python",
+          "Statistics"
+        ],
+        "signals": [
+          "PB-SCI-S08"
+        ],
+        "effort": "2-4 weeks",
+        "minYear": "1st",
+        "kind": "build",
+        "signalValue": "cv_medium",
+        "evidence": "Script and plot; a CV line naming the tool and what it was for (SCI-06).",
+        "sources": [
+          {
+            "title": "Example technical skills CV",
+            "publisher": "University of Nottingham Careers",
+            "url": "https://www.nottingham.ac.uk/careers/documents/students/example-cvs-cls/technicalskills2025.pdf",
+            "quote": "IT skills – competent user of Microsoft Office, Matlab and SPSS",
+            "accessed": "2026-10-20"
+          }
+        ]
+      },
+      {
+        "id": "PB-SCI-P04",
+        "type": "project",
+        "title": "Fit a calibration or dose-response curve in GraphPad Prism",
+        "description": "Use data from a practical to fit a calibration line or a dose-response curve, and report the fitted value with its uncertainty.",
+        "skills": [
+          "GraphPad Prism"
+        ],
+        "signals": [
+          "PB-SCI-S08"
+        ],
+        "effort": "weekend",
+        "minYear": "2nd",
+        "kind": "build",
+        "signalValue": "cv_low",
+        "evidence": "A CV line naming Prism and what you fitted.",
+        "sources": [
+          {
+            "title": "Example technical skills CV",
+            "publisher": "University of Nottingham Careers",
+            "url": "https://www.nottingham.ac.uk/careers/documents/students/example-cvs-cls/technicalskills2025.pdf",
+            "quote": "IT skills – competent user of Microsoft Office, Matlab and SPSS",
+            "accessed": "2026-10-20"
+          }
+        ]
+      },
+      {
+        "id": "PB-SCI-P05",
+        "type": "project",
+        "title": "Turn a module project into a poster",
+        "description": "Make a one-page poster of a module or lab project and present it at a departmental or society event.",
+        "skills": [
+          "Poster Presentation"
+        ],
+        "signals": [
+          "PB-SCI-S07"
+        ],
+        "effort": "2-4 weeks",
+        "minYear": "1st",
+        "kind": "build",
+        "signalValue": "cv_medium",
+        "evidence": "Poster PDF and a line under Presentations (SCI-07).",
+        "sources": [
+          {
+            "title": "Sample CV: Biomedical Sciences with Industrial Placement",
+            "publisher": "University of Aberdeen Careers",
+            "url": "https://abdn.ac.uk/uploads/careers/resources/documents/4185.pdf",
+            "quote": "Produced an academic poster communicating research findings from the Energy for Life module.",
+            "accessed": "2026-10-20"
+          }
+        ]
+      },
+      {
+        "id": "PB-SCI-P06",
+        "type": "project",
+        "title": "Write the COSHH assessment for your project",
+        "description": "Ask your supervisor if you can draft the COSHH or risk assessment for your project's reagents, then have it checked.",
+        "skills": [],
+        "signals": [
+          "PB-SCI-S06"
+        ],
+        "effort": "weekend",
+        "minYear": "2nd",
+        "kind": "build",
+        "signalValue": "cv_low",
+        "evidence": "A CV line saying what you assessed (SCI-05).",
+        "sources": [
+          {
+            "title": "Sample CV: Biomedical Sciences with Industrial Placement",
+            "publisher": "University of Aberdeen Careers",
+            "url": "https://abdn.ac.uk/uploads/careers/resources/documents/4185.pdf",
+            "quote": "consistently follow laboratory safety procedures.",
+            "accessed": "2026-10-20"
+          }
+        ]
+      },
+      {
+        "id": "PB-SCI-C01",
+        "type": "course",
+        "title": "Data Carpentry lessons (R or Python)",
+        "description": "Free lessons on data organisation, cleaning and analysis for scientists. Learning value high; no CV signal by itself.",
+        "skills": [
+          "R",
+          "Python"
+        ],
+        "signals": [
+          "PB-SCI-S08"
+        ],
+        "effort": "2-4 weeks",
+        "minYear": "1st",
+        "kind": "build",
+        "signalValue": "cv_low",
+        "cost": "Free",
+        "evidence": "Supports PB-SCI-P03",
+        "url": "https://datacarpentry.org/lessons/",
+        "verified": true,
+        "sources": [
+          {
+            "title": "Data Carpentry lessons",
+            "publisher": "The Carpentries",
+            "url": "https://datacarpentry.org/lessons/",
+            "quote": "The Ecology workshop can be taught using R or Python as the base language.",
+            "accessed": "2026-10-20"
+          }
+        ]
+      },
+      {
+        "id": "PB-SCI-E01",
+        "type": "experience",
+        "title": "Join the RSC or RSB as a student",
+        "description": "Join the Royal Society of Chemistry (no cost for UK and Irish undergraduates) or the Royal Society of Biology as a student, and go to one local section event. Write the grade in full on your CV, never 'MRSC'.",
+        "skills": [],
+        "signals": [
+          "PB-SCI-S09"
+        ],
+        "effort": "weekend",
+        "minYear": "1st",
+        "kind": "build",
+        "signalValue": "cv_low",
+        "cost": "RSC: free for UK and Irish undergraduates",
+        "evergreen": true,
+        "evidence": "'Student member, Royal Society of Chemistry' (STM-02, STM-03).",
+        "url": "https://www.rsc.org/membership/membership-categories/student-member",
+        "verified": true,
+        "sources": [
+          {
+            "title": "Student member",
+            "publisher": "Royal Society of Chemistry",
+            "url": "https://www.rsc.org/membership/membership-categories/student-member",
+            "quote": "Student membership costs are waived for all undergraduate students in the UK and Ireland and at all RSC-accredited institutions internationally.",
+            "accessed": "2026-10-20"
+          },
+          {
+            "title": "Student affiliate membership",
+            "publisher": "Royal Society of Biology",
+            "url": "https://www.rsb.org.uk/join-student-affiliate.html",
+            "quote": "If you are a full time undergraduate student studying the biosciences, then become a student affiliate member.",
+            "accessed": "2026-10-20"
+          }
+        ]
+      },
+      {
+        "id": "PB-SCI-E02",
+        "type": "experience",
+        "title": "RSC Undergraduate Research Bursary",
+        "description": "Funds a paid summer research placement in a chemistry-related group. The 2027 round opens on 7 December 2026 and closes on 8 February 2027.",
+        "skills": [],
+        "signals": [
+          "PB-SCI-S03",
+          "PB-SCI-S01"
+        ],
+        "effort": "term",
+        "minYear": "2nd",
+        "maxYear": "penultimate",
+        "kind": "opportunity",
+        "signalValue": "cv_high",
+        "commitment": "6–8 weeks of summer research, paid at an hourly rate.",
+        "eligibility": "Middle years of a first undergraduate degree at a UK or Irish university; RSC membership needed (free for UK students).",
+        "evidence": "A research placement entry with techniques and a result (SCI-03, SCI-08).",
+        "url": "https://www.rsc.org/funding-and-support/funding/undergraduate-research-bursaries",
+        "verified": true,
+        "reviewBy": "2027-02-08",
+        "sources": [
+          {
+            "title": "Undergraduate Research Bursaries",
+            "publisher": "Royal Society of Chemistry",
+            "url": "https://www.rsc.org/funding-and-support/funding/undergraduate-research-bursaries",
+            "quote": "We offer bursaries to fund undergraduate summer research placements in chemistry-related research areas, for both lab-based and remote projects.",
+            "accessed": "2026-10-20"
+          }
+        ]
+      },
+      {
+        "id": "PB-SCI-E03",
+        "type": "experience",
+        "title": "Biochemical Society Summer Vacation Studentship",
+        "description": "Funds a 6-week summer placement in a biochemistry or related lab. The next round is expected to open at the end of February 2027.",
+        "skills": [],
+        "signals": [
+          "PB-SCI-S03",
+          "PB-SCI-S01"
+        ],
+        "effort": "term",
+        "minYear": "2nd",
+        "kind": "opportunity",
+        "signalValue": "cv_high",
+        "commitment": "6 weeks of summer lab work.",
+        "eligibility": "Undergraduates in biochemistry or related subjects; you need to have been a Society member for a set time before applying.",
+        "evidence": "A research placement entry with techniques and a result (SCI-03, SCI-08).",
+        "url": "https://www.biochemistry.org/grants-and-awards/grants-and-bursaries/summer-vacation-studentships/",
+        "verified": true,
+        "reviewBy": "2027-03-31",
+        "sources": [
+          {
+            "title": "Summer Vacation Studentships",
+            "publisher": "Biochemical Society",
+            "url": "https://www.biochemistry.org/grants-and-awards/grants-and-bursaries/summer-vacation-studentships/",
+            "quote": "The Biochemical Society's Summer Vacation Studentship scheme funds 6 week summer placements for undergraduate students in biochemistry and related subjects.",
+            "accessed": "2026-10-20"
+          }
+        ]
+      },
+      {
+        "id": "PB-SCI-E04",
+        "type": "experience",
+        "title": "Volunteer as a STEM Ambassador",
+        "description": "Run science activities with school pupils. Good evidence for explaining science to non-specialists.",
+        "skills": [],
+        "signals": [
+          "PB-SCI-S07"
+        ],
+        "effort": "term",
+        "minYear": "1st",
+        "kind": "build",
+        "signalValue": "cv_low",
+        "cost": "Free",
+        "evergreen": true,
+        "evidence": "A line with what you ran and for whom (SCI-07).",
+        "url": "https://www.stem.org.uk/stem-ambassadors",
+        "verified": true,
+        "sources": [
+          {
+            "title": "STEM Ambassadors",
+            "publisher": "STEM Learning",
+            "url": "https://www.stem.org.uk/stem-ambassadors",
+            "quote": "Our STEM Ambassador programme supports a network of thousands of amazing volunteers to bring real-life examples of STEM careers into schools, colleges, and universities across the UK.",
+            "accessed": "2026-10-20"
+          }
+        ]
+      },
+      {
+        "id": "PB-SCI-E05",
+        "type": "experience",
+        "title": "Ask for a summer lab placement in a university group",
+        "description": "Email two or three academics whose work you know from lectures and ask about summer lab work. Say which techniques you have used.",
+        "skills": [],
+        "signals": [
+          "PB-SCI-S03",
+          "PB-SCI-S01",
+          "PB-SCI-S02"
+        ],
+        "effort": "term",
+        "minYear": "1st",
+        "kind": "build",
+        "signalValue": "cv_high",
+        "evidence": "A placement entry with the techniques you ran and a result (SCI-02, SCI-03).",
+        "sources": [
+          {
+            "title": "Research scientist (physical sciences) (job profile)",
+            "publisher": "Prospects (Jisc)",
+            "url": "https://www.prospects.ac.uk/job-profiles/research-scientist-physical-sciences",
+            "quote": "Some scientific organisations offer research-based summer placements for undergraduate students and you may also be able to get work experience in a university research department.",
+            "accessed": "2026-10-20"
+          }
+        ]
+      }
+    ],
+    "yearGuidance": {
+      "1st": "Keep a list of every technique you use in practicals, where, and whether you ran it yourself. Keep your first-year module marks; placement screeners ask for them.",
+      "2nd": "Placement-year applications at pharma and biotech firms open early in your second year. Lead with named techniques and one lab project with a result.",
+      "penultimate": "Aim for a summer studentship, a bursary-funded project or an industrial placement. Lead with your lab project and the techniques you ran independently.",
+      "final": "Graduate and lab roles look for your final-year project: the aim, the techniques, your part and the result. Show protocol and data discipline.",
+      "masters": "Put your research project first, with the techniques, the instruments and the result. For industry roles, keep publications after the project, not before."
+    },
+    "yearGuidanceDated": []
   }
 }

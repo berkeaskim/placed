@@ -9,6 +9,7 @@ import type { AwardResult } from "@/lib/gamify/core";
 import { quizToArchetypes } from "@/lib/ai/quizToArchetypes";
 import { QUESTIONS } from "@/lib/quiz/questions";
 import { quizMayWriteArchetypes, roleCards, type RoleCard } from "@/lib/quiz/view";
+import { withFieldPrior } from "@/lib/profile/field-prior";
 
 export type SubmitQuizResult =
   | { ok: true; award: AwardResult | null; roles: RoleCard[]; skills: string[]; keptCvRoles: boolean }
@@ -33,8 +34,9 @@ export async function submitQuiz(answers: Record<string, string>): Promise<Submi
 
   let write: boolean;
   try {
-    const prof = db.select({ target_archetype: profiles.target_archetype }).from(profiles).where(eq(profiles.user_id, user.id)).get();
+    const prof = db.select({ target_archetype: profiles.target_archetype, field: profiles.field }).from(profiles).where(eq(profiles.user_id, user.id)).get();
     if (!prof) return { error: "Couldn't save your quiz — try again." };
+    r.archetypes = withFieldPrior(r.archetypes, prof.field);
     const cv = db.select({ page_texts: cvs.page_texts, parsed_json: cvs.parsed_json }).from(cvs)
       .where(and(eq(cvs.user_id, user.id), eq(cvs.is_active, true))).get();
     write = quizMayWriteArchetypes(cv ?? null);

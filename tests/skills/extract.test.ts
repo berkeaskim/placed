@@ -64,7 +64,7 @@ describe("extractSkills", () => {
     expect(extractSkills("IMO silver medal")).toContain("UKMT");
     expect(extractSkills("BMO round 2")).toContain("UKMT");
     expect(extractSkills("EGMO team")).toContain("UKMT");
-    expect(extractSkills("Ran PCR assays")).toContain("Lab Techniques");
+    expect(extractSkills("Ran PCR assays")).toContain("PCR");
     expect(extractSkills("in my imo opinion, the pcr was")).toEqual([]);
   });
   it("does not match generic prose containing framework-like words", () => {
@@ -115,7 +115,7 @@ describe("extractSkills", () => {
   it("does not match false positives from case-insensitive probe", () => {
     const text = "imo it was a swift move in Moscow; I spent a spark of time on prototyping and newsletters, a PCR test, welcome to the team";
     const skills = extractSkills(text);
-    expect(skills).toEqual(["Lab Techniques"]); // "a PCR test" legitimately yields Lab Techniques now
+    expect(skills).toEqual(["PCR"]); // "a PCR test" legitimately yields PCR (its own skill since placement-year/07)
   });
   it("matches Swift when capitalized", () => {
     const skills = extractSkills("Built an iOS app in Swift");

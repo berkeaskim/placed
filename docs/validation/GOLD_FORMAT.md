@@ -52,7 +52,7 @@ The only gold file in the repo is `gold/synthetic-example.json`. Its CVs and lab
 
 | Field | Rule |
 |---|---|
-| `sector` | One of `software_eng`, `data_analytics`, `quant_trading`, `consulting`, `product`, `finance_banking`, `marketing_growth`, `research`. |
+| `sector` | One of `software_eng`, `data_analytics`, `quant_trading`, `consulting`, `product`, `finance_banking`, `marketing_growth`, `research`, `engineering`, `science_pharma`. |
 | `year` | `1st`, `2nd`, `penultimate`, `final` or `masters`. |
 | `track` | `standard` (default) or `spring`. |
 | `pageCount` | Pages in the original PDF (default 1). The page-length rule uses it. |
