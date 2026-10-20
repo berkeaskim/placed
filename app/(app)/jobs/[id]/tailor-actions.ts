@@ -16,6 +16,7 @@ import { reverifyEdits, type BeforeAfter, type Counts } from "@/lib/tailor/run";
 import { rulesGained } from "@/lib/tailor/rules-gained";
 import { countStudentEdits, type RulesGained } from "@/lib/tailor/view";
 import { normalizeTailored } from "@/lib/ai/tailorCV";
+import { trackForJob } from "@/lib/tailor/track";
 import { TailoredCvFixture } from "@/lib/ai/schemas";
 import { defendQuestions, type DefendQuestionT, type DefendSource } from "@/lib/ai/defendQuestions";
 import type { VerifyReport } from "@/lib/verify/tailoring";
@@ -68,7 +69,7 @@ export async function previewTailoring(jobId: string, edited: unknown): Promise<
   const r = reverifyEdits({ cv: cv.parsed, rawText: cv.rawText, job, confirmedFacts, tailored });
   const student = toStudent(profile);
   const sector = job.archetype ?? student.archetypes[0]?.key ?? "data_analytics";
-  return { report: r.report, mustHaves: r.mustHaves, niceToHaves: r.niceToHaves, coverageAfter: r.coverageAfter, rules: rulesGained(cv.parsed, r.tailored, sector, student.year) };
+  return { report: r.report, mustHaves: r.mustHaves, niceToHaves: r.niceToHaves, coverageAfter: r.coverageAfter, rules: rulesGained(cv.parsed, r.tailored, sector, student.year, trackForJob(job)) };
 }
 
 /**

@@ -13,16 +13,24 @@ import { assemblePack, toFillPlan, type Answers, type Covers, type FillInstructi
 import { hashToken, safeNamePart } from "./handoff";
 import { findRemembered, isComplete, normLabel, type Core, type Extra } from "./vault";
 import { openAnswers, openLongAnswer, openVault } from "./vault-crypto";
-import type { ParsedCV } from "@/lib/types";
+import type { JobForScoring, ParsedCV } from "@/lib/types";
+import type { Track } from "@/lib/cv-rules/types";
+import { trackForJob } from "@/lib/tailor/track";
+import { offerPrevious } from "./memory";
+import { firmGuard } from "./firm-guard";
 
-export type JobForPack = { id: string; extId: string; url: string; ats: Ats; company: string; textLines: string[] };
+/** `employer`: the posting's own employer on a multi-employer board (TargetJobs), else the company. */
+export type JobForPack = { id: string; extId: string; url: string; ats: Ats; company: string; employer: string; textLines: string[]; track: Track };
 export type ClaimBody = { ats: Ats; url: string; fields: FillInstruction[]; cv: { url: string; filename: string } | null; cover: { url: string; filename: string } | null };
 
 export async function loadJobForPack(jobId: string): Promise<JobForPack | null> {
-  const r = db.select({ id: jobs.id, ext_id: jobs.ext_id, url: jobs.url, text_lines: jobs.text_lines, name: companies.name, ats: companies.ats })
+  const r = db.select({ id: jobs.id, ext_id: jobs.ext_id, url: jobs.url, text_lines: jobs.text_lines, employment_type: jobs.employment_type, employer_name: jobs.employer_name, name: companies.name, ats: companies.ats })
     .from(jobs).innerJoin(companies, eq(companies.id, jobs.company_id)).where(eq(jobs.id, jobId)).get();
   if (!r) return null;
-  return { id: r.id, extId: r.ext_id, url: r.url, ats: r.ats as Ats, company: r.name, textLines: r.text_lines ?? [] };
+  return {
+    id: r.id, extId: r.ext_id, url: r.url, ats: r.ats as Ats, company: r.name, employer: r.employer_name ?? r.name, textLines: r.text_lines ?? [],
+    track: trackForJob({ employmentType: r.employment_type as JobForScoring["employmentType"] }),
+  };
 }
 
 /** `completed` = Autopilot is unlocked: the saved core is complete right now. `completed_at` alone is only the once-only XP marker, so it never unlocks by itself. */
@@ -36,8 +44,10 @@ export async function getVault(userId: string): Promise<{ core: Partial<Core>; e
 /**
  * Looks up kept long answers from the student's OTHER jobs with the remembered-answer matching (exact normalised label,
  * else a near-identical one). The most recent answer wins per label; a row that no longer decrypts is skipped.
+ * Memory rules (lib/autopilot/memory): a "Why [firm]?" answer is never offered, and a recent-news answer older than a
+ * few weeks comes with a note to update it.
  */
-function previousAnswers(userId: string, jobId: string): (label: string) => { text: string; company: string } | null {
+function previousAnswers(userId: string, jobId: string, now = new Date()): (label: string) => { text: string; company: string; staleNote: string | null } | null {
   const rows = db.select().from(autopilotLongAnswers)
     .where(and(eq(autopilotLongAnswers.user_id, userId), ne(autopilotLongAnswers.job_id, jobId))).orderBy(desc(autopilotLongAnswers.updated_at)).all();
   const byLabel: Extra = {};
@@ -47,15 +57,19 @@ function previousAnswers(userId: string, jobId: string): (label: string) => { te
     const hit = findRemembered(byLabel, label);
     const r = hit && typeof hit.value === "string" ? byId.get(hit.value) : undefined;
     if (!r) return null;
+    // The rule follows both the question asked now and the one the answer was written for.
+    const offer = offerPrevious(label, r.updated_at, now);
+    const offerOld = offerPrevious(r.field_label, r.updated_at, now);
+    if (!offer || !offerOld) return null;
     try {
-      return { text: openLongAnswer(userId, r.job_id, r.field_label, r.text), company: r.company };
+      return { text: openLongAnswer(userId, r.job_id, r.field_label, r.text), company: r.company, staleNote: offer.staleNote ?? offerOld.staleNote };
     } catch {
       return null;
     }
   };
 }
 
-export function findPreviousAnswer(userId: string, jobId: string, label: string): { text: string; company: string } | null {
+export function findPreviousAnswer(userId: string, jobId: string, label: string): { text: string; company: string; staleNote: string | null } | null {
   return previousAnswers(userId, jobId)(label);
 }
 
@@ -79,7 +93,15 @@ const words = (s: string) => (s.trim() ? s.trim().split(/\s+/).length : 0);
  * Fetches the form, caches CV-backed suggestions once (a computed `{}` counts), upserts autopilot_packs. Never drafts: see generateDraft.
  * Suggestions are only cached when an active CV existed and the AI call succeeded, so a later build retries.
  */
-export async function buildPack(userId: string, jobId: string): Promise<{ items: PackItem[]; answers: Answers }> {
+/** The student's other tracked applications, for the one-application-per-firm guard. */
+function otherApplications(userId: string, jobId: string) {
+  return db.select({ status: applications.status, title: jobs.title, employer_name: jobs.employer_name, company: companies.name })
+    .from(applications).innerJoin(jobs, eq(jobs.id, applications.job_id)).innerJoin(companies, eq(companies.id, jobs.company_id))
+    .where(and(eq(applications.user_id, userId), ne(applications.job_id, jobId))).all()
+    .map((r) => ({ status: r.status, title: r.title, company: r.employer_name ?? r.company }));
+}
+
+export async function buildPack(userId: string, jobId: string): Promise<{ items: PackItem[]; answers: Answers; warnings: string[] }> {
   const job = await loadJobForPack(jobId);
   if (!job) throw new Error("Job not found");
   const { core, extra } = await getVault(userId);
@@ -110,7 +132,8 @@ export async function buildPack(userId: string, jobId: string): Promise<{ items:
     const p = i.group === "draft" ? previous(i.field.label) : null;
     return p ? { ...i, previous: { ...p, words: words(p.text) } } : i;
   });
-  return { items, answers };
+  const guard = firmGuard({ company: job.employer, track: job.track, others: otherApplications(userId, jobId) });
+  return { items, answers, warnings: guard ? [guard] : [] };
 }
 
 /** The input draftAnswer needs for one free-text field, or null when the job, active CV, pack or field is missing. */

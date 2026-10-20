@@ -2,10 +2,10 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, LayoutGroup, motion, useReducedMotion } from "motion/react";
-import { BookOpenText, ChevronDown, Lightbulb, MessagesSquare, Quote, Route, ShieldCheck, Video } from "lucide-react";
+import { BookOpenText, ChevronDown, Lightbulb, MessagesSquare, Quote, Route, ShieldAlert, ShieldCheck, Video } from "lucide-react";
 import {
   practiceSet, SPRING_FRAMING, SPRING_GROUPS, springQuestions,
-  type SpringContext, type SpringGroup, type SpringQuestion,
+  type PrepQuestion, type SpringContext,
 } from "@/lib/interview-prep/spring-bank";
 import type { StorySuggestion } from "@/lib/interview-prep/spring-stories";
 import { VideoPractice } from "./video-practice";
@@ -16,7 +16,7 @@ const SPRING = { type: "spring", bounce: 0, duration: 0.4 } as const;
  * Interview prep for a spring week: replaces the generic web-researched pack. Motivation-first framing, a timed video
  * practice, the 30-question spring bank and STAR stories from the Experience Bank. All local, no AI call.
  */
-export function SpringPrepPanel({ ctx, stories, bankEmpty }: { ctx: SpringContext; stories: StorySuggestion[]; bankEmpty: boolean }) {
+export function SpringPrepPanel({ ctx, stories, bankEmpty, coachOnly }: { ctx: SpringContext; stories: StorySuggestion[]; bankEmpty: boolean; coachOnly?: string | null }) {
   const [seed, setSeed] = useState(0);
   const set = useMemo(() => practiceSet(ctx, { seed }), [ctx, seed]);
   const all = useMemo(() => springQuestions(ctx), [ctx]);
@@ -27,6 +27,12 @@ export function SpringPrepPanel({ ctx, stories, bankEmpty }: { ctx: SpringContex
         <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#5B3DF5]">{ctx.firm} · Spring week</p>
         <h2 className="text-[26px] font-bold leading-[1.1] tracking-[-0.022em] text-[#1C1C1E]">Interview prep</h2>
         <p className="max-w-[62ch] text-[17px] leading-[1.47] tracking-[-0.01em] text-[#3C3C43]">{SPRING_FRAMING.lead}</p>
+        {coachOnly && (
+          <p role="note" className="flex gap-2 rounded-[14px] bg-[#FFF4E5] px-4 py-3 text-[14px] leading-snug text-[#7A4100]">
+            <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+            <span><span className="font-semibold">Coach-only. </span>{coachOnly}</span>
+          </p>
+        )}
       </header>
 
       <div className="flex flex-col gap-3">
@@ -50,7 +56,7 @@ export function SpringPrepPanel({ ctx, stories, bankEmpty }: { ctx: SpringContex
 
       <Stories stories={stories} bankEmpty={bankEmpty} />
 
-      <Bank questions={all} reported={ctx.preset.reported} firm={ctx.firm} />
+      <Bank title="The spring week question bank" groups={SPRING_GROUPS} questions={all} reported={ctx.preset.reported} firm={ctx.firm} />
 
       <div className="flex flex-col gap-3">
         <SectionTitle icon={Lightbulb}>What gets people through</SectionTitle>
@@ -72,7 +78,7 @@ export function SpringPrepPanel({ ctx, stories, bankEmpty }: { ctx: SpringContex
   );
 }
 
-function Stories({ stories, bankEmpty }: { stories: StorySuggestion[]; bankEmpty: boolean }) {
+export function Stories({ stories, bankEmpty }: { stories: StorySuggestion[]; bankEmpty: boolean }) {
   return (
     <div className="flex flex-col gap-3">
       <SectionTitle icon={BookOpenText}>Your STAR stories</SectionTitle>
@@ -108,25 +114,28 @@ function Stories({ stories, bankEmpty }: { stories: StorySuggestion[]; bankEmpty
   );
 }
 
-function Bank({ questions, reported, firm }: { questions: SpringQuestion[]; reported: number[]; firm: string }) {
+/** A question bank by group (spring or placement), each row expanding to why they ask and how to prepare. */
+export function Bank({ title, groups, questions, reported, firm }: {
+  title: string; groups: readonly { key: string; label: string }[]; questions: PrepQuestion[]; reported: number[]; firm: string;
+}) {
   const reduce = useReducedMotion();
-  const [group, setGroup] = useState<SpringGroup>("motivation");
+  const [group, setGroup] = useState<string>(groups[0]?.key ?? "");
   const [open, setOpen] = useState<number | null>(null);
   const qs = questions.filter((q) => q.group === group);
 
   return (
     <div className="flex flex-col gap-3">
-      <SectionTitle icon={MessagesSquare}>The spring week question bank</SectionTitle>
-      <LayoutGroup id="spring-groups">
+      <SectionTitle icon={MessagesSquare}>{title}</SectionTitle>
+      <LayoutGroup id={`${title}-groups`}>
         <div role="tablist" aria-label="Question type" className="-mx-1 flex overflow-x-auto px-1 [scrollbar-width:none]">
           <div className="flex min-w-max gap-0.5 rounded-[11px] bg-[#EEEEF3] p-[3px]">
-            {SPRING_GROUPS.map(({ key, label }) => {
+            {groups.map(({ key, label }) => {
               const on = group === key;
               const n = questions.filter((q) => q.group === key).length;
               return (
                 <button key={key} type="button" role="tab" aria-selected={on} onClick={() => { setGroup(key); setOpen(null); }}
                   className={`relative min-h-9 rounded-[8px] px-3.5 text-[13px] font-semibold transition-colors ${on ? "text-[#1C1C1E]" : "text-[#6E6E73] hover:text-[#3C3C43]"}`}>
-                  {on && <motion.span layoutId="spring-thumb" transition={reduce ? { duration: 0 } : SPRING} className="absolute inset-0 rounded-[8px] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.12),0_0_0_0.5px_rgba(0,0,0,0.04)]" />}
+                  {on && <motion.span layoutId={`${title}-thumb`} transition={reduce ? { duration: 0 } : SPRING} className="absolute inset-0 rounded-[8px] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.12),0_0_0_0.5px_rgba(0,0,0,0.04)]" />}
                   <span className="relative z-10">{label} <span className="tabular-nums text-[#8E8E93]">{n}</span></span>
                 </button>
               );
@@ -182,7 +191,7 @@ function Detail({ label, children }: { label: string; children: React.ReactNode 
   );
 }
 
-function SectionTitle({ icon: Icon, children }: { icon: React.ComponentType<{ className?: string; "aria-hidden"?: boolean }>; children: React.ReactNode }) {
+export function SectionTitle({ icon: Icon, children }: { icon: React.ComponentType<{ className?: string; "aria-hidden"?: boolean }>; children: React.ReactNode }) {
   return (
     <h3 className="flex items-center gap-2 text-[17px] font-semibold tracking-[-0.015em] text-[#1C1C1E]">
       <Icon className="h-[18px] w-[18px] text-[#5B3DF5]" aria-hidden={true} />

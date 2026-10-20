@@ -9,7 +9,10 @@ import {
 import type { NormalizedForm } from "@/lib/autopilot/forms/types";
 import { putFile } from "@/lib/files";
 import { awardXP } from "@/lib/gamify/award";
-import type { Archetype, ParsedCV } from "@/lib/types";
+import type { Archetype, JobForScoring, ParsedCV } from "@/lib/types";
+import type { Track } from "@/lib/cv-rules/types";
+import { trackForJob } from "@/lib/tailor/track";
+import { firmHooks, needsHook } from "./track";
 import type { DraftInput } from "./draft";
 import { buildEvidence, pickStoryEntry, type Evidence } from "./evidence";
 import { letterFilename, splitName } from "./filename";
@@ -57,7 +60,7 @@ export type CardView = {
 
 export type Ctx = {
   userId: string;
-  job: { id: string; extId: string; company: string; role: string; archetype: Archetype | null; jdLines: string[] };
+  job: { id: string; extId: string; company: string; role: string; archetype: Archetype | null; jdLines: string[]; track: Track };
   cv: ParsedCV | null;
   confirmed: { id: string; claim: string }[];
 };
@@ -65,7 +68,7 @@ export type Ctx = {
 const STALE_STREAM_MS = 2 * 60_000;
 const MAX_ANSWER = 1500;
 const MAX_LETTER = 20_000;
-const QUESTION_IDS = new Set<Answer["question"]>(["why_firm", "facts", "story", "touchpoint", "product"]);
+const QUESTION_IDS = new Set<Answer["question"]>(["why_firm", "facts", "story", "touchpoint", "product", "hook", "why_placement", "bring_back"]);
 const msg = (m: Omit<ChatMsg, "id">): ChatMsg => ({ id: crypto.randomUUID(), ...m });
 const sameTarget = (a: OutputTarget, b: OutputTarget) =>
   a.kind === "upload" ? b.kind === "upload" : b.kind === "field" && a.fieldKey === b.fieldKey;
@@ -73,14 +76,17 @@ const sameTarget = (a: OutputTarget, b: OutputTarget) =>
 // ---------------------------------------------------------------- loading
 
 export function loadCtx(userId: string, jobId: string): Ctx {
-  const j = db.select({ id: jobs.id, ext_id: jobs.ext_id, title: jobs.title, archetype: jobs.archetype, text_lines: jobs.text_lines, name: companies.name })
+  const j = db.select({ id: jobs.id, ext_id: jobs.ext_id, title: jobs.title, archetype: jobs.archetype, text_lines: jobs.text_lines, employment_type: jobs.employment_type, name: companies.name })
     .from(jobs).innerJoin(companies, eq(companies.id, jobs.company_id)).where(eq(jobs.id, jobId)).get();
   if (!j) throw new CardError("Job not found");
   const cvRow = db.select({ parsed_json: cvs.parsed_json }).from(cvs).where(and(eq(cvs.user_id, userId), eq(cvs.is_active, true))).get();
   const confirmed = db.select({ id: confirmedFacts.id, claim: confirmedFacts.claim }).from(confirmedFacts).where(eq(confirmedFacts.user_id, userId)).all();
   return {
     userId, cv: (cvRow?.parsed_json ?? null) as ParsedCV | null, confirmed,
-    job: { id: j.id, extId: j.ext_id, company: j.name, role: j.title, archetype: j.archetype ?? null, jdLines: j.text_lines ?? [] },
+    job: {
+      id: j.id, extId: j.ext_id, company: j.name, role: j.title, archetype: j.archetype ?? null, jdLines: j.text_lines ?? [],
+      track: trackForJob({ employmentType: j.employment_type as JobForScoring["employmentType"] }),
+    },
   };
 }
 
@@ -118,6 +124,20 @@ function savedStory(ctx: Ctx): { id: string; text: string } | null {
   return s ? { id: s.id, text: s.text } : null;
 }
 
+const pickedFactsOf = (letter: LetterRow) => {
+  const ids = new Set(letter.answers.find((a) => a.question === "facts")?.pickedFactIds ?? []);
+  return letter.facts.filter((f) => ids.has(f.id));
+};
+const hooksFor = (letter: LetterRow) => firmHooks({ facts: letter.facts, answers: letter.answers, now: new Date() }).count;
+
+/**
+ * Spring/placement (spring 05 §6c): fewer than two firm-specific hooks and the hook question not yet answered or
+ * skipped. The card asks for one more instead of drafting filler.
+ */
+export function needsFirmHook(ctx: Ctx, letter: LetterRow): boolean {
+  return needsHook(ctx.job.track, hooksFor(letter), letter.answers);
+}
+
 function questionFor(ctx: Ctx, letter: LetterRow) {
   if (feedbackOnly(ctx)) return null;
   const answers = letter.answers;
@@ -125,6 +145,7 @@ function questionFor(ctx: Ctx, letter: LetterRow) {
     answers, researchState: letter.research_state as ResearchState, facts: letter.facts, storyEntry: storyEntry(ctx),
     archetype: ctx.job.archetype, company: ctx.job.company, hasSavedStory: savedStory(ctx) !== null,
     hasTouchpointAnswer: answers.some((a) => (a.question === "touchpoint" || a.question === "product") && !!a.text),
+    track: ctx.job.track, hooks: hooksFor(letter),
   });
 }
 
@@ -381,7 +402,7 @@ export function draftInput(ctx: Ctx, letter: LetterRow, o: OutputRow, evidence: 
   return {
     mode: o.mode as Mode, limit: o.limit, company, role: ctx.job.role, ref: jobRef(ctx.job.jdLines), cv: ctx.cv, jdLines: ctx.job.jdLines,
     evidence, answers, facts: letter.facts, pickedFacts: letter.facts.filter((f) => pickedIds.has(f.id)), confirmedFacts: ctx.confirmed,
-    otherEmployers: otherEmployersFor(ctx, letter),
+    otherEmployers: otherEmployersFor(ctx, letter), track: ctx.job.track,
   };
 }
 
@@ -399,6 +420,7 @@ function relint(ctx: Ctx, letter: LetterRow, o: OutputRow, text: string, spans: 
   const otherEmployers = otherEmployersFor(ctx, letter);
   return lintLetter(text, {
     mode: o.mode as Mode, limit: o.limit, company: ctx.job.company, role: ctx.job.role, otherEmployers, ownSpans: spans.filter((s) => s.kind === "theirs"),
+    track: ctx.job.track, rivals: (letter.evidence as Evidence | null)?.rivals ?? rivalsFor(ctx), pickedFacts: pickedFactsOf(letter),
   });
 }
 

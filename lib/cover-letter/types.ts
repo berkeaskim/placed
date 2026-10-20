@@ -6,7 +6,8 @@ export type Span = { start: number; end: number; kind: SpanKind; refs: string[];
 export type LintHit = { ruleId: string; label: string; severity: "block" | "high" | "med" | "low"; start: number; end: number; scope: SpanKind | "letter" };
 export type Fact = { id: string; claim: string; url: string; publisher: string; date: string | null };
 export type Answer = {
-  id: string; question: "why_firm" | "facts" | "story" | "touchpoint" | "product"; text: string | null; pickedFactIds?: string[]; cvEntryId?: string;
+  /** hook: one more firm-specific detail (spring/placement, when research gave too few); why_placement and bring_back: placement slots. */
+  id: string; question: "why_firm" | "facts" | "story" | "touchpoint" | "product" | "hook" | "why_placement" | "bring_back"; text: string | null; pickedFactIds?: string[]; cvEntryId?: string;
   /** People the answer names: `ok` null until the student confirms (true) or declines (false); all but confirmed names are masked in prompts. */
   persons?: { name: string; ok: boolean | null }[];
 };

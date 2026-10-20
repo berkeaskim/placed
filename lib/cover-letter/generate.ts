@@ -5,7 +5,7 @@ import type { LetterRow, OutputRow } from "@/lib/db/schema";
 import { buildDraftPrompt, HONESTY_RULES, MARKER_RULES, STYLE_BANS, streamDraft, type DraftInput } from "./draft";
 import { applyEdit, type ClosedSentence, type EditKind } from "./edit";
 import {
-  CardError, cardView, claimStreaming, draftInput, ensureEvidence, generationTarget, touchStreaming, type CardView, type Ctx,
+  CardError, cardView, claimStreaming, draftInput, ensureEvidence, generationTarget, needsFirmHook, touchStreaming, type CardView, type Ctx,
 } from "./service";
 import { tidySpaces } from "./spans";
 import { getOrCreateLetter, pushUndo, saveLetter, upsertOutput } from "./store";
@@ -48,6 +48,9 @@ export function precheck(userId: string, jobId: string, body: GenerateBody): { s
   }
   if (t.feedbackOnly) return { status: 409, message: `${t.ctx.job.company} asks applicants not to use AI, so Placed only gives feedback here.` };
   if (body.kind === "draft" && t.output.mode === "skip") return { status: 409, message: "The posting says not to send a cover letter." };
+  if (body.kind === "draft" && needsFirmHook(t.ctx, t.letter)) {
+    return { status: 409, message: `Add one more thing only ${t.ctx.job.company} could say first (answer or skip the question above), so the letter isn't generic.` };
+  }
   if (body.kind === "edit" && !t.output.text.trim()) return { status: 409, message: "Write a draft first." };
   if (t.letter.draft_state === "streaming" && Date.now() - Date.parse(t.letter.updated_at) < 2 * 60_000) {
     return { status: 409, message: "A draft is already being written." };

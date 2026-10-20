@@ -134,3 +134,10 @@ describe("springPrep", () => {
     expect(p.stories[0]).toMatchObject({ label: "Events Officer · UCL Finance Society" });
   });
 });
+
+describe("springPrep coach-only", () => {
+  it("flags employers that ban AI in interviews", () => {
+    expect(springPrep(LOCAL_USER_ID, { employmentType: "spring_week", company: "Barclays", title: "Spring Insight" })?.coachOnly).toContain("Barclays doesn't allow AI tools");
+    expect(springPrep(LOCAL_USER_ID, { employmentType: "spring_week", company: "HSBC", title: "Spring Insight" })?.coachOnly).toBeNull();
+  });
+});

@@ -9,6 +9,8 @@ import type { Evidence } from "./evidence";
 import { RULES } from "./rules";
 import { MarkerParser, type Marked } from "./stream-parse";
 import type { Answer, Fact, Limit, Mode } from "./types";
+import type { Track } from "@/lib/cv-rules/types";
+import { trackLetterBlock } from "./track";
 
 export type DraftInput = {
   mode: Mode;
@@ -27,6 +29,8 @@ export type DraftInput = {
   recipient?: string;
   /** CL-21: companies that must not appear (the student's other tracked jobs and letters, rivals, big UK employers). */
   otherEmployers?: string[];
+  /** The job's track: spring weeks and placements get their own structure and voice. Absent = standard. */
+  track?: Track;
 };
 
 const esc = escapeUntrusted;
@@ -151,6 +155,7 @@ export function buildDraftPrompt(i: DraftInput): { system: string; prompt: strin
     ...answered.map((a) => `<answer id="${a.id}" question="${a.question}">\n${esc(a.text!)}\n</answer>`),
     `<picked_facts>\n${i.pickedFacts.map((f) => `${f.id}: ${esc(f.claim)} (${esc(f.publisher)}${f.date ? `, ${f.date}` : ""})`).join("\n") || "(none)"}\n</picked_facts>`,
     ...(playbook ? [playbook] : []),
+    ...(trackLetterBlock(i.track ?? "standard") ? [trackLetterBlock(i.track ?? "standard")!] : []),
     `STYLE ANCHORS (the student's own lines; match their voice):\n${anchors}`,
     ...(!whyFirm?.text?.trim() ? ["The student gave no reason for choosing the firm: write the why-them part only from job-description anchors and end that sentence with ⟦them:jd⟧. Do not invent a motivation."] : []),
   ].join("\n\n");

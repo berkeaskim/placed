@@ -138,12 +138,15 @@ export function LongAnswer({ jobId, item, answer, onSave }: {
   const prevLabel = `Use my answer from ${prev?.company || "an earlier application"}`;
   // An earlier answer that names its old company opens in Edit, so it is never reused unchanged.
   const namesOld = !!prev?.company.trim() && prev.text.toLowerCase().includes(prev.company.trim().toLowerCase());
+  // A recent-news answer past its window (lib/autopilot/memory) also opens in Edit, with a note to update it.
+  const stale = prev?.staleNote ?? null;
   // The earlier answer is the student's own approved text: it gets the same Use this / Shorter / Warmer / Edit as a draft.
   const usePrevious = () => {
     if (!prev) return;
-    if (namesOld) {
+    if (namesOld || stale) {
       setText(prev.text); setUnapproved(false);
-      setLog((l) => [...l, ...shown(), { k: "me", text: prevLabel }, { k: "warn", text: `This mentions ${prev.company.trim()}. Edit it before you use it.` }]);
+      const warn = [namesOld ? `This mentions ${prev.company.trim()}. Edit it before you use it.` : "", stale ?? ""].filter(Boolean).join(" ");
+      setLog((l) => [...l, ...shown(), { k: "me", text: prevLabel }, { k: "warn", text: warn }]);
       setResumed(false); setMode("edit");
       return;
     }

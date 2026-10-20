@@ -76,6 +76,17 @@ describe("getInterviewPrep", () => {
     }
   });
 
+  it("tells the AI pack a placement is a placement", async () => {
+    mockJob.employmentType = "placement";
+    try {
+      track("applied");
+      await getInterviewPrep(ID);
+      expect(generatePrepPack).toHaveBeenCalledWith(expect.objectContaining({ track: "placement" }));
+    } finally {
+      mockJob.employmentType = "internship";
+    }
+  });
+
   it("rejects a non-uuid", async () => {
     expect(await getInterviewPrep("1; drop")).toEqual({ error: expect.any(String) });
   });

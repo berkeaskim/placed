@@ -25,6 +25,19 @@ export const CoreSchema = z.object({
   outstanding_offers: z.string().trim().optional(),
   linkedin: url, github: url, portfolio: url,
   heard_about: z.string().trim().min(1), languages: z.string().trim().optional(), pronouns: z.string().trim().optional(),
+  // Placement year (placement 05 §4d): optional, so they never block unlocking Autopilot. Residency, nationality and
+  // security-vetting answers are deliberately not here: the student answers those on the form.
+  placement_included: z.enum(["yes", "no"]).optional(),
+  placement_academic_year: z.string().trim().regex(/^20\d\d\s*[–/-]\s*(?:20)?\d\d$/).optional(),
+  available_from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  available_to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  placement_duration: z.string().trim().optional(),
+  placement_min_weeks: z.string().trim().regex(/^\d{1,2}$/).optional(),
+  returning_to_study: z.enum(["yes", "no"]).optional(),
+  year1_result: z.string().trim().optional(),
+  predicted_class: z.string().trim().optional(),
+  relocation: z.string().trim().optional(),
+  placement_office: z.string().trim().optional(),
 }); // zod objects strip unknown keys by default: an EEO key can never be stored through this schema.
 export type Core = z.infer<typeof CoreSchema>;
 
@@ -35,7 +48,23 @@ export const RTW_LABELS: Record<Core["rtw_uk"], string> = {
   needs_sponsorship: "I would need the employer to sponsor my visa",
 };
 
-export type VaultKey = keyof Core | "full_name" | "location" | "graduation";
+export type VaultKey = keyof Core | "full_name" | "location" | "graduation" | "placement_window";
+
+/** The vault keys that only placement forms ask for. */
+export const PLACEMENT_KEYS = [
+  "placement_included", "placement_academic_year", "available_from", "available_to", "placement_duration", "placement_min_weeks",
+  "returning_to_study", "year1_result", "predicted_class", "relocation", "placement_office",
+] as const satisfies readonly (keyof Core)[];
+
+const longDate = (iso: string) => {
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
+};
+
+/** "1 Jun 2027 to 31 Aug 2028" from the placement window, for tailoring's AVAILABILITY line; null when either end is missing. */
+export function placementWindow(core: Partial<Core>): string | null {
+  return core.available_from && core.available_to ? `${longDate(core.available_from)} to ${longDate(core.available_to)}` : null;
+}
 
 export function isComplete(core: unknown): boolean {
   return CoreSchema.safeParse(core).success;
@@ -56,6 +85,10 @@ export function vaultValue(core: Partial<Core>, key: VaultKey): string | null {
     case "location": return core.city && core.country ? `${core.city}, ${core.country}` : null;
     case "graduation": return core.grad_month && core.grad_year ? `${core.grad_month} ${core.grad_year}` : null;
     case "needs_sponsorship": return core.needs_sponsorship ? (core.needs_sponsorship === "yes" ? "Yes" : "No") : null;
+    case "placement_included": return core.placement_included ? (core.placement_included === "yes" ? "Yes" : "No") : null;
+    case "returning_to_study": return core.returning_to_study ? (core.returning_to_study === "yes" ? "Yes" : "No") : null;
+    case "placement_window": return placementWindow(core);
+    case "placement_min_weeks": return core.placement_min_weeks ? `${core.placement_min_weeks} weeks` : null;
     case "rtw_uk": return core.rtw_uk ? RTW_LABELS[core.rtw_uk] : null;
     default: return v(core[key] as string | undefined);
   }

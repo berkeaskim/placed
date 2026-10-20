@@ -17,6 +17,9 @@ import type { AwardResult } from "@/lib/gamify/core";
 import { coverageSummary, reverifyEdits, runTailoring, type ReverifyResult, type RevertedChange, type TailorOutcome } from "@/lib/tailor/run";
 import { BlockedCvError, renderVerifiedPdf } from "@/lib/tailor/render";
 import { normalizeTailored, tailorCV } from "@/lib/ai/tailorCV";
+import { trackForJob } from "@/lib/tailor/track";
+import { getVault } from "@/lib/autopilot/server";
+import { placementWindow } from "@/lib/autopilot/vault";
 import { employerAiPolicy, needsAiPolicyAck } from "@/lib/employer-policy";
 import { TailoredCvFixture } from "@/lib/ai/schemas";
 import type { ParsedCV, TailoredBullet, TailoredCV } from "@/lib/types";
@@ -208,6 +211,18 @@ function storedFresh(ctx: TailorCtx, outcome: TailorOutcome, final: TailoredCV |
     overrides: ctx.overrides, bankStamp: bankStamp(getBank(ctx.userId), ctx.cv.parsed),
   };
 }
+/**
+ * Placement jobs: the placement window from the student's Autopilot setup goes to the tailor as AVAILABILITY, so a
+ * summary can state real dates (placement 05 §4b). Never for other jobs, and never invented when it isn't set.
+ */
+function withAvailability(ctx: TailorCtx): typeof tailorCV {
+  if (trackForJob(ctx.job) !== "placement") return tailorCV;
+  return async (i) => {
+    const availability = await getVault(ctx.userId).then((v) => placementWindow(v.core)).catch(() => null);
+    return tailorCV({ ...i, availability });
+  };
+}
+
 const bankView = (ctx: TailorCtx): BankView | null =>
   ctx.cv.selection ? { report: ctx.cv.selection.report, stale: false, newCvSuggestions: ctx.newCvSuggestions } : null;
 
@@ -238,7 +253,7 @@ export async function tailorForJob(jobId: string, opts?: { extraExcluded?: strin
   }
   let outcome: TailorOutcome;
   try {
-    outcome = await runTailoring({ cv: ctx.cv.parsed, rawText: ctx.cv.rawText, job: ctx.job, confirmedFacts: ctx.confirmedFacts, tailor: tailorCV,
+    outcome = await runTailoring({ cv: ctx.cv.parsed, rawText: ctx.cv.rawText, job: ctx.job, confirmedFacts: ctx.confirmedFacts, tailor: withAvailability(ctx),
       ...(policy.tailorMode === "grammar_only" ? { mode: "grammar_only" as const } : {}) });
   } catch (e) {
     console.error("tailorForJob: tailoring failed", e instanceof Error ? e.message : e);

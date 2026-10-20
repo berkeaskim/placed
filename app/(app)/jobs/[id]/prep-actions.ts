@@ -11,6 +11,7 @@ import { aiMode } from "@/lib/ai/config";
 import { generatePrepPack, mapStories, PrepResult } from "@/lib/ai/interviewPrep";
 import { roleKey } from "@/lib/interview-prep/sources";
 import { getOrCreatePrep, type PrepView } from "@/lib/interview-prep/service";
+import { trackForJob } from "@/lib/tailor/track";
 
 const GONE = "This role is no longer available.";
 export const SPRING_OWN_PREP = "Spring weeks have their own interview prep on this page.";
@@ -55,7 +56,8 @@ export async function getInterviewPrep(jobId: string): Promise<PrepView | { erro
       };
       db.insert(interviewPreps).values(row).onConflictDoUpdate({ target: [interviewPreps.company_id, interviewPreps.role_key], set: row }).run();
     },
-    generate: () => generatePrepPack({ company: job.company, jobTitle: job.title, roleKey: key, jdText: job.textLines.join("\n"), fixtureKey: job.extId }),
+    // A placement gets a programme note in the prompt; its curated bank is PlacementPrepPanel on the job page.
+    generate: () => generatePrepPack({ company: job.company, jobTitle: job.title, roleKey: key, jdText: job.textLines.join("\n"), fixtureKey: job.extId, track: trackForJob(job) }),
     stories: (r) => (cv ? mapStories({ questions: r.pack.questions, cvText: cv.rawText ?? "", fixtureKey: job.extId }) : Promise.resolve([])),
   });
 }

@@ -31,6 +31,8 @@ import { TailorPanel } from "./tailor-panel";
 import { InterviewPrepPanel } from "./interview-prep-panel";
 import { SpringPrepPanel } from "./spring-prep-panel";
 import { springPrep } from "@/lib/interview-prep/spring";
+import { PlacementPrepPanel } from "./placement-prep-panel";
+import { placementPrep } from "@/lib/interview-prep/placement";
 import { CoverLetterButton, CoverLetterHost } from "@/components/cover-letter/cover-letter-host";
 import { AutopilotHost } from "@/components/autopilot-chat/autopilot-host";
 import { AutopilotStartCard } from "@/components/autopilot-chat/autopilot-start-card";
@@ -84,6 +86,7 @@ export default async function JobPage({ params, searchParams }: { params: Promis
   const status = app?.status ?? null;
   const alreadyApplied = isPastSaved(status);
   const spring = springPrep(user.id, job);
+  const placement = placementPrep(user.id, job);
   const stored = (app?.tailored_json ?? null) as StoredTailoring | null;
   const school = universityFor(user.id);
   const detail = curatedDetail(job, env.autopilot);
@@ -179,6 +182,8 @@ export default async function JobPage({ params, searchParams }: { params: Promis
       {/* Spring weeks get their own prep before applying too: video interviews often land within days of the form. */}
       {spring ? <SpringPrepPanel {...spring} />
         : alreadyApplied && <InterviewPrepPanel jobId={job.id} company={job.company} hasCv={Boolean(cv)} />}
+      {/* Placements: local practice (bank, video, STAR stories) alongside the researched pack, before applying too. */}
+      {placement && <PlacementPrepPanel {...placement} />}
     </div>
   );
 }
