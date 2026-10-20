@@ -22,7 +22,7 @@ const PROVIDER_LABEL = { anthropic: "Claude", gemini: "Gemini", ollama: "Ollama 
 export default async function Settings() {
   const provider = aiProvider();
   const { user } = await requireUser();
-  const row = db.select({ u: profiles.university, course: profiles.course, year: profiles.year, grad: profiles.grad_year, placement: profiles.placement_status, workAuth: profiles.work_auth, needsVisa: profiles.needs_visa }).from(profiles).where(eq(profiles.user_id, user.id)).get();
+  const row = db.select({ u: profiles.university, course: profiles.course, year: profiles.year, grad: profiles.grad_year, placement: profiles.placement_status, secureBy: profiles.placement_secure_by, workAuth: profiles.work_auth, needsVisa: profiles.needs_visa }).from(profiles).where(eq(profiles.user_id, user.id)).get();
   const saved = row?.u ?? null;
   const detected = universityFor(user.id);
   const envKey = process.env.SERPER_API_KEY?.trim();
@@ -43,7 +43,7 @@ export default async function Settings() {
         <h2 className="font-bold">You</h2>
         <UniversityForm saved={saved} fromCv={saved ? null : detected} />
         <CourseForm saved={row?.course ?? null} />
-        <StudyForm year={row?.year ?? null} gradYear={row?.grad ?? null} placement={row?.placement ?? null} workAuth={row ? workAuthOf({ work_auth: row.workAuth, needs_visa: row.needsVisa }) : null} options={gradYearOptions(todayLondon())} />
+        <StudyForm year={row?.year ?? null} gradYear={row?.grad ?? null} placement={row?.placement ?? null} secureBy={row?.secureBy ?? null} workAuth={row ? workAuthOf({ work_auth: row.workAuth, needs_visa: row.needsVisa }) : null} options={gradYearOptions(todayLondon())} />
       </section>
       <section className="card-quest flex flex-col gap-3 p-5" id="people-search">
         <h2 className="font-bold">People search</h2>

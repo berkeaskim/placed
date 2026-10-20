@@ -86,3 +86,25 @@ const PLACEMENT_COURSE = /\bwith\s+(an?\s+)?(industrial\s+|professional\s+)?(pla
 export function placementHintFromCourse(course: string): PlacementStatus | null {
   return PLACEMENT_COURSE.test(course) ? "opted_in" : null;
 }
+
+/** University "secure a placement by" date when the student hasn't given theirs: 30 June of the placement's start year. */
+export function defaultSecureBy(today: string): string {
+  return `${placementStartYear(today)}-06-30`;
+}
+
+const DAY = 86_400_000;
+const ISO = /^\d{4}-\d{2}-\d{2}$/;
+
+export type CountdownPhase = "main" | "late" | "final" | "passed";
+/**
+ * Days to the university deadline for securing a placement (research/placement-year/04-timeline-process.md):
+ * "late" from 1 February (big schemes have closed; SMEs and startups recruit January–June), "final" in the last 30 days
+ * (miss it and most universities move you onto the 3-year degree), "passed" after it.
+ */
+export function placementCountdown(today: string, secureBy: string | null | undefined): { secureBy: string; days: number; phase: CountdownPhase } {
+  const by = secureBy && ISO.test(secureBy) && !Number.isNaN(Date.parse(secureBy)) ? secureBy : defaultSecureBy(today);
+  const days = Math.round((Date.parse(`${by}T00:00:00Z`) - Date.parse(`${today}T00:00:00Z`)) / DAY);
+  const lateFrom = `${placementStartYear(today)}-02-01`;
+  const phase: CountdownPhase = days < 0 ? "passed" : days <= 30 ? "final" : today >= lateFrom ? "late" : "main";
+  return { secureBy: by, days, phase };
+}

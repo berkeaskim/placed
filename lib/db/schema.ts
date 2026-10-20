@@ -58,6 +58,8 @@ export const profiles = sqliteTable("profiles", {
   grad_year: integer("grad_year"),
   /** PLACEMENT_STATUSES (lib/types.ts); validated in code, null = not asked yet. */
   placement_status: text("placement_status").$type<PlacementStatus>(),
+  /** The university's deadline to secure a placement (YYYY-MM-DD); null = the 30 June default (lib/profile/cycle.ts). */
+  placement_secure_by: text("placement_secure_by"),
   /** Broad field (one of FIELDS), derived from `course`; drives grouping and anywhere a category is enough. */
   field: text("field"),
   /** The course as the student named it ("BSc Economics and Statistics"); what AI prompts get. */

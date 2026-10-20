@@ -86,7 +86,9 @@ export async function saveStudy(_prev: StudyState, formData: FormData): Promise<
   const rawPlacement = String(formData.get("placement_status") ?? "");
   const placement = rawPlacement ? z.enum(PLACEMENT_STATUSES).safeParse(rawPlacement) : null;
   if (placement && !placement.success) return { ok: false, error: "Pick whether your degree has a placement year." };
-  db.update(profiles).set({ year: year.data, grad_year: grad?.data ?? null, placement_status: placement?.data ?? null, work_auth: workAuth, needs_visa: needsVisaFor(workAuth) })
+  const rawBy = String(formData.get("placement_secure_by") ?? "").trim();
+  if (rawBy && (!/^\d{4}-\d{2}-\d{2}$/.test(rawBy) || Number.isNaN(Date.parse(rawBy)))) return { ok: false, error: "Pick a valid date for your university's placement deadline." };
+  db.update(profiles).set({ year: year.data, grad_year: grad?.data ?? null, placement_status: placement?.data ?? null, placement_secure_by: rawBy || null, work_auth: workAuth, needs_visa: needsVisaFor(workAuth) })
     .where(eq(profiles.user_id, user.id)).run();
   revalidatePath("/", "layout");
   return { ok: true, message: grad ? `Saved. Graduating in ${grad.data}.` : "Saved." };

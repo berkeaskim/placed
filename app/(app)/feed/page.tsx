@@ -7,7 +7,7 @@ import { getActiveCv, getProfile, toStudent } from "@/lib/db/queries";
 import { getFeedJobs } from "@/lib/feed/jobs-cache";
 import { rankJobs } from "@/lib/feed/rank";
 import { applyFilters, feedHref, LOCATION_FILTERS, LOCATION_LABELS, parseFilters, resolveMode } from "@/lib/feed/filters";
-import { isPlacementEligible, isSpringWeekEligible, placementGradYear, placementStartYear, springCycleYear, springWeekGradYear } from "@/lib/profile/cycle";
+import { isPlacementEligible, isSpringWeekEligible, placementCountdown, placementGradYear, placementStartYear, springCycleYear, springWeekGradYear } from "@/lib/profile/cycle";
 import { todayLondon } from "@/lib/scoring/dates";
 import { ARCHETYPE_LABELS, type Archetype } from "@/lib/types";
 import { JobCard } from "@/components/job-card";
@@ -16,6 +16,9 @@ import { ingestRunning, lastIngestSummary } from "@/lib/ingest/local";
 import { nextIngestAt } from "@/lib/ingest/scheduler";
 import { ago, inTime } from "@/lib/feed/when";
 import { RefreshJobs } from "./refresh-jobs";
+
+/** "2027-06-30" → "30 Jun 2027". */
+const formatDay = (d: string) => new Date(`${d}T00:00:00Z`).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
 
 const chipClass = (active: boolean) =>
   `rounded-full border px-3.5 py-2 text-[13px] font-semibold no-underline ${active ? "border-foreground bg-foreground text-white" : "bg-white text-foreground"}`;
@@ -42,6 +45,7 @@ export default async function Feed({ searchParams }: { searchParams: Promise<Rec
   const spring = filters.mode === "spring";
   const placement = filters.mode === "placement";
   const start = placementStartYear(today);
+  const countdown = placementCountdown(today, profile.placement_secure_by ?? null);
   const all = rankJobs(student, cv?.parsed ?? null, jobs, today, { course: profile.course });
   const ranked = applyFilters(secured ? all.filter((r) => r.job.employmentType !== "placement") : all, filters, today);
   const savedIds = new Set(apps.map((x) => x.job_id));
@@ -70,11 +74,21 @@ export default async function Feed({ searchParams }: { searchParams: Promise<Rec
         </p>
       )}
       {placementEligible && (
-        <p className="card-quest p-4 text-sm">
-          Your degree has a placement year and you graduate in {placementGradYear(today)}, so {start}/{String(start + 1).slice(2)} placements are open to you.
-          Banks and pharma close first (September–October) and many others fill on a rolling basis, so apply early.
-          {springEligible && " Spring weeks are open to you too: switch above."}
-        </p>
+        <div className="card-quest flex flex-col gap-1.5 p-4 text-sm">
+          <p className="font-bold">
+            {countdown.phase === "passed"
+              ? `Your university's deadline to secure a placement (${formatDay(countdown.secureBy)}) has passed`
+              : `${countdown.days} days to secure your placement · university deadline ${formatDay(countdown.secureBy)}`}
+          </p>
+          <p>
+            {countdown.phase === "main" && <>Your degree has a placement year and you graduate in {placementGradYear(today)}, so {start}/{String(start + 1).slice(2)} placements are open to you. Banks and pharma close first (September–October) and many others fill on a rolling basis, so apply early.</>}
+            {countdown.phase === "late" && <>Most big schemes have closed, but smaller firms, startups and some engineering and public-sector employers keep recruiting until the summer. Look for rolling deadlines, apply widely, and send speculative applications to firms you&apos;d like to work for.</>}
+            {countdown.phase === "final" && <>Under a month left. Talk to your placement team now: if you don&apos;t secure one by the deadline, most universities move you onto the 3-year version of your course. Apply to everything with a rolling deadline.</>}
+            {countdown.phase === "passed" && <>Check with your placement team whether you can still be approved, or whether you&apos;re moving onto the 3-year course.</>}
+            {springEligible && countdown.phase === "main" && " Spring weeks are open to you too: switch above."}
+          </p>
+          {!profile.placement_secure_by && <Link href="/settings" className="text-xs font-semibold underline">Set your university&apos;s own deadline</Link>}
+        </div>
       )}
       {springEligible && !placementEligible && !secured && (
         <p className="card-quest p-4 text-sm">
