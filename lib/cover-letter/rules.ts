@@ -1,6 +1,8 @@
 import rulesJson from "./rules.json";
 import { namesCompany } from "./employers";
-import type { Limit, LintHit, Mode, Span } from "./types";
+import type { Fact, Limit, LintHit, Mode, Span } from "./types";
+import type { Track } from "@/lib/cv-rules/types";
+import { trackLintHits } from "./track";
 
 type HardEntry = { pattern: string; scope: "any" | "opening" | "close"; label: string };
 type SoftEntry = { pattern: string; weight: number };
@@ -35,6 +37,10 @@ export type LetterOpts = {
   role: string;
   otherEmployers: string[];
   ownSpans: Span[];
+  /** Spring/placement lint (swap test, track clichés, why-placement anchor). Absent = standard: none of it runs. */
+  track?: Track;
+  rivals?: string[];
+  pickedFacts?: Fact[];
 };
 
 type Region = { opening: boolean; close: boolean };
@@ -400,6 +406,9 @@ export function lintLetter(text: string, opts: LetterOpts): LintHit[] {
     for (const h of [...lexiconHits(p.text, region), ...counterHits(p.text)]) local.push({ ...h, start: h.start + p.start, end: h.end + p.start });
   }
   local.push(...otherEmployerHits(text, opts));
+  if (opts.track && opts.track !== "standard") {
+    local.push(...trackLintHits(text, { track: opts.track, company: opts.company, role: opts.role, rivals: opts.rivals ?? [], pickedFacts: opts.pickedFacts ?? [] }));
+  }
   const scoped = withScope(local, opts.ownSpans);
 
   const letterLevel: RawHit[] = [

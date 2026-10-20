@@ -645,7 +645,10 @@ export function verifyOutput(v: VerifyInput): Verified {
 
   const pastEmployers = [...i.cv.experience, ...i.cv.projects, ...i.cv.leadership].map((e) => lower(e.org.trim())).filter(Boolean);
   const otherEmployers = i.otherEmployers ?? [...new Set(i.evidence.rivals)].filter((r) => r.trim() && !pastEmployers.some((p) => p === lower(r.trim())));
-  const lint = lintLetter(text, { mode: i.mode, limit: i.limit, company: i.company, role: i.role, otherEmployers, ownSpans: spans.filter((s) => s.kind === "theirs") });
+  const lint = lintLetter(text, {
+    mode: i.mode, limit: i.limit, company: i.company, role: i.role, otherEmployers, ownSpans: spans.filter((s) => s.kind === "theirs"),
+    track: i.track, rivals: i.evidence.rivals, pickedFacts: i.pickedFacts,
+  });
   return { spans, lint: [...lint, ...notes].sort((a, b) => a.start - b.start) };
 }
 
