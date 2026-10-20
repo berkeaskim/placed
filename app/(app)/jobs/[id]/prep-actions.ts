@@ -13,6 +13,7 @@ import { roleKey } from "@/lib/interview-prep/sources";
 import { getOrCreatePrep, type PrepView } from "@/lib/interview-prep/service";
 
 const GONE = "This role is no longer available.";
+export const SPRING_OWN_PREP = "Spring weeks have their own interview prep on this page.";
 
 /**
  * Interview prep for a job the student has applied to: shared pack (cached per company + role family) plus their CV
@@ -26,6 +27,8 @@ export async function getInterviewPrep(jobId: string): Promise<PrepView | { erro
     .where(and(eq(applications.user_id, user.id), eq(applications.job_id, jobId))).get();
   const jobRow = db.select({ company_id: jobs.company_id }).from(jobs).where(eq(jobs.id, jobId)).get();
   if (!job || !jobRow) return { error: GONE };
+  // Spring weeks have their own local prep (SpringPrepPanel): a generic internship pack is never built or cached for one.
+  if (job.employmentType === "spring_week") return { error: SPRING_OWN_PREP };
   if (!isPastSaved(app?.status)) return { error: "Mark this role as applied to unlock interview prep." };
 
   const companyId = jobRow.company_id;
