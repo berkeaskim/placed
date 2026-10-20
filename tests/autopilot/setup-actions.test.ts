@@ -61,6 +61,12 @@ describe("saveVault", () => {
     expect(r!.values).toMatchObject({ grad_year: "28", phone: "123" }); // typed input is handed back
     expect(r!.unlocked).toBe(true); // merged core is still complete
   });
+  it("saves a scheme-less LinkedIn (as a CV prefill gives it) as an https:// link, and flags a non-link", async () => {
+    const r = await saveVault(null, fd({ linkedin: "linkedin.com/in/amirakhan-e2e", portfolio: "my portfolio" }));
+    expect(r).toMatchObject({ ok: true, invalid: ["portfolio"] });
+    expect(savedCore().linkedin).toBe("https://linkedin.com/in/amirakhan-e2e");
+    expect(r!.values).toMatchObject({ linkedin: "https://linkedin.com/in/amirakhan-e2e", portfolio: "my portfolio" });
+  });
   it("an explicitly cleared required field is removed; unlocked is false even with completed_at set; XP not re-awarded", async () => {
     prior({ ...AYSE_CORE }, "2026-10-14T00:00:00Z");
     const r = await saveVault(null, fd({ phone: "" }));

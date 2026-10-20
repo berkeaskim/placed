@@ -175,9 +175,9 @@ export function SetupForm({ initial, unlocked, needsVisaHint }: { initial: Parti
 
         <Card title="Links & defaults">
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field name="linkedin" label="LinkedIn" hint="Optional."><input id="linkedin" name="linkedin" type="url" defaultValue={v("linkedin")} placeholder="https://linkedin.com/in/your-name" className={inputCls} /></Field>
-            <Field name="github" label="GitHub" hint="Optional."><input id="github" name="github" type="url" defaultValue={v("github")} placeholder="https://github.com/your-name" className={inputCls} /></Field>
-            <Field name="portfolio" label="Portfolio or website" hint="Optional."><input id="portfolio" name="portfolio" type="url" defaultValue={v("portfolio")} placeholder="https://your-site.co.uk" className={inputCls} /></Field>
+            <Field name="linkedin" label="LinkedIn" hint="Optional."><input id="linkedin" name="linkedin" type="text" inputMode="url" autoCapitalize="off" spellCheck={false} defaultValue={v("linkedin")} placeholder="https://linkedin.com/in/your-name" className={inputCls} /></Field>
+            <Field name="github" label="GitHub" hint="Optional."><input id="github" name="github" type="text" inputMode="url" autoCapitalize="off" spellCheck={false} defaultValue={v("github")} placeholder="https://github.com/your-name" className={inputCls} /></Field>
+            <Field name="portfolio" label="Portfolio or website" hint="Optional."><input id="portfolio" name="portfolio" type="text" inputMode="url" autoCapitalize="off" spellCheck={false} defaultValue={v("portfolio")} placeholder="https://your-site.co.uk" className={inputCls} /></Field>
             <Field name="languages" label="Languages" hint="Optional."><input id="languages" name="languages" defaultValue={v("languages")} placeholder="English (native), Turkish (fluent)" className={inputCls} /></Field>
           </div>
           <Field name="heard_about" label="How did you hear about the role?" required hint="Your default answer for the “How did you hear about us?” question."><input id="heard_about" name="heard_about" required defaultValue={v("heard_about")} placeholder="Placed" className={inputCls} /></Field>
