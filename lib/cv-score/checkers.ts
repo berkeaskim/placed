@@ -181,6 +181,14 @@ export function confirmedSpellingErrors(words: string[], text: string, cv: Pick<
   return out;
 }
 
+/**
+ * STM-02 (research/placement-year/07 §4.3). Professional registration titles (protected under Royal Charter: Engineering
+ * Council) and full member grades. Case-sensitive, so "Ceng" or "CEngineering" never match.
+ */
+const PROTECTED_TITLE = /\b(CEng|IEng|EngTech|ICTTech|CSci|CChem|CBiol|Chartered (?:Engineer|Chemist|Scientist|Biologist)|M(?:IMechE|IET|ICE|IStructE|IChemE|RAeS|RSC|RSB)|F(?:IMechE|IET|ICE|RSC|RSB))\b/;
+/** The same line marks it as a route, an accreditation or a student grade, which is honest. */
+const TITLE_ROUTE = /(working towards|towards|route to|accredit\w*|partially (?:meets|fulfils)|further learning|student member|affiliate|aspir\w*|training scheme|leading to)/i;
+
 export const CHECKERS: Record<CheckerId, (ctx: CvContext, rule: CvRule) => Out> = {
   text_layer: (c) =>
     isImageOnly(c.pageTexts) ? bad("fail", null, "Export your CV as a text PDF from Word/Google Docs — this one looks like an image, so ATS can't read it.") : ok(),
@@ -410,6 +418,12 @@ export const CHECKERS: Record<CheckerId, (ctx: CvContext, rule: CvRule) => Out> 
     const first = (c.pageTexts[0] ?? c.text).split("\n").map((l) => l.trim()).find(Boolean) ?? "";
     return /^(?:curriculum\s+vitae|c\.?v\.?|r[ée]sum[ée])\s*[:.]?$/i.test(first)
       ? bad("fail", first, "Delete the \"Curriculum Vitae\" title and put your name at the top instead.") : ok();
+  },
+  protected_titles: (c) => {
+    const hit = c.text.split("\n").map((l) => l.trim()).find((l) => PROTECTED_TITLE.test(l) && !TITLE_ROUTE.test(l));
+    return hit
+      ? bad("fail", hit, `Only registered engineers or scientists and full members can use "${hit.match(PROTECTED_TITLE)![0]}". As a student, write "Student member, IMechE" or "MEng (accredited for CEng)".`)
+      : ok();
   },
   hidden_text: (c) => safetyCheck(c.safety, "ATS-HID-01", "Remove the hidden text — ATS can read it even though people can't, and some reject CVs that contain it."),
   prompt_injection: (c) => safetyCheck(c.safety, "ATS-INJ-01", "Remove the instruction-style text aimed at an AI screener — it won't help you and can get your CV rejected."),

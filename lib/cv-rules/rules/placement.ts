@@ -1,3 +1,4 @@
+import { ARCHETYPES, type Archetype } from "@/lib/types";
 import type { Citation, CvRule, RuleAdjust } from "../types";
 
 /**
@@ -7,11 +8,16 @@ import type { Citation, CvRule, RuleAdjust } from "../types";
  */
 
 const HIGHERIN_PLACEMENT_CV: Citation = { title: "How to write a CV for a placement or work experience", publisher: "Higherin (RateMyPlacement)", year: "current", url: "https://higherin.com/careers-advice/application-tips/placement-work-experience-cv" };
-const NEWCASTLE_ENG_CV: Citation = { title: "How to write a winning CV for an engineering student", publisher: "Newcastle University", year: "current", url: "https://international-blogs.ncl.ac.uk/blog/how-to-write-a-winning-cv-for-an-engineering-student" };
-const BRIGHTON_STEM_CV: Citation = { title: "STEM placements CV example guide", publisher: "University of Brighton", year: "2022", url: "https://blogs.brighton.ac.uk/stemplacements/files/2022/09/CV-EXAMPLE-GUIDE-STEM.pdf" };
+export const NEWCASTLE_ENG_CV: Citation = { title: "How to write a winning CV for an engineering student", publisher: "Newcastle University", year: "current", url: "https://international-blogs.ncl.ac.uk/blog/how-to-write-a-winning-cv-for-an-engineering-student" };
+export const BRIGHTON_STEM_CV: Citation = { title: "STEM placements CV example guide", publisher: "University of Brighton", year: "2022", url: "https://blogs.brighton.ac.uk/stemplacements/files/2022/09/CV-EXAMPLE-GUIDE-STEM.pdf" };
 const SOTON_PLACEMENT_PREP: Citation = { title: "Preparing for placement (first-year module marks on your CV)", publisher: "University of Southampton", year: "current", url: "https://www.southampton.ac.uk/healthsciences/undergraduate/placements/hmpr/hmpr_students/preparing.page" };
 
 const PLACEMENT = ["placement"] as const satisfies readonly ["placement"];
+/**
+ * PLC-03 (modules) and PLC-04 (project write-up) have sector versions for engineering and science: STM-01, ENG-02 and
+ * SCI-03 (research/placement-year/07 §1.3). One question, one rule, so those sectors get the sector version only.
+ */
+const NON_STEM: Archetype[] = ARCHETYPES.filter((a) => a !== "engineering" && a !== "science_pharma");
 
 export const PLACEMENT_RULES: CvRule[] = [
   {
@@ -25,7 +31,7 @@ export const PLACEMENT_RULES: CvRule[] = [
     citations: [BRIGHTON_STEM_CV],
   },
   {
-    id: "PLC-03", sectors: "all", tracks: [...PLACEMENT], dimension: "relevance", check: "llm", severity: "major", evidence: "B",
+    id: "PLC-03", sectors: NON_STEM, tracks: [...PLACEMENT], dimension: "relevance", check: "llm", severity: "major", evidence: "B",
     statement: "List 3–6 modules relevant to this placement, with marks where they're strong. In STEM, your modules and projects stand in for work experience.",
     llmGuidance: "Does the Education entry list at least three modules (or coursework units) relevant to the target role, ideally with marks? Pass if relevant modules are named, even without marks. Not applicable if the CV is for a non-degree applicant. Never judge the university's name or prestige.",
     passExample: "Relevant modules: Thermodynamics (72%), Engineering Design (75%), Materials (68%)",
@@ -33,7 +39,7 @@ export const PLACEMENT_RULES: CvRule[] = [
     citations: [HIGHERIN_PLACEMENT_CV, NEWCASTLE_ENG_CV],
   },
   {
-    id: "PLC-04", sectors: "all", tracks: [...PLACEMENT], dimension: "impact", check: "llm", severity: "major", evidence: "B",
+    id: "PLC-04", sectors: NON_STEM, tracks: [...PLACEMENT], dimension: "impact", check: "llm", severity: "major", evidence: "B",
     statement: "Write up one academic, group or personal project like a job: your role, the tools or methods (CAD, MATLAB, Python, lab techniques, Excel) and the outcome (a mark, a test result, a working prototype, a ranking).",
     llmGuidance: "Is at least one academic, group or personal project described with the candidate's own role, a named tool or method, and an outcome (mark, result, working output, ranking)? Group work passes if the candidate's own part is clear.",
     passExample: "Group design project (4 people): modelled gearbox in SolidWorks and ran FEA on the shaft; design scored 74%, top 3 of 20 teams",
@@ -41,7 +47,7 @@ export const PLACEMENT_RULES: CvRule[] = [
     citations: [BRIGHTON_STEM_CV, NEWCASTLE_ENG_CV],
   },
   {
-    id: "PLC-05", sectors: ["software_eng", "data_analytics", "research"], tracks: [...PLACEMENT], dimension: "relevance", check: "llm", severity: "minor", evidence: "C",
+    id: "PLC-05", sectors: ["software_eng", "data_analytics", "research", "engineering"], tracks: [...PLACEMENT], dimension: "relevance", check: "llm", severity: "minor", evidence: "C",
     statement: "Name your technical tools with a level and where you used them ('SolidWorks: 2nd-year gearbox design project'; 'HPLC: organic chemistry lab'), grouped by type.",
     llmGuidance: "Are technical tools named with a level or a place they were used, rather than as a bare list? Never require a specific tool; judge only specificity.",
     passExample: "Python (pandas, 2nd-year data project); SQL (society membership database); MATLAB (signals coursework)",
@@ -49,6 +55,8 @@ export const PLACEMENT_RULES: CvRule[] = [
     citations: [NEWCASTLE_ENG_CV],
   },
 ];
+
+// PLC-05 is not for science_pharma: SCI-02 already asks for each technique with where it was used, on every track.
 
 /** How existing rules behave on the placement track (05 §4a); merged into each rule's `trackAdjust.placement`. */
 export const PLACEMENT_ADJUST: Record<string, RuleAdjust> = {

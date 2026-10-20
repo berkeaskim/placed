@@ -19,6 +19,10 @@ export const DIMENSION_WEIGHTS: Record<Archetype, Record<Dimension, number>> = {
   finance_banking: { ats: 10, impact: 20, clarity: 25, relevance: 25, uk: 20 },
   marketing_growth: { ats: 10, impact: 25, clarity: 30, relevance: 25, uk: 10 },
   research: { ats: 10, impact: 15, clarity: 25, relevance: 40, uk: 10 },
+  // research/placement-year/07 §2.1, §3.1 (Grade D, synthesis): HR screens first on Workday/Oracle portals; tools, modules
+  // and design or lab projects are the evidence; science weights clarity for GSK's "few acronyms, simple layout".
+  engineering: { ats: 15, impact: 20, clarity: 20, relevance: 35, uk: 10 },
+  science_pharma: { ats: 15, impact: 15, clarity: 25, relevance: 35, uk: 10 },
 };
 
 /**
@@ -34,6 +38,9 @@ export const SECTOR_CAVEATS: Partial<Record<Archetype, string>> = {
     "Big 4 firms screen mainly via application forms and online tests — your CV matters less at that stage. MBB firms still screen on the CV.",
   finance_banking:
     "Big 4 and many insight or spring-week schemes screen mainly via application forms and online tests — your CV matters less at that stage. Banks still screen on the CV.",
+  // research/placement-year/07 §2.1: Mott MacDonald UK placements take no CV; BAE/nuclear vetting is eligibility, not score.
+  engineering:
+    "Some engineering employers don't read a CV at first: Mott MacDonald's UK placements use an application form and a strengths test instead. Defence and nuclear roles also need security vetting, which is an eligibility check, not part of this score.",
 };
 
 /**

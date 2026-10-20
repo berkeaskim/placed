@@ -91,4 +91,11 @@ export const SPRING_ADJUST: Record<string, RuleAdjust> = {
   "FCQ-02": { skip: true },
   "SWE-02": { skip: true },
   "RES-02": { skip: true },
+  // Engineering and science (research/placement-year/07 §5): no module marks or safety record in first term yet.
+  "STM-01": { skip: true },
+  "ENG-04": { skip: true },
+  "ENG-01": { severity: "minor" },
+  "ENG-02": { severity: "minor" },
+  "SCI-01": { severity: "minor" },
+  "SCI-03": { severity: "minor" },
 };

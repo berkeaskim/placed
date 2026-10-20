@@ -13,6 +13,8 @@ export const ROLE_TITLES: Record<Archetype, string> = {
   finance_banking: "Banking & Finance Intern",
   marketing_growth: "Marketing & Growth Intern",
   research: "Research Intern",
+  engineering: "Engineering Intern",
+  science_pharma: "Lab Scientist Intern",
 };
 
 export type RoleCard = { key: Archetype; title: string; score: number; why: string[] };

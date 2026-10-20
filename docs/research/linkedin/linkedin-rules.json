@@ -274,6 +274,22 @@
       "narrative": 20,
       "polish": 10,
       "presence": 0
+    },
+    "engineering": {
+      "integrity": 20,
+      "proof": 35,
+      "findability": 22,
+      "narrative": 13,
+      "polish": 10,
+      "presence": 0
+    },
+    "science_pharma": {
+      "integrity": 25,
+      "proof": 32,
+      "findability": 13,
+      "narrative": 20,
+      "polish": 10,
+      "presence": 0
     }
   },
   "sources": [
@@ -2187,7 +2203,9 @@
         "product",
         "finance_banking",
         "marketing_growth",
-        "research"
+        "research",
+        "engineering",
+        "science_pharma"
       ],
       "dimension": "integrity",
       "statement": "No confidential employer, client or deal information: no non-public client or deal names, internal figures, internal dashboards or customer data, offer or pay details, or assessment and case-interview content.",

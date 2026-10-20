@@ -44,7 +44,7 @@ export const MAX_TAGS_PER_COMPANY = 25;
  */
 export const EMPTY_RUNS_TO_CLOSE = 2;
 /** Bump to force every job to be re-processed once (e.g. after changing deterministic extraction). */
-export const HASH_VERSION = "v4"; // v3: spring-week classifier; v4: placement classifier (lib/ingest/placement.ts)
+export const HASH_VERSION = "v5"; // v3: spring-week classifier; v4: placement classifier (lib/ingest/placement.ts); v5: engineering and science_pharma archetypes
 
 /**
  * Versioned, and includes the ATS close date: an extended deadline with an unchanged JD must still re-process.

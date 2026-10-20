@@ -11,7 +11,8 @@ import type { TailorChange, TailoredCV, TailoredEntry } from "@/lib/types";
 import { toTailored } from "@/lib/verify/tailoring";
 
 const KEYWORDS: Record<Archetype, RegExp> = {
-  software_eng: /\b(software|engineer(ing)?|developer|backend|frontend|full[- ]stack|swe|devops|mobile)\b/gi,
+  // No bare "engineer(ing)": it filed every mechanical, civil and electrical role under software (placement-year/07 §4.1).
+  software_eng: /\b(software|developer|backend|frontend|full[- ]stack|swe|devops|mobile|(back[- ]?end|front[- ]?end|platform|cloud|web|ios|android|site reliability|ml|machine learning|data platform|embedded software|firmware|test automation) engineer(ing|s)?)\b/gi,
   // phrases, not bare words: "data", "product", "research" and "markets" appear in every kind of posting and CV (10#28)
   data_analytics: /\b(data (analyst|analytics|analysis|engineer\w*|scien\w*|visuali[sz]ation)|analytics|business intelligence|bi analyst|machine learning)\b/gi,
   quant_trading: /\b(quant\w*|trading|trader|systematic|market making|algorithmic)\b/gi,
@@ -19,19 +20,45 @@ const KEYWORDS: Record<Archetype, RegExp> = {
   product: /\b(product (manager|management|intern|analyst|owner|designer)|apm)\b/gi,
   finance_banking: /\b(investment banking|banking|global markets|capital markets|financial markets|m&a|asset management|equity research|summer analyst|corporate finance|private equity|finance)\b/gi,
   marketing_growth: /\b(marketing|growth|brand|content|social media|communications|seo)\b/gi,
-  research: /\b(research (assistant|scientist|engineer|intern\w*|fellow|associate|programme|placement)|researcher|scientist|phd|laborator\w*|publications?)\b/gi,
+  // No bare "scientist" or "laboratory": industry lab roles are science_pharma now (placement-year/07 §4.1).
+  research: /\b(research (assistant|scientist|engineer|intern\w*|fellow|associate|programme|placement)|researcher|phd|publications?)\b/gi,
+  // Never bare "plc" (Barclays PLC) or "ice" (the Institution is matched by its full name).
+  engineering: /\b((mechanical|electrical|electronic|electronics|civil|structural|aerospace|aeronautical|automotive|chemical|process|manufacturing|production|mechatronics?|materials|nuclear|geotechnical|building services|biomedical|rail|power|propulsion|avionics|airframe|stress) engineer(ing|s)?|engineering (placement|industrial placement|undergraduate|year in industry)|solidworks|catia|siemens nx|autocad|revit|ansys|abaqus|simulink|labview|plc (programming|ladder)|ladder logic|finite element|fea|cfd|gd&t|formula student|imeche|institution of (mechanical|civil) engineers|istructe|icheme|eurocodes?|aircraft|v-model|rig test\w*|lean manufacturing|six sigma)\b/gi,
+  // Never bare "scientist": "Data Scientist" is data_analytics.
+  science_pharma: /\b(pharma\w*|biopharm\w*|biotech\w*|drug (discovery|development|product|substance)|medicinal chemistry|analytical (chemist\w*|science|development)|synthetic (organic )?chemistry|formulation (scientist|science|development)|(qc|qa|quality control|quality assurance) (analyst|scientist|associate|placement)|regulatory affairs|clinical (operations|trials?|development)|pharmacovigilance|bioprocess\w*|microbiolog\w*|biochemist\w*|toxicolog\w*|cell biology|molecular biology|(lab|laboratory) (scientist|technician|analyst|placement)|lab-based|(analytical|formulation|bench|r&d|development|qc|associate) scientist|gmp|glp|gxp|hplc|uplc|lc-ms|gc-ms|nmr|qpcr|pcr|elisa|cell culture|aseptic|coshh)\b/gi,
 };
 
+/**
+ * Weak signals, counted once even in the title: "systems/test/design engineer" is engineering at BAE and software at a
+ * cloud firm, so the body decides. Degree acronyms are case-sensitive so the surname "Meng" never counts.
+ */
+const WEAK_KEYWORDS: Partial<Record<Archetype, RegExp>> = {
+  engineering: /(?<![Ss]oftware |[Dd]ata |[Cc]loud |[Ww]eb |ML |[Pp]latform )\b(?:[Ss]ystems|[Dd]esign|[Tt]est|[Qq]uality|[Cc]ontrols?|[Ii]ntegration) [Ee]ngineer(?:ing|s)?\b|\b[BM]Eng\b/g,
+  software_eng: /\b(kubernetes|docker|aws|azure|gcp|microservices|ci\/cd)\b/gi,
+};
+
+const DISCIPLINE = /\b(mechanical|electrical|electronic|civil|structural|aerospace|aeronautical|automotive|chemical|manufacturing|materials|nuclear|airframe|avionics|biomedical)\b/i;
+const PHARMA_CUE = /\b(gmp|glp|qc|regulatory|pharma\w*)\b/i;
+
+/** On a tied raw score, prefer the industry sector when the text says so (placement-year/07 §4.1 tie-break). */
+function tieBreak(a: Archetype, b: Archetype, text: string, title: string): number {
+  const pair = (x: Archetype, y: Archetype) => (a === x && b === y ? -1 : a === y && b === x ? 1 : 0);
+  if (PHARMA_CUE.test(text) || PHARMA_CUE.test(title)) { const p = pair("science_pharma", "research"); if (p) return p; }
+  if (DISCIPLINE.test(title)) { const p = pair("engineering", "software_eng"); if (p) return p; }
+  return 0;
+}
+
 export function archetypeScores(text: string, title = ""): ArchetypeScore[] {
+  const count = (s: string, re: RegExp | undefined) => (re ? (s.match(re) ?? []).length : 0);
   const raw = ARCHETYPES.map((key) => {
-    const t = (title.match(KEYWORDS[key]) ?? []).length * 3;
-    const b = (text.match(KEYWORDS[key]) ?? []).length;
+    const t = count(title, KEYWORDS[key]) * 3 + count(title, WEAK_KEYWORDS[key]);
+    const b = count(text, KEYWORDS[key]) + count(text, WEAK_KEYWORDS[key]);
     return { key, raw: t + b };
   });
   const max = Math.max(1, ...raw.map((r) => r.raw));
   return raw
-    .map((r) => ({ key: r.key, score: Math.round((r.raw / max) * 100), why: r.raw > 0 ? [`Matches ${r.key.replace("_", " ")} keywords`] : [] }))
-    .sort((a, b) => b.score - a.score);
+    .sort((a, b) => b.raw - a.raw || tieBreak(a.key, b.key, text, title))
+    .map((r) => ({ key: r.key, score: Math.round((r.raw / max) * 100), why: r.raw > 0 ? [`Matches ${r.key.replace("_", " ")} keywords`] : [] }));
 }
 
 const MONTHS = "january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|sept|oct|nov|dec";

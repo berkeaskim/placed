@@ -38,7 +38,7 @@ describe("fit formula conformance (audit 10#4)", () => {
   it("global = round1(clamp(Σ w·sub − 0.5·softFlags, 1, 5)) for random ungated inputs", () => {
     const r = rng(17);
     for (let i = 0; i < 500; i++) {
-      const res = scoreFit(student(), job({ archetype: ARCHETYPES[Math.floor(r() * 8)], cohortClash: r() < 0.3 }), cov(r()), today);
+      const res = scoreFit(student(), job({ archetype: ARCHETYPES[Math.floor(r() * ARCHETYPES.length)], cohortClash: r() < 0.3 }), cov(r()), today);
       const raw = FIT_WEIGHTS.archetype * res.sub.archetype + FIT_WEIGHTS.requirements * res.sub.requirements +
         FIT_WEIGHTS.location * res.sub.location - 0.5 * res.softFlags.length;
       expect(res.global).toBeCloseTo(Math.round((Math.min(5, Math.max(1, raw)) + 1e-9) * 10) / 10, 9);
@@ -202,7 +202,7 @@ describe("fit invariants (seeded property loops)", () => {
     });
     const j = job({
       location: locations[Math.floor(r() * locations.length)], remote: r() < 0.2,
-      archetype: r() < 0.2 ? null : ARCHETYPES[Math.floor(r() * 8)], yearEligibility: pickN(YEARS),
+      archetype: r() < 0.2 ? null : ARCHETYPES[Math.floor(r() * ARCHETYPES.length)], yearEligibility: pickN(YEARS),
       sponsorsVisa: (["yes", "no", "unknown"] as const)[Math.floor(r() * 3)], employmentType: types[Math.floor(r() * types.length)],
       firstYearFriendly: r() < 0.3, deadline: r() < 0.2 ? null : addDays(today, Math.floor(r() * 120) - 20),
       postedAt: r() < 0.2 ? null : `${addDays(today, -Math.floor(r() * 200))}T00:00:00Z`, cohortClash: r() < 0.2,

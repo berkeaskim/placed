@@ -47,6 +47,9 @@ export const LI_SECTOR_IMPORTANCE: Record<Archetype, { level: "low" | "medium-lo
   finance_banking: { level: "medium", note: "LinkedIn will not get you a spring week. Your application will." },
   marketing_growth: { level: "high", note: "Your profile is a sample of how you market yourself." },
   research: { level: "medium-low", note: "Your application, research statement and references carry far more weight." },
+  // research/placement-year/07 §1.2 row 24
+  engineering: { level: "medium", note: "Big schemes hire through forms, tests and assessment centres; LinkedIn helps when you contact engineers." },
+  science_pharma: { level: "medium-low", note: "Pharma placements screen on the CV and cover letter; LinkedIn is a side channel." },
 };
 
 /** The student-facing line for an advisory rule. Falls back to the scorer statement minus its "Advisory (weight 0):" prefix. */

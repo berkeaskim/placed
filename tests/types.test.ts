@@ -3,8 +3,8 @@ import { ARCHETYPES, YEARS } from "@/lib/types";
 import { aiMode, aiProvider } from "@/lib/ai/config";
 
 describe("shared types", () => {
-  it("has the 8 archetypes and 5 years from the spec", () => {
-    expect(ARCHETYPES).toHaveLength(8);
+  it("has the 10 archetypes and 5 years from the spec", () => {
+    expect(ARCHETYPES).toHaveLength(10);
     expect(YEARS).toEqual(["1st", "2nd", "penultimate", "final", "masters"]);
   });
 });

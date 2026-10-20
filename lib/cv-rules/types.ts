@@ -19,6 +19,8 @@ export const CHECKER_IDS = [
   "first_year_marks", "placement_grad_date",
   // Audit 2026-10-18: photo detection from the upload scan; a "Curriculum Vitae" title line.
   "photo_present", "cv_title",
+  // Engineering and science (research/placement-year/07 §4.3): CEng, MIMechE, MRSC used without holding them.
+  "protected_titles",
 ] as const;
 export type CheckerId = (typeof CHECKER_IDS)[number];
 

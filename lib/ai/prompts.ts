@@ -15,7 +15,7 @@ export function wrapJob(text: string, title?: string): string {
 export const SYSTEM_TAG_JOB = `You label UK early-careers job postings (internships, placements, spring weeks, insight programmes, graduate schemes) for a student job board.
 ${UNTRUSTED_JD_RULE}
 Rules:
-- archetype: the single best fit from the allowed list.
+- archetype: the single best fit from the allowed list. engineering = mechanical, electrical/electronic, civil/structural, aerospace, automotive, chemical/process, manufacturing or materials roles (not software). science_pharma = industrial lab and R&D science roles in pharma, biotech, CROs and FMCG R&D: chemistry, biology, formulation, QC/QA, regulatory, clinical. research = academic or research-lab roles centred on publications or PhD-track work, and ML research. software_eng = software only, including embedded software and firmware.
 - year_eligibility: years of study, ONLY from explicit year-of-study wording ("penultimate year" -> ["penultimate","2nd"], "final year" -> ["final","masters"], "first year" -> ["1st"]). Never convert a graduation year into a year of study ("graduating in 2028" on a summer internship means penultimate, not final): leave the list empty for that, the app reads graduation years from the posting text. Spring weeks with no year-of-study wording -> []. Empty list if not stated.
 - sponsors_visa: "no" only if the posting explicitly says it will not sponsor a visa; "yes" only if it says sponsorship is available; otherwise "unknown". "Must have the right to work in the UK" alone is "unknown" (a Student visa gives that right in vacations), and "no sponsorship required" is "unknown". Silence is not a refusal.
 - deadline: YYYY-MM-DD only if a closing date is stated, else null.
@@ -34,7 +34,7 @@ ${UNTRUSTED_CV_RULE}
 - experience = paid/unpaid roles; leadership = societies, positions of responsibility, volunteering; projects = personal/academic projects.
 - sectionOrder lists the CV's sections in the order they appear, using: education, experience, projects, leadership, skills, interests.
 - yearGuess from graduation dates relative to October 2026 (graduating 2029 → "1st", 2028 → "2nd", 2027 → "final"; masters if a postgraduate degree is in progress), else null.
-- archetypes: the 3 best-fitting from the allowed list with score 0-100 and 1-3 "why" lines that each cite something actually in the CV.
+- archetypes: the 3 best-fitting from the allowed list with score 0-100 and 1-3 "why" lines that each cite something actually in the CV. engineering = mechanical, electrical/electronic, civil/structural, aerospace, automotive, chemical/process, manufacturing or materials roles (not software). science_pharma = industrial lab and R&D science roles in pharma, biotech, CROs and FMCG R&D: chemistry, biology, formulation, QC/QA, regulatory, clinical. research = academic or research-lab roles centred on publications or PhD-track work, and ML research. software_eng = software only, including embedded software and firmware.
 - Use empty strings/arrays or null when something is missing. ids can be any placeholder; they are reassigned.`;
 
 /** 06 R11 prompt guard, in addition to redaction. */

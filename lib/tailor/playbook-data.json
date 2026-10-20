@@ -889,5 +889,190 @@
    "Overstated language levels",
    "Generic profile, or school detail on a penultimate-year CV"
   ]
+ },
+ "engineering": {
+  "recruiterScan": [
+   "Technical skills block: are the advert's CAD, analysis and programming tools visible and grouped?",
+   "One design, build or test project with the student's own role, the method and a technical result.",
+   "Relevant modules with marks.",
+   "Hands-on or practical work.",
+   "Teamwork shown inside engineering work."
+  ],
+  "leadWith": [
+   "The bullet naming the advert's tool or method (SolidWorks, FEA, MATLAB, PLC).",
+   "Test, simulation or performance results already on the CV, with units.",
+   "The component or subsystem the student owned.",
+   "Safety, standards or quality actions already shown."
+  ],
+  "summaryFormula": "Only when the CV already has a profile: shorten it to at most two lines of facts it already states (degree, year, discipline, and the tools or projects the bullets already show). Leave out any job title the student is applying for and the grade. If the CV has no profile, leave it out: never write one.",
+  "verbs": {
+   "prefer": [
+    "Designed",
+    "Modelled",
+    "Analysed",
+    "Simulated",
+    "Tested",
+    "Prototyped",
+    "Machined",
+    "Validated",
+    "Optimised",
+    "Commissioned"
+   ],
+   "avoid": [
+    "Responsible for",
+    "Helped with",
+    "Exposure to",
+    "Led (for a team member's role)"
+   ]
+  },
+  "reframes": [
+   {
+    "from": "did the CAD for the project",
+    "to": "modelled [component] in [CAD tool]",
+    "onlyIf": "the component and the tool are named in the CV"
+   },
+   {
+    "from": "ran some simulations",
+    "to": "finite element analysis of [part] in [tool]",
+    "onlyIf": "the CV says it was FEA and names the part"
+   },
+   {
+    "from": "Year 2 group project",
+    "to": "group design project ([team size]): [own part]",
+    "onlyIf": "the student's own part is stated"
+   },
+   {
+    "from": "helped build the car",
+    "to": "[sub-team] member, Formula Student: [task]",
+    "onlyIf": "the sub-team and task are stated; keep member, never upgrade to lead"
+   },
+   {
+    "from": "used the workshop",
+    "to": "machined [part] on a [lathe/mill]",
+    "onlyIf": "the part and the machine are named"
+   },
+   {
+    "from": "IMechE member",
+    "to": "Student member, Institution of Mechanical Engineers",
+    "onlyIf": "always: never write MIMechE or CEng for a student"
+   }
+  ],
+  "competencyThemes": [
+   "Engineering design",
+   "Analysis and simulation",
+   "Practical and manufacturing skills",
+   "Testing and validation",
+   "Teamwork in technical projects",
+   "Health, safety and quality"
+  ],
+  "sectionOrder": [
+   "Header",
+   "Profile (optional, 1-2 lines)",
+   "Education (degree, relevant modules with marks, design project)",
+   "Technical Skills",
+   "Engineering Projects",
+   "Work Experience",
+   "Positions of Responsibility and Activities",
+   "Professional Membership",
+   "Interests"
+  ],
+  "pitfalls": [
+   "Software-style framing (tech stack, GitHub) for a mechanical role.",
+   "Tool lists with no project context.",
+   "Claiming CEng or member grades.",
+   "Jargon without a plain-English purpose line."
+  ]
+ },
+ "science_pharma": {
+  "recruiterScan": [
+   "Named lab techniques matching the advert, with where they were used.",
+   "A lab project with its aim, method, result or mark.",
+   "Protocol and data discipline (SOPs, lab notebook, GLP or GMP if real).",
+   "Modules with marks.",
+   "Lab safety."
+  ],
+  "leadWith": [
+   "The bullet naming the advert's technique (HPLC, PCR, cell culture).",
+   "Lab results already on the CV (yield, purity, samples run).",
+   "SOP or GxP work.",
+   "Data-analysis software use."
+  ],
+  "summaryFormula": "Only when the CV already has a profile: shorten it to at most two lines of facts it already states (degree, year, subject, and the techniques the bullets already show). Leave out any job title the student is applying for and the grade. If the CV has no profile, leave it out: never write one.",
+  "verbs": {
+   "prefer": [
+    "Performed",
+    "Prepared",
+    "Synthesised",
+    "Characterised",
+    "Analysed",
+    "Validated",
+    "Optimised",
+    "Recorded",
+    "Quantified"
+   ],
+   "avoid": [
+    "Exposure to",
+    "Assisted with (unless the original says so)",
+    "Familiar with GMP",
+    "Discovered (unless it was a genuine finding)"
+   ]
+  },
+  "reframes": [
+   {
+    "from": "did the lab work",
+    "to": "laboratory techniques: [X, Y]",
+    "onlyIf": "the techniques are named in the CV"
+   },
+   {
+    "from": "used HPLC in labs",
+    "to": "HPLC: [what was run], [module or project]",
+    "onlyIf": "where it was used is stated"
+   },
+   {
+    "from": "final year project in organic chemistry",
+    "to": "final-year project: [aim]; [techniques]; [result or mark]",
+    "onlyIf": "the aim and at least one technique are stated"
+   },
+   {
+    "from": "followed the lab script",
+    "to": "followed written SOPs and kept a lab notebook",
+    "onlyIf": "the CV says protocols or a notebook were used; never write GLP or GMP for a teaching lab"
+   },
+   {
+    "from": "made a poster",
+    "to": "poster presentation, [event, year]",
+    "onlyIf": "the poster was presented at a named event"
+   },
+   {
+    "from": "RSC member",
+    "to": "Student member, Royal Society of Chemistry",
+    "onlyIf": "always: never write MRSC or CChem for a student"
+   }
+  ],
+  "competencyThemes": [
+   "Laboratory techniques",
+   "Experimental work and protocols",
+   "Data analysis",
+   "Accurate recording",
+   "Lab safety",
+   "Science communication"
+  ],
+  "sectionOrder": [
+   "Header",
+   "Profile (optional, 1-2 lines)",
+   "Education (degree, relevant modules with marks, lab project)",
+   "Laboratory Skills",
+   "Lab and Research Experience",
+   "Work Experience",
+   "Positions of Responsibility and Activities",
+   "Professional Membership",
+   "Interests"
+  ],
+  "pitfalls": [
+   "Inflated technique lists.",
+   "GMP claimed from teaching labs.",
+   "Acronym walls with no expansion.",
+   "Academic-CV framing (publications first) for an industry placement."
+  ]
  }
 }

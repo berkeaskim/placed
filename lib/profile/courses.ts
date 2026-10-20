@@ -15,6 +15,7 @@ export const COURSES: readonly (readonly [string, Field])[] = [
   ["Mechanical Engineering", "Engineering"], ["Electrical and Electronic Engineering", "Engineering"], ["Civil Engineering", "Engineering"],
   ["Chemical Engineering", "Engineering"], ["Aerospace Engineering", "Engineering"], ["Biomedical Engineering", "Engineering"],
   ["General Engineering", "Engineering"], ["Engineering and Management", "Engineering"],
+  ["Electronic Engineering", "Engineering"], ["Mechatronics", "Engineering"], ["Materials Science and Engineering", "Engineering"],
   ["Physics", "Physics"], ["Theoretical Physics", "Physics"], ["Astrophysics", "Physics"],
   ["Management", "Management"], ["Business Management", "Management"], ["Business Administration", "Management"],
   ["International Business", "Management"], ["Marketing", "Management"], ["Management Science", "Management"],
@@ -30,6 +31,8 @@ export const COURSES: readonly (readonly [string, Field])[] = [
   ["Natural Sciences", "Natural Sciences"], ["Chemistry", "Natural Sciences"], ["Biology", "Natural Sciences"],
   ["Biochemistry", "Natural Sciences"], ["Biomedical Sciences", "Natural Sciences"], ["Geography", "Natural Sciences"],
   ["Earth Sciences", "Natural Sciences"], ["Neuroscience", "Natural Sciences"],
+  ["Pharmacology", "Natural Sciences"], ["Pharmacy (MPharm)", "Natural Sciences"], ["Pharmaceutical Science", "Natural Sciences"],
+  ["Chemistry with Industrial Experience", "Natural Sciences"],
   ["Medicine", "Other"], ["English Literature", "Other"], ["Modern Languages", "Other"], ["Philosophy", "Other"],
   ["Architecture", "Other"], ["Sociology", "Other"], ["Anthropology", "Other"], ["Classics", "Other"], ["Music", "Other"],
 ];
