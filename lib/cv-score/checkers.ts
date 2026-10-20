@@ -149,7 +149,7 @@ export function hasPortfolioLink(text: string, links: string[]): boolean {
 }
 
 /** Positions of responsibility (02#16): society roles, founding or launching something, leading or managing people. */
-const LEADERSHIP = /(president|captain|(?:co-?)?found(?:ed|er|ing)\b|launched|head (?:of|girl|boy|student)|deputy head|\bl(?:ed|ead)\b|team lead|chair|treasurer|secretary|committee|officer|organis(?:ed|er)|organiz(?:ed|er)|mentor(?:ed)?|managed|supervis(?:or|ed)|coordinated|\bran\b|trained|prefect|ambassador|representative|\brep\b|coach(?:ed)?|young enterprise|duke of edinburgh|\bdofe\b)/i;
+export const LEADERSHIP = /(president|captain|(?:co-?)?found(?:ed|er|ing)\b|launched|head (?:of|girl|boy|student)|deputy head|\bl(?:ed|ead)\b|team lead|chair|treasurer|secretary|committee|officer|organis(?:ed|er)|organiz(?:ed|er)|mentor(?:ed)?|managed|supervis(?:or|ed)|coordinated|\bran\b|trained|prefect|ambassador|representative|\brep\b|coach(?:ed)?|young enterprise|duke of edinburgh|\bdofe\b)/i;
 
 /** A likely headshot (02#4): on page 1, centred in its top 30%, at least 2 cm each way, portrait or square. */
 const CM = 72 / 2.54;

@@ -76,6 +76,21 @@ export function BankBlock({ report, stale, newCvSuggestions, jobId, untailoredId
         <p className="rounded-xl bg-[#FFF1DC] px-3 py-2 text-sm text-[#7A4100]" role="status">Some pinned items didn&apos;t fit on one page.</p>
       )}
 
+      {report.education && report.education.length > 0 && (
+        <details className="rounded-xl bg-[#F6F5FB] px-3 py-2 text-sm">
+          <summary className="inline-flex min-h-11 cursor-pointer items-center font-bold text-[#3A20C4]">Education tidied for this programme ({report.education.length})</summary>
+          <ul className="mt-1 flex flex-col gap-2 pb-1" aria-label="Education changes">
+            {report.education.map((c, i) => (
+              <li key={i} className="flex flex-col gap-0.5">
+                <span className="text-muted-foreground line-through">{c.before}</span>
+                {c.after ? <span className="font-semibold text-foreground">{c.after}</span> : <span className="font-semibold text-foreground">Removed</span>}
+                <span className="text-xs text-muted-foreground">{c.why}</span>
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+
       {report.added.length === 0 ? (
         <p className="text-sm text-muted-foreground">Nothing was added from your bank for this role.</p>
       ) : (

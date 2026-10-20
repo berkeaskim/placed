@@ -11,6 +11,9 @@ import { ensureBank } from "./import";
 import { fitSelection } from "./fit";
 import type { Selection, SelectionReport } from "./select";
 import { getBank, getSourceId } from "./store";
+import { trackForJob } from "../tailor/track";
+import { fixEducationForTrack } from "../tailor/education-fix";
+import { jdRequirementSkills } from "../scoring/coverage";
 import type { Bank } from "./types";
 
 export type BankOverrides = { pinned: string[]; excluded: string[] };
@@ -89,8 +92,14 @@ export async function cvForJob(userId: string, job: JobListItem, stored: StoredT
   const bank = getBank(userId);
   if (bank.entries.length === 0) return { parsed: cv.parsed, rawText: cv.rawText ?? "", selection: null, newCvSuggestions };
   const o = overrides ?? NO_OVERRIDES;
-  const selection = await fitSelection(bank, cv.parsed, job, {
-    pinnedForJob: o.pinned, excludedForJob: o.excluded, activeCvSourceId: getSourceId(userId, "cv", cv.id),
+  // Spring weeks and placements (spring 07 §3.3, placement 05 §4b): the education is tidied first (a GCSE summary frees
+  // lines for activities), then the selection runs in the job's mode.
+  const mode = trackForJob(job);
+  const terms = [...jdRequirementSkills(job.textLines ?? [], job.requirements ?? []).map((r) => r.skill), ...(job.archetype ? job.archetype.split("_") : [])];
+  const edu = fixEducationForTrack(cv.parsed, mode, { terms, todayYear: new Date().getFullYear() });
+  const selection = await fitSelection(bank, edu.cv, job, {
+    pinnedForJob: o.pinned, excludedForJob: o.excluded, activeCvSourceId: getSourceId(userId, "cv", cv.id), mode,
   });
+  if (edu.changes.length) selection.report.education = edu.changes;
   return { parsed: selection.base, rawText: groundingText(cv.rawText ?? "", selection.base, bank), selection, newCvSuggestions };
 }
