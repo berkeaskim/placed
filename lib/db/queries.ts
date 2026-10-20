@@ -6,7 +6,7 @@ import { AGGREGATOR_ATS, companies, cvs, jobs, profiles } from "@/lib/db/schema"
 import { normalizeUrl } from "@/lib/ingest/fingerprint";
 
 export type ProfileRow = {
-  user_id: string; display_name: string | null; year: Year | null; grad_year: number | null; placement_status?: PlacementStatus | null; field: string | null; course: string | null; location_pref: Region[];
+  user_id: string; display_name: string | null; year: Year | null; grad_year: number | null; placement_status?: PlacementStatus | null; placement_secure_by?: string | null; field: string | null; course: string | null; location_pref: Region[];
   needs_visa: boolean; work_auth?: WorkAuth | null; target_archetype: Archetype | null; archetypes: ArchetypeScore[]; skills: string[];
   onboarded: boolean; xp: number; level: number; streak_days: number; last_active_date: string | null;
 };

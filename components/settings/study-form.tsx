@@ -9,8 +9,8 @@ const PLACEMENT_LABEL: Record<PlacementStatus, string> = {
 };
 const YEAR_LABEL: Record<Year, string> = { "1st": "1st year", "2nd": "2nd year", penultimate: "Penultimate", final: "Final year", masters: "Master's" };
 
-export function StudyForm({ year, gradYear, placement, workAuth, options }: {
-  year: Year | null; gradYear: number | null; placement: PlacementStatus | null; workAuth: WorkAuth | null; options: number[];
+export function StudyForm({ year, gradYear, placement, secureBy, workAuth, options }: {
+  year: Year | null; gradYear: number | null; placement: PlacementStatus | null; secureBy: string | null; workAuth: WorkAuth | null; options: number[];
 }) {
   const [state, action, pending] = useActionState<StudyState, FormData>(saveStudy, null);
   const select = "min-h-11 min-w-0 flex-1 rounded-[12px] border bg-white px-3 text-sm";
@@ -36,6 +36,10 @@ export function StudyForm({ year, gradYear, placement, workAuth, options }: {
             <option value="">Not sure</option>
             {PLACEMENT_STATUSES.map((p) => <option key={p} value={p}>{PLACEMENT_LABEL[p]}</option>)}
           </select>
+        </label>
+        <label className="flex min-w-0 flex-1 basis-60 flex-col gap-1 text-sm font-semibold">University deadline to secure a placement
+          <input type="date" name="placement_secure_by" defaultValue={secureBy ?? ""} className={select} />
+          <span className="text-xs font-normal text-muted-foreground">Leave empty for 30 June. Your placement team will know the date.</span>
         </label>
       </div>
       <div className="flex flex-wrap gap-2">

@@ -1,0 +1,1 @@
+ALTER TABLE `profiles` ADD `placement_secure_by` text;
