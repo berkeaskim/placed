@@ -66,8 +66,8 @@ describe("long answers", () => {
     await setAnswer(first, "q_free", ESSAY, { approved: true });
     const second = jobWithPack("Wise");
     expect(findPreviousAnswer(UID, first, "Describe a project you are proud of")).toBeNull();
-    expect(findPreviousAnswer(UID, second, "Describe a project you are proud of.")).toEqual({ text: ESSAY, company: "Monzo" });
-    expect(findPreviousAnswer(UID, second, "Please describe a project that you are proud of")).toEqual({ text: ESSAY, company: "Monzo" });
+    expect(findPreviousAnswer(UID, second, "Describe a project you are proud of.")).toEqual({ text: ESSAY, company: "Monzo", staleNote: null });
+    expect(findPreviousAnswer(UID, second, "Please describe a project that you are proud of")).toEqual({ text: ESSAY, company: "Monzo", staleNote: null });
     expect(findPreviousAnswer(UID, second, "Why do you want to work here?")).toBeNull();
     expect(findPreviousAnswer("someone-else", second, "Describe a project you are proud of")).toBeNull();
   });

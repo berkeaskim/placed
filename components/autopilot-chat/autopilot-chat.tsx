@@ -11,7 +11,7 @@ import { announceAutopilotProgress } from "./autopilot-host";
 import { ChatThread, LiveQuestion, turnId, type SaveAnswer } from "./chat-thread";
 import { ProgressList, progressCounts } from "./progress-list";
 
-type Phase = { s: "loading" } | { s: "locked" } | { s: "error"; message: string; applyUrl: string | null } | { s: "ready"; items: PackItem[]; answers: Answers };
+type Phase = { s: "loading" } | { s: "locked" } | { s: "error"; message: string; applyUrl: string | null } | { s: "ready"; items: PackItem[]; answers: Answers; warnings: string[] };
 
 const TYPING_MS = 450;
 const REDUCED = "(prefers-reduced-motion: reduce)";
@@ -27,7 +27,7 @@ export function AutopilotChat({ jobId }: { jobId: string }) {
       if (!live) return;
       if ("locked" in r) setPhase({ s: "locked" });
       else if ("error" in r) setPhase({ s: "error", message: r.error, applyUrl: r.applyUrl });
-      else setPhase({ s: "ready", items: r.items, answers: r.answers });
+      else setPhase({ s: "ready", items: r.items, answers: r.answers, warnings: r.warnings ?? [] });
     }).catch(() => { if (live) setPhase({ s: "error", message: "Something went wrong building your pack.", applyUrl: null }); });
     return () => { live = false; };
   }, [jobId]);
@@ -54,7 +54,14 @@ export function AutopilotChat({ jobId }: { jobId: string }) {
       </div>
     );
   }
-  return <ReadyChat jobId={jobId} items={phase.items} saved={phase.answers} />;
+  return (
+    <>
+      {phase.warnings.map((w) => (
+        <p key={w} role="status" className="mx-5 mt-4 rounded-xl bg-[#FFF1DC] px-3 py-2 text-sm font-semibold text-[#7A4100]">{w}</p>
+      ))}
+      <ReadyChat jobId={jobId} items={phase.items} saved={phase.answers} />
+    </>
+  );
 }
 
 /** Skipped cover items and optional questions are client-only, so the transcript has no turn for them: place one at the item's form position. */

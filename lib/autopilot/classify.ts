@@ -14,6 +14,25 @@ const OTHER_US = /\bU\.?S\.?A?\b/; // case-sensitive so "let us know" is not a j
 const SCORE_TEST = /\b(SAT|ACT)\b|maximum possible/;
 const NOT_A_VALUE = /transcript|agreement|campus event|career fair|1st year|2nd year|sandwich|^are you (currently )?enrolled|\bsign\b/i;
 
+/**
+ * Placement-year questions (placement 05 §4d), checked before the general list so "length of the placement" is not read
+ * as an internship length and "Is your course a sandwich course?" fills from setup instead of being re-asked.
+ */
+const PLACEMENT_VAULT: [RegExp, VaultKey][] = [
+  [/\b(?:available|availability)\b.*\b(?:from|to|until)\b.*\b(?:from|to|until)\b|\bdates? (?:you are|you're) available\b/i, "placement_window"],
+  [/available (?:until|to)\b|latest (?:end|finish) date|(?:placement|availability) end date|until when are you available|when (?:must|do) you return/i, "available_to"],
+  [/available from\b|placement start date|earliest (?:placement )?start date for (?:the|a|your) placement/i, "available_from"],
+  [/return(?:ing)? to (?:full[- ]time )?(?:study|studies|university|your (?:studies|degree|course))|go back to university/i, "returning_to_study"],
+  [/(?:length|duration) of (?:the |your )?placement|placement (?:length|duration)|how (?:long|many months).*placement|months? (?:are you|can you) available/i, "placement_duration"],
+  [/minimum (?:number of )?weeks|university(?:'s)? minimum/i, "placement_min_weeks"],
+  [/(?:academic|which) year (?:is|of|will) (?:your |the )?placement|placement (?:academic )?year (?:is|will be)|year of (?:your )?placement/i, "placement_academic_year"],
+  [/(?:does|will) your (?:course|degree) (?:include|have|require) (?:a |an )?(?:placement|industrial|sandwich|year in industry)|sandwich (?:course|degree)|placement year (?:as )?part of|year in industry/i, "placement_included"],
+  [/(?:year 1|first[- ]year|1st[- ]year) (?:average|result|mark|grade)s?|(?:average|result|mark)s? (?:in|from|for) (?:your )?(?:year 1|first year|1st year)/i, "year1_result"],
+  [/predicted (?:degree )?(?:class|classification|grade|result)|expected (?:degree )?classification/i, "predicted_class"],
+  [/relocat|willing to (?:move|work in another)|location preference|preferred (?:office|site|location)/i, "relocation"],
+  [/placement (?:office|officer|tutor|coordinator)|university placement (?:contact|team)/i, "placement_office"],
+];
+
 // Order matters: first match wins. Anchored patterns avoid "Name" swallowing "company name".
 const VAULT: [RegExp, VaultKey][] = [
   [/^first name|^given name|^forename/i, "first_name"],
@@ -62,6 +81,9 @@ export function classify(label: string, type: FieldType): Classified {
   if (SCORE_TEST.test(l)) return type === "textarea" ? { kind: "freeText" } : { kind: "extra" };
   // Long free-text prompts mention words like "GitHub" or "degree" in passing ("…projects or experiences… GitHub"): never map them to a vault field.
   if (type === "textarea" && l.length > 80) return { kind: "freeText" };
+  if (type !== "textarea") {
+    for (const [re, key] of PLACEMENT_VAULT) if (re.test(l)) return { kind: "vault", key };
+  }
   if (type !== "textarea" && NOT_A_VALUE.test(l)) return { kind: "extra" };
   for (const [re, key] of VAULT) {
     if (!re.test(l)) continue;

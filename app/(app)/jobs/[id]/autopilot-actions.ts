@@ -19,7 +19,7 @@ import { classify } from "@/lib/autopilot/classify";
 import { safeHttpUrl } from "@/lib/text/url";
 import type { FormField, NormalizedForm } from "@/lib/autopilot/forms/types";
 
-type Prepared = { locked: true } | { error: string; applyUrl: string | null } | { items: PackItem[]; answers: Answers };
+type Prepared = { locked: true } | { error: string; applyUrl: string | null } | { items: PackItem[]; answers: Answers; warnings: string[] };
 
 const ownPack = (userId: string, jobId: string) => and(eq(autopilotPacks.user_id, userId), eq(autopilotPacks.job_id, jobId));
 

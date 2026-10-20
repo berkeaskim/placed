@@ -12,6 +12,10 @@ const LABELS: Record<string, string> = {
   grad_month: "Graduation month", grad_year: "Graduation year", rtw_uk: "Right to work in the UK", needs_sponsorship: "Visa sponsorship",
   start_date: "Earliest start date", internship_length: "Preferred length", outstanding_offers: "Outstanding offers or deadlines",
   linkedin: "LinkedIn", github: "GitHub", portfolio: "Portfolio or website", languages: "Languages", heard_about: "How did you hear about the role?",
+  placement_included: "Course includes a placement year", placement_academic_year: "Placement academic year", available_from: "Available from",
+  available_to: "Available until", placement_duration: "Placement length you can do", placement_min_weeks: "University minimum (weeks)",
+  returning_to_study: "Returning to study afterwards", year1_result: "Year 1 result", predicted_class: "Predicted degree class",
+  relocation: "Relocation", placement_office: "University placement office",
 };
 
 const YEAR_LABELS: Record<(typeof YEARS)[number], string> = {
@@ -171,6 +175,35 @@ export function SetupForm({ initial, unlocked, needsVisaHint }: { initial: Parti
             <Field name="internship_length" label="Preferred length" hint="Optional."><input id="internship_length" name="internship_length" defaultValue={v("internship_length")} placeholder="10 to 12 weeks" className={inputCls} /></Field>
           </div>
           <Field name="outstanding_offers" label="Outstanding offers or deadlines" hint="Optional. Employers sometimes ask."><input id="outstanding_offers" name="outstanding_offers" defaultValue={v("outstanding_offers")} placeholder="None" className={inputCls} /></Field>
+        </Card>
+
+        <Card title="Placement year">
+          <p className="-mt-2 text-sm text-[#4A4A57]">Optional. Only if your course has a placement year: placement forms ask these, and Autopilot fills them from here.</p>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field name="placement_included" label="Does your course include a placement year?">
+              <select id="placement_included" name="placement_included" defaultValue={v("placement_included")} className={inputCls}>
+                <option value="">Not set</option>
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+              </select>
+            </Field>
+            <Field name="placement_academic_year" label="Placement academic year" hint="For example 2027–28."><input id="placement_academic_year" name="placement_academic_year" defaultValue={v("placement_academic_year")} placeholder="2027–28" className={inputCls} /></Field>
+            <Field name="available_from" label="Available from"><input id="available_from" name="available_from" type="date" defaultValue={v("available_from")} className={inputCls} /></Field>
+            <Field name="available_to" label="Available until" hint="The last day before you go back to university."><input id="available_to" name="available_to" type="date" defaultValue={v("available_to")} className={inputCls} /></Field>
+            <Field name="placement_duration" label="Placement length you can do"><input id="placement_duration" name="placement_duration" defaultValue={v("placement_duration")} placeholder="9 to 13 months" className={inputCls} /></Field>
+            <Field name="placement_min_weeks" label="University minimum (weeks)" hint="Your course's minimum placement length, if it has one."><input id="placement_min_weeks" name="placement_min_weeks" inputMode="numeric" pattern="\d{1,2}" maxLength={2} defaultValue={v("placement_min_weeks")} placeholder="36" className={inputCls} /></Field>
+            <Field name="returning_to_study" label="Returning to full-time study afterwards?">
+              <select id="returning_to_study" name="returning_to_study" defaultValue={v("returning_to_study")} className={inputCls}>
+                <option value="">Not set</option>
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+              </select>
+            </Field>
+            <Field name="year1_result" label="Year 1 result"><input id="year1_result" name="year1_result" defaultValue={v("year1_result")} placeholder="68% average (First)" className={inputCls} /></Field>
+            <Field name="predicted_class" label="Predicted degree class"><input id="predicted_class" name="predicted_class" defaultValue={v("predicted_class")} placeholder="2:1" className={inputCls} /></Field>
+            <Field name="relocation" label="Relocation"><input id="relocation" name="relocation" defaultValue={v("relocation")} placeholder="Willing to relocate anywhere in the UK" className={inputCls} /></Field>
+          </div>
+          <Field name="placement_office" label="University placement office" hint="Optional. Some employers ask who approves your placement."><input id="placement_office" name="placement_office" defaultValue={v("placement_office")} placeholder="placements@university.ac.uk" className={inputCls} /></Field>
         </Card>
 
         <Card title="Links & defaults">
