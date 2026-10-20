@@ -3,7 +3,7 @@ import { getBank } from "@/lib/bank/store";
 import type { JobForScoring } from "@/lib/types";
 import { springContext, springQuestions, type SpringContext } from "./spring-bank";
 import { suggestStories, type StorySuggestion } from "./spring-stories";
-import { bansAiInInterviews, coachOnlyNotice } from "./banks";
+import { bansAiInInterviews, coachOnlyNotice } from "./ai-ban";
 
 /** `coachOnly`: the employer bans AI in interviews and assessments; the panel says so up front (the notice text). */
 export type SpringPrep = { ctx: SpringContext; stories: StorySuggestion[]; bankEmpty: boolean; coachOnly: string | null };

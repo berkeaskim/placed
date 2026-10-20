@@ -1,9 +1,9 @@
 import type { Bank, BankEntry } from "@/lib/bank/types";
 import { entryLabel } from "@/lib/bank/label";
-import type { SpringQuestion, StoryTheme } from "./spring-bank";
+import type { PrepQuestion, StoryTheme } from "./spring-bank";
 
 /**
- * STAR story suggestions for spring week competency questions, picked from the student's Experience Bank by keyword.
+ * STAR story suggestions for spring week (and placement) competency questions, picked from the student's Experience Bank by keyword.
  * Deterministic and local: no model call, so it works with AI off and never sends the bank anywhere. The student's own
  * bullet is shown as the evidence; nothing is rewritten or invented.
  */
@@ -68,7 +68,7 @@ const MAX_BULLET_USES = 2;
  * One story per competency question, spread across the bank: reuse is penalised and a bullet answers at most two
  * questions, so the student gets a varied set of stories. Questions with no matching bullet are left out.
  */
-export function suggestStories(bank: Bank, questions: SpringQuestion[], max = 10): StorySuggestion[] {
+export function suggestStories(bank: Bank, questions: Pick<PrepQuestion, "id" | "text" | "theme">[], max = 10): StorySuggestion[] {
   const entries = bank.entries.filter((e) => !e.hidden);
   const entryUses = new Map<string, number>();
   const bulletUses = new Map<string, number>();

@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { Camera, CameraOff, Check, Play, RotateCcw, Timer, Video } from "lucide-react";
-import type { SpringQuestion } from "@/lib/interview-prep/spring-bank";
+import type { PrepQuestion } from "@/lib/interview-prep/spring-bank";
 
 /**
  * Timed video interview practice with real spring week timings: prep countdown, answer countdown, one take, no pause.
@@ -42,7 +42,7 @@ function useNow(active: boolean) {
 }
 
 export function VideoPractice({ questions, prepSeconds, answerSeconds, onRestart }: {
-  questions: SpringQuestion[]; prepSeconds: number; answerSeconds: number; onRestart: () => void;
+  questions: PrepQuestion[]; prepSeconds: number; answerSeconds: number; onRestart: () => void;
 }) {
   const [phase, setPhase] = useState<Phase>({ kind: "setup" });
   const [takes, setTakes] = useState<Take[]>([]);

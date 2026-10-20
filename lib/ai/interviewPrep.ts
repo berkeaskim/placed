@@ -2,7 +2,7 @@ import { z } from "zod";
 import { AiError, AI_UNAVAILABLE, generateGrounded, generateStructured, runAi } from "./provider";
 import { escapeUntrusted, UNTRUSTED_JD_RULE, wrapJob } from "./prompts";
 import type { Track } from "@/lib/cv-rules/types";
-import { trackPrepNote } from "@/lib/interview-prep/banks";
+import { placementPrepNote } from "@/lib/interview-prep/placement-bank";
 import {
   attachSources, PrepModelOutput, PrepPack, PrepSource, resolveSources,
   type PrepPackT, type PrepQuestionT, type PrepSourceT,
@@ -46,7 +46,7 @@ export function buildStructurePrompt(input: PrepInput, research: string | null, 
     ? sources.map((s, i) => `[${i}] ${escapeUntrusted(s.title)} ${s.url}`).join("\n")
     : "(none: no public reports were found, so every question is reported=false)";
   const notes = research ? `<research>\n${escapeUntrusted(research)}\n</research>` : "<research>\n(no web research available)\n</research>";
-  const note = trackPrepNote(input.track ?? "standard");
+  const note = placementPrepNote(input.track ?? "standard");
   return `Employer: ${escapeUntrusted(input.company)}\n${note ? `${note}\n` : ""}\n${wrapJob(input.jdText.slice(0, 6000), input.jobTitle)}\n\n${notes}\n\nSources:\n${list}`;
 }
 

@@ -1,6 +1,5 @@
 import { AiError } from "@/lib/ai/provider";
 import type { PrepResultT, StoryT } from "@/lib/ai/interviewPrep";
-import type { TrackBank } from "./banks";
 
 export const FRESH_DAYS = 14;
 /** A pack built without public reports is retried sooner: search coverage changes, and it should not block a sourced one. */
@@ -9,8 +8,7 @@ export const DAILY_CAP = 10;
 const DAY_MS = 86_400_000;
 
 export type CachedPrep = PrepResultT & { createdAt: string };
-/** `bank`: the curated spring/placement question bank (lib/interview-prep/banks), added by the caller; never cached. */
-export type PrepView = PrepResultT & { stories: StoryT[]; createdAt: string; cached: boolean; bank?: TrackBank | null };
+export type PrepView = PrepResultT & { stories: StoryT[]; createdAt: string; cached: boolean };
 export type PrepDeps = {
   /** Cache key `${companyId}:${roleKey}`: concurrent misses for the same key on one instance share one generation. */
   key: string;

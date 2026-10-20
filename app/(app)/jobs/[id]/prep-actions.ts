@@ -11,7 +11,6 @@ import { aiMode } from "@/lib/ai/config";
 import { generatePrepPack, mapStories, PrepResult } from "@/lib/ai/interviewPrep";
 import { roleKey } from "@/lib/interview-prep/sources";
 import { getOrCreatePrep, type PrepView } from "@/lib/interview-prep/service";
-import { trackBank, type TrackBank } from "@/lib/interview-prep/banks";
 import { trackForJob } from "@/lib/tailor/track";
 
 const GONE = "This role is no longer available.";
@@ -21,7 +20,7 @@ export const SPRING_OWN_PREP = "Spring weeks have their own interview prep on th
  * Interview prep for a job the student has applied to: shared pack (cached per company + role family) plus their CV
  * stories. Called by /api/interview-prep/[jobId], not a server action (server actions run one at a time).
  */
-export async function getInterviewPrep(jobId: string): Promise<PrepView | { error: string; bank?: TrackBank | null }> {
+export async function getInterviewPrep(jobId: string): Promise<PrepView | { error: string }> {
   if (!isUuid(jobId)) return { error: GONE };
   const { user } = await requireUser();
   const [job, cv] = await Promise.all([getJob(jobId), getActiveCv(user.id)]);
@@ -31,15 +30,11 @@ export async function getInterviewPrep(jobId: string): Promise<PrepView | { erro
   if (!job || !jobRow) return { error: GONE };
   // Spring weeks have their own local prep (SpringPrepPanel): a generic internship pack is never built or cached for one.
   if (job.employmentType === "spring_week") return { error: SPRING_OWN_PREP };
-  const track = trackForJob(job);
   if (!isPastSaved(app?.status)) return { error: "Mark this role as applied to unlock interview prep." };
 
   const companyId = jobRow.company_id;
   const key = roleKey(job);
-  const jdText = job.textLines.join("\n");
-  // Placements: the curated practice bank (placement 05 §4e), coach-only at employers that ban AI in interviews.
-  const bank = trackBank({ track, company: job.company, title: job.title, archetype: job.archetype, jdText });
-  const r = await getOrCreatePrep({
+  return getOrCreatePrep({
     key: `${companyId}:${key}`,
     cache: aiMode() !== "fixture",
     now: () => new Date(),
@@ -61,10 +56,8 @@ export async function getInterviewPrep(jobId: string): Promise<PrepView | { erro
       };
       db.insert(interviewPreps).values(row).onConflictDoUpdate({ target: [interviewPreps.company_id, interviewPreps.role_key], set: row }).run();
     },
-    generate: () => generatePrepPack({ company: job.company, jobTitle: job.title, roleKey: key, jdText, fixtureKey: job.extId, track }),
+    // A placement gets a programme note in the prompt; its curated bank is PlacementPrepPanel on the job page.
+    generate: () => generatePrepPack({ company: job.company, jobTitle: job.title, roleKey: key, jdText: job.textLines.join("\n"), fixtureKey: job.extId, track: trackForJob(job) }),
     stories: (r) => (cv ? mapStories({ questions: r.pack.questions, cvText: cv.rawText ?? "", fixtureKey: job.extId }) : Promise.resolve([])),
   });
-  // The bank is deterministic: it still shows when the AI pack can't be built (AI off, the daily cap).
-  return bank ? { ...r, bank } : r;
 }
-

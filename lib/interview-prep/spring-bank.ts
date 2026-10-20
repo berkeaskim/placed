@@ -23,6 +23,9 @@ export type SpringQuestionDef = {
 
 export type SpringQuestion = Omit<SpringQuestionDef, "text"> & { text: string };
 
+/** A rendered prep question of any bank (spring or placement): what the video practice, STAR matcher and bank list read. */
+export type PrepQuestion = { id: number; group: string; text: string; whyTheyAsk: string; prepTip: string; theme?: StoryTheme };
+
 export const SPRING_GROUPS: { key: SpringGroup; label: string }[] = [
   { key: "motivation", label: "Motivation" },
   { key: "competency", label: "Competency" },
