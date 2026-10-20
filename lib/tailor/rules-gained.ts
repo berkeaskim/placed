@@ -4,7 +4,7 @@
  * the edited content can flip a rule. Never a single before→after LLM number. Pure; server-side caller.
  */
 import type { Archetype, ParsedCV, TailoredCV, Year } from "@/lib/types";
-import type { CheckerId } from "@/lib/cv-rules/types";
+import type { CheckerId, Track } from "@/lib/cv-rules/types";
 import { rulesFor } from "@/lib/cv-rules";
 import { runCodeChecks } from "@/lib/cv-score/checkers";
 import { renderView } from "./run";
@@ -25,11 +25,12 @@ function textOf(cv: ParsedCV): string {
   ].join("\n");
 }
 
-export function contentRuleChecks(cv: ParsedCV, sector: Archetype, year: Year): RuleCheck[] {
-  const rules = rulesFor(sector).filter((r) => r.check === "code" && r.checker && CONTENT_CHECKERS.has(r.checker));
+/** `track`: the job's track (trackForJob), so a spring or placement job is judged on that track's rules and thresholds (07 §3.2e). */
+export function contentRuleChecks(cv: ParsedCV, sector: Archetype, year: Year, track: Track = "standard"): RuleCheck[] {
+  const rules = rulesFor(sector, track).filter((r) => r.check === "code" && r.checker && CONTENT_CHECKERS.has(r.checker));
   const text = textOf(cv);
   const dim = new Map(rules.map((r) => [r.id, r.dimension]));
-  return runCodeChecks(rules, { text, pageTexts: [text], pageCount: 1, fileSize: 0, cv, year, spellingErrors: null })
+  return runCodeChecks(rules, { text, pageTexts: [text], pageCount: 1, fileSize: 0, cv, year, track, sector, spellingErrors: null })
     .filter((r) => r.status !== "not_applicable")
     .map((r) => ({ ruleId: r.ruleId, dimension: dim.get(r.ruleId)!, passed: r.status === "pass" }));
 }
@@ -41,6 +42,6 @@ export function tailoredAsParsed(t: TailoredCV, cv: ParsedCV): ParsedCV {
   return { ...cv, summary: v.summary, experience: entries(v.experience), projects: entries(v.projects), leadership: entries(v.leadership), skills: v.skills };
 }
 
-export function rulesGained(cv: ParsedCV, t: TailoredCV, sector: Archetype, year: Year): RulesGained {
-  return rulesGainedByDimension(contentRuleChecks(cv, sector, year), contentRuleChecks(tailoredAsParsed(t, cv), sector, year));
+export function rulesGained(cv: ParsedCV, t: TailoredCV, sector: Archetype, year: Year, track: Track = "standard"): RulesGained {
+  return rulesGainedByDimension(contentRuleChecks(cv, sector, year, track), contentRuleChecks(tailoredAsParsed(t, cv), sector, year, track));
 }

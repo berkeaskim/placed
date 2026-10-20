@@ -6,6 +6,7 @@ import { SYSTEM_TAILOR, SYSTEM_TAILOR_GRAMMAR_ONLY, wrapJob } from "./prompts";
 import { TailoredCvFixture, TailoredCvOutput, type TailoredCvFixtureT } from "./schemas";
 import { heuristicTailor } from "./heuristics";
 import { playbookPrompt } from "@/lib/tailor/playbooks";
+import { trackBlock, trackForJob, trackOverlayPrompt } from "@/lib/tailor/track";
 
 /**
  * tailorCV (spec §7.1, 05 §2 [2]). Smart tier (audit 05 #12: prompt-only grounding needs a capable model; the old
@@ -18,7 +19,8 @@ import { playbookPrompt } from "@/lib/tailor/playbooks";
  * playbook is left out and the model may only fix spelling, grammar and punctuation.
  */
 export type TailorMode = "full" | "grammar_only";
-export type TailorInput = { cv: ParsedCV; job: JobListItem; allowed: string[]; supported: string[]; feedback: string[] | null; mode?: TailorMode };
+/** `availability`: the student's placement window from the Autopilot vault ("1 Jun 2027 to 31 Aug 2028"), placement jobs only. */
+export type TailorInput = { cv: ParsedCV; job: JobListItem; allowed: string[]; supported: string[]; feedback: string[] | null; mode?: TailorMode; availability?: string | null };
 
 /** tailorCV's answer, plus whether it came from the reorder-only heuristic instead of the model (and why). */
 export type TailorCvResult = TailoredCV & { usedFallback?: boolean; fallbackReason?: string };
@@ -46,12 +48,21 @@ export function styleAnchors(cv: ParsedCV, max = 3): string[] {
 
 export function buildTailorPrompt(i: TailorInput): string {
   const anchors = styleAnchors(i.cv).map((b) => `- ${escapeData(b)}`).join("\n") || "- (none)";
-  const playbook = i.mode === "grammar_only" ? null : playbookPrompt(i.job.archetype);
+  const full = i.mode !== "grammar_only";
+  const playbook = full ? playbookPrompt(i.job.archetype) : null;
+  // Spring weeks and placements (07 §3.2b, placement 05 §4b): a mode block and a playbook overlay after the sector playbook.
+  const track = trackForJob(i.job);
+  const overlay = full ? trackOverlayPrompt(track, i.job.archetype) : null;
+  const block = full ? trackBlock(track) : null;
+  const availability = full && track === "placement" && i.availability?.trim() ? `AVAILABILITY (from the student's own setup): ${escapeData(i.availability.trim())}` : null;
   const out = [
     `ALLOWED KEYWORDS: ${i.allowed.map(escapeData).join(", ") || "(none)"}`,
     `MAY MOVE INTO SKILLS (already in the CV's prose): ${i.supported.map(escapeData).join(", ") || "(none)"}`,
     wrapJob(i.job.textLines.join("\n"), i.job.title),
     ...(playbook ? [playbook] : []),
+    ...(overlay ? [overlay] : []),
+    ...(block ? [block] : []),
+    ...(availability ? [availability] : []),
     `STYLE ANCHORS (the student's own lines):\n${anchors}`,
     `<cv>\n${escapeData(JSON.stringify(cvForPrompt(i.cv)))}\n</cv>`,
   ];
