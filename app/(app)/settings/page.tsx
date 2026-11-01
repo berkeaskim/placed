@@ -16,6 +16,8 @@ import { dataDir, db } from "@/lib/db/client";
 import { profiles } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { aiProvider } from "@/lib/ai/config";
+import { isDesktop } from "@/lib/desktop";
+import { DesktopSettings } from "@/components/settings/desktop";
 
 const PROVIDER_LABEL = { anthropic: "Claude", gemini: "Gemini", ollama: "Ollama (local)", codex: "ChatGPT (Codex CLI)" } as const;
 
@@ -54,6 +56,7 @@ export default async function Settings() {
         <SearchKeyForm source={envKey ? "env" : savedKey ? "saved" : null} last4={(envKey ?? savedKey)?.slice(-4) ?? null} />
       </section>
       <JobSearchSettings />
+      {isDesktop() && <DesktopSettings />}
       <section className="card-quest flex flex-col gap-3 p-5">
         <h2 className="font-bold">Your data</h2>
         <p className="text-sm text-muted-foreground">Everything is stored on this computer, in <code>{dataDir()}</code>.</p>

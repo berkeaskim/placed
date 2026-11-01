@@ -3,21 +3,19 @@ import { mkdirSync } from "node:fs";
 import { resolve } from "node:path";
 import { handleDownloads } from "./lib/downloads";
 import { prepareDataFolder } from "./lib/first-run";
-import { registerIpc, type UpdateCheckResult } from "./lib/ipc";
+import { registerIpc } from "./lib/ipc";
 import { applyLinkPolicy } from "./lib/links";
 import { appendLogLine, prepareLogFile, readLogTail } from "./lib/log-file";
 import { buildAppMenu } from "./lib/menu";
 import { isPortFree } from "./lib/net";
 import { resolvePaths } from "./lib/paths";
 import { startServer, stopServer, waitForServer } from "./lib/server";
+import { createUpdateChecker } from "./lib/update-prompt";
 import { APP_PORT, APP_URL } from "./lib/urls";
 import { createMainWindow } from "./lib/window";
 
 // QA and tests point the whole app (data, logs, desktop.json, single-instance lock) at a scratch folder.
 if (process.env.PLACED_USER_DATA_DIR) app.setPath("userData", resolve(process.env.PLACED_USER_DATA_DIR));
-
-// Replaced by the GitHub release check in Task 5.
-const checkForUpdates = async (): Promise<UpdateCheckResult> => ({ status: "unavailable" });
 
 let win: BrowserWindow | null = null;
 let serverReady = false;
@@ -60,13 +58,16 @@ async function boot(): Promise<void> {
     mkdirSync(dir, { recursive: true });
     void shell.openPath(dir);
   };
+  const updates = createUpdateChecker({
+    current: app.getVersion(),
+    userData: app.getPath("userData"),
+    getWindow: () => win,
+    log,
+  });
+  const checkForUpdates = () => updates.check(true);
   Menu.setApplicationMenu(
     buildAppMenu({
-      checkForUpdates: () => {
-        void checkForUpdates().then(() =>
-          dialog.showMessageBox({ type: "info", message: "Update checks aren't available in this version yet." }),
-        );
-      },
+      checkForUpdates: () => void checkForUpdates(),
       openDataFolder: openFolder(paths.dataDir),
       openLogsFolder: openFolder(paths.logsDir),
     }),
@@ -98,6 +99,7 @@ async function boot(): Promise<void> {
     log,
   });
   showWindow();
+  win?.once("show", () => updates.schedule());
 
   const abort = new AbortController();
   const outcome = await Promise.race([

@@ -1,9 +1,6 @@
 import { app, ipcMain, shell, type IpcMainEvent, type IpcMainInvokeEvent } from "electron";
+import type { UpdateCheckResult } from "./updates";
 import { isAppUrl, isOpenableFolder } from "./urls";
-
-export interface UpdateCheckResult {
-  status: string;
-}
 
 export interface IpcOptions {
   dataDir: string;
