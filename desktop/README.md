@@ -18,8 +18,8 @@ To work on the shell alone: `cd desktop && npm run build && npm start` (without 
 ## Build the DMG
 
 ```sh
-npm --prefix desktop ci        # once (Electron's postinstall downloads its binary; if desktop/node_modules/electron/dist
-                               # is missing, run `node desktop/node_modules/electron/install.js`)
+npm --prefix desktop ci        # once. Electron has no postinstall: the first `electron` run downloads its binary;
+                               # pre-fetch it with `node desktop/node_modules/electron/install.js`
 npm run desktop:dist           # -> desktop/out/Placed-<version>-arm64.dmg and desktop/out/mac-arm64/Placed.app
 ```
 

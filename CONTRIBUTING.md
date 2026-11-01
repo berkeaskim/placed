@@ -33,6 +33,21 @@ SQLite (`tests/setup/temp-data-dir.ts`). Test against that real database rather 
 - `npm run e2e` runs Playwright against its own dev server on port 3100, with a temp data dir and `AI_MODE=fixture`.
 - `npx vitest run -c vitest.live.config.ts` runs the live AI suite against a real provider (uses your key; costs money).
 
+## Mac app
+
+The Electron shell lives in `desktop/` (details in [docs/desktop.md](docs/desktop.md)).
+
+```bash
+npm --prefix desktop ci   # once
+npm run desktop:check     # typecheck the shell (CI runs this)
+npm run desktop:build     # standalone Next server + shell
+npm run desktop:start     # run it in Electron
+npm run desktop:dist      # desktop/out/Placed-<version>-arm64.dmg (macOS only)
+```
+
+Test against a scratch folder, never your real data:
+`PLACED_USER_DATA_DIR=$(mktemp -d) PLACED_SKIP_FIRST_RUN_DIALOG=1 npm run desktop:start`.
+
 ## Database changes
 
 1. Edit `lib/db/schema.ts`.

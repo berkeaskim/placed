@@ -190,7 +190,24 @@ flowchart LR
 | Security | Loopback-only server, AES-GCM encryption for saved API keys and the Autopilot vault, rate-limited routes |
 | Quality | Vitest (180 test files, including fairness and security suites, each on a temp database), Playwright end-to-end runs, Zod everywhere |
 
-## Quick start
+## Install the Mac app
+
+If you are on a Mac with Apple Silicon (M1 or later), you can skip git and Node entirely.
+
+1. Download `Placed-<version>-arm64.dmg` from the [latest release](https://github.com/berkeaskim/placed/releases/latest).
+2. Open it and drag **Placed** into **Applications**.
+3. First launch: the app is not notarised, so macOS will refuse a normal double-click. Right-click **Placed** → **Open**
+   → **Open**. On newer macOS, go to **System Settings → Privacy & Security**, scroll down and press **Open Anyway**.
+   You only do this once.
+
+Your data lives in `~/Library/Application Support/Placed/data`. If you already ran Placed from the repo, the first
+launch offers **Import existing data…**: pick your old `data/` folder and it is copied across (the original is left alone).
+
+The Chrome extension zip from **Autopilot → Setup** is already pointed at the app (`http://127.0.0.1:3917`). The app
+checks GitHub for new versions and links you to the release page; it does not update itself, so download the new DMG
+and replace the old app. Intel Macs: use the install below. More detail in [docs/desktop.md](docs/desktop.md).
+
+## Quick start (from source)
 
 You need [Node.js](https://nodejs.org) 22.12 or newer and git. Nothing else: no account, no database server, no `.env` file.
 

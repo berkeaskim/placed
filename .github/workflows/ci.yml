@@ -22,3 +22,6 @@ jobs:
       - run: npm run lint
       # Unit tests run on temp SQLite files and recorded AI fixtures: no secrets or API keys needed.
       - run: npm test
+      # Typechecks the Mac app shell (no Electron binary needed).
+      - run: npm --prefix desktop ci
+      - run: npm run desktop:check
