@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <!-- Placed app icon: brand primary (#5B3DF5, app/globals.css) squircle on the macOS 824px grid, white bold "P" drawn as a path. -->
+  <rect x="100" y="100" width="824" height="824" rx="185" ry="185" fill="#5B3DF5"/>
+  <path fill="#FFFFFF" fill-rule="evenodd"
+        d="M338 272 H526 A160 160 0 0 1 526 592 H448 V752 H338 Z
+           M448 370 H526 A62 62 0 0 1 526 494 H448 Z"/>
+</svg>

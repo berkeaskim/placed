@@ -12,8 +12,27 @@ npm run desktop:build          # builds the standalone server into desktop/stage
 npm run desktop:start          # launches Electron against desktop/stage/server
 ```
 
-`npm run desktop:dev` will wrap these once the build pipeline lands. To work on the shell alone:
-`cd desktop && npm run build && npm start` (without a staged server you get the "server stopped" dialog).
+To work on the shell alone: `cd desktop && npm run build && npm start` (without a staged server you get the
+"server stopped" dialog).
+
+## Build the DMG
+
+```sh
+npm --prefix desktop ci        # once (Electron's postinstall downloads its binary; if desktop/node_modules/electron/dist
+                               # is missing, run `node desktop/node_modules/electron/install.js`)
+npm run desktop:dist           # -> desktop/out/Placed-<version>-arm64.dmg and desktop/out/mac-arm64/Placed.app
+```
+
+| Script | What it does |
+|---|---|
+| `desktop:build:next` | Packs the extension for `http://127.0.0.1:3917`, then `next build` with `PLACED_DESKTOP_BUILD=1` (adds `output: "standalone"`) and a throwaway `PLACED_DATA_DIR`, so the build never creates `./data`. |
+| `desktop:stage` | `desktop/scripts/stage.mjs`: copies `.next/standalone`, `.next/static` and `public/` into `desktop/stage/server`, checks `seed/`, `drizzle/`, `fixtures/`, `public/fonts/` are there and no `data/` or `.env*` is, and loads `better-sqlite3` under Electron's Node (it ships Node-API prebuilds, so no rebuild is needed; the check fails the build if that ever stops being true). |
+| `desktop:build` | The two above, then compiles the shell. |
+| `desktop:start` | Runs Electron against the stage. |
+| `desktop:dist` | `desktop:build`, then electron-builder (version synced from the root `package.json`). The `afterPack` hook (`scripts/adhoc-sign.mjs`) ad-hoc signs the app before the DMG is made; there is no Developer ID, so first launch needs right-click → Open. |
+| `desktop:check` | Typechecks and compiles the shell only. |
+
+The icon is `desktop/build/icon.svg`; regenerate `icon.icns` with `sh desktop/scripts/make-icon.sh` (macOS only).
 
 Unpackaged, the shell looks for the server in `desktop/stage/server/server.js`; packaged, in
 `Placed.app/Contents/Resources/server/server.js`. The server's working directory is that folder, because it reads

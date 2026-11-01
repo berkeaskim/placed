@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // The Mac app (desktop/) ships the self-contained server; everything else keeps the normal build.
+  output: process.env.PLACED_DESKTOP_BUILD === "1" ? "standalone" : undefined,
   serverExternalPackages: ["@react-pdf/renderer", "unpdf"],
   outputFileTracingIncludes: { "/**": ["./fixtures/**/*", "./seed/**/*", "./drizzle/**/*", "./public/fonts/**/*"] },
   turbopack: {
