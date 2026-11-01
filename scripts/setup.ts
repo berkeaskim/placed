@@ -1,52 +1,12 @@
-import { existsSync, readFileSync } from "node:fs";
-import { count, sql } from "drizzle-orm";
-import YAML from "yaml";
-import { LOCAL_USER_EMAIL, LOCAL_USER_ID } from "../lib/auth/local-user";
-import { dataDir, db, dbFile } from "../lib/db/client";
-import { ensureProfile } from "../lib/db/functions";
-import { companies, jobs, type NewJob } from "../lib/db/schema";
-import { localSecretKey } from "../lib/settings/secret-key";
-import { seedCompanyRows, seedCuratedCompanies } from "../lib/ingest/seed";
-import { loadProgrammes } from "../lib/ingest/curated";
+import { existsSync } from "node:fs";
+import { sql } from "drizzle-orm";
+import { db } from "../lib/db/client";
+import { ensureLocalSetup } from "../lib/setup/first-run";
 import { runIngest } from "../lib/ingest/local";
 
 /** One-time local setup: data dir, secret key, migrations, the local profile, and the seed companies/jobs. Re-runnable. */
 async function main() {
-  const dir = dataDir();
-  localSecretKey();
-  console.log(`data:     ${dir}`);
-  console.log(`database: ${dbFile()} (migrated)`);
-  ensureProfile(LOCAL_USER_ID, LOCAL_USER_EMAIL);
-
-  const programmesFile = process.env.PLACED_PROGRAMMES_FILE || "seed/programmes.yml";
-  const curated = existsSync(programmesFile) ? seedCuratedCompanies(loadProgrammes(readFileSync(programmesFile, "utf8"))) : [];
-  const rows = [...seedCompanyRows(YAML.parse(readFileSync("seed/companies.yml", "utf8")) as unknown[]), ...curated];
-  db.transaction((tx) => {
-    for (const r of rows) {
-      tx.insert(companies).values(r).onConflictDoUpdate({
-        target: [companies.ats, companies.slug],
-        set: { name: r.name, api_host: r.api_host, employer: r.employer, transport: r.transport, enabled: r.enabled },
-      }).run();
-    }
-  });
-  console.log(`companies: ${rows.length} (${curated.length} curated)`);
-
-  const jobCount = db.select({ n: count() }).from(jobs).get()?.n ?? 0;
-  if (jobCount === 0 && existsSync("seed/jobs.json")) {
-    const snap = JSON.parse(readFileSync("seed/jobs.json", "utf8")) as ({ company_slug: string; company_ats: string } & Omit<NewJob, "company_id">)[];
-    const idOf = new Map(db.select({ id: companies.id, slug: companies.slug, ats: companies.ats }).from(companies).all().map((c) => [`${c.ats}/${c.slug}`, c.id]));
-    let inserted = 0;
-    db.transaction((tx) => {
-      for (const { company_slug, company_ats, ...j } of snap) {
-        const company_id = idOf.get(`${company_ats}/${company_slug}`);
-        if (!company_id) continue;
-        inserted += tx.insert(jobs).values({ ...j, company_id }).onConflictDoNothing().run().changes;
-      }
-    });
-    console.log(`jobs from snapshot: ${inserted}`);
-  } else {
-    console.log(`jobs: ${jobCount} already there (seed skipped)`);
-  }
+  ensureLocalSetup({ log: (line) => console.log(line) });
   await ingestLive();
   db.run(sql`pragma optimize`);
   console.log("\nnext: npm run dev");

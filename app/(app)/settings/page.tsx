@@ -12,7 +12,7 @@ import { SERPER_SECRET } from "@/lib/inside-track/find";
 import { getSecret } from "@/lib/settings/store";
 import { requireUser } from "@/lib/auth/local-user";
 import { universityFor } from "@/lib/profile/university";
-import { db } from "@/lib/db/client";
+import { dataDir, db } from "@/lib/db/client";
 import { profiles } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { aiProvider } from "@/lib/ai/config";
@@ -56,7 +56,7 @@ export default async function Settings() {
       <JobSearchSettings />
       <section className="card-quest flex flex-col gap-3 p-5">
         <h2 className="font-bold">Your data</h2>
-        <p className="text-sm text-muted-foreground">Everything is stored on this computer, in the <code>data/</code> folder.</p>
+        <p className="text-sm text-muted-foreground">Everything is stored on this computer, in <code>{dataDir()}</code>.</p>
         <DeleteDataForm />
       </section>
     </div>

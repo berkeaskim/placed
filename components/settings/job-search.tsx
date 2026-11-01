@@ -5,6 +5,7 @@ import { discoveredCompanies, lastDiscovery, DISCOVERY_EVERY_DAYS } from "@/lib/
 import { launchAgentInstalled } from "@/lib/ingest/launchd";
 import { scraperInstalled } from "@/lib/ingest/stealth";
 import { DEFAULT_DAILY_AT, INTERVAL_CHOICES, ingestDailyAt, ingestIntervalHours, nextIngestAt } from "@/lib/ingest/scheduler";
+import { isDesktop } from "@/lib/desktop";
 import { DiscoveredCompanies } from "./discovered-companies";
 import { JobSearchSelect } from "./job-search-select";
 
@@ -14,7 +15,8 @@ export async function JobSearchSettings() {
   const next = nextIngestAt();
   const agent = launchAgentInstalled();
   const found = lastDiscovery();
-  const scraper = await scraperInstalled();
+  const desktop = isDesktop();
+  const scraper = desktop ? false : await scraperInstalled();
   return (
     <section className="card-quest flex flex-col gap-3 p-5">
       <h2 className="font-bold">Job search</h2>
@@ -24,15 +26,19 @@ export async function JobSearchSettings() {
       </p>
       <JobSearchSelect value={ingestIntervalHours()} dailyAt={ingestDailyAt()} defaultAt={DEFAULT_DAILY_AT} choices={INTERVAL_CHOICES} />
       <p className="text-sm text-muted-foreground">
-        {agent
-          ? "Runs even while Placed is closed (background agent installed)."
-          : <>Only runs while Placed is open. To keep it going while it&apos;s closed, run <code>npm run schedule:install</code> once (macOS).</>}
+        {desktop
+          ? "Runs while Placed is open. Turn on ‘Open Placed at login’ below so it runs every morning."
+          : agent
+            ? "Runs even while Placed is closed (background agent installed)."
+            : <>Only runs while Placed is open. To keep it going while it&apos;s closed, run <code>npm run schedule:install</code> once (macOS).</>}
       </p>
-      <p className="text-sm text-muted-foreground">
-        {scraper
-          ? "Optional scraper: installed"
-          : <>Optional scraper: not installed — <code>npm run scraper:setup</code></>}
-      </p>
+      {!desktop && (
+        <p className="text-sm text-muted-foreground">
+          {scraper
+            ? "Optional scraper: installed"
+            : <>Optional scraper: not installed — <code>npm run scraper:setup</code></>}
+        </p>
+      )}
       <h3 className="pt-2 font-bold">New companies</h3>
       <p className="text-sm text-muted-foreground">
         Every {DISCOVERY_EVERY_DAYS} days the AI suggests employers that fit you, and Placed adds the ones whose careers site it can read.
