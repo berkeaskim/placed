@@ -8,7 +8,8 @@ contextBridge.exposeInMainWorld("placedDesktop", {
   platform: info.platform,
   dataDir: info.dataDir,
   getOpenAtLogin: (): Promise<boolean> => ipcRenderer.invoke("placed:getOpenAtLogin"),
-  setOpenAtLogin: (openAtLogin: boolean): Promise<boolean> => ipcRenderer.invoke("placed:setOpenAtLogin", openAtLogin),
+  setOpenAtLogin: (openAtLogin: boolean): Promise<{ openAtLogin: boolean; needsApproval: boolean }> =>
+    ipcRenderer.invoke("placed:setOpenAtLogin", openAtLogin),
   checkForUpdates: (): Promise<{ status: string; latest?: { version: string; url: string; publishedAt: string } }> =>
     ipcRenderer.invoke("placed:checkForUpdates"),
   openPath: (path: string): Promise<string> => ipcRenderer.invoke("placed:openPath", path),

@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState, useSyncExternalStore } from "react";
+import { loginChangeMessage } from "@/lib/desktop";
 
 const button = "min-h-11 rounded-[12px] border-2 border-border bg-white px-4 text-sm font-bold transition-colors hover:bg-muted disabled:opacity-60";
 const noop = () => () => {};
@@ -34,9 +35,9 @@ export function DesktopSettings() {
     setAtLogin(next);
     setLoginMsg(null);
     bridge.setOpenAtLogin(next).then(
-      (actual) => {
-        setAtLogin(actual);
-        if (actual !== next) setLoginMsg("macOS didn't accept that change.");
+      (result) => {
+        setAtLogin(result.openAtLogin);
+        setLoginMsg(loginChangeMessage(next, result));
       },
       () => {
         setAtLogin(before);

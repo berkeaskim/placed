@@ -1,4 +1,5 @@
 import { app, ipcMain, shell, type IpcMainEvent, type IpcMainInvokeEvent } from "electron";
+import { toLoginItemResult } from "./login-item";
 import type { UpdateCheckResult } from "./updates";
 import { isAppUrl, isOpenableFolder } from "./urls";
 
@@ -38,7 +39,7 @@ export function registerIpc({ dataDir, logsDir, checkForUpdates }: IpcOptions): 
     CHANNELS.setOpenAtLogin,
     guard((openAtLogin: unknown) => {
       app.setLoginItemSettings({ openAtLogin: openAtLogin === true });
-      return app.getLoginItemSettings().openAtLogin;
+      return toLoginItemResult(app.getLoginItemSettings());
     }),
   );
   ipcMain.handle(CHANNELS.checkForUpdates, guard(() => checkForUpdates()));

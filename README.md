@@ -196,10 +196,13 @@ flowchart LR
 If you are on a Mac with Apple Silicon (M1 or later), you can skip git and Node entirely.
 
 1. Download `Placed-<version>-arm64.dmg` from the [latest release](https://github.com/berkeaskim/placed/releases/latest).
+   (The DMG is attached to releases from the first one tagged after the Mac app landed; older releases have none.)
 2. Open it and drag **Placed** into **Applications**.
 3. First launch: the app is not notarised, so macOS will refuse a normal double-click. Right-click **Placed** → **Open**
    → **Open**. On newer macOS, go to **System Settings → Privacy & Security**, scroll down and press **Open Anyway**.
-   You only do this once.
+   You only do this once. If macOS says **"Placed is damaged and can't be opened"**, that is the download quarantine
+   flag on an unnotarised app, not real damage: run `xattr -dr com.apple.quarantine /Applications/Placed.app` in
+   Terminal, then open it again.
 
 Your data lives in `~/Library/Application Support/Placed/data`. If you already ran Placed from the repo, the first
 launch offers **Import existing data…**: pick your old `data/` folder and it is copied across (the original is left alone).
