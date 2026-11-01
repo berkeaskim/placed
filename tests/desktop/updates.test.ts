@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { checkForUpdates, compareVersions, latestRelease, RELEASES_API } from "../../desktop/src/lib/updates";
+import { checkForUpdates, compareVersions, createReleaseSource, latestRelease, RELEASES_API } from "../../desktop/src/lib/updates";
 
 const release = (tag: string, extra: Record<string, unknown> = {}) => ({
   tag_name: tag,
@@ -85,5 +85,32 @@ describe("checkForUpdates", () => {
     expect(offline).toEqual({ status: "error" });
     const garbled = await checkForUpdates({ current: "1.0.0", fetchImpl: vi.fn(async () => new Response("<html>", { status: 200 })) });
     expect(garbled).toEqual({ status: "error" });
+  });
+});
+
+describe("createReleaseSource", () => {
+  it("shares one in-flight request between concurrent callers", async () => {
+    const fetchImpl = ok(release("v1.1.0"));
+    const source = createReleaseSource(fetchImpl, "1.0.0");
+    const [a, b] = await Promise.all([
+      checkForUpdates({ current: "1.0.0", source }),
+      checkForUpdates({ current: "1.0.0", skipped: "1.1.0", source }),
+    ]);
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    expect(a.status).toBe("available");
+    expect(b.status).toBe("skipped");
+  });
+
+  it("reuses the answer (errors too) for the TTL, then asks GitHub again", async () => {
+    let t = 0;
+    const fetchImpl = vi.fn(async () => { throw new TypeError("fetch failed"); });
+    const source = createReleaseSource(fetchImpl, "1.0.0", { ttlMs: 60_000, now: () => t });
+    expect(await source()).toBeNull();
+    t = 59_999;
+    expect(await source()).toBeNull();
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    t = 60_000;
+    await source();
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
   });
 });

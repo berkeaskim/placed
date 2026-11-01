@@ -61,18 +61,52 @@ export async function latestRelease(fetchImpl: FetchLike, current: string, timeo
   }
 }
 
-export async function checkForUpdates({
-  current,
-  skipped,
-  fetchImpl = globalThis.fetch,
-}: {
-  current: string;
-  skipped?: string;
-  fetchImpl?: FetchLike;
-}): Promise<UpdateCheckResult> {
-  const latest = await latestRelease(fetchImpl, current);
+export function statusFor(latest: Release | null, current: string, skipped?: string): UpdateCheckResult {
   if (!latest) return { status: "error" };
   if (compareVersions(latest.version, current) <= 0) return { status: "current", latest };
   if (skipped && compareVersions(latest.version, skipped) === 0) return { status: "skipped", latest };
   return { status: "available", latest };
+}
+
+export type ReleaseSource = () => Promise<Release | null>;
+
+/**
+ * One GitHub request at a time, and its answer (failures included) reused for `ttlMs`, so repeated clicks or a
+ * misbehaving renderer can't burn the unauthenticated 60-requests-per-hour budget.
+ */
+export function createReleaseSource(
+  fetchImpl: FetchLike,
+  current: string,
+  { ttlMs = 60_000, now = Date.now }: { ttlMs?: number; now?: () => number } = {},
+): ReleaseSource {
+  let inflight: Promise<Release | null> | null = null;
+  let cached: { at: number; value: Release | null } | null = null;
+  return () => {
+    if (cached && now() - cached.at < ttlMs) return Promise.resolve(cached.value);
+    inflight ??= latestRelease(fetchImpl, current)
+      .then((value) => {
+        cached = { at: now(), value };
+        return value;
+      })
+      .finally(() => {
+        inflight = null;
+      });
+    return inflight;
+  };
+}
+
+export async function checkForUpdates({
+  current,
+  skipped,
+  fetchImpl = globalThis.fetch,
+  source,
+}: {
+  current: string;
+  skipped?: string;
+  fetchImpl?: FetchLike;
+  /** Shared, deduped release lookup; defaults to a fresh request. */
+  source?: ReleaseSource;
+}): Promise<UpdateCheckResult> {
+  const latest = await (source ? source() : latestRelease(fetchImpl, current));
+  return statusFor(latest, current, skipped);
 }

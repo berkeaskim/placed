@@ -1,6 +1,6 @@
 import { dialog, shell, type BrowserWindow, type MessageBoxOptions } from "electron";
 import { readDesktopSettings, updateDesktopSettings } from "./settings-store";
-import { checkForUpdates, type UpdateCheckResult } from "./updates";
+import { checkForUpdates, createReleaseSource, type UpdateCheckResult } from "./updates";
 
 export interface UpdatePromptOptions {
   current: string;
@@ -19,6 +19,7 @@ const EVERY_MS = 24 * 60 * 60 * 1000;
  */
 export function createUpdateChecker({ current, userData, getWindow, log }: UpdatePromptOptions) {
   let dialogOpen = false;
+  const source = createReleaseSource(globalThis.fetch, current);
 
   const show = async (options: MessageBoxOptions) => {
     const win = getWindow();
@@ -51,24 +52,43 @@ export function createUpdateChecker({ current, userData, getWindow, log }: Updat
     }
   };
 
+  /**
+   * Always resolves with the status, even when a dialog is already open (then no second dialog is shown, but the
+   * Settings button still gets its inline result).
+   */
   async function check(manual: boolean): Promise<UpdateCheckResult> {
     const skipped = manual ? undefined : readDesktopSettings(userData).skippedVersion;
-    const result = await checkForUpdates({ current, skipped });
+    const result = await checkForUpdates({ current, skipped, source });
     log(`update check (${manual ? "manual" : "background"}): ${result.status}${result.latest ? ` ${result.latest.version}` : ""}`);
     void prompt(result, manual).catch((err: unknown) => log(`update dialog failed: ${String(err)}`));
     return result;
   }
 
+  const background = () => {
+    check(false).catch((err: unknown) => log(`update check failed: ${String(err)}`));
+  };
+
+  let first: NodeJS.Timeout | null = null;
+  let daily: NodeJS.Timeout | null = null;
   let scheduled = false;
-  /** First background check 15 s after the window shows, then every 24 h. Never blocks startup. */
+  /** First background check 15 s after the window shows, then every 24 h. Never blocks startup or quitting. */
   function schedule(): void {
     if (scheduled) return;
     scheduled = true;
-    setTimeout(() => {
-      void check(false);
-      setInterval(() => void check(false), EVERY_MS);
+    first = setTimeout(() => {
+      first = null;
+      background();
+      daily = setInterval(background, EVERY_MS);
+      daily.unref();
     }, FIRST_CHECK_MS);
+    first.unref();
   }
 
-  return { check, schedule };
+  function stop(): void {
+    if (first) clearTimeout(first);
+    if (daily) clearInterval(daily);
+    first = daily = null;
+  }
+
+  return { check, schedule, stop };
 }

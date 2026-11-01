@@ -20,6 +20,7 @@ if (process.env.PLACED_USER_DATA_DIR) app.setPath("userData", resolve(process.en
 let win: BrowserWindow | null = null;
 let serverReady = false;
 let quitting = false;
+let stopUpdateChecks = (): void => {};
 
 function showWindow(): void {
   win = createMainWindow();
@@ -64,6 +65,7 @@ async function boot(): Promise<void> {
     getWindow: () => win,
     log,
   });
+  stopUpdateChecks = updates.stop;
   const checkForUpdates = () => updates.check(true);
   Menu.setApplicationMenu(
     buildAppMenu({
@@ -138,6 +140,7 @@ if (!app.requestSingleInstanceLock()) {
   });
   app.on("before-quit", () => {
     quitting = true;
+    stopUpdateChecks();
     stopServer();
   });
   app.on("will-quit", () => stopServer());
