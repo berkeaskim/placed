@@ -1,4 +1,4 @@
-import { dirname, join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 
 export interface PathInputs {
   /** app.getPath("userData"), already redirected by PLACED_USER_DATA_DIR when set. */
@@ -24,7 +24,8 @@ export function resolvePaths({ userData, resourcesPath, appPath, isPackaged, env
   const repoRoot = dirname(appPath);
   const serverDir = isPackaged ? join(resourcesPath, "server") : join(repoRoot, "desktop", "stage", "server");
   return {
-    dataDir: env.PLACED_DATA_DIR || join(userData, "data"),
+    // Absolute, so a relative PLACED_DATA_DIR can never land in the server's cwd (inside the app bundle).
+    dataDir: env.PLACED_DATA_DIR ? resolve(env.PLACED_DATA_DIR) : join(userData, "data"),
     logsDir: join(userData, "logs"),
     serverDir,
     serverEntry: join(serverDir, "server.js"),

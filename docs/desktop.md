@@ -59,6 +59,31 @@ git push --follow-tags
 The `Release` workflow (`.github/workflows/release.yml`) runs on a `macos-14` (Apple Silicon) runner for any `v*` tag.
 It builds the DMG, fails if the DMG version does not match the tag, and attaches the `.dmg` and `.dmg.blockmap` to the
 GitHub release with generated notes. Pull requests only run the shell typecheck (`npm run desktop:check`) on Linux.
+`npm version` also copies the new version into `desktop/package.json` (the root `version` script) and commits it with the tag.
+
+Only distribute the DMG the workflow builds. A local `npm run desktop:dist` embeds the build machine's absolute paths
+in the standalone server and bakes in any `NEXT_PUBLIC_*` values from your `.env.local`; it is fine for testing, not for sharing.
+
+## QA checklist
+
+Before tagging a release, on an Apple Silicon Mac:
+
+```bash
+npm run desktop:dist
+APP=desktop/out/mac-arm64/Placed.app
+TMP=$(mktemp -d)
+PLACED_USER_DATA_DIR=$TMP PLACED_SKIP_FIRST_RUN_DIALOG=1 $APP/Contents/MacOS/Placed &
+# wait for "[desktop] server is up" in $TMP/logs/server.log, then click around (or curl a few pages):
+for p in feed onboarding settings; do curl -s http://127.0.0.1:3917/$p >/dev/null; done
+kill %1
+codesign --verify --deep --strict $APP   # must pass after a run
+# must print nothing (CodeResources is written last, by the ad-hoc signing step; Info.plist is not a safe reference)
+find $APP/Contents/Resources/server -type f -newer $APP/Contents/_CodeSignature/CodeResources
+```
+
+The app must never write inside its own bundle (that breaks the signature, and fails outright on a read-only or
+translocated copy). The desktop build keeps Next's ISR/fetch cache in memory (`experimental.isrFlushToDisk: false` in
+`next.config.ts`, only when `PLACED_DESKTOP_BUILD=1`); everything else goes under the data folder.
 
 ## Known limits
 

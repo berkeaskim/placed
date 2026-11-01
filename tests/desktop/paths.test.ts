@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { join } from "node:path";
+import { isAbsolute, join, resolve } from "node:path";
 import { resolvePaths } from "../../desktop/src/lib/paths";
 
 const base = {
@@ -33,5 +33,11 @@ describe("resolvePaths", () => {
   it("an empty PLACED_DATA_DIR is ignored", () => {
     const p = resolvePaths({ ...base, isPackaged: true, env: { PLACED_DATA_DIR: "" } });
     expect(p.dataDir).toBe(join(base.userData, "data"));
+  });
+
+  it("a relative PLACED_DATA_DIR is made absolute (never relative to the server's cwd in the bundle)", () => {
+    const p = resolvePaths({ ...base, isPackaged: true, env: { PLACED_DATA_DIR: "scratch/data" } });
+    expect(isAbsolute(p.dataDir)).toBe(true);
+    expect(p.dataDir).toBe(resolve("scratch/data"));
   });
 });
