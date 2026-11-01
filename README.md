@@ -42,7 +42,8 @@ Bring a Claude or Gemini key, use your ChatGPT plan through the Codex CLI, or ru
   <a href="#a-quick-tour">Tour</a> ·
   <a href="#principles">Principles</a> ·
   <a href="#architecture">Architecture</a> ·
-  <a href="#quick-start">Quick start</a> ·
+  <a href="#install-the-mac-app">Mac app</a> ·
+  <a href="#quick-start-from-source">Quick start</a> ·
   <a href="#choosing-an-ai-backend">AI backend</a> ·
   <a href="#troubleshooting">Troubleshooting</a>
 </p>
