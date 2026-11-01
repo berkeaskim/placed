@@ -5,7 +5,7 @@ import { firstRunPlan, hasPlacedDb, importDataFolder } from "./data-folder";
 const WELCOME = {
   message: "Welcome to Placed",
   detail:
-    "Start fresh, or import the data folder from a copy of Placed you ran from the repo (it is copied, your original is untouched).",
+    "Start fresh, or import the data folder from a copy of Placed you ran from the repo (it is copied, your original is untouched). Quit any copy of Placed running from the repo first.",
   buttons: ["Start fresh", "Import existing data…"],
 };
 
@@ -53,7 +53,7 @@ async function pickAndImport(dataDir: string, log: (line: string) => void): Prom
   for (;;) {
     const picked = await dialog.showOpenDialog({
       title: "Import Placed data",
-      message: "Choose the data folder of your existing Placed (it contains placed.db).",
+      message: "Choose the data folder of your existing Placed (it contains placed.db). Quit any copy of Placed running from the repo first.",
       buttonLabel: "Import",
       properties: ["openDirectory"],
     });

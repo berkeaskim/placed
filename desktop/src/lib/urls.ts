@@ -14,6 +14,16 @@ export function isAppUrl(url: string): boolean {
   }
 }
 
+/**
+ * Where a new-window request (target=_blank, window.open) goes. Placed pages load in the window that asked,
+ * since a second untracked window would keep the app alive after the main one closes; web links go to the
+ * default browser; anything else is dropped. Pure.
+ */
+export function newWindowTarget(url: string): "same-window" | "browser" | "drop" {
+  if (isAppUrl(url)) return "same-window";
+  return canOpenExternally(url) ? "browser" : "drop";
+}
+
 /** Links handed to the default browser/mail app: never file:, custom schemes or javascript:. Pure. */
 export function canOpenExternally(url: string): boolean {
   try {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { DESKTOP_PORT } from "@/lib/desktop";
-import { APP_PORT, APP_URL, canOpenExternally, isAppUrl, isOpenableFolder } from "../../desktop/src/lib/urls";
+import { APP_PORT, APP_URL, canOpenExternally, isAppUrl, isOpenableFolder, newWindowTarget } from "../../desktop/src/lib/urls";
 
 describe("app origin", () => {
   it("matches lib/desktop.ts DESKTOP_PORT (the shell cannot import app code)", () => {
@@ -50,5 +50,23 @@ describe("isOpenableFolder", () => {
     expect(isOpenableFolder("/Applications/Calculator.app", allowed)).toBe(false);
     expect(isOpenableFolder(undefined, allowed)).toBe(false);
     expect(isOpenableFolder(42, allowed)).toBe(false);
+  });
+});
+
+describe("newWindowTarget", () => {
+  it("loads Placed pages in the same window instead of a new untracked one", () => {
+    expect(newWindowTarget(`${APP_URL}jobs/123`)).toBe("same-window");
+  });
+
+  it("sends web and mail links to the default browser", () => {
+    expect(newWindowTarget("https://example.com/careers")).toBe("browser");
+    expect(newWindowTarget("mailto:hr@example.com")).toBe("browser");
+    expect(newWindowTarget("http://127.0.0.1:3000/")).toBe("browser");
+  });
+
+  it("drops file:, javascript: and garbage", () => {
+    expect(newWindowTarget("file:///etc/passwd")).toBe("drop");
+    expect(newWindowTarget("javascript:alert(1)")).toBe("drop");
+    expect(newWindowTarget("not a url")).toBe("drop");
   });
 });

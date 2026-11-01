@@ -24,6 +24,7 @@
     "desktop:start": "npm --prefix desktop start",
     "desktop:dist": "npm run desktop:build && npm --prefix desktop run dist",
     "desktop:check": "npm --prefix desktop run build",
+    "version": "node desktop/scripts/sync-version.mjs && git add desktop/package.json",
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
