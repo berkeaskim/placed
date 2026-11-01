@@ -15,6 +15,11 @@ const eslintConfig = defineConfig([
     // Local tooling (git-ignored): plan/review notes and the recon Python venv.
     ".superpowers/**",
     "**/.venv*/**",
+    // Mac app build output and the staged server bundle (desktop/src is linted).
+    "desktop/node_modules/**",
+    "desktop/dist/**",
+    "desktop/stage/**",
+    "desktop/out/**",
   ]),
 ]);
 
