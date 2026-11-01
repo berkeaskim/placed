@@ -24,7 +24,7 @@ describe("augmentPath", () => {
 
 describe("serverEnv", () => {
   const env = serverEnv({
-    baseEnv: { PATH: "/usr/bin:/bin", HOME: "/Users/x", PORT: "3000", HOSTNAME: "0.0.0.0", KEEP: "1" },
+    baseEnv: { PATH: "/usr/bin:/bin", HOME: "/Users/x", PORT: "3000", HOSTNAME: "0.0.0.0", KEEP: "1", AI_MODE: "fixture" },
     home: "/Users/x",
     dataDir: "/d/data",
     serverDir: "/r/server",
@@ -50,5 +50,9 @@ describe("serverEnv", () => {
     expect(env.PORT).toBe("3917");
     expect(env.KEEP).toBe("1");
     expect(env.PATH).toContain("/opt/homebrew/bin");
+  });
+
+  it("drops AI_MODE so a terminal's AI_MODE=fixture never reaches the app's server", () => {
+    expect("AI_MODE" in env).toBe(false);
   });
 });

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { DESKTOP_PORT } from "@/lib/desktop";
-import { APP_PORT, APP_URL, canOpenExternally, isAppUrl, isInside } from "../../desktop/src/lib/urls";
+import { APP_PORT, APP_URL, canOpenExternally, isAppUrl, isOpenableFolder } from "../../desktop/src/lib/urls";
 
 describe("app origin", () => {
   it("matches lib/desktop.ts DESKTOP_PORT (the shell cannot import app code)", () => {
@@ -33,12 +33,22 @@ describe("canOpenExternally", () => {
   });
 });
 
-describe("isInside", () => {
-  it("accepts the folder itself and paths under it, rejects escapes", () => {
-    expect(isInside("/u/data", "/u/data")).toBe(true);
-    expect(isInside("/u/data", "/u/data/files/cv.pdf")).toBe(true);
-    expect(isInside("/u/data", "/u/data/../secret")).toBe(false);
-    expect(isInside("/u/data", "/u/data-other")).toBe(false);
-    expect(isInside("/u/data", "/Applications/Calculator.app")).toBe(false);
+describe("isOpenableFolder", () => {
+  const allowed = ["/u/data", "/u/logs"];
+  it("accepts exactly the allowed folders (trailing slash or ./ allowed)", () => {
+    expect(isOpenableFolder("/u/data", allowed)).toBe(true);
+    expect(isOpenableFolder("/u/logs/", allowed)).toBe(true);
+    expect(isOpenableFolder("/u/data/./", allowed)).toBe(true);
+  });
+
+  it("rejects anything under them, escapes, siblings, relative paths and non-strings", () => {
+    expect(isOpenableFolder("/u/data/files/cv.pdf", allowed)).toBe(false);
+    expect(isOpenableFolder("/u/data/run.command", allowed)).toBe(false);
+    expect(isOpenableFolder("/u/data/../secret", allowed)).toBe(false);
+    expect(isOpenableFolder("/u/data-other", allowed)).toBe(false);
+    expect(isOpenableFolder("data", allowed)).toBe(false);
+    expect(isOpenableFolder("/Applications/Calculator.app", allowed)).toBe(false);
+    expect(isOpenableFolder(undefined, allowed)).toBe(false);
+    expect(isOpenableFolder(42, allowed)).toBe(false);
   });
 });

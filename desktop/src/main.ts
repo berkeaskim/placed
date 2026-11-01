@@ -31,6 +31,7 @@ function showWindow(): void {
 
 async function failAndQuit(message: string, logFile: string): Promise<void> {
   stopServer();
+  if (quitting) return; // the user quit (or closed the window): the server stopping is expected
   const { response } = await dialog.showMessageBox({
     type: "error",
     message,
@@ -85,6 +86,7 @@ async function boot(): Promise<void> {
   }
 
   await prepareDataFolder({ dataDir: paths.dataDir, env: process.env, log });
+  if (quitting) return; // quit while the Welcome dialog or folder picker was open
 
   const server = startServer({
     entry: paths.serverEntry,
@@ -103,6 +105,7 @@ async function boot(): Promise<void> {
     server.exited.then(() => "exited" as const),
   ]);
   abort.abort();
+  if (quitting) return;
 
   if (outcome !== "ready") {
     const why = outcome === "exited" ? "stopped before it was ready" : "did not start within 60 seconds";

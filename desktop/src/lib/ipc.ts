@@ -1,5 +1,5 @@
 import { app, ipcMain, shell, type IpcMainEvent, type IpcMainInvokeEvent } from "electron";
-import { isAppUrl, isInside } from "./urls";
+import { isAppUrl, isOpenableFolder } from "./urls";
 
 export interface UpdateCheckResult {
   status: string;
@@ -45,11 +45,11 @@ export function registerIpc({ dataDir, logsDir, checkForUpdates }: IpcOptions): 
     }),
   );
   ipcMain.handle(CHANNELS.checkForUpdates, guard(() => checkForUpdates()));
-  // Opening arbitrary paths could launch programs, so only Placed's own data and logs folders are allowed.
+  // Opening a path can launch a program, so only the data and logs folders themselves are allowed.
   ipcMain.handle(
     CHANNELS.openPath,
     guard(async (path: unknown) => {
-      if (typeof path !== "string" || !(isInside(dataDir, path) || isInside(logsDir, path))) {
+      if (!isOpenableFolder(path, [dataDir, logsDir])) {
         return "Placed can only open its own data and logs folders.";
       }
       return shell.openPath(path);

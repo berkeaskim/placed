@@ -21,10 +21,11 @@ export interface ServerEnvInputs {
   port: number;
 }
 
-/** Environment for the forked Next standalone server. Loopback only, desktop mode, first-run setup on. Pure. */
+/** Environment for the forked Next standalone server. Loopback only, desktop mode, first-run setup on, no AI_MODE. Pure. */
 export function serverEnv({ baseEnv, home, dataDir, serverDir, port }: ServerEnvInputs): Record<string, string> {
   const env: Record<string, string> = {};
   for (const [key, value] of Object.entries(baseEnv)) if (value !== undefined) env[key] = value;
+  delete env.AI_MODE; // AI_MODE=fixture is for tests only; a terminal launch must never pass it to the app
   return {
     ...env,
     PORT: String(port),

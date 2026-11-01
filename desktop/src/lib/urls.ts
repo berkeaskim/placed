@@ -1,4 +1,4 @@
-import { relative, resolve, isAbsolute } from "node:path";
+import { isAbsolute, resolve } from "node:path";
 
 /** Mirrors DESKTOP_PORT in lib/desktop.ts (the shell cannot import app code; a test keeps them equal). */
 export const APP_PORT = 3917;
@@ -23,8 +23,11 @@ export function canOpenExternally(url: string): boolean {
   }
 }
 
-/** True when `path` is `parent` or inside it (after resolving `..`). Pure. */
-export function isInside(parent: string, path: string): boolean {
-  const rel = relative(resolve(parent), resolve(path));
-  return rel === "" || (!rel.startsWith("..") && !isAbsolute(rel));
+/**
+ * The renderer may only open Placed's own folders, never a file in them: shell.openPath on a file runs its
+ * default handler (a .command file opens in Terminal). Absolute paths only, compared after resolving. Pure.
+ */
+export function isOpenableFolder(path: unknown, allowed: string[]): path is string {
+  if (typeof path !== "string" || !isAbsolute(path)) return false;
+  return allowed.some((dir) => resolve(dir) === resolve(path));
 }
