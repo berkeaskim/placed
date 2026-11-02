@@ -1,6 +1,7 @@
-import { dialog, shell, type BrowserWindow, type MessageBoxOptions } from "electron";
+import { app, dialog, shell, type BrowserWindow, type MessageBoxOptions } from "electron";
+import { bundleFor, isWritable, launchSwap, stageUpdate, whyCannotSelfUpdate } from "./self-update";
 import { readDesktopSettings, updateDesktopSettings } from "./settings-store";
-import { checkForUpdates, createReleaseSource, type UpdateCheckResult } from "./updates";
+import { checkForUpdates, createReleaseSource, type Release, type UpdateCheckResult } from "./updates";
 
 export interface UpdatePromptOptions {
   current: string;
@@ -19,11 +20,41 @@ const EVERY_MS = 24 * 60 * 60 * 1000;
  */
 export function createUpdateChecker({ current, userData, getWindow, log }: UpdatePromptOptions) {
   let dialogOpen = false;
+  let installing = false;
   const source = createReleaseSource(globalThis.fetch, current);
 
   const show = async (options: MessageBoxOptions) => {
     const win = getWindow();
     return win ? dialog.showMessageBox(win, options) : dialog.showMessageBox(options);
+  };
+
+  /** Download, check and swap in `latest`, then quit; Placed reopens on the new version. Falls back to the page. */
+  const install = async (latest: Release) => {
+    if (installing) return;
+    installing = true;
+    const progress = (f: number) => getWindow()?.setProgressBar(f);
+    try {
+      progress(0);
+      const staged = await stageUpdate(latest, { onProgress: progress, log });
+      const target = bundleFor(process.execPath);
+      if (!target) throw new Error("Placed isn't running as an installed app.");
+      launchSwap({ pid: process.pid, target, staged });
+      log(`update: installing ${latest.version}, restarting`);
+      app.quit();
+    } catch (err) {
+      log(`update: install failed: ${String(err)}`);
+      getWindow()?.setProgressBar(-1);
+      installing = false;
+      const { response } = await show({
+        type: "warning",
+        message: "Couldn't install the update",
+        detail: err instanceof Error ? err.message : String(err),
+        buttons: ["Download Manually", "OK"],
+        defaultId: 0,
+        cancelId: 1,
+      });
+      if (response === 0) await shell.openExternal(latest.url);
+    }
   };
 
   // Dialogs are fire-and-forget so the Settings button gets its inline result straight away.
@@ -33,14 +64,21 @@ export function createUpdateChecker({ current, userData, getWindow, log }: Updat
     try {
       if (result.status === "available" && result.latest) {
         const { latest } = result;
+        // Self-update when this copy can replace itself and the release has a DMG; otherwise link to the page.
+        const blocker = latest.dmg ? whyCannotSelfUpdate(bundleFor(process.execPath), isWritable) : null;
+        const canInstall = Boolean(latest.dmg) && !blocker;
         const { response } = await show({
           type: "info",
           message: `Placed ${latest.version} is available (you have ${current}).`,
-          buttons: ["Download", "Later", "Skip this version"],
+          detail: canInstall ? "Placed downloads it, restarts and keeps all your data." : blocker ?? undefined,
+          buttons: [canInstall ? "Update and Restart" : "Download", "Later", "Skip this version"],
           defaultId: 0,
           cancelId: 1,
         });
-        if (response === 0) await shell.openExternal(latest.url);
+        if (response === 0) {
+          if (canInstall) void install(latest);
+          else await shell.openExternal(latest.url);
+        }
         if (response === 2) updateDesktopSettings(userData, { skippedVersion: latest.version });
       } else if (manual && result.status === "current") {
         await show({ type: "info", message: `You're up to date (${current})` });

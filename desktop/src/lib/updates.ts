@@ -3,10 +3,14 @@
 export const RELEASES_API = "https://api.github.com/repos/berkeaskim/placed/releases/latest";
 export const RELEASES_PAGE = "https://github.com/berkeaskim/placed/releases/latest";
 
+export const DOWNLOADS_PREFIX = "https://github.com/berkeaskim/placed/releases/download/";
+
 export interface Release {
   version: string;
   url: string;
   publishedAt: string;
+  /** The release's arm64 DMG, when it has one: what the in-app updater installs. */
+  dmg?: { url: string; size: number };
 }
 
 export interface UpdateCheckResult {
@@ -31,6 +35,20 @@ export function compareVersions(a: string, b: string): number {
   return 0;
 }
 
+/** The `Placed-<version>-arm64.dmg` asset, only from this repo's release downloads. */
+function dmgAsset(assets: unknown, version: string): Release["dmg"] {
+  if (!Array.isArray(assets)) return undefined;
+  for (const a of assets as unknown[]) {
+    if (!a || typeof a !== "object") continue;
+    const { name, browser_download_url: url, size } = a as Record<string, unknown>;
+    if (name !== `Placed-${version}-arm64.dmg`) continue;
+    if (typeof url !== "string" || !url.startsWith(DOWNLOADS_PREFIX)) continue;
+    if (typeof size !== "number" || !Number.isInteger(size) || size <= 0) continue;
+    return { url, size };
+  }
+  return undefined;
+}
+
 // Only ever hand shell.openExternal a GitHub https page.
 const safeUrl = (u: unknown) =>
   typeof u === "string" && u.startsWith("https://github.com/berkeaskim/placed/") ? u : RELEASES_PAGE;
@@ -47,12 +65,15 @@ export async function latestRelease(fetchImpl: FetchLike, current: string, timeo
     if (!res.ok) return null;
     const body: unknown = await res.json();
     if (!body || typeof body !== "object" || Array.isArray(body)) return null;
-    const { tag_name, html_url, published_at } = body as Record<string, unknown>;
+    const { tag_name, html_url, published_at, assets } = body as Record<string, unknown>;
     if (typeof tag_name !== "string" || !parts(tag_name)) return null;
+    const version = tag_name.trim().replace(/^v/, "");
+    const dmg = dmgAsset(assets, version);
     return {
-      version: tag_name.trim().replace(/^v/, ""),
+      version,
       url: safeUrl(html_url),
       publishedAt: typeof published_at === "string" ? published_at : "",
+      ...(dmg ? { dmg } : {}),
     };
   } catch {
     return null;

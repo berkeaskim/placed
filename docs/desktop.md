@@ -90,5 +90,5 @@ translocated copy). The desktop build keeps Next's ISR/fetch cache in memory (`e
 - **Not notarised.** There is no Developer ID, only an ad-hoc signature, so a downloaded DMG is blocked on first open
   (right-click → Open, or Privacy & Security → Open Anyway; `xattr -dr com.apple.quarantine /Applications/Placed.app` also works).
 - **Apple Silicon only.** Intel Macs should run from source.
-- **No silent auto-update.** That needs a real signing identity. The app checks GitHub for a newer release and links to it; you replace the app by hand.
+- **Updates are in-app, not silent.** Squirrel.Mac needs a Developer ID, so Placed does it itself: "Update and Restart" downloads the release DMG, checks the bundle id, version and signature, swaps `Placed.app` after quitting and reopens it (data lives outside the bundle). A copy that can't replace itself (run from the DMG, App Translocation, or a folder it can't write) links to the release page instead. See `desktop/src/lib/self-update.ts`.
 - **Open at Login** may be refused by macOS for an unsigned app.

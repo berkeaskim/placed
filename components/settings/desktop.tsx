@@ -70,7 +70,7 @@ export function DesktopSettings() {
       />
       <Row
         title="Updates"
-        subtitle={updateMsg ? <span role="status">{updateMsg}</span> : "Placed tells you when a new version is out."}
+        subtitle={updateMsg ? <span role="status">{updateMsg}</span> : "Placed updates itself when a new version is out."}
         trailing={
           <button type="button" className={btn} disabled={!bridge || checking} onClick={check}>
             {checking ? <Spinner /> : null}
