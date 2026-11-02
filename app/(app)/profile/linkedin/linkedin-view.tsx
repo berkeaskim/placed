@@ -1,9 +1,11 @@
 "use client";
 import { useEffect, useRef, useState, useSyncExternalStore, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ARCHETYPES, ARCHETYPE_LABELS, type Archetype } from "@/lib/types";
 import type { LiPanelData } from "@/lib/linkedin-score/run";
 import { LinkedInScorePanel } from "@/components/linkedin-score-panel";
+import { useAutopilotExtension } from "@/components/autopilot/extension-install";
 import { pollLinkedInCapture, startLinkedInCapture, uploadLinkedIn, uploadLinkedInArchive, type UploadLinkedInResult } from "./actions";
 
 const STEPS = ["Opening your profile…", "Comparing it with your CV…", "Checking recruiter rules…", "Writing your fixes…"];
@@ -47,6 +49,9 @@ export function LinkedInView({ initial, sector: initialSector }: { initial: LiPa
   const [step, setStep] = useState(0);
   // extension/placed-bridge.js marks <html> at document_start; false during SSR.
   const hasExt = useSyncExternalStore(() => () => {}, () => Boolean(document.documentElement.dataset.placedExtension), () => false);
+  // extension/hello.js stamps every loopback page, so an old copy is seen here even when its bridge stays silent.
+  const ext = useAutopilotExtension();
+  const extOutdated = ext.state === "outdated" || (ext.state === "installed" && !hasExt);
   const [capturing, setCapturing] = useState(false);
   const [capStep, setCapStep] = useState(0);
 
@@ -123,7 +128,7 @@ export function LinkedInView({ initial, sector: initialSector }: { initial: LiPa
             <p className="text-xs text-[#5B5B6B]">Only the profile files are read. Messages, connections and everything else in the zip are ignored, and the zip isn&apos;t kept.</p>
           </form>
         </details>
-        {hasExt ? (
+        {hasExt && !extOutdated ? (
           <div className="flex flex-col gap-3">
             <button type="button" onClick={scoreWithExtension} disabled={busy} className="flex min-h-12 items-center justify-center rounded-[14px] border-2 border-border bg-white py-3 font-bold transition-colors hover:bg-muted disabled:opacity-60">
               Or score in one click with the extension
@@ -139,8 +144,16 @@ export function LinkedInView({ initial, sector: initialSector }: { initial: LiPa
           </div>
         ) : (
           <div className="flex flex-col gap-1.5 rounded-2xl bg-[#F8F7FF] p-4 text-sm text-[#3F3F4C]">
-            <p className="font-bold text-[#1A1A2E]">One-click scoring needs the Placed extension</p>
-            <p>LinkedIn doesn&apos;t show profiles to other sites, so the extension reads yours in your own browser. Add it from <code>chrome://extensions</code> (Load unpacked → the <code>extension</code> folder), then reload this page. LinkedIn&apos;s User Agreement restricts browser add-ons that copy profile data, so the data download above is the safer route.</p>
+            <p className="font-bold text-[#1A1A2E]">{extOutdated ? "Update the Placed extension for one-click scoring" : "One-click scoring needs the Placed extension"}</p>
+            <p>
+              {extOutdated
+                ? `Your copy${ext.version ? ` (${ext.version})` : ""} is too old to read LinkedIn for this app. Download the new one, remove the old Placed Autopilot in chrome://extensions, load the new folder, then reload this page.`
+                : "LinkedIn doesn't show profiles to other sites, so the extension reads yours in your own browser. It's the same extension Autopilot uses: download it, load it in Chrome, then reload this page."}{" "}
+              <Link href="/autopilot/setup#extension" className="font-semibold text-[#5B3DF5] underline">
+                {extOutdated ? "Get the new version →" : "Install the extension (1 min) →"}
+              </Link>
+            </p>
+            <p className="text-xs text-[#7A4100]">LinkedIn&apos;s User Agreement restricts browser add-ons that copy profile data, so the data download above is the safer route.</p>
           </div>
         )}
         {capturing && <p role="status" aria-live="polite" className="font-semibold text-[#3A20C4]">{EXT_STEPS[capStep]}</p>}
