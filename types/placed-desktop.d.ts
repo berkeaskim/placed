@@ -4,7 +4,7 @@ export {};
 declare global {
   interface PlacedDesktopUpdateResult {
     status: "current" | "available" | "skipped" | "error";
-    latest?: { version: string; url: string; publishedAt: string };
+    latest?: { version: string; url: string; publishedAt: string; dmg?: { url: string; size: number } };
   }
 
   /** Mirrors LoginItemResult in desktop/src/lib/login-item.ts. */

@@ -44,6 +44,18 @@ describe("latestRelease", () => {
     expect(r?.url).toBe("https://github.com/berkeaskim/placed/releases/latest");
   });
 
+  it("picks the matching arm64 DMG asset, only from this repo's release downloads", async () => {
+    const dl = "https://github.com/berkeaskim/placed/releases/download/v1.2.0/Placed-1.2.0-arm64.dmg";
+    const asset = (extra: Record<string, unknown>) => ({ name: "Placed-1.2.0-arm64.dmg", browser_download_url: dl, size: 200, ...extra });
+    const withAssets = (assets: unknown) => latestRelease(ok(release("v1.2.0", { assets })), "1.0.0");
+    expect((await withAssets([{ name: "Placed-1.2.0-arm64.dmg.blockmap", browser_download_url: `${dl}.blockmap`, size: 9 }, asset({})]))?.dmg)
+      .toEqual({ url: dl, size: 200 });
+    expect((await withAssets([asset({ browser_download_url: "https://evil.example/Placed-1.2.0-arm64.dmg" })]))?.dmg).toBeUndefined();
+    expect((await withAssets([asset({ name: "Placed-1.1.0-arm64.dmg" })]))?.dmg).toBeUndefined();
+    expect((await withAssets([asset({ size: 0 })]))?.dmg).toBeUndefined();
+    expect((await withAssets("nope"))?.dmg).toBeUndefined();
+  });
+
   it("returns null on a network error, a non-200, malformed JSON or a bad tag", async () => {
     expect(await latestRelease(vi.fn(async () => { throw new TypeError("fetch failed"); }), "1.0.0")).toBeNull();
     expect(await latestRelease(vi.fn(async () => new Response("rate limited", { status: 403 })), "1.0.0")).toBeNull();
