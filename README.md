@@ -307,9 +307,16 @@ npm run scraper:setup   # needs uv or Python 3.10+; creates scraper/.venv and do
 The extension fills application forms on Greenhouse, Ashby and Lever (it never presses *Submit*) and captures your
 own LinkedIn profile for the LinkedIn score.
 
+**Easiest (Mac app or source):** in Placed open **Autopilot → Setup**, press **Download**, unzip it, then in
+`chrome://extensions` switch on **Developer mode**, click **Load unpacked** and pick the unzipped `placed-autopilot`
+folder. The same page tells you when your copy is out of date. **Profile → LinkedIn** links there too.
+
+**From the repo folder (developers):**
+
 1. Open `chrome://extensions` and switch on **Developer mode**.
 2. Click **Load unpacked** and select the [`extension/`](extension) folder of this repo.
-3. Keep Placed running. The extension talks to the app at `http://localhost:3000`.
+3. Keep Placed running. The extension finds the app on any `localhost` / `127.0.0.1` port (`npm run dev` on 3000, the
+   Mac app on 3917). After pulling an update, press the reload icon on the extension in `chrome://extensions`.
 
 See [`extension/README.md`](extension/README.md) for how it works and what it will never do.
 
