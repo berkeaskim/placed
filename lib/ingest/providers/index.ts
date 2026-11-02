@@ -37,7 +37,7 @@ function fetchCurated(slug: string): RawJob[] {
   const file = process.env.PLACED_PROGRAMMES_FILE || "seed/programmes.yml";
   let text: string;
   try {
-    text = readFileSync(file, "utf8");
+    text = readFileSync(/*turbopackIgnore: true*/ file, "utf8");
   } catch (e) {
     throw new ProviderError(`curated/${slug}: cannot read ${file} (${(e as Error).message})`);
   }

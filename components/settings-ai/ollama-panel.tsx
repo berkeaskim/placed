@@ -58,7 +58,7 @@ export function OllamaPanel(p: Props) {
       {!p.running ? <InstallSteps /> : null}
 
       <div className="flex flex-col gap-2">
-        <h3 className="font-bold">Pick a model for your computer</h3>
+        <h3 className="text-[14px] font-semibold tracking-[-0.01em]">Pick a model for your computer</h3>
         <p className="text-sm text-muted-foreground">
           This computer has about <strong className="text-foreground">{p.ramGb} GB</strong> of memory, so we suggest the{" "}
           <strong className="text-foreground">{p.tierGb} GB</strong> row.
@@ -167,7 +167,7 @@ function ModelRow({ model, fits, tooBig, canPull }: { model: LocalModel & { inst
 
   const installed = model.installed || pull.state === "done";
   return (
-    <li className={`flex flex-col gap-2 rounded-[14px] border-2 p-3 ${fits ? "border-[#5B3DF5] bg-[#F3F0FF]" : "border-border bg-white"}`}>
+    <li className={`flex flex-col gap-2 rounded-[10px] p-3 ${fits ? "bg-[#5B3DF5]/[0.07] shadow-[inset_0_0_0_1px_rgba(91,61,245,0.35)]" : "bg-black/[0.03]"}`}>
       <div className="flex flex-wrap items-start justify-between gap-2 sm:flex-nowrap">
         <div className="min-w-0 flex-1">
           <p className="flex flex-wrap items-center gap-x-2 gap-y-1 font-bold">
@@ -239,7 +239,7 @@ function ModelPickers({ installed, fast, smart }: { installed: InstalledModel[];
         save.run(() => setOllamaModelsAction(f, s));
       }}
     >
-      <h3 className="font-bold">Models Placed uses</h3>
+      <h3 className="text-[14px] font-semibold tracking-[-0.01em]">Models Placed uses</h3>
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="flex flex-col gap-1 text-sm font-semibold">
           Fast (tagging jobs, quick checks)
@@ -284,7 +284,7 @@ function HostField({ host, fromEnv }: { host: string; fromEnv: boolean }) {
   const [value, setValue] = useState(host);
   const save = useAction();
   return (
-    <details className="rounded-[14px] border-2 border-border p-3">
+    <details className="rounded-[10px] bg-black/[0.03] p-3">
       <summary className="cursor-pointer text-sm font-semibold">Advanced: Ollama address</summary>
       <form
         className="mt-3 flex flex-col gap-2"

@@ -41,7 +41,7 @@ export function scraperInstalled(): Promise<boolean> {
     p = new Promise<boolean>((resolve) => {
       let child;
       try {
-        child = spawn(argv[0], [...argv.slice(1), "--version"], { stdio: "ignore" });
+        child = spawn(/*turbopackIgnore: true*/ argv[0], [...argv.slice(1), "--version"], { stdio: "ignore" });
       } catch {
         return resolve(false);
       }
@@ -119,7 +119,7 @@ function unrefStreams(c: ChildProcessWithoutNullStreams) {
 
 function start(): ChildProcessWithoutNullStreams {
   const argv = sidecarCommand();
-  const c = spawn(argv[0], argv.slice(1), { stdio: ["pipe", "pipe", "pipe"] });
+  const c = spawn(/*turbopackIgnore: true*/ argv[0], argv.slice(1), { stdio: ["pipe", "pipe", "pipe"] });
   stderrTail = "";
   unrefStreams(c);
   const onGone = (why: string) => {

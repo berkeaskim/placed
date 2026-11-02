@@ -4,6 +4,7 @@
 import { mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { zipSync, strToU8 } from "fflate";
+import { packOrigins } from "./extension-origins.mjs";
 
 const ROOT = new URL("..", import.meta.url).pathname;
 const SRC = join(ROOT, "extension");
@@ -12,8 +13,7 @@ const DIR = "placed-autopilot/";
 
 const origin = (process.env.PLACED_PUBLIC_ORIGIN || `http://localhost:${process.env.PORT || 3000}`).replace(/\/+$/, "");
 const u = new URL(origin);
-const origins = [...new Set([origin, ...(["localhost", "127.0.0.1"].includes(u.hostname)
-  ? [`${u.protocol}//localhost${u.port ? `:${u.port}` : ""}`, `${u.protocol}//127.0.0.1${u.port ? `:${u.port}` : ""}`] : [])])];
+const origins = packOrigins(origin);
 
 const walk = (dir) => readdirSync(dir).flatMap((name) => {
   const p = join(dir, name);

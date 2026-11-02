@@ -14,7 +14,7 @@ Tailor your CV to a job without inventing a single claim. Let Autopilot fill the
 Track every application, prep for the interview, and get a dated plan for who to message and when.
 
 **Runs on your own computer.** No account, no cloud database: your CV and applications stay in a folder on your machine.
-Bring a Claude or Gemini key, use your ChatGPT plan through the Codex CLI, or run a model locally with Ollama.
+Bring one OpenRouter key (Claude, Gemini, GPT and more), use your ChatGPT plan through the Codex CLI, or run a model locally with Ollama.
 
 <p>
   <img alt="3rd place, Claude Hackathon" src="https://img.shields.io/badge/%F0%9F%A5%89%203rd%20place-Claude%20Hackathon-D97757">
@@ -42,7 +42,8 @@ Bring a Claude or Gemini key, use your ChatGPT plan through the Codex CLI, or ru
   <a href="#a-quick-tour">Tour</a> ·
   <a href="#principles">Principles</a> ·
   <a href="#architecture">Architecture</a> ·
-  <a href="#quick-start">Quick start</a> ·
+  <a href="#install-the-mac-app">Mac app</a> ·
+  <a href="#quick-start-from-source">Quick start</a> ·
   <a href="#choosing-an-ai-backend">AI backend</a> ·
   <a href="#troubleshooting">Troubleshooting</a>
 </p>
@@ -190,7 +191,27 @@ flowchart LR
 | Security | Loopback-only server, AES-GCM encryption for saved API keys and the Autopilot vault, rate-limited routes |
 | Quality | Vitest (180 test files, including fairness and security suites, each on a temp database), Playwright end-to-end runs, Zod everywhere |
 
-## Quick start
+## Install the Mac app
+
+If you are on a Mac with Apple Silicon (M1 or later), you can skip git and Node entirely.
+
+1. Download `Placed-<version>-arm64.dmg` from the [latest release](https://github.com/berkeaskim/placed/releases/latest).
+   (The DMG is attached to releases from the first one tagged after the Mac app landed; older releases have none.)
+2. Open it and drag **Placed** into **Applications**.
+3. First launch: the app is not notarised, so macOS will refuse a normal double-click. Right-click **Placed** → **Open**
+   → **Open**. On newer macOS, go to **System Settings → Privacy & Security**, scroll down and press **Open Anyway**.
+   You only do this once. If macOS says **"Placed is damaged and can't be opened"**, that is the download quarantine
+   flag on an unnotarised app, not real damage: run `xattr -dr com.apple.quarantine /Applications/Placed.app` in
+   Terminal, then open it again.
+
+Your data lives in `~/Library/Application Support/Placed/data`. If you already ran Placed from the repo, the first
+launch offers **Import existing data…**: pick your old `data/` folder and it is copied across (the original is left alone).
+
+The Chrome extension zip from **Autopilot → Setup** is already pointed at the app (`http://127.0.0.1:3917`). The app
+checks GitHub for new versions and links you to the release page; it does not update itself, so download the new DMG
+and replace the old app. Intel Macs: use the install below. More detail in [docs/desktop.md](docs/desktop.md).
+
+## Quick start (from source)
 
 You need [Node.js](https://nodejs.org) 22.12 or newer and git. Nothing else: no account, no database server, no `.env` file.
 
@@ -212,16 +233,18 @@ model under **Settings → AI** (next section) before you score your own CV.
 
 ## Choosing an AI backend
 
-Open **Settings → AI** in the app and pick one of four backends. You can switch at any time.
+Open **Settings → AI** in the app and pick a backend. You can switch at any time.
 
 | Backend | What you need | Notes |
 |---|---|---|
-| **Claude** | An Anthropic API key ([console.anthropic.com](https://console.anthropic.com)) | Best quality. Paid per use. |
-| **Gemini** | A Google AI Studio key ([aistudio.google.com/apikey](https://aistudio.google.com/apikey)) | Google offers a rate-limited free tier. Also powers search-grounded interview prep. |
+| **OpenRouter** (recommended) | One API key from [openrouter.ai/keys](https://openrouter.ai/keys) with some credit | Reaches Claude, Gemini, GPT and hundreds more; pick the model per task in the app. Defaults: Claude Sonnet 5.5 for CV review and writing, Gemini 3.8 Flash for quick tasks. Also powers web-researched interview prep. |
+| **Claude** (advanced) | An Anthropic API key ([console.anthropic.com](https://console.anthropic.com)) | Best quality. Paid per use. |
+| **Gemini** (advanced) | A Google AI Studio key ([aistudio.google.com/apikey](https://aistudio.google.com/apikey)) | Google offers a rate-limited free tier. Also powers search-grounded interview prep. |
 | **ChatGPT (Codex CLI)** | OpenAI's [Codex CLI](https://github.com/openai/codex) (`npm install -g @openai/codex`), signed in with `codex login` | Uses your ChatGPT plan, no API key. Each call starts the CLI, so it takes a few seconds longer than Claude or Gemini. |
 | **Ollama** | [Ollama](https://ollama.com) installed and running | Fully offline and free. Your CV never leaves your computer. Slower, and quality depends on your hardware. |
 
-Paste a key and press **Test connection**. For ChatGPT there is no key: press **Use ChatGPT**, then **Test connection**
+Paste a key and save: Placed checks an OpenRouter key with OpenRouter before saving it, and every provider or model you pick is
+tested with a real request straight away, so the page shows whether it answers. For ChatGPT there is no key: switch on **Use ChatGPT**
 (set `CODEX_BIN` if the `codex` binary isn't on your PATH). Keys are stored encrypted in `data/`. If you prefer environment
 variables, copy `.env.example` to `.env.local` and fill in what you need; a value there overrides the one in Settings.
 

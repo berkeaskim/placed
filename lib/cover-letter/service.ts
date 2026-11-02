@@ -213,7 +213,7 @@ function startResearch(ctx: Ctx, letter: LetterRow): void {
       text: aiOff
         ? `AI isn't set up, so I couldn't look ${company} up. I'll work from the job post. Set up AI in Settings → AI.`
         : state === "none"
-        ? `I couldn't look ${company} up (that needs a Gemini or Serper key in Settings), so I'll work from the job post.`
+        ? `I couldn't look ${company} up (that needs OpenRouter, Gemini or a Serper key in Settings), so I'll work from the job post.`
         : `Researching ${company} didn't work this time, so I'll work from the job post.`,
     })];
     saveLetter(cur.id, { research_state: state, facts, chat: [...cur.chat, ...note] });

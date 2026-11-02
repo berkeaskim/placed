@@ -1,8 +1,10 @@
 "use server";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { AI_KEYS, AI_PROVIDERS, aiProvider, type AiProvider } from "@/lib/ai/config";
+import { AI_KEYS, AI_PROVIDERS, KEY_SECRET, aiProvider, type AiProvider } from "@/lib/ai/config";
 import { AiError } from "@/lib/ai/provider";
+import { clearHealth, writeHealth } from "@/lib/ai/health";
+import type { Tier } from "@/lib/ai/models";
 import { OLLAMA_TAG_RE } from "@/lib/ai/ollama";
 import { getSetting, setSecret, setSetting } from "@/lib/settings/store";
 
@@ -26,7 +28,7 @@ function refresh() {
   revalidatePath(PATH);
   revalidatePath("/", "layout");
 }
-const CloudProvider = z.enum(["anthropic", "gemini"]);
+const CloudProvider = z.enum(["openrouter", "anthropic", "gemini"]);
 
 export async function setProviderAction(provider: string): Promise<ActionResult> {
   if (!(AI_PROVIDERS as readonly string[]).includes(provider)) return { ok: false, error: "Unknown provider." };
@@ -41,8 +43,17 @@ export async function saveKeyAction(provider: string, key: string): Promise<Acti
   if (!p.success) return { ok: false, error: "Unknown provider." };
   const k = key.trim();
   if (k.length < 10 || k.length > 400 || /\s/.test(k)) return { ok: false, error: "That doesn't look like an API key." };
+  if (p.data === "openrouter") {
+    // Check the key before saving it (free: no model call), so a typo never becomes the active setup.
+    try {
+      await (await import("@/lib/ai/openrouter")).openrouterKeyInfo(k);
+    } catch (e) {
+      return { ok: false, error: `OpenRouter rejected this key: ${e instanceof Error ? e.message : String(e)}` };
+    }
+  }
   pinProvider(p.data);
-  setSecret(p.data === "anthropic" ? AI_KEYS.anthropicKey : AI_KEYS.geminiKey, k);
+  setSecret(KEY_SECRET[p.data], k);
+  clearHealth(p.data);
   refresh();
   return { ok: true, message: "Key saved." };
 }
@@ -50,7 +61,8 @@ export async function saveKeyAction(provider: string, key: string): Promise<Acti
 export async function clearKeyAction(provider: string): Promise<ActionResult> {
   const p = CloudProvider.safeParse(provider);
   if (!p.success) return { ok: false, error: "Unknown provider." };
-  setSecret(p.data === "anthropic" ? AI_KEYS.anthropicKey : AI_KEYS.geminiKey, null);
+  setSecret(KEY_SECRET[p.data], null);
+  clearHealth(p.data);
   refresh();
   return { ok: true, message: "Key removed." };
 }
@@ -65,16 +77,42 @@ export async function setCodexEnabledAction(on: boolean): Promise<ActionResult> 
 
 const ModelId = z.string().trim().max(200).regex(/^[\w.:\/-]*$/);
 
-/** Per-tier model overrides for Claude/Gemini/ChatGPT; an empty value goes back to the built-in default. */
+const CloudModelProvider = z.enum(["openrouter", "anthropic", "gemini", "codex"]);
+
+/** Per-tier model overrides for OpenRouter/Claude/Gemini/ChatGPT; an empty value goes back to the built-in default. */
 export async function setCloudModelsAction(provider: string, fast: string, smart: string): Promise<ActionResult> {
-  const p = z.enum(["anthropic", "gemini", "codex"]).safeParse(provider);
+  const p = CloudModelProvider.safeParse(provider);
   const f = ModelId.safeParse(fast);
   const s = ModelId.safeParse(smart);
   if (!p.success || !f.success || !s.success) return { ok: false, error: "Invalid model id." };
   setSetting(`ai.${p.data}.model.fast`, f.data || null);
   setSetting(`ai.${p.data}.model.smart`, s.data || null);
+  clearHealth(p.data);
   refresh();
   return { ok: true, message: "Models saved." };
+}
+
+/** One tier's model (the OpenRouter picker). Empty = the default. The page then runs a test call on it. */
+export async function setTierModelAction(provider: string, tier: string, model: string): Promise<ActionResult> {
+  const p = CloudModelProvider.safeParse(provider);
+  const t = z.enum(["fast", "smart"]).safeParse(tier);
+  const m = ModelId.safeParse(model);
+  if (!p.success || !t.success || !m.success) return { ok: false, error: "Invalid model id." };
+  setSetting(`ai.${p.data}.model.${t.data}`, m.data || null);
+  writeHealth(p.data, t.data, null);
+  refresh();
+  return { ok: true, message: "Model saved." };
+}
+
+export type ModelOption = { id: string; name: string; promptPerM: number; completionPerM: number; context: number };
+
+/** OpenRouter models Placed can use (structured output), for the picker. */
+export async function listOpenRouterModelsAction(): Promise<{ ok: true; models: ModelOption[] } | { ok: false; error: string }> {
+  try {
+    return { ok: true, models: await (await import("@/lib/ai/openrouter")).openrouterModels() };
+  } catch (e) {
+    return { ok: false, error: `Couldn't load the model list: ${e instanceof Error ? e.message : String(e)}` };
+  }
 }
 
 /** Fast/smart Ollama models; also sets ai.ollama.model (the fallback) so the provider counts as configured. */
@@ -84,6 +122,7 @@ export async function setOllamaModelsAction(fast: string, smart: string): Promis
   setSetting("ai.ollama.model.fast", fast || null);
   setSetting("ai.ollama.model.smart", smart || null);
   setSetting(AI_KEYS.ollamaModel, fast || smart || null);
+  clearHealth("ollama");
   refresh();
   return { ok: true, message: "Models saved." };
 }
@@ -119,25 +158,52 @@ function describe(e: unknown): string {
   return (detail ? `${base} ${detail}` : base).slice(0, 300);
 }
 
-/** A tiny real call through the provider's adapter (whether or not it is the active provider). */
-export async function testConnectionAction(provider: string): Promise<ActionResult> {
+/** The model id a tier of this provider would use, for the health record (currentModelId only covers the active one). */
+async function modelFor(provider: AiProvider, tier: Tier): Promise<string> {
+  const m = await import("@/lib/ai/models");
+  const { ollamaModel } = await import("@/lib/ai/config");
+  if (provider === "openrouter") return m.openrouterModel(tier);
+  if (provider === "anthropic") return m.anthropicModel(tier);
+  if (provider === "gemini") return m.geminiModel(tier);
+  if (provider === "codex") return m.codexModel(tier) ?? "default";
+  return ollamaModel(tier) ?? "unset";
+}
+
+/**
+ * A tiny real call through the provider's adapter (whether or not it is the active provider), on the given tier's
+ * model. The result is saved, so the page keeps showing whether the chosen model works.
+ */
+export async function testConnectionAction(provider: string, tier: string = "smart"): Promise<ActionResult> {
   if (!(AI_PROVIDERS as readonly string[]).includes(provider)) return { ok: false, error: "Unknown provider." };
+  const t: Tier = tier === "fast" ? "fast" : "smart";
+  const p = provider as AiProvider;
+  const model = await modelFor(p, t);
+  const res = await runTest(p, t);
+  writeHealth(p, t, { ok: res.ok, model, ms: res.ms, at: new Date().toISOString(), ...(res.ok ? {} : { error: res.error }) });
+  refresh();
+  return res.ok ? { ok: true, message: `Working: ${model} answered in ${(res.ms / 1000).toFixed(1)} s.` } : { ok: false, error: res.error };
+}
+
+async function runTest(provider: AiProvider, tier: Tier): Promise<{ ok: true; ms: number } | { ok: false; ms: number; error: string }> {
   const req = {
-    tier: "fast" as const,
+    tier,
     system: "You are a connection test. Answer with JSON only.",
     parts: [{ type: "text" as const, text: 'Return {"ok": true}.' }],
     schema: Ping,
-    maxTokens: 200,
+    maxTokens: 2000, // reasoning models spend part of the budget thinking
   };
   const t0 = Date.now();
   try {
     let out: z.infer<typeof Ping>;
-    if (provider === "anthropic") out = await (await import("@/lib/ai/anthropic")).anthropicStructured(req);
+    if (provider === "openrouter") out = await (await import("@/lib/ai/openrouter")).openrouterStructured(req);
+    else if (provider === "anthropic") out = await (await import("@/lib/ai/anthropic")).anthropicStructured(req);
     else if (provider === "gemini") out = await (await import("@/lib/ai/gemini")).geminiStructured(req);
     else if (provider === "codex") out = await (await import("@/lib/ai/codex")).codexStructured(req);
     else out = await (await import("@/lib/ai/ollama")).ollamaStructured(req);
-    return { ok: true, message: `Connected: got a valid answer in ${((Date.now() - t0) / 1000).toFixed(1)} s${out.ok ? "" : " (model said ok=false)"}.` };
+    void out;
+    return { ok: true, ms: Date.now() - t0 };
   } catch (e) {
-    return { ok: false, error: e instanceof AiError ? describe(e) : `Test failed: ${describe(e)}` };
+    return { ok: false, ms: Date.now() - t0, error: e instanceof AiError ? describe(e) : `Test failed: ${describe(e)}` };
   }
 }
+

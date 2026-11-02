@@ -17,9 +17,11 @@ export default async function AutopilotSetupPage() {
   // The local user has no real email (you@localhost): the CV's email is the prefill.
   const prefill = prefillCore({ email: null, year: profile.year, cv: cv?.parsed ?? null, needsVisa: profile.needs_visa });
   return (
-    <div className="mx-auto flex max-w-2xl flex-col gap-4">
-      <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">Set up Autopilot</h1>
-      <p className="text-[15px] text-[#4A4A57]">Answer these once. Autopilot uses them to fill application forms for you, and you always press Submit yourself.</p>
+    <div className="mx-auto flex max-w-[680px] flex-col gap-6 pb-10 [font-family:-apple-system,BlinkMacSystemFont,'SF_Pro_Text',system-ui,sans-serif] antialiased">
+      <header className="flex flex-col gap-1">
+        <h1 className="text-[28px] font-bold leading-[1.1] tracking-[-0.025em] text-black/90">Autopilot</h1>
+        <p className="text-[13px] text-black/55">Answer these once. Autopilot uses them to fill application forms for you, and you always press Submit yourself.</p>
+      </header>
       <SetupForm initial={{ ...prefill, ...vault.core }} unlocked={vault.completed} needsVisaHint={profile.needs_visa} />
       <RememberedAnswers extra={vault.extra} long={listLongAnswers(user.id)} />
       <SavedStories stories={stories} />

@@ -64,3 +64,10 @@ __pycache__/
 
 # optional stealth sidecar (npm run scraper:setup)
 scraper/.venv
+
+# Mac app (desktop/): dependencies, compiled shell, staged server, built DMG
+desktop/node_modules/
+desktop/dist/
+desktop/stage/
+desktop/out/
+desktop/out-*/

@@ -105,11 +105,23 @@ export function codexStructured<T>(req: StructuredRequest<T>, runner: CodexRunne
   return withSlot(() => inTempDir((dir) => structured(req, dir, runner)));
 }
 
+/**
+ * Failures a second run cannot fix (signed out, usage limit, unknown model). Anything else (a dropped connection, a
+ * stream error, a CLI crash) is retried once: one failed run used to cost a whole CV-review batch.
+ */
+const PERMANENT_FAILURE = /usage limit|log ?in|signed|unauthori[sz]ed|forbidden|not supported|unsupported|does not exist|unknown model|invalid model|ENOENT|EACCES/i;
+
+/** Logged to the server log (Mac app: Open Logs Folder), since the UI only shows the generic AI_UNAVAILABLE. */
+function logFailure(err: Error, willRetry: boolean) {
+  console.error(`codex: run failed${willRetry ? ", retrying once" : ""}:`, err.message);
+}
+
 async function structured<T>(req: StructuredRequest<T>, dir: string, runner: CodexRunner): Promise<T> {
   const jsonSchema = z.toJSONSchema(req.schema);
   const schemaFile = path.join(dir, "schema.json");
   await writeFile(schemaFile, JSON.stringify(toStrictSchema(jsonSchema)));
   const prompt = `${req.system}\n\n${NO_TOOLS}\n\n${await partsToText(req.parts)}`;
+  let runFailures = 0;
   for (let attempt = 0; attempt < 2; attempt++) {
     const lines: string[] = [];
     let text: string | null = null;
@@ -125,7 +137,13 @@ async function structured<T>(req: StructuredRequest<T>, dir: string, runner: Cod
       });
       if (code !== 0 || text === null) throw errorFrom(lines, stderr);
     } catch (cause) {
-      throw new AiError(AI_UNAVAILABLE, { cause });
+      const err = cause instanceof Error ? cause : new Error(String(cause));
+      const retry = runFailures === 0 && !PERMANENT_FAILURE.test(err.message);
+      logFailure(err, retry);
+      if (!retry) throw new AiError(AI_UNAVAILABLE, { cause: err });
+      runFailures++;
+      attempt--; // a failed run does not use up the bad-answer retry
+      continue;
     }
     try {
       const raw = JSON.parse(text) as unknown;
@@ -164,6 +182,7 @@ export async function* codexStream(req: StreamRequest, runner: CodexRunner = spa
       } catch (cause) {
         if (req.signal?.aborted) return [];
         if (cause instanceof AiError) throw cause;
+        if (cause instanceof Error) logFailure(cause, false);
         throw new AiError(AI_UNAVAILABLE, { cause });
       }
       return out;

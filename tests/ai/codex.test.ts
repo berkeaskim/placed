@@ -85,6 +85,12 @@ describe("codexStructured", () => {
     expect(runs).toHaveLength(2);
   });
 
+  it("a transient failed run is retried once before giving up", async () => {
+    const { runner, runs } = fakeRunner([{ code: 1, lines: [JSON.stringify({ type: "error", message: "stream disconnected before completion" })] }, { lines: [message('{"ok":true}')] }]);
+    expect(await codexStructured(req, runner)).toEqual({ ok: true });
+    expect(runs).toHaveLength(2);
+  });
+
   it("a failed run (not signed in, usage limit) is AI_UNAVAILABLE with the CLI's reason as the cause", async () => {
     const { runner } = fakeRunner([{ code: 1, lines: [JSON.stringify({ type: "error", message: "You've hit your usage limit." })] }]);
     const err = (await codexStructured(req, runner).catch((e) => e)) as AiError;

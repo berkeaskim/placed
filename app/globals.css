@@ -179,3 +179,17 @@
   .agent-ink, .agent-glint { animation: none; }
   .agent-motion-scan, .agent-motion-ping { display: none; }
 }
+
+/* Settings → AI: pickers fade/slide in from their trigger (reduced motion: no keyframes, see motion-safe). */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* macOS pop-up button chevrons for <select> (components/ui/apple.tsx). */
+.apple-select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M8 9.5l4-4 4 4M8 14.5l4 4 4-4' fill='none' stroke='%23888' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-size: 14px;
+  background-position: right 9px center;
+  background-repeat: no-repeat;
+}

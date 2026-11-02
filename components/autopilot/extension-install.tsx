@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { env } from "@/lib/env";
 import { extensionStatus, outdatedNotice, SHIPPED_EXTENSION_VERSION } from "@/lib/autopilot/extension-version";
+import { AppIcon, Group, Row, StatusDot, btnPrimary } from "@/components/ui/apple";
 
 export type ExtensionState = "checking" | "installed" | "outdated" | "missing";
 export type ExtensionInfo = { state: ExtensionState; version: string | null };
@@ -48,46 +49,51 @@ function Outdated({ version, className }: { version: string | null; className?: 
   );
 }
 
-/** The full install card on /autopilot/setup: one button, and the manual steps only while there is no store listing. */
+const steps = "list-decimal space-y-1.5 pl-5 text-[13px] leading-relaxed text-black/65 marker:text-black/40";
+const code = "rounded bg-black/[0.05] px-1 py-px font-mono text-[12px]";
+
+/** The install group on /autopilot/setup: one button, and the manual steps only while there is no store listing. */
 export function ExtensionInstall() {
   const { state, version } = useAutopilotExtension();
   const store = env.autopilotStoreUrl;
+  const badge =
+    state === "installed" ? <span className="flex items-center gap-1.5"><StatusDot state="ok" />Installed</span>
+      : state === "outdated" ? <span className="flex items-center gap-1.5"><StatusDot state="checking" />Update available</span>
+      : state === "missing" ? <span className="flex items-center gap-1.5"><StatusDot state="fail" />Not installed</span>
+      : <span className="flex items-center gap-1.5"><StatusDot state="unknown" />Checking</span>;
   return (
-    <section id="extension" className="scroll-mt-20 rounded-2xl border border-[#E8E8EE] bg-white p-5">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-lg font-extrabold tracking-tight">Get the Chrome extension</h2>
-        {state === "installed" && <span className="rounded-full bg-[#E7F8EE] px-3 py-1 text-xs font-bold text-[#0F6B3A]">✓ Installed</span>}
-        {state === "outdated" && <span className="rounded-full bg-[#FFF3E0] px-3 py-1 text-xs font-bold text-[#7A4100]">Update available</span>}
-        {state === "missing" && <span className="rounded-full bg-[#FFF3E0] px-3 py-1 text-xs font-bold text-[#7A4100]">Not installed yet</span>}
-      </div>
-      <p className="mt-1 text-[14px] text-[#4A4A57]">Autopilot fills the form through a small Chrome extension. It never presses Submit.</p>
-
-      {state === "installed" ? (
-        <p className="mt-3 text-[14px] text-[#4A4A57]">You&apos;re set. Open a job, press <strong>Autopilot this application</strong>, then <strong>Open &amp; fill</strong>.</p>
-      ) : state === "outdated" ? (
-        <>
-          <Outdated version={version} className="mt-3 text-[14px] font-semibold text-[#7A4100]" />
-          {!store && (
-            <ol className="mt-3 list-decimal space-y-1.5 pl-5 text-[14px] text-[#4A4A57]">
-              <li>Unzip the new <code>placed-autopilot.zip</code>.</li>
-              <li>In <code>chrome://extensions</code>, remove the old <strong>Placed Autopilot</strong>.</li>
-              <li>Click <strong>Load unpacked</strong> and choose the new <code>placed-autopilot</code> folder, then reload this page.</li>
-            </ol>
+    <section id="extension" className="scroll-mt-20">
+      <Group title="Chrome extension" footer="Autopilot fills the form through a small Chrome extension. It never presses Submit.">
+        <Row icon={<AppIcon kind="chrome" />} title="Placed Autopilot" subtitle={version ? `Version ${version}` : "For Google Chrome"} trailing={badge} />
+        <div className="px-4 py-3">
+          {state === "installed" ? (
+            <p className="text-[13px] text-black/65">You&apos;re set. Open a job, press <strong className="font-semibold text-black/85">Autopilot this application</strong>, then <strong className="font-semibold text-black/85">Open &amp; fill</strong>.</p>
+          ) : state === "outdated" ? (
+            <>
+              <Outdated version={version} className="text-[13px] font-medium text-[#8A4200]" />
+              {!store && (
+                <ol className={`mt-2 ${steps}`}>
+                  <li>Unzip the new <code className={code}>placed-autopilot.zip</code>.</li>
+                  <li>In <code className={code}>chrome://extensions</code>, remove the old <strong>Placed Autopilot</strong>.</li>
+                  <li>Click <strong>Load unpacked</strong> and choose the new <code className={code}>placed-autopilot</code> folder, then reload this page.</li>
+                </ol>
+              )}
+            </>
+          ) : store ? (
+            <a href={store} target="_blank" rel="noopener noreferrer" className={`${btnPrimary} min-h-10 px-5 text-[14px]`}>Add to Chrome</a>
+          ) : (
+            <div className="flex flex-col gap-3">
+              <a href={ZIP} download className={`${btnPrimary} min-h-10 w-fit px-5 text-[14px]`}>Download the extension (.zip)</a>
+              <ol className={steps}>
+                <li>Unzip <code className={code}>placed-autopilot.zip</code>. You get a <code className={code}>placed-autopilot</code> folder.</li>
+                <li>Open <code className={code}>chrome://extensions</code> (paste it in the address bar) and switch on <strong>Developer mode</strong>, top right.</li>
+                <li>Click <strong>Load unpacked</strong> and choose the <code className={code}>placed-autopilot</code> folder.</li>
+                <li>Come back to this page. The status above turns <strong>Installed</strong>.</li>
+              </ol>
+            </div>
           )}
-        </>
-      ) : store ? (
-        <a href={store} target="_blank" rel="noopener noreferrer" className="btn-quest mt-4 inline-flex min-h-12 items-center px-5 py-3">Add to Chrome →</a>
-      ) : (
-        <>
-          <a href={ZIP} download className="btn-quest mt-4 inline-flex min-h-12 items-center px-5 py-3">Download the extension (.zip)</a>
-          <ol className="mt-4 list-decimal space-y-1.5 pl-5 text-[14px] text-[#4A4A57]">
-            <li>Unzip <code>placed-autopilot.zip</code>. You get a <code>placed-autopilot</code> folder.</li>
-            <li>Open <code>chrome://extensions</code> (paste it in the address bar) and switch on <strong>Developer mode</strong>, top right.</li>
-            <li>Click <strong>Load unpacked</strong> and choose the <code>placed-autopilot</code> folder.</li>
-            <li>Come back to this page. The badge above turns <strong>✓ Installed</strong>.</li>
-          </ol>
-        </>
-      )}
+        </div>
+      </Group>
     </section>
   );
 }

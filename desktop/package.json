@@ -1,0 +1,74 @@
+{
+  "name": "placed-desktop",
+  "productName": "Placed",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Placed for macOS: an Electron shell around the local Next.js server.",
+  "main": "dist/main.js",
+  "scripts": {
+    "sync-version": "node scripts/sync-version.mjs",
+    "prebuild": "npm run sync-version",
+    "build": "tsc -p tsconfig.json",
+    "start": "electron .",
+    "dist": "npm run sync-version && electron-builder"
+  },
+  "devDependencies": {
+    "electron": "44.10.1",
+    "electron-builder": "26.18.0",
+    "typescript": "5.9.3"
+  },
+  "build": {
+    "appId": "dev.placed.app",
+    "productName": "Placed",
+    "directories": {
+      "output": "out",
+      "buildResources": "build"
+    },
+    "files": [
+      "dist/**",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "stage",
+        "to": ".",
+        "filter": [
+          "server/**/*"
+        ]
+      }
+    ],
+    "asar": true,
+    "npmRebuild": false,
+    "artifactName": "Placed-${version}-${arch}.${ext}",
+    "afterPack": "scripts/adhoc-sign.mjs",
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64"
+          ]
+        }
+      ],
+      "category": "public.app-category.productivity",
+      "icon": "build/icon.icns",
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false,
+      "identity": null
+    },
+    "dmg": {
+      "contents": [
+        {
+          "x": 130,
+          "y": 220
+        },
+        {
+          "x": 410,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ]
+    }
+  }
+}
