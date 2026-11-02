@@ -4,14 +4,15 @@ import { wordLimitOf } from "./limits";
 const unescape = (s: string) => s.replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
 const CARD_TYPE: Record<string, FieldType> = { text: "text", textarea: "textarea", "multiple-choice": "select", dropdown: "select", "multiple-select": "multiselect" };
 
-export function leverRef(url: string): { site: string; id: string } | null {
-  const m = url.match(/jobs\.lever\.co\/([^/?#]+)\/([0-9a-f-]{36})/i);
-  return m ? { site: m[1], id: m[2] } : null;
+/** `host` is jobs.lever.co or, for EU accounts, jobs.eu.lever.co (the other host 404s). */
+export function leverRef(url: string): { site: string; id: string; host: string } | null {
+  const m = url.match(/(jobs(?:\.eu)?\.lever\.co)\/([^/?#]+)\/([0-9a-f-]{36})/i);
+  return m ? { host: m[1].toLowerCase(), site: m[2], id: m[3] } : null;
 }
 
 type Tpl = { fields: { type: string; text: string; required: boolean; options?: { text: string }[] }[] };
 
-export function parseLever(html: string, site: string, id: string): NormalizedForm {
+export function parseLever(html: string, site: string, id: string, host = "jobs.lever.co"): NormalizedForm {
   if (!/name="email"/.test(html)) throw new FormUnavailableError();
   const fields: FormField[] = [];
   const seen = new Set<string>();
@@ -38,5 +39,5 @@ export function parseLever(html: string, site: string, id: string): NormalizedFo
     });
   }
   if (/name="comments"/.test(html)) add({ key: "comments", target: "comments", label: "Additional information", type: "textarea", required: false, options: [] });
-  return { ats: "lever", url: `https://jobs.lever.co/${site}/${id}/apply`, fields };
+  return { ats: "lever", url: `https://${host}/${site}/${id}/apply`, fields };
 }

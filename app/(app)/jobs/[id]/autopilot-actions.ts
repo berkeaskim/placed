@@ -12,7 +12,7 @@ import { canOpen, type Answers, type PackItem } from "@/lib/autopilot/pack";
 import { mintToken } from "@/lib/autopilot/handoff";
 import { normLabel } from "@/lib/autopilot/vault";
 import { sealAnswers, sealLongAnswer, sealVault, type StoredAnswer } from "@/lib/autopilot/vault-crypto";
-import { FormUnavailableError } from "@/lib/autopilot/forms/types";
+import { FormUnavailableError, PostingClosedError } from "@/lib/autopilot/forms/types";
 import { isUuid } from "@/lib/feed/save-result";
 import { env } from "@/lib/env";
 import { classify } from "@/lib/autopilot/classify";
@@ -54,7 +54,9 @@ export async function preparePack(jobId: string): Promise<Prepared> {
     console.error("autopilot preparePack:", e instanceof Error ? e.message : "unknown error");
     const data = db.select({ url: jobs.url }).from(jobs).where(eq(jobs.id, jobId)).get();
     return {
-      error: e instanceof FormUnavailableError ? "We couldn't read this form. Here's the normal Apply link." : "Something went wrong building your pack.",
+      error: e instanceof PostingClosedError
+        ? "This posting looks closed: the company no longer lists it, so there's no form to fill. Here's the original link."
+        : e instanceof FormUnavailableError ? "We couldn't read this form. Here's the normal Apply link." : "Something went wrong building your pack.",
       applyUrl: safeHttpUrl(data?.url),
     };
   }

@@ -12,6 +12,9 @@ describe("extension job match", () => {
   const UUID = "2993de0d-80fd-4dff-a708-c16fa593df41";
   it("extracts the job id from greenhouse, ashby and lever urls", () => {
     expect(wantedJobId(GH)).toBe("123");
+    expect(wantedJobId("https://job-boards.greenhouse.io/embed/job_app?for=stripe&token=8097801")).toBe("8097801");
+    expect(pageMatches("8097801", "/embed/job_app", "?for=stripe&token=8097801")).toBe(true);
+    expect(pageMatches("8097801", "/embed/job_app", "?for=stripe&token=80978011")).toBe(false);
     expect(wantedJobId(`https://jobs.ashbyhq.com/org/${UUID.toUpperCase()}/application`)).toBe(UUID);
     expect(wantedJobId(`https://jobs.lever.co/site/${UUID}/apply`)).toBe(UUID);
     expect(wantedJobId("https://example.com/")).toBeNull();

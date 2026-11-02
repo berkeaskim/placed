@@ -9,7 +9,7 @@ importScripts("config.js");
 importScripts("lib/geometry.js");
 importScripts("lib/origins.js");
 
-const ALLOWED = ["https://job-boards.greenhouse.io", "https://boards.greenhouse.io", "https://jobs.ashbyhq.com", "https://jobs.lever.co"];
+const ALLOWED = ["https://job-boards.greenhouse.io", "https://boards.greenhouse.io", "https://jobs.ashbyhq.com", "https://jobs.lever.co", "https://jobs.eu.lever.co"];
 const IDLE_MS = 60_000;
 const CV_MAX_BYTES = 10 * 1024 * 1024;
 const CONTROL_CHARS = /[\u0000-\u001F\u007F]/g;
