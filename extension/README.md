@@ -64,7 +64,9 @@ runs in your browser.
   Contact info (email, phone, birthday).
 - The ticket is signed by Placed, lasts 10 minutes and scores once. Placed also refuses a profile whose name doesn't
   match your CV.
-- Origins allowed to hand out tickets are `PLACED_ORIGINS` in `config.js`; each needs a `host_permissions` entry.
+- Any loopback origin (`localhost`, `127.0.0.1`, `[::1]`, any port) that renders `<meta name="placed-app">` may hand
+  out a ticket, so dev (:3000), the Mac app (:3917) and worktrees on other ports all work from one copy. The result is
+  posted back to the origin that issued the ticket.
 
 ## What is not supported
 
