@@ -20,15 +20,15 @@ import { offerPrevious } from "./memory";
 import { firmGuard } from "./firm-guard";
 
 /** `employer`: the posting's own employer on a multi-employer board (TargetJobs), else the company. */
-export type JobForPack = { id: string; extId: string; url: string; ats: Ats; company: string; employer: string; textLines: string[]; track: Track };
+export type JobForPack = { id: string; extId: string; url: string; ats: Ats; slug: string; company: string; employer: string; textLines: string[]; track: Track };
 export type ClaimBody = { ats: Ats; url: string; fields: FillInstruction[]; cv: { url: string; filename: string } | null; cover: { url: string; filename: string } | null };
 
 export async function loadJobForPack(jobId: string): Promise<JobForPack | null> {
-  const r = db.select({ id: jobs.id, ext_id: jobs.ext_id, url: jobs.url, text_lines: jobs.text_lines, employment_type: jobs.employment_type, employer_name: jobs.employer_name, name: companies.name, ats: companies.ats })
+  const r = db.select({ id: jobs.id, ext_id: jobs.ext_id, url: jobs.url, text_lines: jobs.text_lines, employment_type: jobs.employment_type, employer_name: jobs.employer_name, name: companies.name, ats: companies.ats, slug: companies.slug })
     .from(jobs).innerJoin(companies, eq(companies.id, jobs.company_id)).where(eq(jobs.id, jobId)).get();
   if (!r) return null;
   return {
-    id: r.id, extId: r.ext_id, url: r.url, ats: r.ats as Ats, company: r.name, employer: r.employer_name ?? r.name, textLines: r.text_lines ?? [],
+    id: r.id, extId: r.ext_id, url: r.url, ats: r.ats as Ats, slug: r.slug, company: r.name, employer: r.employer_name ?? r.name, textLines: r.text_lines ?? [],
     track: trackForJob({ employmentType: r.employment_type as JobForScoring["employmentType"] }),
   };
 }

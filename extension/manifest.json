@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Placed Autopilot",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "description": "Fills internship application forms from your Placed Answer Vault (never presses Submit) and reads your own LinkedIn profile for your Placed LinkedIn Score.",
   "icons": {
     "16": "icons/icon16.png",
@@ -37,7 +37,8 @@
         "https://job-boards.greenhouse.io/*",
         "https://boards.greenhouse.io/*",
         "https://jobs.ashbyhq.com/*",
-        "https://jobs.lever.co/*"
+        "https://jobs.lever.co/*",
+        "https://jobs.eu.lever.co/*"
       ],
       "js": [
         "capture.js"
@@ -49,7 +50,8 @@
         "https://job-boards.greenhouse.io/*",
         "https://boards.greenhouse.io/*",
         "https://jobs.ashbyhq.com/*",
-        "https://jobs.lever.co/*"
+        "https://jobs.lever.co/*",
+        "https://jobs.eu.lever.co/*"
       ],
       "js": [
         "config.js",

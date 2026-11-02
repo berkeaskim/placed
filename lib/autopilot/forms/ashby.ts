@@ -1,4 +1,4 @@
-import { FormUnavailableError, type FieldType, type FormField, type NormalizedForm } from "./types";
+import { FormUnavailableError, PostingClosedError, type FieldType, type FormField, type NormalizedForm } from "./types";
 import { wordLimitOf } from "./limits";
 
 const TYPE: Record<string, FieldType> = {
@@ -16,6 +16,7 @@ export const ASHBY_QUERY = "query ApiJobPosting($organizationHostedJobsPageName:
 
 export function parseAshby(json: unknown, org: string, id: string): NormalizedForm {
   const jp = (json as { data?: { jobPosting?: { applicationForm?: { sections: { fieldEntries: { field: AField; isRequired: boolean }[] }[] } } | null } })?.data?.jobPosting;
+  if (jp === null) throw new PostingClosedError();
   if (!jp?.applicationForm) throw new FormUnavailableError();
   const fields: FormField[] = [];
   const seen = new Set<string>();

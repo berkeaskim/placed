@@ -6,7 +6,7 @@ import { parseGreenhouse, greenhouseRef } from "@/lib/autopilot/forms/greenhouse
 import { parseAshby, ashbyRef } from "@/lib/autopilot/forms/ashby";
 import { parseLever, leverRef } from "@/lib/autopilot/forms/lever";
 import { fetchForm, wordLimitOf } from "@/lib/autopilot/forms";
-import { FormUnavailableError } from "@/lib/autopilot/forms/types";
+import { FormUnavailableError, PostingClosedError } from "@/lib/autopilot/forms/types";
 import { isEeoLabel } from "@/lib/autopilot/vault";
 
 const lever = readFileSync("tests/fixtures/autopilot/lever-palantir.html", "utf8");
@@ -51,7 +51,17 @@ describe("greenhouse", () => {
   });
   it("parses refs", () => {
     expect(greenhouseRef("https://job-boards.greenhouse.io/monzo/jobs/8232726")).toEqual({ board: "monzo", id: "8232726" });
-    expect(greenhouseRef("https://boards.greenhouse.io/embed/job_app?for=tide&token=7980213003")).toEqual({ board: "tide", id: "7980213003" });
+    expect(greenhouseRef("https://boards.greenhouse.io/embed/job_app?for=tide&token=7980213003")).toEqual({ board: "tide", id: "7980213003", embed: true });
+    expect(greenhouseRef("https://job-boards.eu.greenhouse.io/feverup/jobs/4940097101")).toEqual({ board: "feverup", id: "4940097101" });
+  });
+  it("reads a company careers-page link (?gh_jid=) with the company's board slug, opened on the embed page", () => {
+    const url = "https://stripe.com/jobs/search?gh_jid=8097801";
+    expect(greenhouseRef(url)).toBeNull();
+    expect(greenhouseRef(url, "stripe")).toEqual({ board: "stripe", id: "8097801", embed: true });
+    expect(greenhouseRef("https://www.squarepoint-capital.com/open-opportunities?id=243853&gh_jid=243853", "squarepointcapital"))
+      .toEqual({ board: "squarepointcapital", id: "243853", embed: true });
+    expect(greenhouseRef(url, "../evil")).toBeNull();
+    expect(parseGreenhouse(gh, "stripe", "8097801", true).url).toBe("https://job-boards.greenhouse.io/embed/job_app?for=stripe&token=8097801");
   });
 });
 
@@ -65,7 +75,7 @@ describe("ashby", () => {
     expect(f.fields.find((x) => /sponsorship/i.test(x.label))?.type).toBe("boolean");
   });
   it("treats a null posting as unavailable", () => {
-    expect(() => parseAshby({ data: { jobPosting: null } }, "x", "y")).toThrow(FormUnavailableError);
+    expect(() => parseAshby({ data: { jobPosting: null } }, "x", "y")).toThrow(PostingClosedError);
   });
   it("parses refs", () => expect(ashbyRef("https://jobs.ashbyhq.com/lendable/e001dc0b-6e0f-46a7-95ba-38a3733db2f4")).toEqual({ org: "lendable", id: "e001dc0b-6e0f-46a7-95ba-38a3733db2f4" }));
 });
@@ -79,7 +89,11 @@ describe("lever", () => {
     expect(lang).toMatchObject({ type: "multiselect", required: true });
     expect(lang.target).toMatch(/^cards\[a69a985a-eae9-4c14-90fb-b5a4b891523e\]\[field\d+\]$/);
   });
-  it("parses refs", () => expect(leverRef("https://jobs.lever.co/palantir/774cf5c9-bf6a-4d77-bf60-d50ef1beb1a0")).toEqual({ site: "palantir", id: "774cf5c9-bf6a-4d77-bf60-d50ef1beb1a0" }));
+  it("parses refs, EU host included", () => {
+    expect(leverRef("https://jobs.lever.co/palantir/774cf5c9-bf6a-4d77-bf60-d50ef1beb1a0")).toEqual({ host: "jobs.lever.co", site: "palantir", id: "774cf5c9-bf6a-4d77-bf60-d50ef1beb1a0" });
+    expect(leverRef("https://jobs.eu.lever.co/cirrus/b0eeba19-9950-4e6b-a709-037e271a71fd")).toEqual({ host: "jobs.eu.lever.co", site: "cirrus", id: "b0eeba19-9950-4e6b-a709-037e271a71fd" });
+    expect(parseLever(lever, "cirrus", "b0eeba19-9950-4e6b-a709-037e271a71fd", "jobs.eu.lever.co").url).toBe("https://jobs.eu.lever.co/cirrus/b0eeba19-9950-4e6b-a709-037e271a71fd/apply");
+  });
 });
 
 describe("fetchForm", () => {
@@ -89,9 +103,10 @@ describe("fetchForm", () => {
     expect(f).toHaveBeenCalledWith("https://boards-api.greenhouse.io/v1/boards/monzo/jobs/8232726?questions=true", expect.anything());
     expect(form.fields.length).toBeGreaterThan(15);
   });
-  it("throws FormUnavailableError on 404", async () => {
+  it("throws PostingClosedError (a FormUnavailableError) on 404", async () => {
     const f = vi.fn(async () => new Response("nope", { status: 404 }));
-    await expect(fetchForm({ url: "https://job-boards.greenhouse.io/monzo/jobs/1", ats: "greenhouse" }, f as unknown as typeof fetch)).rejects.toThrow(FormUnavailableError);
+    await expect(fetchForm({ url: "https://job-boards.greenhouse.io/monzo/jobs/1", ats: "greenhouse" }, f as unknown as typeof fetch)).rejects.toThrow(PostingClosedError);
+    expect(new PostingClosedError()).toBeInstanceOf(FormUnavailableError);
   });
   it("reads word limits", () => {
     expect(wordLimitOf("Why us? (250 word limit)")).toBe(250);

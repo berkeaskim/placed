@@ -6,3 +6,7 @@ export type NormalizedForm = { ats: Ats; url: string; fields: FormField[] };
 export class FormUnavailableError extends Error {
   constructor(msg = "We couldn't read this form.") { super(msg); }
 }
+/** The ATS no longer serves the posting (404, or Ashby's null jobPosting): it has closed. */
+export class PostingClosedError extends FormUnavailableError {
+  constructor() { super("This posting has closed."); }
+}

@@ -16,14 +16,26 @@ const TYPE: Record<string, FieldType | null> = {
   multi_value_single_select: "select", multi_value_multi_select: "multiselect",
 };
 
-export function greenhouseRef(url: string): { board: string; id: string } | null {
+/**
+ * Board and job id. A company careers page that embeds Greenhouse (stripe.com/jobs/search?gh_jid=…) has no board in
+ * the URL, so the company's board slug fills in; `embed` then means the hosted job page redirects back to that careers
+ * site, and the form has to be opened on Greenhouse's embed page instead.
+ */
+export function greenhouseRef(url: string, boardSlug?: string): { board: string; id: string; embed?: true } | null {
   const a = url.match(/greenhouse\.io\/([^/?#]+)\/jobs\/(\d+)/);
-  if (a) return { board: a[1], id: a[2] };
+  if (a && a[1] !== "embed") return { board: a[1], id: a[2] };
   const b = url.match(/[?&]for=([^&]+).*?[?&]token=(\d+)/);
-  return b ? { board: b[1], id: b[2] } : null;
+  if (b) return { board: b[1], id: b[2], embed: true };
+  const c = url.match(/[?&]gh_jid=(\d+)/);
+  return c && boardSlug && /^[\w-]+$/.test(boardSlug) ? { board: boardSlug, id: c[1], embed: true } : null;
 }
 
-export function parseGreenhouse(json: unknown, board: string, id: string): NormalizedForm {
+export const greenhouseFormUrl = (board: string, id: string, embed?: boolean) =>
+  embed
+    ? `https://job-boards.greenhouse.io/embed/job_app?for=${encodeURIComponent(board)}&token=${id}`
+    : `https://job-boards.greenhouse.io/${board}/jobs/${id}`;
+
+export function parseGreenhouse(json: unknown, board: string, id: string, embed?: boolean): NormalizedForm {
   const j = json as GhJson;
   if (!Array.isArray(j?.questions)) throw new FormUnavailableError();
   const fields: FormField[] = [];
@@ -42,7 +54,7 @@ export function parseGreenhouse(json: unknown, board: string, id: string): Norma
     });
   }
   fields.push(...demographicFields(j, seen));
-  return { ats: "greenhouse", url: `https://job-boards.greenhouse.io/${board}/jobs/${id}`, fields };
+  return { ats: "greenhouse", url: greenhouseFormUrl(board, id, embed), fields };
 }
 
 /** The separate identity survey: EEO selects the student answers once (and Autopilot remembers), plus the survey's consent box, which stays theirs. */
