@@ -21,11 +21,12 @@ export class AiError extends Error {}
 export const AI_REFUSAL = "The AI declined to process this request.";
 export const AI_BAD_FORMAT = "The AI returned an answer we couldn't read. Please try again.";
 export const AI_UNAVAILABLE = "The AI service is unavailable right now. Please try again shortly.";
-export const AI_NOT_SET_UP = "AI isn't set up yet. Choose Claude, Gemini, ChatGPT or a local model in Settings → AI.";
+export const AI_NOT_SET_UP = "AI isn't set up yet. Add an OpenRouter key, use ChatGPT or a local model in Settings → AI.";
 export const isAiNotSetUp = (e: unknown): boolean => e instanceof AiError && e.message === AI_NOT_SET_UP;
 
 // One shared import promise per adapter: parallel first calls (judgeLinkedIn batches) must not race the module's
 // evaluation ("Cannot access 'ai' before initialization" under jiti).
+let openrouterMod: Promise<typeof import("./openrouter")> | null = null;
 let anthropicMod: Promise<typeof import("./anthropic")> | null = null;
 let geminiMod: Promise<typeof import("./gemini")> | null = null;
 let ollamaMod: Promise<typeof import("./ollama")> | null = null;
@@ -35,6 +36,10 @@ let codexMod: Promise<typeof import("./codex")> | null = null;
 export async function generateStructured<T>(req: StructuredRequest<T>): Promise<T> {
   const provider = aiProvider();
   if (!provider) throw new AiError(AI_NOT_SET_UP);
+  if (provider === "openrouter") {
+    const { openrouterStructured } = await (openrouterMod ??= import("./openrouter"));
+    return openrouterStructured(req);
+  }
   if (provider === "anthropic") {
     const { anthropicStructured } = await (anthropicMod ??= import("./anthropic"));
     return anthropicStructured(req);
@@ -52,12 +57,16 @@ export async function generateStructured<T>(req: StructuredRequest<T>): Promise<
 }
 
 /**
- * Free-text answer researched with web search. Gemini only (Google Search grounding); returns null for a provider
- * without search (Anthropic, Ollama, Codex), so callers fall back to an inferred, unsourced answer.
+ * Free-text answer researched with web search: Gemini (Google Search grounding) or OpenRouter (its web plugin).
+ * Returns null for a provider without search (Anthropic, Ollama, Codex), so callers fall back to an inferred, unsourced answer.
  */
 export async function generateGrounded(req: GroundedRequest): Promise<GroundedResult | null> {
   const provider = aiProvider();
   if (!provider) throw new AiError(AI_NOT_SET_UP);
+  if (provider === "openrouter") {
+    const { openrouterGrounded } = await (openrouterMod ??= import("./openrouter"));
+    return openrouterGrounded(req);
+  }
   if (provider !== "gemini") return null;
   const { geminiGrounded } = await (geminiMod ??= import("./gemini"));
   return geminiGrounded(req);
@@ -91,7 +100,10 @@ export async function* streamText(req: StreamRequest, o: { fn: string; fixtureKe
   }
   const provider = aiProvider();
   if (!provider) throw new AiError(AI_NOT_SET_UP);
-  if (provider === "anthropic") {
+  if (provider === "openrouter") {
+    const { openrouterStream } = await (openrouterMod ??= import("./openrouter"));
+    yield* openrouterStream(req);
+  } else if (provider === "anthropic") {
     const { anthropicStream } = await (anthropicMod ??= import("./anthropic"));
     yield* anthropicStream(req);
   } else if (provider === "ollama") {

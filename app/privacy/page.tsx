@@ -26,8 +26,8 @@ export default function PrivacyPage() {
 
       <h2 className={H2}>AI processing</h2>
       <p className={P}>
-        To score and tailor your CV and draft answers, the relevant text is sent to the AI you choose in Settings: Anthropic (Claude) or
-        Google (Gemini) with your own key, OpenAI (ChatGPT) through the Codex CLI and your ChatGPT account, or a local model through Ollama, in which case nothing leaves your computer. Tailoring never
+        To score and tailor your CV and draft answers, the relevant text is sent to the AI you choose in Settings: OpenRouter with your own key (it forwards
+        the request to the model you pick, such as Claude, Gemini or GPT), Anthropic (Claude) or Google (Gemini) with your own key, OpenAI (ChatGPT) through the Codex CLI and your ChatGPT account, or a local model through Ollama, in which case nothing leaves your computer. Tailoring never
         invents experience: every claim must trace back to your CV.
       </p>
 

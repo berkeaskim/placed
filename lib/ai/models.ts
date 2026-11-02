@@ -7,6 +7,9 @@ export type Tier = "fast" | "smart";
 export const ANTHROPIC_MODELS = { fast: "claude-haiku-4-5", smart: "claude-sonnet-5-5" } as const;
 export const GEMINI_MODELS = { fast: "gemini-3.8-flash", smart: "gemini-3.8-flash" } as const; // smart on Flash too: Pro took 130-300s per call
 
+/** OpenRouter defaults: Gemini Flash for quick tagging, Claude Sonnet for CV judging and writing. */
+export const OPENROUTER_MODELS = { fast: "google/gemini-3.8-flash", smart: "anthropic/claude-sonnet-5.5" } as const;
+
 function override(key: string): string | null {
   try {
     return getSetting(key)?.trim() || null;
@@ -20,6 +23,9 @@ export const anthropicModel = (tier: Tier): string => override(`ai.anthropic.mod
 /** Gemini model for a tier: setting `ai.gemini.model.<tier>` over the pinned default. */
 export const geminiModel = (tier: Tier): string => override(`ai.gemini.model.${tier}`) ?? GEMINI_MODELS[tier];
 
+/** OpenRouter model for a tier: setting `ai.openrouter.model.<tier>` over the default. */
+export const openrouterModel = (tier: Tier): string => override(`ai.openrouter.model.${tier}`) ?? OPENROUTER_MODELS[tier];
+
 /** ChatGPT model for a tier: setting `ai.codex.model.<tier>`; null lets the Codex CLI use its own default model. */
 export const codexModel = (tier: Tier): string | null => override(`ai.codex.model.${tier}`);
 
@@ -28,6 +34,6 @@ export function currentModelId(tier: Tier): string {
   if (aiMode() === "fixture") return "fixture";
   const p = aiProvider();
   if (!p) return "off";
-  const model = p === "anthropic" ? anthropicModel(tier) : p === "gemini" ? geminiModel(tier) : p === "codex" ? (codexModel(tier) ?? "default") : ollamaModel(tier);
+  const model = p === "openrouter" ? openrouterModel(tier) : p === "anthropic" ? anthropicModel(tier) : p === "gemini" ? geminiModel(tier) : p === "codex" ? (codexModel(tier) ?? "default") : ollamaModel(tier);
   return `${p}:${model ?? "unset"}`;
 }

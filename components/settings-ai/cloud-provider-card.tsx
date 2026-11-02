@@ -84,7 +84,7 @@ export function CloudProviderCard({ provider, label, keyUrl, envVar, keyState, d
       </div>
       <ResultLine result={keyAction.result} />
       <ResultLine result={testAction.result} />
-      <details className="rounded-[14px] border-2 border-border p-3">
+      <details className="rounded-[10px] bg-black/[0.03] p-3">
         <summary className="cursor-pointer text-sm font-semibold">Models (optional)</summary>
         <form
           className="mt-3 flex flex-col gap-2"

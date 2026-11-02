@@ -1,7 +1,8 @@
 "use client";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { setCloudModelsAction, setCodexEnabledAction, testConnectionAction } from "@/app/(app)/settings/ai/actions";
-import { btn, btnPrimary, CopyCommand, field, ResultLine, useAction } from "./shared";
+import { Chevron, CopyCommand, Group, ResultLine, Row, StatusDot, Switch, btn, field, useAction } from "./shared";
 
 type Props = {
   installed: boolean;
@@ -15,79 +16,104 @@ type Props = {
 };
 
 export function CodexPanel({ installed, bin, version, loggedIn, account, error, enabled, overrides }: Props) {
+  const router = useRouter();
   const toggle = useAction();
-  const testAction = useAction();
   const modelAction = useAction();
+  const [open, setOpen] = useState(false);
   const [fast, setFast] = useState(overrides.fast);
   const [smart, setSmart] = useState(overrides.smart);
+
   return (
-    <div className="flex flex-col gap-3">
-      <p className="text-sm text-muted-foreground">
-        Uses your ChatGPT plan through OpenAI&apos;s Codex CLI, signed in with your ChatGPT account. No API key needed. Each call starts the CLI, so
-        it is a little slower than Claude or Gemini.
-      </p>
-      {!installed ? (
-        <div className="flex flex-col gap-2 text-sm">
-          <p className="font-semibold text-amber-700">Codex CLI not found{error ? ` (${error})` : ""}.</p>
-          <p>Install it, then sign in with your ChatGPT account:</p>
-          <CopyCommand command="npm install -g @openai/codex" />
-          <CopyCommand command="codex login" />
-        </div>
-      ) : (
-        <div className="flex flex-col gap-2 text-sm">
-          <p>
-            <span className="font-semibold">Codex CLI {version}</span> <span className="text-muted-foreground">at {bin}</span>
-          </p>
-          {loggedIn ? (
-            <p className="font-semibold text-emerald-700">{account}</p>
-          ) : (
-            <>
-              <p className="font-semibold text-amber-700">Not signed in. Run this in a terminal and choose &quot;Sign in with ChatGPT&quot;:</p>
-              <CopyCommand command="codex login" />
-            </>
-          )}
-        </div>
-      )}
-      <div className="flex flex-wrap gap-2">
-        {enabled ? (
-          <button type="button" className={btn} disabled={toggle.pending} onClick={() => toggle.run(() => setCodexEnabledAction(false))}>
-            Turn off ChatGPT
-          </button>
-        ) : (
-          <button type="button" className={btnPrimary} disabled={!installed || toggle.pending} onClick={() => toggle.run(() => setCodexEnabledAction(true))}>
-            Use ChatGPT
-          </button>
-        )}
-        <button type="button" className={btn} disabled={!installed || testAction.pending} onClick={() => testAction.run(() => testConnectionAction("codex"))}>
-          {testAction.pending ? "Testing..." : "Test connection"}
-        </button>
-      </div>
-      <ResultLine result={toggle.result} />
-      <ResultLine result={testAction.result} />
-      <details className="rounded-[14px] border-2 border-border p-3">
-        <summary className="cursor-pointer text-sm font-semibold">Models (optional)</summary>
-        <form
-          className="mt-3 flex flex-col gap-2"
-          onSubmit={(e) => {
-            e.preventDefault();
-            modelAction.run(() => setCloudModelsAction("codex", fast, smart));
-          }}
+    <Group
+      title="ChatGPT (Codex CLI)"
+      footer="Uses your ChatGPT plan through OpenAI's Codex CLI, so there is no API key. Each request starts the CLI, so answers take 5 to 20 seconds."
+    >
+      <Row
+        title="Codex CLI"
+        subtitle={installed ? bin : "Not found on this Mac"}
+        trailing={installed ? <span>{version}</span> : <span className="flex items-center gap-1.5"><StatusDot state="fail" />Missing</span>}
+      >
+        {!installed ? (
+          <div className="flex flex-col gap-2 px-4 pb-3 text-[13px]">
+            {error ? <p className="break-words text-[12px] text-black/45">{error}</p> : null}
+            <p className="text-black/70">Install it in Terminal, then sign in with your ChatGPT account:</p>
+            <CopyCommand command="npm install -g @openai/codex" />
+            <CopyCommand command="codex login" />
+          </div>
+        ) : null}
+      </Row>
+      {installed ? (
+        <Row
+          title="ChatGPT account"
+          subtitle={loggedIn ? account : "Not signed in"}
+          trailing={<span className="flex items-center gap-1.5"><StatusDot state={loggedIn ? "ok" : "fail"} />{loggedIn ? "Signed in" : "Sign in needed"}</span>}
         >
-          <p className="text-xs text-muted-foreground">Leave empty to use the Codex CLI&apos;s default model. &quot;Fast&quot; handles quick tagging; &quot;smart&quot; scores and tailors your CV.</p>
-          <label className="flex flex-col gap-1 text-sm font-semibold">
-            Fast model
-            <input value={fast} onChange={(e) => setFast(e.target.value)} placeholder="Codex default" className={field} spellCheck={false} />
-          </label>
-          <label className="flex flex-col gap-1 text-sm font-semibold">
-            Smart model
-            <input value={smart} onChange={(e) => setSmart(e.target.value)} placeholder="Codex default" className={field} spellCheck={false} />
-          </label>
-          <button type="submit" className={`${btn} self-start`} disabled={modelAction.pending}>
-            Save models
-          </button>
-          <ResultLine result={modelAction.result} />
-        </form>
-      </details>
-    </div>
+          {!loggedIn ? (
+            <div className="flex flex-col gap-2 px-4 pb-3 text-[13px]">
+              <p className="text-black/70">Run this in Terminal and choose &quot;Sign in with ChatGPT&quot;, then check again:</p>
+              <CopyCommand command="codex login" />
+            </div>
+          ) : null}
+        </Row>
+      ) : null}
+      <Row
+        title="Use ChatGPT"
+        subtitle={enabled ? "On: Placed can send requests through Codex" : "Off"}
+        trailing={
+          <Switch
+            label="Use ChatGPT"
+            checked={enabled}
+            disabled={(!installed && !enabled) || toggle.pending}
+            onChange={(on) =>
+              toggle.run(async () => {
+                const r = await setCodexEnabledAction(on);
+                router.refresh();
+                if (r.ok && on) {
+                  const t = await testConnectionAction("codex", "smart");
+                  router.refresh();
+                  return t;
+                }
+                return r;
+              })
+            }
+          />
+        }
+      >
+        {toggle.pending || toggle.result ? (
+          <div className="px-4 pb-3">{toggle.pending ? <p className="text-[13px] text-black/50">Testing ChatGPT…</p> : <ResultLine result={toggle.result} />}</div>
+        ) : null}
+      </Row>
+      <Row title="Models" subtitle={overrides.smart || overrides.fast ? `${overrides.smart || "default"} · ${overrides.fast || "default"}` : "Codex default"} trailing={<button type="button" className={btn} onClick={() => setOpen(!open)} aria-expanded={open}>Edit<Chevron open={open} /></button>}>
+        {open ? (
+          <form
+            className="flex flex-col gap-2 px-4 pb-3"
+            onSubmit={(e) => {
+              e.preventDefault();
+              modelAction.run(async () => {
+                const r = await setCloudModelsAction("codex", fast, smart);
+                if (!r.ok || !enabled) return r;
+                const t = await testConnectionAction("codex", "smart");
+                router.refresh();
+                return t;
+              });
+            }}
+          >
+            <p className="text-[12px] text-black/50">Leave empty for the Codex CLI&apos;s default model.</p>
+            <label className="flex flex-col gap-1 text-[13px] font-medium text-black/70">
+              CV review &amp; writing
+              <input value={smart} onChange={(e) => setSmart(e.target.value)} placeholder="Codex default" className={`${field} font-mono`} spellCheck={false} />
+            </label>
+            <label className="flex flex-col gap-1 text-[13px] font-medium text-black/70">
+              Quick tasks
+              <input value={fast} onChange={(e) => setFast(e.target.value)} placeholder="Codex default" className={`${field} font-mono`} spellCheck={false} />
+            </label>
+            <button type="submit" className={`${btn} self-start`} disabled={modelAction.pending}>
+              {modelAction.pending ? "Saving and testing…" : "Save"}
+            </button>
+            <ResultLine result={modelAction.result} />
+          </form>
+        ) : null}
+      </Row>
+    </Group>
   );
 }

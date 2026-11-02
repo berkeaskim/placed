@@ -14,7 +14,7 @@ Tailor your CV to a job without inventing a single claim. Let Autopilot fill the
 Track every application, prep for the interview, and get a dated plan for who to message and when.
 
 **Runs on your own computer.** No account, no cloud database: your CV and applications stay in a folder on your machine.
-Bring a Claude or Gemini key, use your ChatGPT plan through the Codex CLI, or run a model locally with Ollama.
+Bring one OpenRouter key (Claude, Gemini, GPT and more), use your ChatGPT plan through the Codex CLI, or run a model locally with Ollama.
 
 <p>
   <img alt="3rd place, Claude Hackathon" src="https://img.shields.io/badge/%F0%9F%A5%89%203rd%20place-Claude%20Hackathon-D97757">
@@ -233,16 +233,18 @@ model under **Settings → AI** (next section) before you score your own CV.
 
 ## Choosing an AI backend
 
-Open **Settings → AI** in the app and pick one of four backends. You can switch at any time.
+Open **Settings → AI** in the app and pick a backend. You can switch at any time.
 
 | Backend | What you need | Notes |
 |---|---|---|
-| **Claude** | An Anthropic API key ([console.anthropic.com](https://console.anthropic.com)) | Best quality. Paid per use. |
-| **Gemini** | A Google AI Studio key ([aistudio.google.com/apikey](https://aistudio.google.com/apikey)) | Google offers a rate-limited free tier. Also powers search-grounded interview prep. |
+| **OpenRouter** (recommended) | One API key from [openrouter.ai/keys](https://openrouter.ai/keys) with some credit | Reaches Claude, Gemini, GPT and hundreds more; pick the model per task in the app. Defaults: Claude Sonnet 5.5 for CV review and writing, Gemini 3.8 Flash for quick tasks. Also powers web-researched interview prep. |
+| **Claude** (advanced) | An Anthropic API key ([console.anthropic.com](https://console.anthropic.com)) | Best quality. Paid per use. |
+| **Gemini** (advanced) | A Google AI Studio key ([aistudio.google.com/apikey](https://aistudio.google.com/apikey)) | Google offers a rate-limited free tier. Also powers search-grounded interview prep. |
 | **ChatGPT (Codex CLI)** | OpenAI's [Codex CLI](https://github.com/openai/codex) (`npm install -g @openai/codex`), signed in with `codex login` | Uses your ChatGPT plan, no API key. Each call starts the CLI, so it takes a few seconds longer than Claude or Gemini. |
 | **Ollama** | [Ollama](https://ollama.com) installed and running | Fully offline and free. Your CV never leaves your computer. Slower, and quality depends on your hardware. |
 
-Paste a key and press **Test connection**. For ChatGPT there is no key: press **Use ChatGPT**, then **Test connection**
+Paste a key and save: Placed checks an OpenRouter key with OpenRouter before saving it, and every provider or model you pick is
+tested with a real request straight away, so the page shows whether it answers. For ChatGPT there is no key: switch on **Use ChatGPT**
 (set `CODEX_BIN` if the `codex` binary isn't on your PATH). Keys are stored encrypted in `data/`. If you prefer environment
 variables, copy `.env.example` to `.env.local` and fill in what you need; a value there overrides the one in Settings.
 

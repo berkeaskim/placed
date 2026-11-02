@@ -8,12 +8,15 @@ import os from "node:os";
 import path from "node:path";
 import { getSecret, getSetting } from "@/lib/settings/store";
 
-export type AiProvider = "anthropic" | "gemini" | "ollama" | "codex";
-export const AI_PROVIDERS: readonly AiProvider[] = ["anthropic", "gemini", "ollama", "codex"];
+export type AiProvider = "openrouter" | "anthropic" | "gemini" | "ollama" | "codex";
+/** Also the "first configured" order when no provider was chosen. OpenRouter first: one key reaches every cloud model. */
+export const AI_PROVIDERS: readonly AiProvider[] = ["openrouter", "anthropic", "gemini", "ollama", "codex"];
+export type KeyProvider = "openrouter" | "anthropic" | "gemini";
 
 /** Setting / secret keys for the AI configuration (lib/settings/store). */
 export const AI_KEYS = {
   provider: "ai.provider",
+  openrouterKey: "ai.openrouter.key",
   anthropicKey: "ai.anthropic.key",
   geminiKey: "ai.gemini.key",
   ollamaHost: "ai.ollama.host",
@@ -40,10 +43,13 @@ function asProvider(v: string | null | undefined): AiProvider | null {
 }
 
 /** API key for a cloud provider: env first, then the key saved in Settings → AI. Read per call, so UI edits apply without a restart. */
-export function aiApiKey(p: "anthropic" | "gemini"): string | null {
-  const fromEnv = (p === "anthropic" ? process.env.ANTHROPIC_API_KEY : process.env.GEMINI_API_KEY)?.trim();
+export const KEY_ENV: Record<KeyProvider, string> = { openrouter: "OPENROUTER_API_KEY", anthropic: "ANTHROPIC_API_KEY", gemini: "GEMINI_API_KEY" };
+export const KEY_SECRET: Record<KeyProvider, string> = { openrouter: AI_KEYS.openrouterKey, anthropic: AI_KEYS.anthropicKey, gemini: AI_KEYS.geminiKey };
+
+export function aiApiKey(p: KeyProvider): string | null {
+  const fromEnv = process.env[KEY_ENV[p]]?.trim();
   if (fromEnv) return fromEnv;
-  return safe(() => getSecret(p === "anthropic" ? AI_KEYS.anthropicKey : AI_KEYS.geminiKey));
+  return safe(() => getSecret(KEY_SECRET[p]));
 }
 
 /** Ollama base URL: env OLLAMA_HOST, then setting ai.ollama.host, then the local default. Bare "host:port" gets http://. */
@@ -84,7 +90,7 @@ export function isProviderConfigured(p: AiProvider): boolean {
 
 /**
  * Active provider. Order: env AI_PROVIDER, then setting ai.provider, then the first configured provider
- * (anthropic, gemini, ollama, codex). A chosen provider that is not configured falls through to the first configured one.
+ * (openrouter, anthropic, gemini, ollama, codex). A chosen provider that is not configured falls through to the first configured one.
  * Synchronous: the settings store is synchronous (better-sqlite3).
  */
 export function aiProvider(): AiProvider | null {

@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { DeleteDataForm } from "./delete-data-form";
 import { JobSearchSettings } from "@/components/settings/job-search";
 import { UniversityForm } from "@/components/settings/university-form";
@@ -16,10 +15,13 @@ import { dataDir, db } from "@/lib/db/client";
 import { profiles } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { aiProvider } from "@/lib/ai/config";
+import { PROVIDER_LABEL, shortModel } from "@/lib/ai/labels";
+import { codexModel, currentModelId } from "@/lib/ai/models";
+import { readHealth } from "@/lib/ai/health";
+import { AppIcon, Group, Row, StatusDot } from "@/components/ui/apple";
 import { isDesktop } from "@/lib/desktop";
 import { DesktopSettings } from "@/components/settings/desktop";
 
-const PROVIDER_LABEL = { anthropic: "Claude", gemini: "Gemini", ollama: "Ollama (local)", codex: "ChatGPT (Codex CLI)" } as const;
 
 export default async function Settings() {
   const provider = aiProvider();
@@ -29,39 +31,53 @@ export default async function Settings() {
   const detected = universityFor(user.id);
   const envKey = process.env.SERPER_API_KEY?.trim();
   const savedKey = envKey ? null : getSecret(SERPER_SECRET);
+  const smart = provider ? currentModelId("smart").split(":").slice(1).join(":") : null;
+  const health = provider ? readHealth(provider, "smart") : null;
+  const healthy = health && health.model === (provider === "codex" ? (codexModel("smart") ?? "default") : smart) ? health.ok : null;
   return (
-    <div className="mx-auto flex max-w-xl flex-col gap-4">
-      <h1 className="text-[28px] font-extrabold tracking-tight">Settings</h1>
-      <section className="card-quest flex flex-col gap-3 p-5">
-        <h2 className="font-bold">AI</h2>
-        <p className="text-sm text-muted-foreground">
-          {provider ? `Using ${PROVIDER_LABEL[provider]}.` : "No AI set up yet, so AI features (scoring, tailoring, cover letters) are off."} Pick Claude, Gemini, ChatGPT or a local model.
-        </p>
-        <Link href="/settings/ai" className="inline-flex h-11 items-center self-start rounded-[14px] border-2 border-border bg-white px-5 font-bold transition-colors hover:bg-muted">
-          AI settings
-        </Link>
-      </section>
-      <section className="card-quest flex flex-col gap-3 p-5">
-        <h2 className="font-bold">You</h2>
+    <div className="mx-auto flex max-w-[680px] flex-col gap-6 pb-10 [font-family:-apple-system,BlinkMacSystemFont,'SF_Pro_Text',system-ui,sans-serif] antialiased">
+      <h1 className="text-[28px] font-bold leading-[1.1] tracking-[-0.025em] text-black/90">Settings</h1>
+
+      <Group title="AI" footer="One OpenRouter key reaches Claude, Gemini, GPT and more; ChatGPT and local models work too.">
+        <Row
+          href="/settings/ai"
+          icon={<AppIcon kind={provider ?? "off"} />}
+          title={provider ? PROVIDER_LABEL[provider] : "AI is off"}
+          subtitle={provider ? <span className="font-mono">{smart === "default" ? "Codex default model" : shortModel(smart ?? "")}</span> : "Set up AI to score, tailor and write"}
+          trailing={
+            provider ? (
+              <span className="flex items-center gap-1.5">
+                <StatusDot state={healthy === null ? "unknown" : healthy ? "ok" : "fail"} />
+                {healthy === null ? "Not checked" : healthy ? "Working" : "Not working"}
+              </span>
+            ) : (
+              "Set up"
+            )
+          }
+        />
+      </Group>
+
+      <Group title="You">
         <UniversityForm saved={saved} fromCv={saved ? null : detected} />
         <CourseForm saved={row?.course ?? null} />
         <StudyForm year={row?.year ?? null} gradYear={row?.grad ?? null} placement={row?.placement ?? null} secureBy={row?.secureBy ?? null} workAuth={row ? workAuthOf({ work_auth: row.workAuth, needs_visa: row.needsVisa }) : null} options={gradYearOptions(todayLondon())} />
-      </section>
-      <section className="card-quest flex flex-col gap-3 p-5" id="people-search">
-        <h2 className="font-bold">People search</h2>
-        <p className="text-sm text-muted-foreground">
-          Optional. With a search key, roles you&apos;ve applied to show real alumni, team members and recruiters to message (Inside Track).
-          Without one, you get LinkedIn search links instead.
-        </p>
-        <SearchKeyForm source={envKey ? "env" : savedKey ? "saved" : null} last4={(envKey ?? savedKey)?.slice(-4) ?? null} />
-      </section>
+      </Group>
+
       <JobSearchSettings />
+
+      <Group
+        title="People search"
+        id="people-search"
+        footer="Optional. With a search key, roles you've applied to show real alumni, team members and recruiters to message (Inside Track). Searches send the company, role and your university to Serper; nothing else leaves this computer."
+      >
+        <SearchKeyForm source={envKey ? "env" : savedKey ? "saved" : null} last4={(envKey ?? savedKey)?.slice(-4) ?? null} />
+      </Group>
+
       {isDesktop() && <DesktopSettings />}
-      <section className="card-quest flex flex-col gap-3 p-5">
-        <h2 className="font-bold">Your data</h2>
-        <p className="text-sm text-muted-foreground">Everything is stored on this computer, in <code>{dataDir()}</code>.</p>
+
+      <Group title="Your data" footer={<>Everything is stored on this computer, in <code className="break-all">{dataDir()}</code>.</>}>
         <DeleteDataForm />
-      </section>
+      </Group>
     </div>
   );
 }

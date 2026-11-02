@@ -1,8 +1,8 @@
 "use client";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { loginChangeMessage } from "@/lib/desktop";
+import { Group, Note, Row, Spinner, Switch, btn } from "@/components/ui/apple";
 
-const button = "min-h-11 rounded-[12px] border-2 border-border bg-white px-4 text-sm font-bold transition-colors hover:bg-muted disabled:opacity-60";
 const noop = () => () => {};
 // Server render: undefined (unknown yet), so the section is in the HTML. In the browser: the bridge or null.
 const useBridge = () => useSyncExternalStore(noop, () => window.placedDesktop ?? null, () => undefined);
@@ -62,22 +62,27 @@ export function DesktopSettings() {
   };
 
   return (
-    <section className="card-quest flex flex-col gap-3 p-5" aria-labelledby="mac-app-heading">
-      <h2 id="mac-app-heading" className="font-bold">Mac app</h2>
-      <p className="text-sm text-muted-foreground">{bridge ? `Placed ${bridge.version} for Mac.` : "Placed for Mac."}</p>
-      <label className="flex items-center gap-3 text-sm font-semibold">
-        <input type="checkbox" className="size-5 accent-[#16161D]" checked={atLogin ?? false} disabled={!bridge || atLogin === null}
-          onChange={(e) => toggleLogin(e.target.checked)} />
-        Open Placed at login
-      </label>
-      {loginMsg && <p role="status" className="text-xs font-semibold text-[#B42318]">{loginMsg}</p>}
-      <div className="flex flex-wrap items-center gap-2">
-        <button type="button" className={button} disabled={!bridge || checking} onClick={check}>
-          {checking ? "Checking…" : "Check for updates"}
-        </button>
-        <button type="button" className={button} disabled={!bridge} onClick={showFolder}>Show data folder</button>
-      </div>
-      <p role="status" className="text-xs text-muted-foreground">{updateMsg}{updateMsg && folderMsg ? " " : null}{folderMsg}</p>
-    </section>
+    <Group title="Mac app" footer={bridge ? `Placed ${bridge.version} for Mac.` : "Placed for Mac."}>
+      <Row
+        title="Open Placed at login"
+        subtitle={loginMsg ? <Note tone="error">{loginMsg}</Note> : "Keeps the morning job refresh running."}
+        trailing={<Switch label="Open Placed at login" checked={atLogin ?? false} disabled={!bridge || atLogin === null} onChange={toggleLogin} />}
+      />
+      <Row
+        title="Updates"
+        subtitle={updateMsg ? <span role="status">{updateMsg}</span> : "Placed tells you when a new version is out."}
+        trailing={
+          <button type="button" className={btn} disabled={!bridge || checking} onClick={check}>
+            {checking ? <Spinner /> : null}
+            {checking ? "Checking" : "Check now"}
+          </button>
+        }
+      />
+      <Row
+        title="Data folder"
+        subtitle={folderMsg ? <Note tone="error">{folderMsg}</Note> : "Your database, CVs and keys, on this Mac."}
+        trailing={<button type="button" className={btn} disabled={!bridge} onClick={showFolder}>Show in Finder</button>}
+      />
+    </Group>
   );
 }

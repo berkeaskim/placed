@@ -1,6 +1,7 @@
 "use client";
 import { useState, useTransition } from "react";
 import { findNewCompanies, stopWatchingCompany } from "./job-search-actions";
+import { Row, Spinner, btn } from "@/components/ui/apple";
 
 type Row = { id: number; name: string; enabled: boolean };
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
@@ -11,10 +12,11 @@ export function DiscoveredCompanies({ rows, canSearch }: { rows: Row[]; canSearc
   const [msg, setMsg] = useState<string | null>(null);
   const watched = rows.filter((r) => r.enabled);
   return (
-    <div className="flex flex-col gap-2">
-      <div className="flex flex-wrap items-center gap-3 text-sm">
-        <button type="button" disabled={pending || !canSearch}
-          className="min-h-11 rounded-full border bg-white px-4 font-semibold hover:bg-[#EFEBFF] disabled:opacity-60"
+    <Row
+      title="New companies"
+      subtitle={<span role="status" aria-live="polite">{msg ?? (canSearch ? "The AI suggests employers that fit you; Placed adds those it can read." : "Needs an AI provider (Settings → AI).")}</span>}
+      trailing={
+        <button type="button" disabled={pending || !canSearch} className={btn}
           onClick={() => {
             setMsg("Asking the AI and checking each careers site…");
             start(async () => {
@@ -24,24 +26,23 @@ export function DiscoveredCompanies({ rows, canSearch }: { rows: Row[]; canSearc
                 : `Checked ${plural(r.suggested, "suggestion")}; none had a careers site we can read yet.`);
             });
           }}>
-          {pending ? "Searching…" : "Find new companies"}
+          {pending ? <Spinner /> : null}
+          {pending ? "Searching" : "Find now"}
         </button>
-        <span role="status" aria-live="polite" className="text-muted-foreground">
-          {msg ?? (canSearch ? null : "Needs an AI provider (Settings → AI).")}
-        </span>
-      </div>
+      }
+    >
       {watched.length > 0 && (
-        <ul className="flex flex-wrap gap-2" aria-label="Companies found by the AI">
+        <ul className="flex flex-wrap gap-1.5 px-4 pb-3" aria-label="Companies found by the AI">
           {watched.map((r) => (
-            <li key={r.id} className="flex items-center gap-1 rounded-full bg-[#EFEBFF] py-1 pl-3 pr-1 text-xs font-bold text-[#5B3DF5]">
+            <li key={r.id} className="flex items-center gap-0.5 rounded-full bg-black/[0.05] py-0.5 pl-2.5 pr-0.5 text-[12px] font-medium text-black/75">
               {r.name}
               <button type="button" aria-label={`Stop watching ${r.name}`} disabled={pending}
-                className="grid size-6 place-items-center rounded-full hover:bg-white"
+                className="grid size-5 place-items-center rounded-full text-black/40 hover:bg-black/10 hover:text-black/70"
                 onClick={() => start(async () => { await stopWatchingCompany(r.id); })}>×</button>
             </li>
           ))}
         </ul>
       )}
-    </div>
+    </Row>
   );
 }
