@@ -189,7 +189,7 @@ const liGet = async () => {
 const liSet = (s) => chrome.storage.session.set({ [LI_KEY]: s });
 const liClear = () => chrome.storage.session.remove(LI_KEY);
 function fromPlacedPage(sender) {
-  return sender.id === chrome.runtime.id && Boolean(sender.tab) && sender.frameId === 0 && placedOrigins().includes(senderOrigin(sender));
+  return sender.id === chrome.runtime.id && Boolean(sender.tab) && sender.frameId === 0 && globalThis.PlacedOrigins.isLoopbackOrigin(senderOrigin(sender));
 }
 function fromLinkedInProfile(sender) {
   if (sender.id !== chrome.runtime.id || !sender.tab || sender.frameId !== 0 || senderOrigin(sender) !== "https://www.linkedin.com") return false;
