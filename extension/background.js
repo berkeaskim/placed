@@ -303,3 +303,22 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
   })();
   return true;
 });
+
+// ---------- "installed" report ----------
+// The Mac app's window is Electron, not Chrome, so hello.js can't stamp it. Instead, tell every Placed origin that
+// answers which version is installed: on install/reload, on Chrome start-up, whenever the worker wakes, and every
+// 30 minutes. It carries nothing but the version.
+const REPORT_ALARM = "placed-report-installed";
+async function reportInstalled() {
+  const O = globalThis.PlacedOrigins;
+  const origins = O.claimOrigins({ last: await lastOrigin(), primary: placedOrigin(), list: placedOrigins() }).filter(O.isLoopbackOrigin);
+  const body = JSON.stringify({ version: chrome.runtime.getManifest().version });
+  await Promise.allSettled(origins.map((o) =>
+    fetch(`${o}/api/autopilot/extension`, { method: "POST", headers: { "content-type": "application/json" }, body, credentials: "omit", redirect: "error" }),
+  ));
+}
+chrome.runtime.onInstalled.addListener(() => void reportInstalled());
+chrome.runtime.onStartup.addListener(() => void reportInstalled());
+chrome.alarms.create(REPORT_ALARM, { periodInMinutes: 30 });
+chrome.alarms.onAlarm.addListener((a) => { if (a.name === REPORT_ALARM) void reportInstalled(); });
+void reportInstalled();

@@ -9,21 +9,45 @@ export type ExtensionState = "checking" | "installed" | "outdated" | "missing";
 export type ExtensionInfo = { state: ExtensionState; version: string | null };
 
 // extension/hello.js stamps <html data-placed-autopilot="<version>"> on the Placed site once the extension is installed.
+// The Mac app's window is not Chrome, so there the stamp never appears: fall back to the version the extension's
+// service worker last reported to this server, re-asking every few seconds so a fresh install shows up by itself.
 // An install older than the version this build ships (extension/manifest.json) is "outdated".
+const POLL_MS = 3000;
+
+async function reportedVersion(): Promise<string | null> {
+  try {
+    const res = await fetch("/api/autopilot/extension", { cache: "no-store" });
+    const body = res.ok ? ((await res.json()) as { seen?: { version?: unknown } | null }) : null;
+    return typeof body?.seen?.version === "string" ? body.seen.version : null;
+  } catch {
+    return null;
+  }
+}
+
 export function useAutopilotExtension(): ExtensionInfo {
   const [info, setInfo] = useState<ExtensionInfo>({ state: "checking", version: null });
   useEffect(() => {
     const root = document.documentElement;
-    const check = (final: boolean) => {
+    let poll: ReturnType<typeof setTimeout> | undefined;
+    let stopped = false;
+    const stamped = () => {
       const version = root.getAttribute("data-placed-autopilot");
-      if (version != null) setInfo({ state: extensionStatus(version), version });
-      else if (final) setInfo({ state: "missing", version: null });
+      if (version == null) return false;
+      clearTimeout(poll);
+      setInfo({ state: extensionStatus(version), version });
+      return true;
     };
-    const obs = new MutationObserver(() => check(false));
+    const ask = async () => {
+      const version = await reportedVersion();
+      if (stopped || stamped()) return;
+      setInfo(version ? { state: extensionStatus(version), version } : { state: "missing", version: null });
+      if (!version) poll = setTimeout(ask, POLL_MS);
+    };
+    const obs = new MutationObserver(() => stamped());
     obs.observe(root, { attributes: true, attributeFilter: ["data-placed-autopilot"] });
-    const now = setTimeout(() => check(false), 0);
-    const t = setTimeout(() => check(true), 1500);
-    return () => { obs.disconnect(); clearTimeout(now); clearTimeout(t); };
+    const now = setTimeout(stamped, 0);
+    const t = setTimeout(() => { if (!stamped()) void ask(); }, 1500);
+    return () => { stopped = true; obs.disconnect(); clearTimeout(now); clearTimeout(t); clearTimeout(poll); };
   }, []);
   return info;
 }
